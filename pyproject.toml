@@ -25,6 +25,51 @@ dev = [
     "ruff>=0.14.5",
 ]
 
+[tool.ruff.lint]
+select = [
+    # "A",
+    "B",
+    "BLE",
+    # "C4",
+    "DTZ",
+    "E",
+    "EM",
+    "F",
+    "FA",
+    # "FBT",
+    "I",
+    "PT",
+    "RSE",
+    "RUF",
+    "S",
+    "T20",
+    "TRY",
+    "UP",
+    "W605",
+]
+ignore = [
+    "E111",
+    "E114",
+    "E117",
+    "E501",
+    "PT011",
+    "PT013",
+    "S101",
+    "S110",
+    "S112",
+    "TRY003",
+    "UP007",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["DTZ", "S105"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["carthorse"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
 [tool.basedpyright]
 # Use strict mode as the baseline
 typeCheckingMode = "all"

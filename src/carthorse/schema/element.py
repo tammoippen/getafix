@@ -1,6 +1,6 @@
+import enum
 from abc import ABC
 from dataclasses import dataclass, fields
-import enum
 from typing import ClassVar
 
 from tagic.xml import XML
