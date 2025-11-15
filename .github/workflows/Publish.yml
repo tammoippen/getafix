@@ -14,7 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
-      - run: uv install
       - run: uv build 
 
       - name: Archive artifacts
