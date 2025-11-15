@@ -3,14 +3,53 @@ from typing import ClassVar, override
 
 from tagic.xml import XML
 
-from carthorse.schema.fields import Indicator
-
 from .element import Element, Namespace, Profile
+from .fields import Indicator, StringId
 
 TestIndicator = Indicator[Namespace.ram, "TestIndicator", Profile.EXTENDED]
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass
+class BusinessDocumentContextParameter(Element):
+    """Gruppierung der Geschäftsprozessinformationen"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "DocumentContextParameterType"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: StringId | None = None
+    """Geschäftsprozesstyp / Geschäftsprozess
+
+    Identifiziert den Kontext des Geschäftsprozesses, in dem die Transaktion erfolgt, um es dem Käufer zu ermöglichen, die Rechnung in angemessener Weise zu verarbeiten
+
+    Anwendung: Diese Daten ermöglichen es, den Zweck der Abrechnung (Rechnung des Bevollmächtigten, Vertragspartners, Subunternehmers, Abrechnungsbeleg für einen Bauauftrag usw.) zu definieren.
+
+    Beispiele: Produktionsmaterial, sonstiges Material, Frachtrechnung
+
+    EN 16931-ID: BG-23
+    """
+
+
+@dataclass
+class GuidelineDocumentContextParameter(Element):
+    """Gruppierung der Anwendungsempfehlungsinformationen"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "DocumentContextParameterType"
+
+    id: StringId
+    """Spezifikationskennung / Anwendungsempfehlung
+
+    Eine Kennung der Spezifikation, die das gesamte Regelwerk zum semantischen Inhalt, zu den Kardinalitäten und den Geschäftsregeln enthält und zu denen die im Instanzdokument enthaltenen Daten conformant sind
+
+    Hinweis: In diesem wird die Compliance oder Conformance der Instanz mit diesem Dokument angegeben. Rechnungen, die compliant sind, geben folgendes an: urn:cen.eu:en16931:2017. Rechnungen, die compliant mit einer Benutzerspezifikation sind, dürfen diese Benutzerspezifikation an dieser Stelle angeben.
+    Es ist kein Identifikationsschema zu verwenden.
+
+    EN 16931-ID: BG-24
+    """
+
+
+@dataclass
 class Context(Element):
     """Prozesssteuerung
 
@@ -30,24 +69,24 @@ class Context(Element):
     werden, um die Rechnung als "Testrechnung" zu kennzeichnen.
     """
 
-    # IndicatorField(
-    #     NS_RAM, "TestIndicator", required=False, profile=EXTENDED, _d="Testkennzeichen"
-    # )
-    # business_parameter: BusinessDocumentContextParameter = Field(
-    #     BusinessDocumentContextParameter,
-    #     required=False,
-    #     profile=EXTENDED,
-    #     _d="Geschäftsprozess, Wert",
-    # )
-    # guideline_parameter: GuidelineDocumentContextParameter = Field(
-    #     GuidelineDocumentContextParameter,
-    #     required=True,
-    #     profile=BASIC,
-    #     _d="Anwendungsempfehlung",
-    # )
+    business_parameter: BusinessDocumentContextParameter | None = None
+    guideline_parameter: GuidelineDocumentContextParameter | None = None
+
+    @override
+    def to_xml(self, profile: Profile) -> XML:
+        modified = False
+        if self.guideline_parameter is None:
+            modified = True
+            self.guideline_parameter = GuidelineDocumentContextParameter(
+                id=StringId(profile.value)
+            )
+        res = super().to_xml(profile)
+        if modified:
+            self.guideline_parameter = None
+        return res
 
 
-@dataclass(kw_only=True)
+@dataclass
 class Document(Element):
     """Rechnung
 
@@ -64,10 +103,10 @@ class Document(Element):
     # trade: TradeTransaction
 
     @override
-    def to_xml(self) -> XML:
+    def to_xml(self, profile: Profile) -> XML:
         return XML(
             self.get_tag(),
             attrs={f"xmlns:{ns.name}": ns.value for ns in Namespace},
             is_root=True,
-            children=self._children_xml(),
+            children=self._children_xml(profile),
         )
