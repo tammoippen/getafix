@@ -29,7 +29,7 @@ class Namespace(enum.StrEnum):
 class Element(ABC):
     namespace: ClassVar[Namespace]
     tag: ClassVar[str]
-    profile: ClassVar[Profile] = Profile.BASIC
+    profile: ClassVar[Profile] = Profile.MINIMUM
 
     def get_tag(self) -> str:
         return f"{self.namespace.name}:{self.tag}"
@@ -41,8 +41,10 @@ class Element(ABC):
             if value is None:
                 # not required
                 continue
-            assert isinstance(value, Element)
-            children += [value.to_xml(profile)]
+            if isinstance(value, list):
+                children += [v.to_xml(profile) for v in value]  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+            else:
+                children += [value.to_xml(profile)]  # pyright: ignore[reportAny]
         return children
 
     def to_xml(self, profile: Profile) -> XML:

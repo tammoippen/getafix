@@ -1,13 +1,16 @@
 from dataclasses import dataclass
-from typing import Literal, override
+from datetime import date
+from typing import override
 
 from tagic.xml import XML
 
 from .element import Element, Namespace, Profile
 
 
-@dataclass
+@dataclass(kw_only=True, slots=True)
 class Field(Element):
+    # have to override value
+
     def __class_getitem__(
         cls, params: tuple[Namespace, str] | tuple[Namespace, str, Profile]
     ) -> type[Element]:
@@ -19,23 +22,37 @@ class Field(Element):
         new_cls = type(cls.__name__, (cls,), vars)
         return dataclass(new_cls)
 
+    @override
+    def to_xml(self, profile: Profile) -> XML:
+        assert hasattr(self, "value")
+        return XML(self.get_tag())[self.value]  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 
-@dataclass
+
+@dataclass(kw_only=True, slots=True)
 class Indicator(Field):
-    value: Literal[True] = True
+    value: bool
 
     @override
     def to_xml(self, profile: Profile) -> XML:
-        return XML(self.get_tag())[XML("udt:Indicator")["true"]]
+        return XML(self.get_tag())[XML("udt:Indicator")[str(self.value).lower()]]
 
 
-@dataclass
+@dataclass(kw_only=True, slots=True)
 class String(Field):
     value: str
 
-    @override
-    def to_xml(self, profile: Profile) -> XML:
-        return XML(self.get_tag())[self.value]
-
 
 StringId = String[Namespace.ram, "ID"]
+
+
+@dataclass(kw_only=True, slots=True)
+class Date(Field):
+    value: date
+
+    @override
+    def to_xml(self, profile: Profile) -> XML:
+        return XML(self.get_tag())[
+            XML("udt:DateTimeString", attrs={"format": "102"})[
+                self.value.strftime("%Y%m%d")
+            ]
+        ]
