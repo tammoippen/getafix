@@ -33,7 +33,6 @@ select = [
     # "C4",
     "DTZ",
     "E",
-    "EM",
     "F",
     "FA",
     # "FBT",
@@ -152,7 +151,7 @@ reportPrivateUsage = "error"
 reportPrivateImportUsage = "error"
 reportUninitializedInstanceVariable = "error"
 reportInvalidTypeForm = "error"
-reportAny = "error"  # Very strict: reports any usage of 'Any' type
+reportAny = "information" 
 
 # Additional strict settings
 enableTypeIgnoreComments = false  # Disallow type: ignore comments

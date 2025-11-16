@@ -1,32 +1,26 @@
 from datetime import date
 
 from carthorse.schema.document import (
-    CompleteDateTime,
-    Content,
     Context,
-    CopyIndicator,
     Document,
     EffectivePeriod,
+    GuidelineDocumentContextParameter,
     Header,
-    IssueDateTime,
-    LanguageId,
-    NameStr,
     Note,
-    TestIndicator,
-    TypeCodeEnum,
+    TypeCode,
 )
 from carthorse.schema.element import Profile
-from src.carthorse.schema.document import TypeCode
-from src.carthorse.schema.fields import StringId
 
 
-def test_sample():
+def test_simple():
     doc = Document(
-        context=Context(),
+        context=Context(
+            guideline_parameter=GuidelineDocumentContextParameter(id=Profile.BASIC)
+        ),
         header=Header(
-            id=StringId(value="1234"),
-            type_code=TypeCode(value=TypeCodeEnum.T_Handelsrechnung),
-            issue_date_time=IssueDateTime(value=date(2025, 11, 16)),
+            id="1234",
+            type_code=TypeCode.T_Handelsrechnung,
+            issue_date_time=date(2025, 11, 16),
         ),
     )
 
@@ -60,23 +54,24 @@ def test_sample():
     )
 
 
-def test_sample_indicator():
+def test_full():
     doc = Document(
-        context=Context(test_indicator=TestIndicator(value=True)),
+        context=Context(
+            test_indicator=True,
+            guideline_parameter=GuidelineDocumentContextParameter(id=Profile.EXTENDED),
+        ),
         header=Header(
-            id=StringId(value="1234"),
-            type_code=TypeCode(value=TypeCodeEnum.T_Handelsrechnung),
-            issue_date_time=IssueDateTime(value=date(2025, 11, 16)),
-            name=NameStr(value="Fooo"),
-            copyright_indicator=CopyIndicator(value=False),
-            language_id=LanguageId(value="de"),
+            id="1234",
+            type_code=TypeCode.T_Handelsrechnung,
+            issue_date_time=date(2025, 11, 16),
+            name="Fooo",
+            copyright_indicator=False,
+            language_id="de",
             notes=[
-                Note(content=Content(value="XXX")),
-                Note(content=Content(value="YYY")),
+                Note(content="XXX"),
+                Note(content="YYY"),
             ],
-            effective_period=EffectivePeriod(
-                complete=CompleteDateTime(value=date(2025, 11, 16))
-            ),
+            effective_period=EffectivePeriod(complete=date(2025, 11, 16)),
         ),
     )
 

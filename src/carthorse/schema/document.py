@@ -1,13 +1,15 @@
 import enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date
 from typing import ClassVar, override
 
 from tagic.xml import XML
 
-from .element import Element, Namespace, Profile
-from .fields import Date, Field, Indicator, String, StringId
-
-TestIndicator = Indicator[Namespace.ram, "TestIndicator", Profile.EXTENDED]
+from .element import (
+    Element,
+    Namespace,
+    Profile,
+)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -18,7 +20,7 @@ class BusinessDocumentContextParameter(Element):
     tag: ClassVar[str] = "DocumentContextParameterType"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    id: StringId | None = None
+    id: str | None = field(default=None, metadata={"tag": "ID", "ns": Namespace.ram})
     """Geschäftsprozesstyp / Geschäftsprozess
 
     Identifiziert den Kontext des Geschäftsprozesses, in dem die Transaktion erfolgt, um es dem Käufer zu ermöglichen, die Rechnung in angemessener Weise zu verarbeiten
@@ -38,7 +40,7 @@ class GuidelineDocumentContextParameter(Element):
     namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "DocumentContextParameterType"
 
-    id: StringId
+    id: Profile = field(metadata={"tag": "ID", "ns": Namespace.ram})
     """Spezifikationskennung / Anwendungsempfehlung
 
     Eine Kennung der Spezifikation, die das gesamte Regelwerk zum semantischen Inhalt, zu den Kardinalitäten und den Geschäftsregeln enthält und zu denen die im Instanzdokument enthaltenen Daten conformant sind
@@ -63,39 +65,26 @@ class Context(Element):
     namespace: ClassVar[Namespace] = Namespace.rsm
     tag: ClassVar[str] = "ExchangedDocumentContext"
 
-    test_indicator: TestIndicator | None = None
+    test_indicator: bool | None = field(
+        default=None,
+        metadata={
+            "tag": "TestIndicator",
+            "ns": Namespace.ram,
+            "profile": Profile.EXTENDED,
+        },
+    )
     """Testkennzeichen
 
     Das Testkennzeichen kann bei der Einführung eines neuen Systems verwendet
     werden, um die Rechnung als "Testrechnung" zu kennzeichnen.
     """
 
+    guideline_parameter: GuidelineDocumentContextParameter
     business_parameter: BusinessDocumentContextParameter | None = None
-    guideline_parameter: GuidelineDocumentContextParameter | None = None
-
-    @override
-    def to_xml(self, profile: Profile) -> XML:
-        modified = False
-        # BR-1: Eine Rechnung muss eine Spezifikationskennung (BT-24) haben.
-        if self.guideline_parameter is None:
-            modified = True
-            self.guideline_parameter = GuidelineDocumentContextParameter(
-                id=StringId(value=profile.value)
-            )
-        else:
-            # raises valueerror on false values
-            _ = Profile(self.guideline_parameter.id.value)
-        res = super(Context, self).to_xml(profile)
-        if modified:
-            self.guideline_parameter = None
-        return res
-
-
-NameStr = String[Namespace.ram, "Name", Profile.BASIC]
 
 
 @enum.unique
-class TypeCodeEnum(enum.StrEnum):
+class TypeCode(enum.StrEnum):
     T_80 = "80"
     T_81 = "81"
     T_82 = "82"
@@ -141,19 +130,6 @@ class TypeCodeEnum(enum.StrEnum):
 
 
 @dataclass(kw_only=True, slots=True)
-class TypeCode(Field):
-    namespace: ClassVar[Namespace] = Namespace.ram
-    tag: ClassVar[str] = "TypeCode"
-
-    value: TypeCodeEnum
-
-
-Content = String[Namespace.ram, "Content", Profile.BASIC]
-ContentCode = String[Namespace.ram, "ContentCode", Profile.EXTENDED]
-SubjectCode = String[Namespace.ram, "SubjectCode", Profile.COMFORT]
-
-
-@dataclass(kw_only=True, slots=True)
 class Note(Element):
     """Freitext zur Rechnung
 
@@ -165,13 +141,28 @@ class Note(Element):
 
     namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "IncludedNote"
+    profile: ClassVar[Profile] = Profile.BASIC
 
-    content_code: ContentCode | None = None
-    content: Content | None = None
-    subject_code: SubjectCode | None = None
-
-
-CompleteDateTime = Date[Namespace.ram, "CompleteDateTime", Profile.EXTENDED]
+    content_code: str | None = field(
+        default=None,
+        metadata={
+            "tag": "ContentCode",
+            "ns": Namespace.ram,
+            "profile": Profile.EXTENDED,
+        },
+    )
+    content: str | None = field(
+        default=None,
+        metadata={"tag": "Content", "ns": Namespace.ram, "profile": Profile.BASIC},
+    )
+    subject_code: str | None = field(
+        default=None,
+        metadata={
+            "tag": "SubjectCode",
+            "ns": Namespace.ram,
+            "profile": Profile.COMFORT,
+        },
+    )
 
 
 @dataclass(kw_only=True, slots=True)
@@ -184,13 +175,15 @@ class EffectivePeriod(Element):
 
     namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "EffectiveSpecifiedPeriod"
+    profile: ClassVar[Profile] = Profile.EXTENDED
 
-    complete: CompleteDateTime
-
-
-IssueDateTime = Date[Namespace.ram, "IssueDateTime"]
-CopyIndicator = Indicator[Namespace.ram, "CopyIndicator", Profile.EXTENDED]
-LanguageId = String[Namespace.ram, "LanguageID", Profile.EXTENDED]
+    complete: date = field(
+        metadata={
+            "tag": "CompleteDateTime",
+            "ns": Namespace.ram,
+            "profile": Profile.EXTENDED,
+        }
+    )
 
 
 @dataclass(kw_only=True, slots=True)
@@ -200,7 +193,7 @@ class Header(Element):
     namespace: ClassVar[Namespace] = Namespace.rsm
     tag: ClassVar[str] = "CrossIndustryInvoiceType"
 
-    id: StringId
+    id: str = field(metadata={"ns": Namespace.ram, "tag": "ID"})
     """Rechnungsnummer
     
     Eine eindeutige Kennung der Rechnung
@@ -215,7 +208,7 @@ class Header(Element):
     EN 16931-ID: BT-1
     """
 
-    type_code: TypeCode
+    type_code: TypeCode = field(metadata={"ns": Namespace.ram, "tag": "TypeCode"})
     """Code für den Rechnungstyp / Dokumentenart (Code)
     
     Handelsrechnungen und Gutschriften sind nach den Einträgen in UNTDID 1001 
@@ -229,7 +222,9 @@ class Header(Element):
     EN 16931-ID: BT-3
     """
 
-    issue_date_time: IssueDateTime
+    issue_date_time: date = field(
+        metadata={"tag": "IssueDateTime", "ns": Namespace.ram},
+    )
     """Rechnungsdatum
 
     Das Datum, an dem die Rechnung ausgestellt wurde
@@ -237,14 +232,31 @@ class Header(Element):
     EN 16931-ID: BT-2
     """
 
-    name: NameStr | None = None
+    name: str | None = field(
+        default=None,
+        metadata={"tag": "Name", "ns": Namespace.ram, "profile": Profile.BASIC},
+    )
     """Dokumentenart (Freitext)
     
     RECHNUNG, GUTSCHRIFT, BELASTUNGSANZEIGE, PROFORMARECHNUNG
     """
 
-    copyright_indicator: CopyIndicator | None = None
-    language_id: LanguageId | None = None
+    copyright_indicator: bool | None = field(
+        default=None,
+        metadata={
+            "tag": "CopyIndicator",
+            "ns": Namespace.ram,
+            "profile": Profile.EXTENDED,
+        },
+    )
+    language_id: str | None = field(
+        default=None,
+        metadata={
+            "tag": "LanguageID",
+            "ns": Namespace.ram,
+            "profile": Profile.EXTENDED,
+        },
+    )
     """Sprachkennzeichen
 
     Beispiel: de
