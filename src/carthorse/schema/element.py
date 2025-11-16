@@ -77,6 +77,14 @@ class Element(ABC):
 
     @classmethod
     def from_xml(cls, elem: ETElement) -> Self:
+        """Parse the document from a lxml / xml Element.
+
+        Typing those modules is difficult, but for what we do here,
+        they are interchangeable. Hence, we use duck-typing. Sorry for you having to
+        ignore possible warnings.
+
+        FIXME: Better typing for ETElement
+        """
         if elem.tag != cls.get_qualified_tag():
             breakpoint()
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")

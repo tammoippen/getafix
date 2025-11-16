@@ -56,8 +56,8 @@ def test_simple():
 """
     )
 
-    assert Document.from_xml(etree.fromstring(xml.encode())) == doc
-    assert Document.from_xml(other_etree.fromstring(xml.encode())) == doc  # noqa: S314
+    assert Document.from_xml(etree.fromstring(xml.encode())) == doc  # pyright: ignore[reportArgumentType]
+    assert Document.from_xml(other_etree.fromstring(xml.encode())) == doc  # noqa: S314  # pyright: ignore[reportArgumentType]
 
 
 def test_full():
@@ -143,5 +143,5 @@ def test_full():
 </rsm:CrossIndustryInvoiceType>
 """
     )
-    assert Document.from_xml(etree.fromstring(xml.encode())) == doc
-    assert Document.from_xml(other_etree.fromstring(xml.encode())) == doc
+    assert Document.from_xml(etree.fromstring(xml.encode())) == doc  # pyright: ignore[reportArgumentType]
+    assert Document.from_xml(other_etree.fromstring(xml.encode())) == doc  # noqa: S314    # pyright: ignore[reportArgumentType]
