@@ -1,38 +1,30 @@
-import enum
+from __future__ import annotations
+
+import datetime
+import json
+import types
 from abc import ABC
+from collections.abc import Iterator
 from dataclasses import Field, dataclass, fields
-from datetime import date
-from typing import ClassVar, override
+from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
 
 from tagic.xml import XML
 
+from carthorse.schema._defs import Namespace, Profile
+
+
+class ETElement(Protocol):
+    # works with lxml and xml
+    tag: str
+    text: str | None
+    attrib: dict[str, str]
+
+    def __iter__(self) -> Iterator[ETElement]: ...
+    def __len__(self) -> int: ...
+    def __getitem__(self, item: int) -> ETElement: ...
+
 
 class ProfileMismatch(ValueError): ...
-
-
-@enum.unique
-class Profile(enum.StrEnum):
-    MINIMUM = "urn:factur-x.eu:1p0:minimum"
-    BASIC = "urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic"
-    BASIC_WL = "urn:factur-x.eu:1p0:basicwl"
-    COMFORT = "urn:cen.eu:en16931:2017"
-    EXTENDED = "urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended"
-
-    @override
-    def __lt__(self, value: str, /) -> bool:
-        p = Profile(value)
-        ps = list(Profile)
-        return ps.index(self) < ps.index(p)
-
-
-@enum.unique
-class Namespace(enum.StrEnum):
-    rsm = "urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
-    qdt = "urn:un:unece:uncefact:data:standard:QualifiedDataType:100"
-    ram = "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
-    xs = "http://www.w3.org/2001/XMLSchema"
-    xsi = "http://www.w3.org/2001/XMLSchema-instance"
-    udt = "urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100"
 
 
 @dataclass(kw_only=True, slots=True)
@@ -41,8 +33,13 @@ class Element(ABC):
     tag: ClassVar[str]
     profile: ClassVar[Profile] = Profile.MINIMUM
 
-    def get_tag(self) -> str:
-        return f"{self.namespace.name}:{self.tag}"
+    @classmethod
+    def get_tag(cls) -> str:
+        return f"{cls.namespace.name}:{cls.tag}"
+
+    @classmethod
+    def get_qualified_tag(cls) -> str:
+        return cls.namespace.get_qualified_tag(cls.tag)
 
     def _children_xml(self, profile: Profile) -> list[XML]:
         children: list[XML] = []
@@ -52,7 +49,10 @@ class Element(ABC):
                 # not required
                 continue
 
-            p = field.metadata.get("profile", Profile.MINIMUM)
+            if isinstance(field.type, type) and issubclass(field.type, Element):
+                p = field.type.profile
+            else:
+                p = field.metadata.get("profile", Profile.MINIMUM)
             assert isinstance(p, Profile)
             if profile < p:
                 raise ProfileMismatch(
@@ -63,7 +63,7 @@ class Element(ABC):
                     children += [_render_str(value, field)]
                 case bool():
                     children += [_render_bool(value, field)]
-                case date():
+                case datetime.date():
                     children += [_render_date(value, field)]
                 case list():
                     children += [v.to_xml(profile) for v in value]  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
@@ -74,6 +74,49 @@ class Element(ABC):
 
     def to_xml(self, profile: Profile) -> XML:
         return XML(self.get_tag(), children=self._children_xml(profile))
+
+    @classmethod
+    def from_xml(cls, elem: ETElement) -> Self:
+        if elem.tag != cls.get_qualified_tag():
+            breakpoint()
+            raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
+
+        params: dict[str, Any] = {}
+        fields_ = fields(cls)
+        for el in elem:
+            for field in fields_:
+                curr_type = _get_non_none_type(field.type)
+                if issubclass(curr_type, str):
+                    params.update(_parse_str(el, field, curr_type))
+                elif issubclass(curr_type, bool):
+                    params.update(_parse_bool(el, field))
+                elif issubclass(curr_type, datetime.date):
+                    params.update(_parse_date(el, field))
+                else:
+                    origin = get_origin(curr_type)
+                    is_list = False
+                    if origin is list:
+                        is_list = True
+                        curr_type = get_args(curr_type)[0]
+
+                    assert isinstance(curr_type, type), curr_type
+                    assert issubclass(curr_type, Element)
+                    if el.tag == curr_type.get_qualified_tag():
+                        if is_list and field.name not in params:
+                            params[field.name] = []
+                        if isinstance(params.get(field.name), list):
+                            params[field.name] += [curr_type.from_xml(el)]
+                        else:
+                            params[field.name] = curr_type.from_xml(el)
+        return cls(**params)
+
+
+def _get_non_none_type(field_type: Any) -> Any:
+    if get_origin(field_type) is types.UnionType:
+        ts = [arg for arg in get_args(field_type) if arg is not type(None)]
+        assert len(ts) == 1, ts
+        return ts[0]
+    return field_type
 
 
 def _render_bool(value: bool, field: Field[bool]) -> XML:
@@ -87,6 +130,23 @@ def _render_bool(value: bool, field: Field[bool]) -> XML:
     return XML(f"{ns.name}:{tag}")[XML("udt:Indicator")[str(value).lower()]]
 
 
+def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
+    tag = field.metadata["tag"]
+    assert isinstance(tag, str)
+    ns = field.metadata["ns"]
+    assert isinstance(ns, Namespace)
+
+    if el.tag != ns.get_qualified_tag(tag):
+        return {}
+    if len(el) != 1:
+        raise ValueError
+    if el[0].tag != Namespace.udt.get_qualified_tag("Indicator"):
+        raise ValueError
+    if el[0].text is None:
+        raise ValueError
+    return {field.name: json.loads(el[0].text)}
+
+
 def _render_str(value: str, field: Field[str]) -> XML:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
@@ -96,7 +156,20 @@ def _render_str(value: str, field: Field[str]) -> XML:
     return XML(f"{ns.name}:{tag}")[value]
 
 
-def _render_date(value: date, field: Field[date]) -> XML:
+def _parse_str(el: ETElement, field: Field[str], curr_type: type) -> dict[str, Any]:
+    tag = field.metadata["tag"]
+    assert isinstance(tag, str)
+    ns = field.metadata["ns"]
+    assert isinstance(ns, Namespace)
+
+    if el.tag != ns.get_qualified_tag(tag):
+        return {}
+    if el.text is None:
+        raise ValueError
+    return {field.name: curr_type(el.text.strip())}
+
+
+def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
     ns = field.metadata["ns"]
@@ -105,3 +178,22 @@ def _render_date(value: date, field: Field[date]) -> XML:
     return XML(f"{ns.name}:{tag}")[
         XML("udt:DateTimeString", attrs={"format": "102"})[value.strftime("%Y%m%d")]
     ]
+
+
+def _parse_date(el: ETElement, field: Field[datetime.date]) -> dict[str, datetime.date]:
+    tag = field.metadata["tag"]
+    assert isinstance(tag, str)
+    ns = field.metadata["ns"]
+    assert isinstance(ns, Namespace)
+
+    if el.tag != ns.get_qualified_tag(tag):
+        return {}
+    if len(el) != 1:
+        raise ValueError
+    if el[0].tag != Namespace.udt.get_qualified_tag("DateTimeString"):
+        raise ValueError
+    if el[0].attrib.get("format") != "102":
+        raise ValueError
+    if el[0].text is None:
+        raise ValueError
+    return {field.name: datetime.datetime.strptime(el[0].text.strip(), "%Y%m%d").date()}

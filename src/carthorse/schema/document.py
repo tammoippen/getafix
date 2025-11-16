@@ -1,15 +1,12 @@
-import enum
 from dataclasses import dataclass, field
 from datetime import date
 from typing import ClassVar, override
 
 from tagic.xml import XML
 
-from .element import (
-    Element,
-    Namespace,
-    Profile,
-)
+from carthorse.schema._defs import Namespace, Profile, TypeCode
+
+from .element import Element
 
 
 @dataclass(kw_only=True, slots=True)
@@ -38,7 +35,7 @@ class GuidelineDocumentContextParameter(Element):
     """Gruppierung der Anwendungsempfehlungsinformationen"""
 
     namespace: ClassVar[Namespace] = Namespace.ram
-    tag: ClassVar[str] = "DocumentContextParameterType"
+    tag: ClassVar[str] = "GuidelineSpecifiedDocumentContextParameter"
 
     id: Profile = field(metadata={"tag": "ID", "ns": Namespace.ram})
     """Spezifikationskennung / Anwendungsempfehlung
@@ -81,52 +78,6 @@ class Context(Element):
 
     guideline_parameter: GuidelineDocumentContextParameter
     business_parameter: BusinessDocumentContextParameter | None = None
-
-
-@enum.unique
-class TypeCode(enum.StrEnum):
-    T_80 = "80"
-    T_81 = "81"
-    T_82 = "82"
-    T_83 = "83"
-    T_84 = "84"
-    T_Rechnungsdatenblatt = "130"
-    T_Verkuerzte_Baurechnung = "202"
-    T_Vorlaeufige_Baurechnung = "203"
-    T_Baurechnung = "204"
-    T_Zwischen_abschlags_rechnung = "211"
-    T_261 = "261"
-    T_262 = "262"
-    T_295 = "295"
-    T_296 = "296"
-    T_308 = "308"
-    T_Proformarechnung = "325"
-    T_Teilrechnung = "326"
-    T_Handelsrechnung = "380"
-    T_Gutschriftanzeige = "381"
-    T_Belastungsanzeige_383 = "383"
-    T_Rechnungskorrektur = "384"
-    T_Konsolidierte_Rechnung = "385"
-    T_Vorauszahlungsrechnung = "386"
-    T_Mietrechnung = "387"
-    T_Steuerrechnung = "388"
-    T_Gutschrift_Selbst_ausgestellte_Rechnung = "389"
-    T_Delkredere_Rechnung = "390"
-    T_Inkasso_Rechnung = "393"
-    T_Leasing_Rechnung = "394"
-    T_Konsignationsrechnung = "395"
-    T_Inkasso_Gutschrift = "396"
-    T_420 = "420"
-    T_Belastungsanzeige_456 = "456"
-    T_Storno_einer_Belastung = "457"
-    T_Storno_einer_Gutschrift = "458"
-    T_527 = "527"
-    T_Rechnung_des_Versicherers = "575"
-    T_Speditionsrechnung = "623"
-    T_Hafenkostenrechnung = "633"
-    T_751 = "751"
-    T_Frachtrechnung = "780"
-    T_Zollrechnung = "935"
 
 
 @dataclass(kw_only=True, slots=True)

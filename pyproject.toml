@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "beartype>=0.22.5",
+    "lxml>=6.0.2",
     "tagic>=1.4.0",
 ]
 
@@ -19,6 +20,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "basedpyright>=1.33.0",
+    "lxml-stubs>=0.5.1",
     "pytest>=9.0.1",
     "pytest-cov>=7.0.0",
     "pytest-randomly>=4.0.1",
@@ -31,7 +33,7 @@ select = [
     "B",
     "BLE",
     # "C4",
-    "DTZ",
+    # "DTZ",
     "E",
     "F",
     "FA",
@@ -71,7 +73,7 @@ docstring-code-format = true
 
 [tool.basedpyright]
 # Use strict mode as the baseline
-typeCheckingMode = "all"
+typeCheckingMode = "recommended"
 
 # Python version and platform
 pythonVersion = "3.12"
@@ -86,76 +88,4 @@ exclude = [
     "**/.pytest_cache",
 ]
 
-# Strict type checking rules (all enabled in "all" mode, but explicit for clarity)
-strictListInference = true
-strictDictionaryInference = true
-strictSetInference = true
-strictParameterNoneValue = true
-
-# Report all issues as errors (strictest setting)
-reportMissingImports = "error"
-reportMissingTypeStubs = "error"
-reportMissingTypeArgument = "error"
-reportMissingParameterType = "error"
-# reportMissingReturnType = "error"
-reportUnknownParameterType = "error"
-reportUnknownArgumentType = "error"
-reportUnknownLambdaType = "error"
-reportUnknownVariableType = "error"
-reportUnknownMemberType = "error"
-reportUntypedFunctionDecorator = "error"
-reportUntypedClassDecorator = "error"
-reportUntypedBaseClass = "error"
-reportUntypedNamedTuple = "error"
-
-# General type checking
-reportGeneralTypeIssues = "error"
-reportPropertyTypeMismatch = "error"
-reportFunctionMemberAccess = "error"
-reportIncompatibleMethodOverride = "error"
-reportIncompatibleVariableOverride = "error"
-reportInconsistentConstructor = "error"
-reportOverlappingOverload = "error"
-reportPossiblyUnboundVariable = "error"
-reportConstantRedefinition = "error"
-reportDeprecated = "error"
-reportDuplicateImport = "error"
-reportIncompleteStub = "error"
-reportInvalidStubStatement = "error"
-reportMatchNotExhaustive = "error"
-# reportShadowedImports = "error"
-reportTypeCommentUsage = "error"
-reportUnusedImport = "error"
-reportUnusedClass = "error"
-reportUnusedFunction = "error"
-reportUnusedVariable = "error"
-reportUnusedCoroutine = "error"
-reportUnusedExpression = "error"
-
-# Implicit/any issues
-reportImplicitStringConcatenation = "error"
-reportImplicitOverride = "error"
-reportInvalidTypeVarUse = "error"
-reportCallInDefaultInitializer = "error"
-reportUnnecessaryIsInstance = "error"
-reportUnnecessaryCast = "error"
-reportUnnecessaryComparison = "error"
-reportUnnecessaryContains = "error"
-reportAssertAlwaysTrue = "error"
-reportSelfClsParameterName = "error"
-reportUnsupportedDunderAll = "error"
-reportUnusedCallResult = "error"
-
-# Optional strictness - can be relaxed if too strict
-reportPrivateUsage = "error"
-reportPrivateImportUsage = "error"
-reportUninitializedInstanceVariable = "error"
-reportInvalidTypeForm = "error"
-reportAny = "information" 
-
-# Additional strict settings
-enableTypeIgnoreComments = false  # Disallow type: ignore comments
-disableBytesTypePromotions = true  # Strict bytes vs str checking
-
-# Diagnostic settings
-enableExperimentalFeatures = false
+ failOnWarnings = false

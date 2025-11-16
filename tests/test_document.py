@@ -1,5 +1,9 @@
+import xml.etree.ElementTree as other_etree
 from datetime import date
 
+import lxml.etree as etree
+
+from carthorse.schema._defs import Profile, TypeCode
 from carthorse.schema.document import (
     Context,
     Document,
@@ -7,9 +11,7 @@ from carthorse.schema.document import (
     GuidelineDocumentContextParameter,
     Header,
     Note,
-    TypeCode,
 )
-from carthorse.schema.element import Profile
 
 
 def test_simple():
@@ -24,17 +26,18 @@ def test_simple():
         ),
     )
 
+    xml = doc.to_xml(Profile.BASIC).render(indent=True)
     assert (
-        doc.to_xml(Profile.BASIC).render(indent=True)
+        xml
         == """\
 <?xml version='1.0' encoding='UTF-8' ?>
 <rsm:CrossIndustryInvoiceType xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
   <rsm:ExchangedDocumentContext>
-    <ram:DocumentContextParameterType>
+    <ram:GuidelineSpecifiedDocumentContextParameter>
       <ram:ID>
         urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic
       </ram:ID>
-    </ram:DocumentContextParameterType>
+    </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
   <rsm:CrossIndustryInvoiceType>
     <ram:ID>
@@ -52,6 +55,9 @@ def test_simple():
 </rsm:CrossIndustryInvoiceType>
 """
     )
+
+    assert Document.from_xml(etree.fromstring(xml.encode())) == doc
+    assert Document.from_xml(other_etree.fromstring(xml.encode())) == doc  # noqa: S314
 
 
 def test_full():
@@ -75,8 +81,9 @@ def test_full():
         ),
     )
 
+    xml = doc.to_xml(Profile.EXTENDED).render(indent=True)
     assert (
-        doc.to_xml(Profile.EXTENDED).render(indent=True)
+        xml
         == """\
 <?xml version='1.0' encoding='UTF-8' ?>
 <rsm:CrossIndustryInvoiceType xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
@@ -86,11 +93,11 @@ def test_full():
         true
       </udt:Indicator>
     </ram:TestIndicator>
-    <ram:DocumentContextParameterType>
+    <ram:GuidelineSpecifiedDocumentContextParameter>
       <ram:ID>
         urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended
       </ram:ID>
-    </ram:DocumentContextParameterType>
+    </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
   <rsm:CrossIndustryInvoiceType>
     <ram:ID>
@@ -136,3 +143,5 @@ def test_full():
 </rsm:CrossIndustryInvoiceType>
 """
     )
+    assert Document.from_xml(etree.fromstring(xml.encode())) == doc
+    assert Document.from_xml(other_etree.fromstring(xml.encode())) == doc
