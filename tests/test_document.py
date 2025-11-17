@@ -43,9 +43,9 @@ from carthorse.schema.trade import (
 
 
 @pt.fixture
-def basic_simple() -> Document:
+def minimum_doc() -> Document:
     return Document(
-        context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
+        context=Context(guideline=GuidelineDocument(id=Profile.MINIMUM)),
         header=Header(
             id="1234",
             type_code=TypeCode.T_Handelsrechnung,
@@ -62,7 +62,6 @@ def basic_simple() -> Document:
             ),
             delivery=TradeDelivery(),
             settlement=TradeSettlement(),
-            items=[TradeLineItem()],
         ),
     )
 
@@ -182,8 +181,8 @@ def full_doc() -> Document:
     )
 
 
-def test_simple(basic_simple):
-    xml = basic_simple.to_xml().render(indent=True)
+def test_simple(minimum_doc):
+    xml = minimum_doc.to_xml().render(indent=True)
     assert (
         xml
         == """\
@@ -192,7 +191,7 @@ def test_simple(basic_simple):
   <rsm:ExchangedDocumentContext>
     <ram:GuidelineSpecifiedDocumentContextParameter>
       <ram:ID>
-        urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic
+        urn:factur-x.eu:1p0:minimum
       </ram:ID>
     </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
@@ -234,14 +233,13 @@ def test_simple(basic_simple):
     </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeDelivery />
     <ram:ApplicableHeaderTradeSettlement />
-    <ram:IncludedSupplyChainTradeLineItem />
   </ram:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoiceType>
 """
     )
 
-    assert Document.from_xml(etree.fromstring(xml.encode())) == basic_simple  # pyright: ignore[reportArgumentType]
-    assert Document.from_xml(other_etree.fromstring(xml.encode())) == basic_simple  # noqa: S314  # pyright: ignore[reportArgumentType]
+    assert Document.from_xml(etree.fromstring(xml.encode())) == minimum_doc  # pyright: ignore[reportArgumentType]
+    assert Document.from_xml(other_etree.fromstring(xml.encode())) == minimum_doc  # noqa: S314  # pyright: ignore[reportArgumentType]
 
 
 def test_full(full_doc):
@@ -614,15 +612,16 @@ def test_full(full_doc):
     assert Document.from_xml(other_etree.fromstring(xml.encode())) == full_doc  # noqa: S314    # pyright: ignore[reportArgumentType]
 
 
-def test_br_16_error(basic_simple: Document):
-    basic_simple.trade.items.clear()
+def test_br_16_error(minimum_doc: Document):
+    minimum_doc.context.guideline.id = Profile.BASIC
+    minimum_doc.trade.items.clear()
 
     with pt.raises(ValidationError) as e:
-        basic_simple.validate()
+        minimum_doc.validate()
 
     assert e.value.code == "BR-16"
 
-    basic_simple.context.guideline.id = Profile.MINIMUM
-    basic_simple.validate()
-    basic_simple.context.guideline.id = Profile.BASIC_WL
-    basic_simple.validate()
+    minimum_doc.context.guideline.id = Profile.MINIMUM
+    minimum_doc.validate()
+    minimum_doc.context.guideline.id = Profile.BASIC_WL
+    minimum_doc.validate()
