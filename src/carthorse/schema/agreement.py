@@ -4,8 +4,17 @@ from typing import ClassVar
 from carthorse.schema.element import Element
 from carthorse.schema.party import (
     BuyerTradeParty,
+    ProductEndUserTradeParty,
     SellerTaxRepresentativeTradeParty,
     SellerTradeParty,
+)
+from carthorse.schema.references import (
+    AdditionalReferencedDocument,
+    BuyerOrderReferencedDocument,
+    ContractReferencedDocument,
+    ProcuringProject,
+    SellerOrderReferencedDocument,
+    UltimateCustomerOrderReferencedDocument,
 )
 from carthorse.schema.types import Namespace, Profile
 
@@ -49,3 +58,10 @@ class TradeAgreement(Element):
 
     EN 16931-ID: BG-11
     """
+    end_user: ProductEndUserTradeParty | None = None
+    seller_order: SellerOrderReferencedDocument | None = None
+    buyer_order: BuyerOrderReferencedDocument | None = None
+    contract: ContractReferencedDocument | None = None
+    additional_references: list[AdditionalReferencedDocument] | None = None
+    procuring_project: ProcuringProject | None = None
+    customer_order: UltimateCustomerOrderReferencedDocument | None = None

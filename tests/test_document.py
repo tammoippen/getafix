@@ -27,12 +27,24 @@ from carthorse.schema.party import (
     PhoneNumber,
     PostalTradeAddress,
     PostalTradeAddressExtended,
+    ProductEndUserTradeParty,
     SellerTaxRepresentativeTradeParty,
     SellerTradeParty,
     SpecifiedTaxRegistration,
     TaxSchemaId,
     TradeContact,
     URIUniversalCommunication,
+)
+from carthorse.schema.references import (
+    MIME,
+    AdditionalReferencedDocument,
+    AttachmentBinaryObject,
+    BuyerOrderReferencedDocument,
+    ContractReferencedDocument,
+    ProcuringProject,
+    SellerOrderReferencedDocument,
+    UltimateCustomerOrderReferencedDocument,
+    UNTDID1001TypeCode,
 )
 from carthorse.schema.trade import (
     Trade,
@@ -172,6 +184,55 @@ def full_doc() -> Document:
                     tax_registrations=SpecifiedTaxRegistration(
                         id=TaxSchemaId(id="DE1234567", schema_id="VA")
                     ),
+                ),
+                end_user=ProductEndUserTradeParty(
+                    name="End User",
+                    id="End1234",
+                    global_ids=[GlobalID(id="foo", schema_id="0012")],
+                    legal_organization=LegalOrganization(
+                        id=ISO6523SchemaId(id="8765", schema_id="0021"),
+                        trade_name="Some trade name",
+                        trade_address=address2,
+                    ),
+                    contact=contact,
+                    address=address1,
+                    electronic_address=URIUniversalCommunication(
+                        uri_id=URIID(id="ftp://example.com", schema_id="ftp")
+                    ),
+                    tax_registrations=SpecifiedTaxRegistration(
+                        id=TaxSchemaId(id="1234/5678/90", schema_id="FC")
+                    ),
+                ),
+                seller_order=SellerOrderReferencedDocument(issuer_assigned_id="1234"),
+                buyer_order=BuyerOrderReferencedDocument(issuer_assigned_id="5678"),
+                contract=ContractReferencedDocument(issuer_assigned_id="2468"),
+                additional_references=[
+                    AdditionalReferencedDocument(
+                        issuer_assigned_id="369",
+                        uriid="http://example.com",
+                        type_code=UNTDID1001TypeCode.Rechnungsdatenblatt,
+                        name="XXX",
+                        attached_object=AttachmentBinaryObject(
+                            mime_code=MIME.pdf,
+                            filename="example.pdf",
+                            object="some-binary-data",
+                        ),
+                    ),
+                    AdditionalReferencedDocument(
+                        issuer_assigned_id="370",
+                        uriid="http://example.com",
+                        type_code=UNTDID1001TypeCode.Rechnungsdatenblatt,
+                        name="XXX",
+                        attached_object=AttachmentBinaryObject(
+                            mime_code=MIME.pdf,
+                            filename="example.pdf",
+                            object="some-binary-data",
+                        ),
+                    ),
+                ],
+                procuring_project=ProcuringProject(id="FooBar", name="Baz"),
+                customer_order=UltimateCustomerOrderReferencedDocument(
+                    issuer_assigned_id="some-id", issue_date_time=date(2025, 11, 17)
                 ),
             ),
             delivery=TradeDelivery(),
@@ -600,6 +661,168 @@ def test_full(full_doc):
           </ram:URIID>
         </ram:URIUniversalCommunication>
       </ram:SellerTaxRepresentativeTradeParty>
+      <ram:ProductEndUserTradeParty>
+        <ram:Name>
+          End User
+        </ram:Name>
+        <ram:ID>
+          End1234
+        </ram:ID>
+        <ram:GlobalID schemaID="0012">
+          foo
+        </ram:GlobalID>
+        <ram:SpecifiedLegalOrganization>
+          <ram:ID schemaID="0021">
+            8765
+          </ram:ID>
+          <ram:TradingBusinessName>
+            Some trade name
+          </ram:TradingBusinessName>
+          <ram:PostalTradeAddress>
+            <ram:CountryID>
+              DE
+            </ram:CountryID>
+            <ram:PostcodeCode>
+              12345
+            </ram:PostcodeCode>
+            <ram:LineOne>
+              Teststr 1
+            </ram:LineOne>
+            <ram:LineTwo>
+              Second floor
+            </ram:LineTwo>
+            <ram:LineThree>
+              third door
+            </ram:LineThree>
+            <ram:CityName>
+              Musterstadt
+            </ram:CityName>
+          </ram:PostalTradeAddress>
+        </ram:SpecifiedLegalOrganization>
+        <ram:DefinedTradeContact>
+          <ram:PersonName>
+            Person
+          </ram:PersonName>
+          <ram:DepartmentName>
+            department
+          </ram:DepartmentName>
+          <ram:TelephoneUniversalCommunication>
+            <ram:CompleteNumber>
+              +49 (0) 12345
+            </ram:CompleteNumber>
+          </ram:TelephoneUniversalCommunication>
+          <ram:FaxUniversalCommunication>
+            <ram:CompleteNumber>
+              +49 (0) 54321
+            </ram:CompleteNumber>
+          </ram:FaxUniversalCommunication>
+          <ram:EmailURIUniversalCommunication>
+            <ram:URIID>
+              name@domain.de
+            </ram:URIID>
+          </ram:EmailURIUniversalCommunication>
+        </ram:DefinedTradeContact>
+        <ram:PostalTradeAddress>
+          <ram:CountryID>
+            DE
+          </ram:CountryID>
+          <ram:PostcodeCode>
+            12345
+          </ram:PostcodeCode>
+          <ram:LineOne>
+            Teststr 1
+          </ram:LineOne>
+          <ram:LineTwo>
+            Second floor
+          </ram:LineTwo>
+          <ram:LineThree>
+            third door
+          </ram:LineThree>
+          <ram:CityName>
+            Musterstadt
+          </ram:CityName>
+          <ram:CountrySubDivisionName>
+            NRW
+          </ram:CountrySubDivisionName>
+        </ram:PostalTradeAddress>
+        <ram:URIUniversalCommunication>
+          <ram:URIID schemaID="ftp">
+            ftp://example.com
+          </ram:URIID>
+        </ram:URIUniversalCommunication>
+        <ram:SpecifiedTaxRegistration>
+          <ram:GlobalID schemaID="FC">
+            1234/5678/90
+          </ram:GlobalID>
+        </ram:SpecifiedTaxRegistration>
+      </ram:ProductEndUserTradeParty>
+      <ram:SellerOrderReferencedDocument>
+        <ram:IssuerAssignedID>
+          1234
+        </ram:IssuerAssignedID>
+      </ram:SellerOrderReferencedDocument>
+      <ram:BuyerOrderReferencedDocument>
+        <ram:IssuerAssignedID>
+          5678
+        </ram:IssuerAssignedID>
+      </ram:BuyerOrderReferencedDocument>
+      <ram:ContractReferencedDocument>
+        <ram:IssuerAssignedID>
+          2468
+        </ram:IssuerAssignedID>
+      </ram:ContractReferencedDocument>
+      <ram:AdditionalReferencedDocument>
+        <ram:IssuerAssignedID>
+          369
+        </ram:IssuerAssignedID>
+        <ram:URIID>
+          http://example.com
+        </ram:URIID>
+        <ram:TypeCode>
+          130
+        </ram:TypeCode>
+        <ram:Name>
+          XXX
+        </ram:Name>
+        <ram:AttachmentBinaryObject mimeCode="application/pdf" filename="example.pdf">
+          some-binary-data
+        </ram:AttachmentBinaryObject>
+      </ram:AdditionalReferencedDocument>
+      <ram:AdditionalReferencedDocument>
+        <ram:IssuerAssignedID>
+          370
+        </ram:IssuerAssignedID>
+        <ram:URIID>
+          http://example.com
+        </ram:URIID>
+        <ram:TypeCode>
+          130
+        </ram:TypeCode>
+        <ram:Name>
+          XXX
+        </ram:Name>
+        <ram:AttachmentBinaryObject mimeCode="application/pdf" filename="example.pdf">
+          some-binary-data
+        </ram:AttachmentBinaryObject>
+      </ram:AdditionalReferencedDocument>
+      <ram:SpecifiedProcuringProject>
+        <ram:ID>
+          FooBar
+        </ram:ID>
+        <ram:Name>
+          Baz
+        </ram:Name>
+      </ram:SpecifiedProcuringProject>
+      <ram:UltimateCustomerOrderReferencedDocument>
+        <ram:IssuerAssignedID>
+          some-id
+        </ram:IssuerAssignedID>
+        <ram:FormattedIssueDateTime>
+          <udt:DateTimeString format="102">
+            20251117
+          </udt:DateTimeString>
+        </ram:FormattedIssueDateTime>
+      </ram:UltimateCustomerOrderReferencedDocument>
     </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeDelivery />
     <ram:ApplicableHeaderTradeSettlement />

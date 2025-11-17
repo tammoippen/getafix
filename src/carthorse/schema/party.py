@@ -584,3 +584,38 @@ class SellerTaxRepresentativeTradeParty(Element):
         default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Details zur elektronischen Adresse"""
+
+
+@dataclass(kw_only=True, slots=True)
+class ProductEndUserTradeParty(Element):
+    """Detailinformationen zum abweichenden Endverbraucher"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "ProductEndUserTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
+    """Name/Firmierung des Endverbrauchers"""
+    id: str | None = field(
+        default=None,
+        metadata={"tag": "ID", "ns": Namespace.ram},
+    )
+
+    """Identifikation des abweichenden Endverbrauchers"""
+    global_ids: list[GlobalID] | None = None
+    """Globaler Identifier des abweichenden Endverbrauchers"""
+    legal_organization: LegalOrganization | None = None
+    """Details zur Organisation"""
+    contact: TradeContact | None = None
+    """Detailinformationen zum Ansprechpartner des Endverbrauchers"""
+    address: PostalTradeAddressExtended | None = None
+    """Detailinformationen zur Anschrift des Endverbrauchers"""
+    electronic_address: URIUniversalCommunication | None = None
+    """Details zur elektronischen Adresse"""
+    tax_registrations: SpecifiedTaxRegistration | None = field(
+        default=None, metadata={"profile": Profile.BASIC_WL}
+    )
+    """Detailinformationen zur Steuernummer des abweichenden Endverbrauchers
+
+    Steuernummer, Umsatzsteueridentnummer
+    """
