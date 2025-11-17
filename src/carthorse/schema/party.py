@@ -6,12 +6,6 @@ from tagic.xml import XML
 from carthorse.schema.element import Element, ValidationError
 from carthorse.schema.types import Namespace, Profile
 
-_ID_Field = field(
-    default=None,
-    metadata={"tag": "ID", "ns": Namespace.ram, "profile": Profile.COMFORT},
-)
-_Name_Field = field(metadata={"tag": "Name", "ns": Namespace.ram})
-
 # Validation:
 # BR-CO-26 Verkäufer
 # Um dem Käufer eine automatische Identifizierung eines Lieferanten zu ermöglichen, müssen die Kennung des Verkäufers (BT-29), die Kennung der rechtlichen Registrierung des Verkäufers (BT-30) und/oder die Umsatzsteuer-Identifikationsnummer des Verkäufers (BT-31) angegeben werden.
@@ -364,7 +358,7 @@ class SellerTradeParty(Element):
     namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SellerTradeParty"
 
-    name: str = _Name_Field
+    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
     """Name des Verkäufers
 
     Der volle formelle Name, unter dem der Verkäufer im nationalen Register für
@@ -382,7 +376,11 @@ class SellerTradeParty(Element):
 
     EN 16931-ID: BG-5
     """
-    id: str | None = _ID_Field
+    id: str | None = field(
+        default=None,
+        metadata={"tag": "ID", "ns": Namespace.ram, "profile": Profile.COMFORT},
+    )
+
     """Kennung des Verkäufers / Durch den Kunden zugewiesene Lieferantennummer
 
     Hinweis: Bei vielen Systemen ist die Verkäuferkennung eine Schlüsselinformation.
@@ -455,7 +453,7 @@ class BuyerTradeParty(Element):
     namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "BuyerTradeParty"
 
-    name: str = _Name_Field
+    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
     """Name des Käufers
 
     Der volle Name des Käufers
@@ -467,7 +465,11 @@ class BuyerTradeParty(Element):
 
     EN 16931-ID: BG-8
     """
-    id: str | None = _ID_Field
+    id: str | None = field(
+        default=None,
+        metadata={"tag": "ID", "ns": Namespace.ram, "profile": Profile.COMFORT},
+    )
+
     """Kennung des Käufers / Kundennummer
 
     Hinweis: Wird kein Schema angegeben, sollte sie dem Käufer und Verkäufer bekannt sein, z. B. eine zuvor ausgetauschte, vom Verkäufer zugewiesene Kennung des Käufers.
@@ -522,7 +524,7 @@ class SellerTaxRepresentativeTradeParty(Element):
     tag: ClassVar[str] = "SellerTaxRepresentativeTradeParty"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    name: str = _Name_Field
+    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
     """Name des Steuerbevollmächtigten des Verkäufers
 
     EN 16931-ID: BT-62

@@ -14,10 +14,15 @@ from carthorse.schema import (
     Profile,
     TypeCode,
 )
+from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.element import ValidationError
+from carthorse.schema.party import (
+    BuyerTradeParty,
+    PostalTradeAddressExtended,
+    SellerTradeParty,
+)
 from carthorse.schema.trade import (
     Trade,
-    TradeAgreement,
     TradeDelivery,
     TradeLineItem,
     TradeSettlement,
@@ -33,7 +38,14 @@ def test_simple():
             issue_date=date(2025, 11, 16),
         ),
         trade=Trade(
-            agreement=TradeAgreement(),
+            agreement=TradeAgreement(
+                seller=SellerTradeParty(
+                    name="Foo", address=PostalTradeAddressExtended(country_id="DE")
+                ),
+                buyer=BuyerTradeParty(
+                    name="Bar", address=PostalTradeAddressExtended(country_id="DE")
+                ),
+            ),
             delivery=TradeDelivery(),
             settlement=TradeSettlement(),
             items=[TradeLineItem()],
@@ -67,7 +79,28 @@ def test_simple():
     </ram:IssueDateTime>
   </rsm:CrossIndustryInvoiceType>
   <ram:SupplyChainTradeTransaction>
-    <ram:ApplicableHeaderTradeAgreement />
+    <ram:ApplicableHeaderTradeAgreement>
+      <ram:SellerTradeParty>
+        <ram:Name>
+          Foo
+        </ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:CountryID>
+            DE
+          </ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:SellerTradeParty>
+      <ram:BuyerTradeParty>
+        <ram:Name>
+          Bar
+        </ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:CountryID>
+            DE
+          </ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:BuyerTradeParty>
+    </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeDelivery />
     <ram:ApplicableHeaderTradeSettlement />
     <ram:IncludedSupplyChainTradeLineItem />
@@ -100,7 +133,14 @@ def test_full():
             effective_period=EffectivePeriod(complete=date(2025, 11, 16)),
         ),
         trade=Trade(
-            agreement=TradeAgreement(),
+            agreement=TradeAgreement(
+                seller=SellerTradeParty(
+                    name="Foo", address=PostalTradeAddressExtended(country_id="DE")
+                ),
+                buyer=BuyerTradeParty(
+                    name="Bar", address=PostalTradeAddressExtended(country_id="DE")
+                ),
+            ),
             delivery=TradeDelivery(),
             settlement=TradeSettlement(),
             items=[TradeLineItem()],
@@ -167,7 +207,28 @@ def test_full():
     </ram:EffectiveSpecifiedPeriod>
   </rsm:CrossIndustryInvoiceType>
   <ram:SupplyChainTradeTransaction>
-    <ram:ApplicableHeaderTradeAgreement />
+    <ram:ApplicableHeaderTradeAgreement>
+      <ram:SellerTradeParty>
+        <ram:Name>
+          Foo
+        </ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:CountryID>
+            DE
+          </ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:SellerTradeParty>
+      <ram:BuyerTradeParty>
+        <ram:Name>
+          Bar
+        </ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:CountryID>
+            DE
+          </ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:BuyerTradeParty>
+    </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeDelivery />
     <ram:ApplicableHeaderTradeSettlement />
     <ram:IncludedSupplyChainTradeLineItem />
@@ -188,7 +249,14 @@ def test_br_16_error():
             issue_date=date(2025, 11, 16),
         ),
         trade=Trade(
-            agreement=TradeAgreement(),
+            agreement=TradeAgreement(
+                seller=SellerTradeParty(
+                    name="Foo", address=PostalTradeAddressExtended(country_id="DE")
+                ),
+                buyer=BuyerTradeParty(
+                    name="Bar", address=PostalTradeAddressExtended(country_id="DE")
+                ),
+            ),
             delivery=TradeDelivery(),
             settlement=TradeSettlement(),
             items=[],
