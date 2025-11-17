@@ -25,7 +25,7 @@ def test_simple():
         ),
     )
 
-    xml = doc.to_xml(Profile.BASIC).render(indent=True)
+    xml = doc.to_xml().render(indent=True)
     assert (
         xml
         == """\
@@ -80,7 +80,7 @@ def test_full():
         ),
     )
 
-    xml = doc.to_xml(Profile.EXTENDED).render(indent=True)
+    xml = doc.to_xml().render(indent=True)
     assert (
         xml
         == """\

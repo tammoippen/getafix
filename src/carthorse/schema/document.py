@@ -232,10 +232,18 @@ class Document(Element):
     # trade: TradeTransaction
 
     @override
-    def to_xml(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile) -> XML:
+        if profile != self.context.guideline.id:
+            raise ValueError(
+                f"{profile=} has to be the same as set profile: {self.context.guideline.id}"
+            )
         return XML(
             self.get_tag(),
             attrs={f"xmlns:{ns.name}": ns.value for ns in Namespace},
             is_root=True,
             children=self._children_xml(profile),
         )
+
+    def to_xml(self) -> XML:
+        profile = self.context.guideline.id
+        return self.to_xml_internal(profile)

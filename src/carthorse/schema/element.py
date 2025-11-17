@@ -64,13 +64,13 @@ class Element(ABC):
                 case datetime.date():
                     children += [_render_date(value, field)]
                 case list():
-                    children += [v.to_xml(profile) for v in value]  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                    children += [v.to_xml_internal(profile) for v in value]  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                 case _:
-                    children += [value.to_xml(profile)]
+                    children += [value.to_xml_internal(profile)]
 
         return children
 
-    def to_xml(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile) -> XML:
         return XML(self.get_tag(), children=self._children_xml(profile))
 
     @classmethod
