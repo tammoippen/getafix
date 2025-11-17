@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import datetime
 import json
 import types
@@ -10,7 +8,7 @@ from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
 
 from tagic.xml import XML
 
-from carthorse.schema._defs import Namespace, Profile
+from .types import Namespace, Profile
 
 
 class ETElement(Protocol):
@@ -19,9 +17,9 @@ class ETElement(Protocol):
     text: str | None
     attrib: dict[str, str]
 
-    def __iter__(self) -> Iterator[ETElement]: ...
+    def __iter__(self) -> "Iterator[ETElement]": ...
     def __len__(self) -> int: ...
-    def __getitem__(self, item: int) -> ETElement: ...
+    def __getitem__(self, item: int) -> "ETElement": ...
 
 
 class ProfileMismatch(ValueError): ...

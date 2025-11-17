@@ -4,13 +4,12 @@ from typing import ClassVar, override
 
 from tagic.xml import XML
 
-from carthorse.schema._defs import Namespace, Profile, TypeCode
-
 from .element import Element
+from .types import Namespace, Profile, TypeCode
 
 
 @dataclass(kw_only=True, slots=True)
-class BusinessDocumentContextParameter(Element):
+class BusinessDocument(Element):
     """Gruppierung der Geschäftsprozessinformationen"""
 
     namespace: ClassVar[Namespace] = Namespace.ram
@@ -31,7 +30,7 @@ class BusinessDocumentContextParameter(Element):
 
 
 @dataclass(kw_only=True, slots=True)
-class GuidelineDocumentContextParameter(Element):
+class GuidelineDocument(Element):
     """Gruppierung der Anwendungsempfehlungsinformationen"""
 
     namespace: ClassVar[Namespace] = Namespace.ram
@@ -76,12 +75,12 @@ class Context(Element):
     werden, um die Rechnung als "Testrechnung" zu kennzeichnen.
     """
 
-    guideline_parameter: GuidelineDocumentContextParameter
-    business_parameter: BusinessDocumentContextParameter | None = None
+    guideline: GuidelineDocument
+    business: BusinessDocument | None = None
 
 
 @dataclass(kw_only=True, slots=True)
-class Note(Element):
+class IncludedNote(Element):
     """Freitext zur Rechnung
 
     Eine Gruppierung betriebswirtschaftlicher Begriffe zur Angabe rechnungsrelevanter
@@ -173,7 +172,7 @@ class Header(Element):
     EN 16931-ID: BT-3
     """
 
-    issue_date_time: date = field(
+    issue_date: date = field(
         metadata={"tag": "IssueDateTime", "ns": Namespace.ram},
     )
     """Rechnungsdatum
@@ -212,7 +211,7 @@ class Header(Element):
 
     Beispiel: de
     """
-    notes: list[Note] | None = None
+    notes: list[IncludedNote] | None = None
     effective_period: EffectivePeriod | None = None
 
 

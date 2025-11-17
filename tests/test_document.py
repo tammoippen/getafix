@@ -3,26 +3,25 @@ from datetime import date
 
 import lxml.etree as etree
 
-from carthorse.schema._defs import Profile, TypeCode
-from carthorse.schema.document import (
+from carthorse.schema import (
     Context,
     Document,
     EffectivePeriod,
-    GuidelineDocumentContextParameter,
+    GuidelineDocument,
     Header,
-    Note,
+    IncludedNote,
+    Profile,
+    TypeCode,
 )
 
 
 def test_simple():
     doc = Document(
-        context=Context(
-            guideline_parameter=GuidelineDocumentContextParameter(id=Profile.BASIC)
-        ),
+        context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
         header=Header(
             id="1234",
             type_code=TypeCode.T_Handelsrechnung,
-            issue_date_time=date(2025, 11, 16),
+            issue_date=date(2025, 11, 16),
         ),
     )
 
@@ -64,18 +63,18 @@ def test_full():
     doc = Document(
         context=Context(
             test_indicator=True,
-            guideline_parameter=GuidelineDocumentContextParameter(id=Profile.EXTENDED),
+            guideline=GuidelineDocument(id=Profile.EXTENDED),
         ),
         header=Header(
             id="1234",
             type_code=TypeCode.T_Handelsrechnung,
-            issue_date_time=date(2025, 11, 16),
+            issue_date=date(2025, 11, 16),
             name="Fooo",
             copyright_indicator=False,
             language_id="de",
             notes=[
-                Note(content="XXX"),
-                Note(content="YYY"),
+                IncludedNote(content="XXX"),
+                IncludedNote(content="YYY"),
             ],
             effective_period=EffectivePeriod(complete=date(2025, 11, 16)),
         ),
