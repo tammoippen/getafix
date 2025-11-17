@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from typing import ClassVar, override
+from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from carthorse.schema.element import Element, ValidationError
+from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.types import Namespace, Profile
 
 # Validation:
@@ -33,6 +33,19 @@ class SchemaID(Element):
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
         return XML(self.get_tag(), attrs={"schemaID": self.schema_id})[self.id]
+
+    @override
+    @classmethod
+    def from_xml(cls, elem: ETElement) -> Self:
+        if elem.tag != cls.get_qualified_tag():
+            raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
+        if "schemaID" not in elem.attrib:
+            raise ValueError
+        if elem.text is None:
+            raise ValueError
+        schema_id = elem.attrib["schemaID"]
+        value = elem.text.strip()
+        return cls(id=value, schema_id=schema_id)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -315,8 +328,8 @@ class TaxSchemaId(ISO6523SchemaId):
     """Umsatzsteueridentnummer / Steuernummer
 
     Zulässige Codes für schema_id:
-      VA Umsatzsteuernummer (BT-31, BT-48)
-      FC Steuernummer (BT-32)
+    - VA Umsatzsteuernummer (BT-31, BT-48)
+    - FC Steuernummer (BT-32)
 
     SchemaID:
     EN 16931-ID: BT-31-0, BT-32-0 (Seller)

@@ -103,7 +103,6 @@ class Element(ABC):
         FIXME: Better typing for ETElement
         """
         if elem.tag != cls.get_qualified_tag():
-            breakpoint()
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
 
         params: dict[str, Any] = {}
