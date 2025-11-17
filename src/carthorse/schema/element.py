@@ -66,11 +66,14 @@ class Element(ABC):
                 # not required
                 continue
 
-            if isinstance(field.type, type) and issubclass(field.type, Element):
-                p = field.type.profile
-            else:
-                p = field.metadata.get("profile", Profile.MINIMUM)
+            p = field.metadata.get("profile")
+            if p is None and isinstance(value, Element):
+                p = value.__class__.profile
+            if p is None:
+                p = Profile.MINIMUM
+
             assert isinstance(p, Profile)
+            # TODO: check in validate and only ignore here?
             if profile < p:
                 raise ProfileMismatch(
                     f"{self.__class__.__name__}.{field.name}: {profile} < {p}"
