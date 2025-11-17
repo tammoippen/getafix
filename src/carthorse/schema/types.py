@@ -5,8 +5,8 @@ from typing import override
 @enum.unique
 class Profile(enum.StrEnum):
     MINIMUM = "urn:factur-x.eu:1p0:minimum"
-    BASIC = "urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic"
     BASIC_WL = "urn:factur-x.eu:1p0:basicwl"
+    BASIC = "urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic"
     COMFORT = "urn:cen.eu:en16931:2017"
     EXTENDED = "urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended"
 

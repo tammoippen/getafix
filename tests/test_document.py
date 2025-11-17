@@ -2,6 +2,7 @@ import xml.etree.ElementTree as other_etree
 from datetime import date
 
 import lxml.etree as etree
+import pytest as pt
 
 from carthorse.schema import (
     Context,
@@ -13,6 +14,14 @@ from carthorse.schema import (
     Profile,
     TypeCode,
 )
+from carthorse.schema.element import ValidationError
+from carthorse.schema.trade import (
+    Trade,
+    TradeAgreement,
+    TradeDelivery,
+    TradeLineItem,
+    TradeSettlement,
+)
 
 
 def test_simple():
@@ -22,6 +31,12 @@ def test_simple():
             id="1234",
             type_code=TypeCode.T_Handelsrechnung,
             issue_date=date(2025, 11, 16),
+        ),
+        trade=Trade(
+            agreement=TradeAgreement(),
+            delivery=TradeDelivery(),
+            settlement=TradeSettlement(),
+            items=[TradeLineItem()],
         ),
     )
 
@@ -51,6 +66,12 @@ def test_simple():
       </udt:DateTimeString>
     </ram:IssueDateTime>
   </rsm:CrossIndustryInvoiceType>
+  <ram:SupplyChainTradeTransaction>
+    <ram:ApplicableHeaderTradeAgreement />
+    <ram:ApplicableHeaderTradeDelivery />
+    <ram:ApplicableHeaderTradeSettlement />
+    <ram:IncludedSupplyChainTradeLineItem />
+  </ram:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoiceType>
 """
     )
@@ -77,6 +98,12 @@ def test_full():
                 IncludedNote(content="YYY"),
             ],
             effective_period=EffectivePeriod(complete=date(2025, 11, 16)),
+        ),
+        trade=Trade(
+            agreement=TradeAgreement(),
+            delivery=TradeDelivery(),
+            settlement=TradeSettlement(),
+            items=[TradeLineItem()],
         ),
     )
 
@@ -139,8 +166,41 @@ def test_full():
       </ram:CompleteDateTime>
     </ram:EffectiveSpecifiedPeriod>
   </rsm:CrossIndustryInvoiceType>
+  <ram:SupplyChainTradeTransaction>
+    <ram:ApplicableHeaderTradeAgreement />
+    <ram:ApplicableHeaderTradeDelivery />
+    <ram:ApplicableHeaderTradeSettlement />
+    <ram:IncludedSupplyChainTradeLineItem />
+  </ram:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoiceType>
 """
     )
     assert Document.from_xml(etree.fromstring(xml.encode())) == doc  # pyright: ignore[reportArgumentType]
     assert Document.from_xml(other_etree.fromstring(xml.encode())) == doc  # noqa: S314    # pyright: ignore[reportArgumentType]
+
+
+def test_br_16_error():
+    doc = Document(
+        context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
+        header=Header(
+            id="1234",
+            type_code=TypeCode.T_Handelsrechnung,
+            issue_date=date(2025, 11, 16),
+        ),
+        trade=Trade(
+            agreement=TradeAgreement(),
+            delivery=TradeDelivery(),
+            settlement=TradeSettlement(),
+            items=[],
+        ),
+    )
+
+    with pt.raises(ValidationError) as e:
+        doc.validate()
+
+    assert e.value.code == "BR-16"
+
+    doc.context.guideline.id = Profile.MINIMUM
+    doc.validate()
+    doc.context.guideline.id = Profile.BASIC_WL
+    doc.validate()

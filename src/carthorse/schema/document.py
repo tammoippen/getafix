@@ -4,8 +4,9 @@ from typing import ClassVar, override
 
 from tagic.xml import XML
 
-from .element import Element
-from .types import Namespace, Profile, TypeCode
+from carthorse.schema.element import Element
+from carthorse.schema.trade import Trade
+from carthorse.schema.types import Namespace, Profile, TypeCode
 
 
 @dataclass(kw_only=True, slots=True)
@@ -229,7 +230,7 @@ class Document(Element):
 
     context: Context
     header: Header
-    # trade: TradeTransaction
+    trade: Trade
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
@@ -247,3 +248,7 @@ class Document(Element):
     def to_xml(self) -> XML:
         profile = self.context.guideline.id
         return self.to_xml_internal(profile)
+
+    def validate(self) -> None:
+        profile = self.context.guideline.id
+        return self.validate_internal(profile)

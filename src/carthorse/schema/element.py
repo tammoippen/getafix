@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
 
 from tagic.xml import XML
 
-from .types import Namespace, Profile
+from carthorse.schema.types import Namespace, Profile
 
 
 class ETElement(Protocol):
@@ -25,11 +25,30 @@ class ETElement(Protocol):
 class ProfileMismatch(ValueError): ...
 
 
+class ValidationError(ValueError):
+    def __init__(self, code: str, message: str):
+        super().__init__(f"{code}: {message}")
+        self.code: str = code
+        self.message: str = message
+
+
 @dataclass(kw_only=True, slots=True)
 class Element(ABC):
     namespace: ClassVar[Namespace]
     tag: ClassVar[str]
     profile: ClassVar[Profile] = Profile.MINIMUM
+
+    def validate_internal(self, profile: Profile) -> None:
+        for field in fields(self):
+            value = getattr(self, field.name)
+            if value is None:
+                # not required
+                continue
+            if not isinstance(value, list):
+                value = [value]
+            for v in value:
+                if isinstance(v, Element):
+                    v.validate_internal(profile)
 
     @classmethod
     def get_tag(cls) -> str:
