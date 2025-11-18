@@ -78,17 +78,20 @@ class Element(ABC):
                 raise ProfileMismatch(
                     f"{self.__class__.__name__}.{field.name}: {profile} < {p}"
                 )
-            match value:
-                case str():
-                    children += [_render_str(value, field)]
-                case bool():
-                    children += [_render_bool(value, field)]
-                case datetime.date():
-                    children += [_render_date(value, field)]
-                case list():
-                    children += [v.to_xml_internal(profile) for v in value]  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-                case _:
-                    children += [value.to_xml_internal(profile)]
+            if not isinstance(value, list):
+                value = [value]
+            for v in value:
+                match v:
+                    case str():
+                        children += [_render_str(v, field)]
+                    case bool():
+                        children += [_render_bool(v, field)]
+                    case datetime.date():
+                        children += [_render_date(v, field)]
+                    case Element():
+                        children += [v.to_xml_internal(profile)]
+                    case _:
+                        raise TypeError(f"Unknown type {v=}.")
 
         return children
 
@@ -113,19 +116,27 @@ class Element(ABC):
         for el in elem:
             for field in fields_:
                 curr_type = _get_non_none_type(field.type)
+                origin = get_origin(curr_type)
+                is_list = False
+                if origin is list:
+                    is_list = True
+                    curr_type = get_args(curr_type)[0]
+
                 if issubclass(curr_type, str):
-                    params.update(_parse_str(el, field, curr_type))
+                    res = _parse_str(el, field, curr_type)
+                    if res is None:
+                        continue
+                    if is_list:
+                        before = params.get(field.name, [])
+                        res = [*before, res]
+                    params[field.name] = res
                 elif issubclass(curr_type, bool):
+                    assert not is_list
                     params.update(_parse_bool(el, field))
                 elif issubclass(curr_type, datetime.date):
+                    assert not is_list
                     params.update(_parse_date(el, field))
                 else:
-                    origin = get_origin(curr_type)
-                    is_list = False
-                    if origin is list:
-                        is_list = True
-                        curr_type = get_args(curr_type)[0]
-
                     assert isinstance(curr_type, type), curr_type
                     assert issubclass(curr_type, Element)
                     if el.tag == curr_type.get_qualified_tag():
@@ -183,17 +194,19 @@ def _render_str(value: str, field: Field[str]) -> XML:
     return XML(f"{ns.name}:{tag}")[value]
 
 
-def _parse_str(el: ETElement, field: Field[str], curr_type: type) -> dict[str, Any]:
+def _parse_str[T: str](
+    el: ETElement, field: Field[str], curr_type: type[T]
+) -> T | None:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
     ns = field.metadata["ns"]
     assert isinstance(ns, Namespace)
 
     if el.tag != ns.get_qualified_tag(tag):
-        return {}
+        return None
     if el.text is None:
         raise ValueError
-    return {field.name: curr_type(el.text.strip())}
+    return curr_type(el.text.strip())
 
 
 def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:

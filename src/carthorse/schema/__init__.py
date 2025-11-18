@@ -9,3 +9,6 @@ from carthorse.schema.trade import Trade as Trade
 from carthorse.schema.types import Namespace as Namespace
 from carthorse.schema.types import Profile as Profile
 from carthorse.schema.types import TypeCode as TypeCode
+# TODO add party fields
+# TODO add agreement fields
+# TODO add reference fields

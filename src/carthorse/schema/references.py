@@ -284,3 +284,26 @@ class ProcuringProject(Element):
 
     EN 16931-ID: BT-11-0
     """
+
+
+@dataclass(kw_only=True, slots=True)
+class DespatchAdviceReferencedDocument(Element):
+    """Detailinformationen zum zugehörigen Lieferavis"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "DespatchAdviceReferencedDocument"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    issuer_assigned_id: str = field(
+        metadata={
+            "tag": "IssuerAssignedID",
+            "ns": Namespace.ram,
+            "profile": Profile.COMFORT,
+        }
+    )
+    """Lieferavisreferenz
+
+    Eine Kennung für ein referenziertes Lieferavis
+
+    EN 16931-ID: BT-16
+    """

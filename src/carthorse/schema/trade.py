@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar, override
 
 from carthorse.schema.agreement import TradeAgreement
+from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.element import Element, ValidationError
 from carthorse.schema.types import Namespace, Profile
 
@@ -19,14 +20,6 @@ class TradeLineItem(Element):
     namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "IncludedSupplyChainTradeLineItem"
     profile: ClassVar[Profile] = Profile.BASIC
-
-
-@dataclass(kw_only=True, slots=True)
-class TradeDelivery(Element):
-    """Gruppierung von Lieferangaben"""
-
-    namespace: ClassVar[Namespace] = Namespace.ram
-    tag: ClassVar[str] = "ApplicableHeaderTradeDelivery"
 
 
 @dataclass(kw_only=True, slots=True)

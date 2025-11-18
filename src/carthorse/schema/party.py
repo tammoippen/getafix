@@ -619,3 +619,80 @@ class ProductEndUserTradeParty(Element):
 
     Steuernummer, Umsatzsteueridentnummer
     """
+
+
+@dataclass(kw_only=True, slots=True)
+class ShipToTradeParty(Element):
+    """Lieferinfomationen / ZUGFeRD10: Detailinformationen zum abweichenden Warenempfänger
+
+    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen darüber
+    enthält, wo und wann die in Rechnung gestellten Waren und Dienstleistungen
+    geliefert bzw. erbracht werden
+
+    EN 16931-ID: BG-13
+    """
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "ShipToTradeParty"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    # TODO: check other parties: 0..n
+    id: list[str] | None = field(
+        default=None,
+        metadata={"tag": "ID", "ns": Namespace.ram},
+    )
+    """Kennung des Lieferorts / Identifikation des Warenempfängers
+
+    Eine Kennung für den Ort, an den die Waren geliefert oder an dem die Dienstleistungen erbracht werden.
+
+    Wird kein Schema angegeben, sollte sie dem Käufer und Verkäufer bekannt sein,
+    z. B. eine zuvor ausgetauschte, vom Käufer oder Verkäufer zugewiesene Kennung.
+    
+    EN 16931-ID: BT-71
+    """
+    global_ids: GlobalID | None = None
+    """Globaler Identifier der Kennung für den Lieferort
+
+    EN 16931-ID: BT-71-0
+    """
+    name: str | None = field(
+        default=None, metadata={"tag": "Name", "ns": Namespace.ram}
+    )
+    """Name/Firmierung des Waren- oder Dienstleistungsempfängers
+
+    Der Name der Partei, an die die Waren geliefert bzw. für die die
+    Dienstleistungen erbracht werden.
+    Muss verwendet werden, wenn der Waren- bzw. Dienstleistungsempfänger nicht
+    mit dem Käufer identisch ist.
+
+    EN 16931-ID: BT-70
+    """
+    address: PostalTradeAddressExtended | None = None
+    """Lieferanschrift
+
+    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über die Anschrift enthält, an die die in Rechnung gestellten Waren geliefert oder an der die in Rechnung gestellten Dienst-leistungen erbracht werden.
+
+    Im Falle einer Abholung entspricht die Lieferanschrift der Abholanschrift. Um den rechtlichen Anforderungen zu entsprechen, muss eine ausreichende Anzahl an Komponenten der Anschrift eingegeben werden.
+
+    EN 16931-ID: BG-15
+    """
+
+    legal_organization: LegalOrganization | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Details zur Organisation"""
+    contact: TradeContact | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Detailinformationen zum Ansprechpartner des Warenempfängers"""
+    electronic_address: URIUniversalCommunication | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Details zur elektronischen Adresse"""
+    tax_registrations: SpecifiedTaxRegistration | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Detailinformationen zu Steuerangaben des Warenempfängers
+
+    Steuernummer, Umsatzsteueridentnummer
+    """
