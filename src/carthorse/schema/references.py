@@ -295,11 +295,7 @@ class DespatchAdviceReferencedDocument(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     issuer_assigned_id: str = field(
-        metadata={
-            "tag": "IssuerAssignedID",
-            "ns": Namespace.ram,
-            "profile": Profile.COMFORT,
-        }
+        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
     )
     """Lieferavisreferenz
 
@@ -307,3 +303,58 @@ class DespatchAdviceReferencedDocument(Element):
 
     EN 16931-ID: BT-16
     """
+    issue_date_time: date | None = field(
+        default=None,
+        metadata={
+            "tag": "FormattedIssueDateTime",
+            "ns": Namespace.ram,
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Lieferavisdatum"""
+
+
+@dataclass(kw_only=True, slots=True)
+class ReceivingAdviceReferencedDocument(Element):
+    """Detailinformationen zur zugehörigen Wareneingangsmeldung"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "ReceivingAdviceReferencedDocument"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    issuer_assigned_id: str = field(
+        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
+    )
+    """Referenz auf die Wareneingangsmeldung / Wareneingangsnummer
+
+    Eine Kennung für eine referenzierte Wareneingangsmeldung
+
+    EN 16931-ID: BT-15
+    """
+    issue_date_time: date | None = field(
+        default=None,
+        metadata={
+            "tag": "FormattedIssueDateTime",
+            "ns": Namespace.ram,
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Wareneingangsdatum"""
+
+
+@dataclass(kw_only=True, slots=True)
+class DeliveryNoteReferencedDocument(Element):
+    """Detailinformationen zum zugehörigen Lieferschein"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "DeliveryNoteReferencedDocument"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    issuer_assigned_id: str = field(
+        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
+    )
+    """Lieferscheinnummer"""
+    issue_date_time: date | None = field(
+        default=None, metadata={"tag": "FormattedIssueDateTime", "ns": Namespace.ram}
+    )
+    """Lieferscheindatum"""

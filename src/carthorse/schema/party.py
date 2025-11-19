@@ -689,10 +689,88 @@ class ShipToTradeParty(Element):
         default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Details zur elektronischen Adresse"""
-    tax_registrations: SpecifiedTaxRegistration | None = field(
+    tax_registrations: list[SpecifiedTaxRegistration] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Detailinformationen zu Steuerangaben des Warenempfängers
+
+    Steuernummer, Umsatzsteueridentnummer
+    """
+
+
+@dataclass(kw_only=True, slots=True)
+class ShipFromTradeParty(Element):
+    """Identifikation des abweichenden Versenders"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "ShipFromTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    # TODO: check other parties: 0..n
+    id: list[str] | None = field(
+        default=None,
+        metadata={"tag": "ID", "ns": Namespace.ram},
+    )
+    """Identifikation des Versenders
+
+    Der Identifier des Versenders ist eine eindeutige, bilateral vereinbarte
+    Kennzeichnung des Versenders.
+    """
+    global_ids: GlobalID | None = None
+    """Globaler Identifier des Versenders"""
+    name: str | None = field(
+        default=None, metadata={"tag": "Name", "ns": Namespace.ram}
+    )
+    """Name/Firmierung des Versenders"""
+    legal_organization: LegalOrganization | None = None
+    """Details zur Organisation"""
+    contact: TradeContact | None = None
+    """Detailinformationen zum Ansprechpartner des Versenders"""
+    address: PostalTradeAddressExtended | None = None
+    """Detailinformationen zur Anschrift des Versenders"""
+    electronic_address: URIUniversalCommunication | None = None
+    """Details zur elektronischen Adresse"""
+    tax_registrations: list[SpecifiedTaxRegistration] | None = None
+    """Detailinformationen zu Steuerangaben des Versenders
+
+    Steuernummer, Umsatzsteueridentnummer
+    """
+
+
+@dataclass(kw_only=True, slots=True)
+class UltimateShipToTradeParty(Element):
+    """Detailinformationen zum abweichenden Endempfänger"""
+
+    namespace: ClassVar[Namespace] = Namespace.ram
+    tag: ClassVar[str] = "UltimateShipToTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    # TODO: check other parties: 0..n
+    id: list[str] | None = field(
+        default=None,
+        metadata={"tag": "ID", "ns": Namespace.ram},
+    )
+    """Identifikation des Endempfängers
+
+    Der Identifier des Endempfängers ist eine eindeutige, bilateral
+    vereinbarte Kennzeichnung des Endempfängers.
+    """
+    global_ids: list[GlobalID] | None = None
+    """Globaler Identifier des Endempfängers"""
+    name: str | None = field(
+        default=None, metadata={"tag": "Name", "ns": Namespace.ram}
+    )
+    """Name/Firmierung des Endempfängers"""
+    legal_organization: LegalOrganization | None = None
+    """Details zur Organisation"""
+    contact: TradeContact | None = None
+    """Detailinformationen zum Ansprechpartner des Endempfängers"""
+    address: PostalTradeAddressExtended | None = None
+    """Detailinformationen zur Anschrift des Endempfängers"""
+    electronic_address: URIUniversalCommunication | None = None
+    """Details zur elektronischen Adresse"""
+    tax_registrations: list[SpecifiedTaxRegistration] | None = None
+    """Detailinformationen zu Steuerangaben des Endempfängers
 
     Steuernummer, Umsatzsteueridentnummer
     """
