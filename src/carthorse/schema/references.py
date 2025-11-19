@@ -1,4 +1,3 @@
-import enum
 from dataclasses import dataclass, field
 from datetime import date
 from typing import ClassVar, Self, override
@@ -6,7 +5,7 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import MIME, Namespace, Profile, UNTDID1001TypeCode
 
 
 @dataclass(kw_only=True, slots=True)
@@ -86,23 +85,6 @@ class UltimateCustomerOrderReferencedDocument(Element):
     issue_date_time: date = field(
         metadata={"tag": "FormattedIssueDateTime", "ns": Namespace.ram}
     )
-
-
-@enum.unique
-class UNTDID1001TypeCode(enum.StrEnum):
-    T_50 = "50"
-    Rechnungsdatenblatt = "130"
-    Referenzpapier = "916"
-
-
-@enum.unique
-class MIME(enum.StrEnum):
-    pdf = "application/pdf"
-    png = "image/png"
-    jpeg = "image/jpeg"
-    csv = "text/csv"
-    xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    odf = "application/vnd.oasis.opendocument.spreadsheet"
 
 
 @dataclass(kw_only=True, slots=True)

@@ -74,3 +74,20 @@ class TypeCode(enum.StrEnum):
     T_751 = "751"
     T_Frachtrechnung = "780"
     T_Zollrechnung = "935"
+
+
+@enum.unique
+class UNTDID1001TypeCode(enum.StrEnum):
+    T_50 = "50"
+    Rechnungsdatenblatt = "130"
+    Referenzpapier = "916"
+
+
+@enum.unique
+class MIME(enum.StrEnum):
+    pdf = "application/pdf"
+    png = "image/png"
+    jpeg = "image/jpeg"
+    csv = "text/csv"
+    xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    odf = "application/vnd.oasis.opendocument.spreadsheet"

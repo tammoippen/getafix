@@ -4,6 +4,7 @@ import types
 from abc import ABC
 from collections.abc import Iterator
 from dataclasses import Field, dataclass, fields
+from decimal import Decimal
 from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
 
 from tagic.xml import XML
@@ -84,6 +85,8 @@ class Element(ABC):
                 match v:
                     case str():
                         children += [_render_str(v, field)]
+                    case Decimal():
+                        children += [_render_str(str(v), field)]
                     case bool():
                         children += [_render_bool(v, field)]
                     case datetime.date():
@@ -130,6 +133,11 @@ class Element(ABC):
                         before = params.get(field.name, [])
                         res = [*before, res]
                     params[field.name] = res
+                elif issubclass(curr_type, Decimal):
+                    res = _parse_str(el, field, str)
+                    if res is None:
+                        continue
+                    params[field.name] = Decimal(res)
                 elif issubclass(curr_type, bool):
                     assert not is_list
                     params.update(_parse_bool(el, field))

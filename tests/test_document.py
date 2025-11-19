@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as other_etree
 from datetime import date
+from decimal import Decimal
 
 import lxml.etree as etree
 import pytest as pt
@@ -15,6 +16,7 @@ from carthorse.schema import (
     TypeCode,
 )
 from carthorse.schema.agreement import TradeAgreement
+from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.element import ValidationError
 from carthorse.schema.party import (
     URIID,
@@ -36,7 +38,6 @@ from carthorse.schema.party import (
     URIUniversalCommunication,
 )
 from carthorse.schema.references import (
-    MIME,
     AdditionalReferencedDocument,
     AttachmentBinaryObject,
     BuyerOrderReferencedDocument,
@@ -44,14 +45,13 @@ from carthorse.schema.references import (
     ProcuringProject,
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
-    UNTDID1001TypeCode,
 )
+from carthorse.schema.settlement import MonetarySummation, TaxTotal, TradeSettlement
 from carthorse.schema.trade import (
     Trade,
-    TradeDelivery,
     TradeLineItem,
-    TradeSettlement,
 )
+from carthorse.schema.types import MIME, UNTDID1001TypeCode
 
 
 @pt.fixture
@@ -73,7 +73,16 @@ def minimum_doc() -> Document:
                 ),
             ),
             delivery=TradeDelivery(),
-            settlement=TradeSettlement(),
+            settlement=TradeSettlement(
+                currency_code="EUR",
+                monetary_summation=MonetarySummation(
+                    line_total=Decimal("123.45"),
+                    tax_basis_total=Decimal("123.45"),
+                    tax_total=TaxTotal(amount=Decimal("23.46"), currency_id="EUR"),
+                    grand_total=Decimal("146.91"),
+                    due_amount=Decimal("146.91"),
+                ),
+            ),
         ),
     )
 
@@ -236,7 +245,16 @@ def full_doc() -> Document:
                 ),
             ),
             delivery=TradeDelivery(),
-            settlement=TradeSettlement(),
+            settlement=TradeSettlement(
+                currency_code="EUR",
+                monetary_summation=MonetarySummation(
+                    line_total=Decimal("123.45"),
+                    tax_basis_total=Decimal("123.45"),
+                    tax_total=TaxTotal(amount=Decimal("23.46"), currency_id="EUR"),
+                    grand_total=Decimal("146.91"),
+                    due_amount=Decimal("146.91"),
+                ),
+            ),
             items=[TradeLineItem()],
         ),
     )
@@ -293,7 +311,28 @@ def test_simple(minimum_doc):
       </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeDelivery />
-    <ram:ApplicableHeaderTradeSettlement />
+    <ram:ApplicableHeaderTradeSettlement>
+      <ram:InvoiceCurrencyCode>
+        EUR
+      </ram:InvoiceCurrencyCode>
+      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+        <ram:LineTotalAmount>
+          123.45
+        </ram:LineTotalAmount>
+        <ram:TaxBasisTotalAmount>
+          123.45
+        </ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="EUR">
+          23.46
+        </ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>
+          146.91
+        </ram:GrandTotalAmount>
+        <ram:DuePayableAmount>
+          146.91
+        </ram:DuePayableAmount>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+    </ram:ApplicableHeaderTradeSettlement>
   </ram:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoiceType>
 """
@@ -825,7 +864,28 @@ def test_full(full_doc):
       </ram:UltimateCustomerOrderReferencedDocument>
     </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeDelivery />
-    <ram:ApplicableHeaderTradeSettlement />
+    <ram:ApplicableHeaderTradeSettlement>
+      <ram:InvoiceCurrencyCode>
+        EUR
+      </ram:InvoiceCurrencyCode>
+      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+        <ram:LineTotalAmount>
+          123.45
+        </ram:LineTotalAmount>
+        <ram:TaxBasisTotalAmount>
+          123.45
+        </ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="EUR">
+          23.46
+        </ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>
+          146.91
+        </ram:GrandTotalAmount>
+        <ram:DuePayableAmount>
+          146.91
+        </ram:DuePayableAmount>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+    </ram:ApplicableHeaderTradeSettlement>
     <ram:IncludedSupplyChainTradeLineItem />
   </ram:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoiceType>
