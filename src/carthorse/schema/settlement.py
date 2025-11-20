@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import date
 from typing import ClassVar, override
 
 from carthorse.schema.accounting import (
@@ -132,6 +133,46 @@ class PaymentMeans(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class PaymentTerms(Element):
+    """Detailinformationen zu Zahlungsbedingungen"""
+
+    tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    due: date | None = field(default=None, metadata={"tag": "DueDateDateTime"})
+    """Fälligkeitsdatum"""
+    debit_mandate_id: str | None = field(
+        default=None, metadata={"tag": "DirectDebitMandateID"}
+    )
+    """Kennung der Mandatsreferenz / Mandatsreferenz für SEPA
+
+    Eindeutige Kennung, die vom Zahlungsempfänger zur Referenz der Einzugsermächtigung
+    zugewiesen.
+
+    Wird verwendet, um den Käufer vorweg über eine SEPA-Lastschrift in Kenntnis zu setzen.
+
+    EN 16931-ID: BG-19/BT-89
+    """
+
+
+@dataclass(kw_only=True, slots=True)
+class ReceivableAccountingAccount(Element):
+    """Detailinformationen zur Buchungsreferenz"""
+
+    tag: ClassVar[str] = "ReceivableSpecifiedTradeAccountingAccount"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    id: str = field(metadata={"tag": "ID"})
+    """Buchungsreferenz des Käufers
+
+    Ein Textwert, der angibt, an welcher Stelle die betreffenden Daten in den
+    Finanzkonten des Käufers zu verbuchen sind.
+
+    EN 16931-ID: BG-19
+    """
+
+
+@dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
     """Gruppierung von Angaben zur Zahlung und Rechnungsausgleich"""
 
@@ -212,7 +253,9 @@ class TradeSettlement(Element):
     payment_means: list[PaymentMeans] | None = None
     trade_taxes: list[ApplicableTradeTax] | None = None
     allowance_charge: list[TradeAllowanceCharge] | None = None
+    terms: PaymentTerms | None = None
     invoice_referenced_document: InvoiceReferencedDocument | None = None
+    accounting_account: list[ReceivableAccountingAccount] | None = None
 
     @override
     def validate_internal(self, profile: Profile) -> None:

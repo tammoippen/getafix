@@ -10,18 +10,25 @@ from carthorse.schema.types import CategoryCode, Profile
 # TODO:
 # BR-CO-10 Gesamtsummen auf Dokumentenebene
 # Summe der Nettobeträge aller Rechnungspositionen (BT-106) = Summe Nettobeträge der Rechnungsposition (BT-131).
+# BR-CO-11 Gesamtsummen auf Dokumentenebene
+# Summe der Abschläge auf Dokumentenebene (BT-107) = Summe Beträge des Abschlags auf Dokumentenebene (BT-92).
+# BR-CO-12 Gesamtsummen auf Dokumentenebene
+# Summe der Zuschläge auf Dokumentenebene (BT-108) = Summe Beträge des Zuschlags auf Dokumentenebene (BT-99).
 # BR-CO-13 Gesamtsummen auf Dokumentenebene
 # Rechnungsgesamtbetrag ohne Umsatzsteuer (BT-109) = Summe Nettobeträge der Rechnungsposition (BT-131) - Summe der Abschläge auf Dokumentenebene (BT-107) + Summe der Zuschläge auf Dokumentenebene (BT-108).
+# BR-CO-14 Gesamtsummen auf Dokumentenebene
+# Gesamtbetrag der Rechnungsumsatzsteuer (BT-110) = ?  kategoriespezifische Steuerbeträge (BT-117).
 # BR-CO-15 Gesamtsummen auf Dokumentenebene
 # Rechnungsgesamtbetrag einschließlich Umsatzsteuer (BT-112) = Rechnungsgesamtbetrag ohne Umsatzsteuer (BT-109) + Gesamtbetrag der Rechnungsumsatzsteuer (BT-110).
 # BR-CO-16 Gesamtsummen auf Dokumentenebene
 # Fälliger Zahlungsbetrag (BT-115) = Gesamtbetrag der Rechnungsumsatzsteuer (BT-112) - Vorauszahlungsbetrag (BT-113) + Rundungsbetrag (BT-114).
-# BR-53 Gesamtsummen auf Dokumentenebene
-# Falls der Code für die Währung der Umsatzsteuerbuchung (BT-6) vorhanden ist, muss der Steuergesamtbetrag in Buchungswährung (BT-111) angegeben werden.
-# BR-CO-14 Gesamtsummen auf Dokumentenebene
-# Gesamtbetrag der Rechnungsumsatzsteuer (BT-110) = ?  kategoriespezifische Steuerbeträge (BT-117).
 # BR-CO-17 Umsatzsteueraufschlüsselung
 # Kategoriespezifischer Steuerbetrag (BT-117) = kategoriespezifischer Steuerbasisbetrag (BT-116) x (kategoriespezifischer Umsatzsteuersatz (BT-119)/100), gerundet auf zwei Dezimalstellen.
+
+# BR-12 Gesamtsummen auf  Dokumentenebene
+# Eine Rechnung muss die Summe der Nettobeträge aller Rechnungspositionen (BT-106) anzeigen.
+# BR-53 Gesamtsummen auf Dokumentenebene
+# Falls der Code für die Währung der Umsatzsteuerbuchung (BT-6) vorhanden ist, muss der Steuergesamtbetrag in Buchungswährung (BT-111) angegeben werden.
 # BR-48 Umsatzsteueraufschlüsselung
 # Jede Umsatzsteueraufschlüsselung (BG-23) muss einen kategoriespezifischen Umsatzsteuersatz (BT-119) haben, es sei denn, die Rechnung unterliegt nicht der Umsatzsteuer.
 
@@ -145,6 +152,42 @@ class MonetarySummation(Element):
     Bei geleisteten Anzahlungen kann dieser vom Rechnungsendbetrag abweichen.
 
     EN 16931-ID: BT-115
+    """
+    charge_total: Decimal | None = field(
+        metadata={"tag": "ChargeTotalAmount", "profile": Profile.BASIC_WL}
+    )
+    """Summe der Zuschläge auf Dokumentenebene
+
+    Summe aller in der Rechnung enthaltenen Zuschläge der Dokumentenebene.
+
+    Zuschläge der Positionsebene sind in den Gesamtpositionsbeträgen enthalten,
+    die addiert werden, um den Gesamtnettobetrag der Positionen zu erhalten.
+
+    EN 16931-ID: BT-108
+    """
+    allowance_total: Decimal | None = field(
+        metadata={"tag": "AllowanceTotalAmount", "profile": Profile.BASIC_WL}
+    )
+    """Summe der Abschläge auf Dokumentenebene
+
+    Summe aller in der Rechnung enthaltenen Abschläge der Dokumentenebene.
+
+    Abschläge auf der Positionsebene sind in den Gesamtpositionsbeträgen enthalten,
+    die addiert werden, um den Gesamtnettobetrag der Positionen zu erhalten.
+
+    EN 16931-ID: BT-107
+    """
+    prepaid_total: Decimal | None = field(
+        metadata={"tag": "TotalPrepaidAmount", "profile": Profile.BASIC_WL}
+    )
+    """Vorauszahlungsbetrag / Anzahlungsbetrag
+
+    Die Summe der im Voraus gezahlten Beträge
+
+    Dieser Betrag wird vom Rechnungsgesamtbetrag einschließlich Umsatzsteuer
+    subtrahiert, um den fälligen Zahlungsbetrag zu berechnen.
+
+    EN 16931-ID: BT-113
     """
 
 
