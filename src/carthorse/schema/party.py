@@ -688,3 +688,57 @@ class UltimateShipToTradeParty(Element):
 
     Steuernummer, Umsatzsteueridentnummer
     """
+
+
+@dataclass(kw_only=True, slots=True)
+class PayeeTradeParty(Element):
+    """Abweichender Zahlungsempfänger
+
+    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen
+    über den Zahlungsempfänger liefert, d. h. über die Stelle, die die Zahlung empfängt.
+
+    Die Rolle des Zahlungsempfängers darf auch von einer anderen Partei als dem
+    Verkäufer, z. B. von einem Factoringdienst, ausgeübt werden.
+
+    EN 16931-ID: BG-10
+    """
+
+    tag: ClassVar[str] = "PayeeTradeParty"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    name: str = field(metadata={"tag": "Name"})
+    """Firmierung/Name des Zahlungsempfängers
+
+    Muss verwendet werden, wenn der Zahlungsempfänger nicht mit dem Verkäufer
+    identisch ist. Der Name des Zahlungsempfängers darf jedoch dem Namen des
+    Verkäufers entsprechen.
+
+    EN 16931-ID: BT-59
+    """
+    id: list[str] | None = field(default=None, metadata={"tag": "ID"})
+    """Identifikation des Zahlungsempfängers
+
+    Eine Kennung für den Zahlungsempfänger.
+
+    Wird kein Schema angegeben, sollte sie dem Käufer und Verkäufer bekannt
+    sein, z. B. eine zuvor ausgetauschte, vom Käufer oder Verkäufer zugewiesene
+    Kennung.
+
+    EN 16931-ID: BT-60
+    """
+    global_id: GlobalID | None = None
+    """Globaler Identifier des Zahlungsempfängers"""
+    legal_organization: LegalOrganization | None = None
+    """Details zur Organisation"""
+
+    # contact: TradeContact | None = None
+    # """Detailinformationen zum Ansprechpartner des Endempfängers"""
+    # address: PostalTradeAddressExtended | None = None
+    # """Detailinformationen zur Anschrift des Endempfängers"""
+    # electronic_address: URIUniversalCommunication | None = None
+    # """Details zur elektronischen Adresse"""
+    # tax_registrations: list[SpecifiedTaxRegistration] | None = None
+    # """Detailinformationen zu Steuerangaben des Endempfängers
+
+    # Steuernummer, Umsatzsteueridentnummer
+    # """

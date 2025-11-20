@@ -4,8 +4,10 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.element import Element, ETElement, ValidationError
+from carthorse.schema.party import PayeeTradeParty
+from carthorse.schema.references import InvoiceReferencedDocument
+from carthorse.schema.types import Profile
 
 # TODO:
 # BR-CO-10 Gesamtsummen auf Dokumentenebene
@@ -20,6 +22,122 @@ from carthorse.schema.types import Namespace, Profile
 # Falls der Code für die Währung der Umsatzsteuerbuchung (BT-6) vorhanden ist, muss der Steuergesamtbetrag in Buchungswährung (BT-111) angegeben werden.
 # BR-CO-14 Gesamtsummen auf Dokumentenebene
 # Gesamtbetrag der Rechnungsumsatzsteuer (BT-110) = ?  kategoriespezifische Steuerbeträge (BT-117).
+# BR-61 Zahlungsanweisungen
+# Ist der Zahlungsmitteltyp (BT-81) eine SEPA-Überweisung, eine örtliche Überweisung oder eine internationale Überweisung ohne SEPA, muss die Kennung des Zahlungskontos (BT-84) angegeben werden.
+
+
+@dataclass(kw_only=True, slots=True)
+class PayerPartyDebtorFinancialAccount(Element):
+    """Bankinstitut des Käufers"""
+
+    tag: ClassVar[str] = "PayerPartyDebtorFinancialAccount"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    iban_id: str = field(metadata={"tag": "IBANID"})
+    """Lastschriftverfahren: Kennung des zu belastenden Kontos
+
+    Das durch die Lastschrift zu belastende Konto. Bei Lastschriftzahlung anzugeben
+
+    EN 16931-ID: BG-19/BT-91
+    """
+
+
+@dataclass(kw_only=True, slots=True)
+class PayeePartyCreditorFinancialAccount(Element):
+    """Überweisung / Bankverbindung des Verkäufers
+
+    Wenn mehrere Bankkonten für die Überweisung angegeben werden sollen, muss das
+    Element SpecifiedTradeSettlementPaymentMeans entsprechend wiederholt werden.
+
+    EN 16931-ID: BG-17
+    """
+
+    tag: ClassVar[str] = "PayeePartyCreditorFinancialAccount"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    iban_id: str | None = field(default=None, metadata={"tag": "IBANID"})
+    """Kennung des Zahlungskontos
+
+    Eine eindeutige Kennung für das bei einem Zahlungsdienstleister geführte Finanzkonto, auf das die Zahlung erfolgen sollte, wie z. B. eine IBAN (im Falle einer SEPA-Zahlung), für eine nationale Kontonummer ProprietaryID nutzen
+
+    In Bezug auf BR-50 und BR-61 muss entweder eine IBAN-ID oder eine ProprietaryID angegeben werden.
+    
+    EN 16931-ID: BT-84
+    """
+    proprietary_id: str | None = field(default=None, metadata={"tag": "ProprietaryID"})
+    """Nationale Kontonummer (nicht für SEPA)
+
+    Für SEPA-Zahlungen IBANID nutzen
+
+    EN 16931-ID: BT-84-0
+    """
+
+    @override
+    def validate_internal(self, profile: Profile) -> None:
+        if self.iban_id is None and self.proprietary_id is None:
+            raise ValidationError(
+                "BR-50",
+                "Falls in der Rechnung Überweisungsinformationen (BG-17) angegeben sind, muss eine Kennung des Zahlungskontos (BT-84) vorhanden sein.",
+            )
+
+
+@dataclass(kw_only=True, slots=True)
+class PaymentMeans(Element):
+    """Zahlungsanweisungen
+
+    Nur wenn mehrere Bankkonten für Überweisungen übertragen werden sollen,
+    kann das Element SpecifiedTradeSettlementPaymentMeans für jedes Bankkonto
+    wiederholt werden. Der Code für die Zahlungsart im Element Typecode (BT-81)
+    darf sich demzufolge in den Wiederholungen nicht unterscheiden.
+    Die Elemente ApplicableTradeSettlementFinancialCard und PayerPartyDebtorFinancialAccount
+    dürfen bei Banküberweisungen nicht angegeben werden.
+
+    EN 16931-ID: BG-16
+    """
+
+    tag: ClassVar[str] = "SpecifiedTradeSettlementPaymentMeans"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    type_code: str = field(metadata={"tag": "TypeCode"})
+    """Code für die Zahlungsart / Zahlungstyp
+
+    Das als Code ausgedrückte erwartete oder genutzte Zahlungsmittel.
+
+    Die Einträge aus der UNTDID 4461 Codeliste müssen verwendet werden.
+    Es sollte zwischen SEPA- und Nicht-SEPA-Zahlungen unterschieden werden
+    sowie zwischen Kreditzahlungen, Lastschriften, Kartenzahlungen und anderen
+    Zahlungsmitteln.
+
+    Codeliste: UNTDID 4461:
+        https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred4461.htm
+
+    Insbesondere können folgende Codes verwendet werden:
+        10 : Bargeld
+        20 : Scheck
+        30 : Überweisung
+        42 : Payment to bank account
+        48 : Kartenzahlung
+        49 : Lastschrift
+        57 : Dauerauftrag
+        58 : SEPA Credit Transfer
+        59 : SEPA Direct Debit
+        97 : Report
+
+    EN 16931-ID: BT-81
+    """
+    payer: PayerPartyDebtorFinancialAccount | None = None
+    payee: PayeePartyCreditorFinancialAccount | None = None
+
+    @override
+    def validate_internal(self, profile: Profile) -> None:
+        if not (
+            len(self.type_code) <= 3
+            and (self.type_code.isdigit() or self.type_code == "ZZZ")
+        ):
+            raise ValidationError(
+                "UNTDID-4461",
+                f"Given TypeCode='{self.type_code}' cannot be a UNTDID-4461: 1-97 and ZZZ",
+            )
 
 
 @dataclass(kw_only=True, slots=True)
@@ -104,16 +222,12 @@ class MonetarySummation(Element):
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementHeaderMonetarySummation"
 
-    line_total: Decimal = field(
-        metadata={"tag": "LineTotalAmount", "ns": Namespace.ram}
-    )
+    line_total: Decimal = field(metadata={"tag": "LineTotalAmount"})
     """Summe der Nettobeträge aller Rechnungspositionen
 
     EN 16931-ID: BT-106
     """
-    tax_basis_total: Decimal = field(
-        metadata={"tag": "TaxBasisTotalAmount", "ns": Namespace.ram}
-    )
+    tax_basis_total: Decimal = field(metadata={"tag": "TaxBasisTotalAmount"})
     """Rechnungsgesamtbetrag ohne Umsatzsteuer
 
     Die Gesamtsumme der Rechnung ohne Umsatzsteuer. Der Rechnungsgesamtbetrag ohne
@@ -124,9 +238,7 @@ class MonetarySummation(Element):
     EN 16931-ID: BT-109
     """
     tax_total: TaxTotal
-    grand_total: Decimal = field(
-        metadata={"tag": "GrandTotalAmount", "ns": Namespace.ram}
-    )
+    grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount"})
     """Rechnungsgesamtbetrag einschließlich Umsatzsteuer / Bruttosumme
 
     Der Rechnungsgesamtbetrag einschließlich Umsatzsteuer ist der Rechnungsgesamtbetrag
@@ -134,9 +246,7 @@ class MonetarySummation(Element):
 
     EN 16931-ID: BT-112
     """
-    due_amount: Decimal = field(
-        metadata={"tag": "DuePayableAmount", "ns": Namespace.ram}
-    )
+    due_amount: Decimal = field(metadata={"tag": "DuePayableAmount"})
     """Fälliger Zahlungsbetrag / Zahlbetrag
 
     Der ausstehende Betrag, um dessen Zahlung gebeten wird.
@@ -158,9 +268,7 @@ class TradeSettlement(Element):
 
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
-    currency_code: str = field(
-        metadata={"tag": "InvoiceCurrencyCode", "ns": Namespace.ram}
-    )
+    currency_code: str = field(metadata={"tag": "InvoiceCurrencyCode"})
     """Code für die Rechnungswährung
 
     Die Währung, in der alle Rechnungsbeträge angegeben werden, ausgenommen ist
@@ -189,8 +297,7 @@ class TradeSettlement(Element):
     EN 16931-ID: BG19/BT-90
     """
     payment_reference: str | None = field(
-        default=None,
-        metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL},
+        default=None, metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL}
     )
     """Verwendungszweck / Kassenzeichen
 
@@ -232,6 +339,9 @@ class TradeSettlement(Element):
 
     EN 16931-ID: BT-83
     """
+    payee: PayeeTradeParty | None = None
+    payment_means: list[PaymentMeans] | None = None
+    invoice_referenced_document: InvoiceReferencedDocument | None = None
 
     @override
     def validate_internal(self, profile: Profile) -> None:

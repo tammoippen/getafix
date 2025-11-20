@@ -283,3 +283,36 @@ class DeliveryNoteReferencedDocument(Element):
         default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
     """Lieferscheindatum"""
+
+
+@dataclass(kw_only=True, slots=True)
+class InvoiceReferencedDocument(Element):
+    """Referenz auf die vorausgegangene Rechnungen
+
+    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
+    eine oder mehrere vorausgegangene Rechnungen enthält.
+
+    Zu verwenden falls:
+    — eine vorausgegangene Rechnung korrigiert wird;
+    — aus einer Schlußrechnung auf vorausgegangene Teilrechnungen Bezug genommen
+      wird;
+    — aus einer Schlußrechnung auf vorausgegangene Rechnungen für Vorauszahlungen
+      Bezug genommen wird.
+
+    EN 16931-ID: BT-3
+    """
+
+    tag: ClassVar[str] = "InvoiceReferencedDocument"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
+    """Nummer der vorausgegangenen Rechnung
+
+    Die Identifikation einer Rechnung, die vom Verkäufer zuvor gesendet wurde
+
+    EN 16931-ID: BT-25
+    """
+    issue_date_time: date | None = field(
+        default=None, metadata={"tag": "FormattedIssueDateTime"}
+    )
+    """Rechnungsdatum"""
