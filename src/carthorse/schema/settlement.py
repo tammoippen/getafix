@@ -188,6 +188,50 @@ class TradeSettlement(Element):
 
     EN 16931-ID: BG19/BT-90
     """
+    payment_reference: str | None = field(
+        default=None,
+        metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL},
+    )
+    """Verwendungszweck / Kassenzeichen
+
+    Ein Textwert, der zur Verknüpfung der Zahlung mit der vom Verkäufer
+    ausgestellten Rechnung verwendet wird.
+
+    Diese Referenz hilft dem Verkäufer, eine eingehende Zahlung dem betreffenden
+    Zahlungsprozess zuzuordnen. Bei der Angabe des Textwertes, bei dem es sich
+    üblicherweise um die Rechnungs-nummer der zu zahlenden Rechnung handelt,
+    aber auch eine andere Verkäuferreferenz sein darf, sollte der Käufer diese
+    Referenz in seinem Zahlungsauftrag oder bei Durchführung der Zahlung angeben.
+    Bei einem Zahlungsvorgang wird diese Referenz dem Verkäufer als
+    Überweisungsinformation zurückübermittelt.
+
+    Um eine automatische Verarbeitung von grenzüberschreitenden SEPA-Zahlungen zu
+    ermöglichen, sollten in diesem Feld ausschließlich lateinische Schriftzeichen
+    und maximal 140 Zeichen verwendet werden. Siehe 1.4 der SEPA Credit Transfer
+    und der SEPA Direct Debit Scheme Implementation Guides für weitere Angaben
+    zu den zulässigen Schriftzeichen. Gegebenenfalls gelten für SEPA-Zahlungen
+    innerhalb von Landesgrenzen andere Regeln.
+
+    Ist die Überweisungsinformation nach ISO 11649:2009 über die strukturierte
+    Referenz des Zahlungsempfängers strukturiert, so muss diese in SEPA-Zahlungsnachrichten
+    dem Feld Structured Remittance Information Creditor Reference zugeordnet werden.
+
+    Ist die Überweisungsinformation nach EACT-Norm für automatische Kontenabstimmung
+    strukturiert, so muss diese in SEPA-Zahlungsnachrichten dem Feld Unstructured
+    Remittance Information zugeordnet werden.
+
+    Ist die Überweisungsinformation in SEPA-Zahlungsnachrichten dem Feld End To
+    End Identification oder dem Feld Structured Remittance Information Creditor
+    Reference zuzuordnen, darf der Inhalt, abgesehen von der Einschränkung auf
+    lateinische Schriftzeichen, nicht mit einem ,/' beginnen oder enden und
+    keine ,//' beinhalten.
+
+    Im einfachsten Fall könnte dies zum Beispiel identisch mit der Rechnungsnummer sein.
+    Hinweis: Soll die Zahlungsreferenz in SEPA-Überweisungen bzw. Lastschriften
+    angegeben werden , darf nur der für SEPA erlaubte Zeichensatz verwendet werden.
+
+    EN 16931-ID: BT-83
+    """
 
     @override
     def validate_internal(self, profile: Profile) -> None:
