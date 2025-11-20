@@ -47,10 +47,7 @@ from carthorse.schema.references import (
     UltimateCustomerOrderReferencedDocument,
 )
 from carthorse.schema.settlement import MonetarySummation, TaxTotal, TradeSettlement
-from carthorse.schema.trade import (
-    Trade,
-    TradeLineItem,
-)
+from carthorse.schema.trade import Trade, TradeLineItem
 from carthorse.schema.types import MIME, UNTDID1001TypeCode
 
 
@@ -115,8 +112,7 @@ def full_doc() -> Document:
     )
     return Document(
         context=Context(
-            test_indicator=True,
-            guideline=GuidelineDocument(id=Profile.EXTENDED),
+            test_indicator=True, guideline=GuidelineDocument(id=Profile.EXTENDED)
         ),
         header=Header(
             id="1234",
@@ -125,10 +121,7 @@ def full_doc() -> Document:
             name="Fooo",
             copyright_indicator=False,
             language_id="de",
-            notes=[
-                IncludedNote(content="XXX"),
-                IncludedNote(content="YYY"),
-            ],
+            notes=[IncludedNote(content="XXX"), IncludedNote(content="YYY")],
             effective_period=EffectivePeriod(complete=date(2025, 11, 16)),
         ),
         trade=Trade(

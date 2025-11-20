@@ -13,7 +13,7 @@ from carthorse.schema.references import (
     DespatchAdviceReferencedDocument,
     ReceivingAdviceReferencedDocument,
 )
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -23,9 +23,7 @@ class LogisticsTransportMovement(Element):
     tag: ClassVar[str] = "SpecifiedLogisticsTransportMovement"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    mode: str | None = field(
-        default=None, metadata={"tag": "ModeCode", "ns": Namespace.ram}
-    )
+    mode: str | None = field(default=None, metadata={"tag": "ModeCode"})
     """Versandart (Code)"""
 
 
@@ -48,10 +46,7 @@ class SupplyChainEvent(Element):
 
     occurrence: date | None = field(
         default=None,
-        metadata={
-            "tag": "OccurrenceDateTime",
-            "profile": Profile.BASIC_WL,
-        },
+        metadata={"tag": "OccurrenceDateTime", "profile": Profile.BASIC_WL},
     )
     """Tatsächlicher Lieferungszeitpunkt / Liefer- und Leistungsdatum im umsatzsteuerrechtlichen Sinn
 

@@ -16,7 +16,7 @@ class BusinessDocument(Element):
     tag: ClassVar[str] = "DocumentContextParameterType"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    id: str | None = field(default=None, metadata={"tag": "ID", "ns": Namespace.ram})
+    id: str | None = field(default=None, metadata={"tag": "ID"})
     """Geschäftsprozesstyp / Geschäftsprozess
 
     Identifiziert den Kontext des Geschäftsprozesses, in dem die Transaktion erfolgt, um es dem Käufer zu ermöglichen, die Rechnung in angemessener Weise zu verarbeiten
@@ -35,7 +35,7 @@ class GuidelineDocument(Element):
 
     tag: ClassVar[str] = "GuidelineSpecifiedDocumentContextParameter"
 
-    id: Profile = field(metadata={"tag": "ID", "ns": Namespace.ram})
+    id: Profile = field(metadata={"tag": "ID"})
     """Spezifikationskennung / Anwendungsempfehlung
 
     Eine Kennung der Spezifikation, die das gesamte Regelwerk zum semantischen Inhalt, zu den Kardinalitäten und den Geschäftsregeln enthält und zu denen die im Instanzdokument enthaltenen Daten conformant sind
@@ -61,11 +61,7 @@ class Context(Element):
     tag: ClassVar[str] = "ExchangedDocumentContext"
 
     test_indicator: bool | None = field(
-        default=None,
-        metadata={
-            "tag": "TestIndicator",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"tag": "TestIndicator", "profile": Profile.EXTENDED}
     )
     """Testkennzeichen
 
@@ -91,22 +87,13 @@ class IncludedNote(Element):
     profile: ClassVar[Profile] = Profile.BASIC
 
     content_code: str | None = field(
-        default=None,
-        metadata={
-            "tag": "ContentCode",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"tag": "ContentCode", "profile": Profile.EXTENDED}
     )
     content: str | None = field(
-        default=None,
-        metadata={"tag": "Content", "profile": Profile.BASIC},
+        default=None, metadata={"tag": "Content", "profile": Profile.BASIC}
     )
     subject_code: str | None = field(
-        default=None,
-        metadata={
-            "tag": "SubjectCode",
-            "profile": Profile.COMFORT,
-        },
+        default=None, metadata={"tag": "SubjectCode", "profile": Profile.COMFORT}
     )
 
 
@@ -122,10 +109,7 @@ class EffectivePeriod(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     complete: date = field(
-        metadata={
-            "tag": "CompleteDateTime",
-            "profile": Profile.EXTENDED,
-        }
+        metadata={"tag": "CompleteDateTime", "profile": Profile.EXTENDED}
     )
 
 
@@ -165,9 +149,7 @@ class Header(Element):
     EN 16931-ID: BT-3
     """
 
-    issue_date: date = field(
-        metadata={"tag": "IssueDateTime", "ns": Namespace.ram},
-    )
+    issue_date: date = field(metadata={"tag": "IssueDateTime"})
     """Rechnungsdatum
 
     Das Datum, an dem die Rechnung ausgestellt wurde
@@ -176,8 +158,7 @@ class Header(Element):
     """
 
     name: str | None = field(
-        default=None,
-        metadata={"tag": "Name", "profile": Profile.BASIC},
+        default=None, metadata={"tag": "Name", "profile": Profile.BASIC}
     )
     """Dokumentenart (Freitext)
     
@@ -185,18 +166,10 @@ class Header(Element):
     """
 
     copyright_indicator: bool | None = field(
-        default=None,
-        metadata={
-            "tag": "CopyIndicator",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"tag": "CopyIndicator", "profile": Profile.EXTENDED}
     )
     language_id: str | None = field(
-        default=None,
-        metadata={
-            "tag": "LanguageID",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"tag": "LanguageID", "profile": Profile.EXTENDED}
     )
     """Sprachkennzeichen
 

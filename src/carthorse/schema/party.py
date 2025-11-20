@@ -4,7 +4,7 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from carthorse.schema.element import Element, ETElement, ValidationError
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import Profile
 
 # Validation:
 # BR-CO-26 Verkäufer
@@ -101,16 +101,11 @@ class PostalTradeAddress(Element):
     Beispiel: DE
     """
     postcode: str | None = field(
-        default=None,
-        metadata={
-            "tag": "PostcodeCode",
-            "profile": Profile.BASIC_WL,
-        },
+        default=None, metadata={"tag": "PostcodeCode", "profile": Profile.BASIC_WL}
     )
     """Postleitzahl"""
     line_one: str | None = field(
-        default=None,
-        metadata={"tag": "LineOne", "profile": Profile.BASIC_WL},
+        default=None, metadata={"tag": "LineOne", "profile": Profile.BASIC_WL}
     )
     """Adresszeile 1
 
@@ -120,24 +115,21 @@ class PostalTradeAddress(Element):
     Beispiel: Lieferantenstraße 20
     """
     line_two: str | None = field(
-        default=None,
-        metadata={"tag": "LineTwo", "profile": Profile.BASIC_WL},
+        default=None, metadata={"tag": "LineTwo", "profile": Profile.BASIC_WL}
     )
     """Adresszeile 2
 
     Beispiel: Gebäude 3
     """
     line_three: str | None = field(
-        default=None,
-        metadata={"tag": "LineThree", "profile": Profile.BASIC_WL},
+        default=None, metadata={"tag": "LineThree", "profile": Profile.BASIC_WL}
     )
     """Adresszeile 3
 
     Beispiel: Tür B
     """
     city_name: str | None = field(
-        default=None,
-        metadata={"tag": "CityName", "profile": Profile.BASIC_WL},
+        default=None, metadata={"tag": "CityName", "profile": Profile.BASIC_WL}
     )
     """Ort
     Beispiel: München
@@ -148,10 +140,7 @@ class PostalTradeAddress(Element):
 class PostalTradeAddressExtended(PostalTradeAddress):
     country_subdivision: str | None = field(
         default=None,
-        metadata={
-            "tag": "CountrySubDivisionName",
-            "profile": Profile.BASIC,
-        },
+        metadata={"tag": "CountrySubDivisionName", "profile": Profile.BASIC},
     )
     """Bundesland
 
@@ -166,12 +155,7 @@ class PhoneNumber(Element):
     tag: ClassVar[str] = "TelephoneUniversalCommunication"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    number: str = field(
-        metadata={
-            "tag": "CompleteNumber",
-            "profile": Profile.COMFORT,
-        },
-    )
+    number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.COMFORT})
     """Eine Telefonnummer der Kontaktstelle
 
     Beispiel: +49 (123) 56789-0
@@ -185,12 +169,7 @@ class FaxNumber(Element):
     tag: ClassVar[str] = "FaxUniversalCommunication"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    number: str = field(
-        metadata={
-            "tag": "CompleteNumber",
-            "profile": Profile.COMFORT,
-        },
-    )
+    number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.COMFORT})
     """Eine Faxnummer der Kontaktstelle
 
     Beispiel: +49 (123) 456789-999
@@ -202,9 +181,7 @@ class EmailURI(Element):
     tag: ClassVar[str] = "EmailURIUniversalCommunication"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    address: str | None = field(
-        metadata={"tag": "URIID", "profile": Profile.EXTENDED},
-    )
+    address: str | None = field(metadata={"tag": "URIID", "profile": Profile.EXTENDED})
     """Eine E-Mailadresse der Kontaktstelle
 
     Beispiel: karin.mustermann@seller.tld
@@ -219,11 +196,7 @@ class TradeContact(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     person_name: str | None = field(
-        default=None,
-        metadata={
-            "tag": "PersonName",
-            "profile": Profile.COMFORT,
-        },
+        default=None, metadata={"tag": "PersonName", "profile": Profile.COMFORT}
     )
     """Ansprechpartnername des Verkäufers / Käufers
 
@@ -233,11 +206,7 @@ class TradeContact(Element):
     EN 16931-ID: BT-41 (Seller), BT-56 (Buyer)
     """
     department_name: str | None = field(
-        default=None,
-        metadata={
-            "tag": "DepartmentName",
-            "profile": Profile.COMFORT,
-        },
+        default=None, metadata={"tag": "DepartmentName", "profile": Profile.COMFORT}
     )
     """Abteilungsname des Verkäufers / Käufers
 
@@ -270,10 +239,7 @@ class LegalOrganization(Element):
     """
     trade_name: str | None = field(
         default=None,
-        metadata={
-            "tag": "TradingBusinessName",
-            "profile": Profile.BASIC_WL,
-        },
+        metadata={"tag": "TradingBusinessName", "profile": Profile.BASIC_WL},
     )
     """Handelsname des Verkäufers / Käufers
 
@@ -351,7 +317,7 @@ class SellerTradeParty(Element):
 
     tag: ClassVar[str] = "SellerTradeParty"
 
-    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
+    name: str = field(metadata={"tag": "Name"})
     """Name des Verkäufers
 
     Der volle formelle Name, unter dem der Verkäufer im nationalen Register für
@@ -370,8 +336,7 @@ class SellerTradeParty(Element):
     EN 16931-ID: BG-5
     """
     id: str | None = field(
-        default=None,
-        metadata={"tag": "ID", "profile": Profile.COMFORT},
+        default=None, metadata={"tag": "ID", "profile": Profile.COMFORT}
     )
 
     """Kennung des Verkäufers / Durch den Kunden zugewiesene Lieferantennummer
@@ -397,11 +362,7 @@ class SellerTradeParty(Element):
     EN 16931-ID: BT-29-0
     """
     description: str | None = field(
-        default=None,
-        metadata={
-            "tag": "Description",
-            "profile": Profile.COMFORT,
-        },
+        default=None, metadata={"tag": "Description", "profile": Profile.COMFORT}
     )
     """Sonstige rechtliche Informationen des Verkäufers
 
@@ -444,7 +405,7 @@ class BuyerTradeParty(Element):
 
     tag: ClassVar[str] = "BuyerTradeParty"
 
-    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
+    name: str = field(metadata={"tag": "Name"})
     """Name des Käufers
 
     Der volle Name des Käufers
@@ -457,8 +418,7 @@ class BuyerTradeParty(Element):
     EN 16931-ID: BG-8
     """
     id: str | None = field(
-        default=None,
-        metadata={"tag": "ID", "profile": Profile.COMFORT},
+        default=None, metadata={"tag": "ID", "profile": Profile.COMFORT}
     )
 
     """Kennung des Käufers / Kundennummer
@@ -514,7 +474,7 @@ class SellerTaxRepresentativeTradeParty(Element):
     tag: ClassVar[str] = "SellerTaxRepresentativeTradeParty"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
+    name: str = field(metadata={"tag": "Name"})
     """Name des Steuerbevollmächtigten des Verkäufers
 
     EN 16931-ID: BT-62
@@ -541,8 +501,7 @@ class SellerTaxRepresentativeTradeParty(Element):
     EN 16931-ID: BT-63
     """
     id: str | None = field(
-        default=None,
-        metadata={"tag": "ID", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "ID", "profile": Profile.EXTENDED}
     )
     """Identifier des Steuerbevollmächtigten"""
     global_ids: list[GlobalID] | None = field(
@@ -570,12 +529,9 @@ class ProductEndUserTradeParty(Element):
     tag: ClassVar[str] = "ProductEndUserTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
+    name: str = field(metadata={"tag": "Name"})
     """Name/Firmierung des Endverbrauchers"""
-    id: str | None = field(
-        default=None,
-        metadata={"tag": "ID", "ns": Namespace.ram},
-    )
+    id: str | None = field(default=None, metadata={"tag": "ID"})
 
     """Identifikation des abweichenden Endverbrauchers"""
     global_ids: list[GlobalID] | None = None
@@ -612,10 +568,7 @@ class ShipToTradeParty(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     # TODO: check other parties: 0..n
-    id: list[str] | None = field(
-        default=None,
-        metadata={"tag": "ID", "ns": Namespace.ram},
-    )
+    id: list[str] | None = field(default=None, metadata={"tag": "ID"})
     """Kennung des Lieferorts / Identifikation des Warenempfängers
 
     Eine Kennung für den Ort, an den die Waren geliefert oder an dem die Dienstleistungen erbracht werden.
@@ -625,14 +578,12 @@ class ShipToTradeParty(Element):
     
     EN 16931-ID: BT-71
     """
-    global_ids: GlobalID | None = None
+    global_id: GlobalID | None = None
     """Globaler Identifier der Kennung für den Lieferort
 
     EN 16931-ID: BT-71-0
     """
-    name: str | None = field(
-        default=None, metadata={"tag": "Name", "ns": Namespace.ram}
-    )
+    name: str | None = field(default=None, metadata={"tag": "Name"})
     """Name/Firmierung des Waren- oder Dienstleistungsempfängers
 
     Der Name der Partei, an die die Waren geliefert bzw. für die die
@@ -681,20 +632,15 @@ class ShipFromTradeParty(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     # TODO: check other parties: 0..n
-    id: list[str] | None = field(
-        default=None,
-        metadata={"tag": "ID", "ns": Namespace.ram},
-    )
+    id: list[str] | None = field(default=None, metadata={"tag": "ID"})
     """Identifikation des Versenders
 
     Der Identifier des Versenders ist eine eindeutige, bilateral vereinbarte
     Kennzeichnung des Versenders.
     """
-    global_ids: GlobalID | None = None
+    global_id: GlobalID | None = None
     """Globaler Identifier des Versenders"""
-    name: str | None = field(
-        default=None, metadata={"tag": "Name", "ns": Namespace.ram}
-    )
+    name: str | None = field(default=None, metadata={"tag": "Name"})
     """Name/Firmierung des Versenders"""
     legal_organization: LegalOrganization | None = None
     """Details zur Organisation"""
@@ -719,10 +665,7 @@ class UltimateShipToTradeParty(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     # TODO: check other parties: 0..n
-    id: list[str] | None = field(
-        default=None,
-        metadata={"tag": "ID", "ns": Namespace.ram},
-    )
+    id: list[str] | None = field(default=None, metadata={"tag": "ID"})
     """Identifikation des Endempfängers
 
     Der Identifier des Endempfängers ist eine eindeutige, bilateral
@@ -730,9 +673,7 @@ class UltimateShipToTradeParty(Element):
     """
     global_ids: list[GlobalID] | None = None
     """Globaler Identifier des Endempfängers"""
-    name: str | None = field(
-        default=None, metadata={"tag": "Name", "ns": Namespace.ram}
-    )
+    name: str | None = field(default=None, metadata={"tag": "Name"})
     """Name/Firmierung des Endempfängers"""
     legal_organization: LegalOrganization | None = None
     """Details zur Organisation"""

@@ -5,7 +5,7 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import MIME, Namespace, Profile, UNTDID1001TypeCode
+from carthorse.schema.types import MIME, Profile, UNTDID1001TypeCode
 
 
 @dataclass(kw_only=True, slots=True)
@@ -14,9 +14,7 @@ class BuyerOrderReferencedDocument(Element):
 
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
 
-    issuer_assigned_id: str = field(
-        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
-    )
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Bestellreferenz / Bestellnummer
 
     Eine vom Käufer ausgegebene Kennung für eine referenzierte Bestellung
@@ -33,10 +31,7 @@ class SellerOrderReferencedDocument(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     issuer_assigned_id: str = field(
-        metadata={
-            "tag": "IssuerAssignedID",
-            "profile": Profile.COMFORT,
-        }
+        metadata={"tag": "IssuerAssignedID", "profile": Profile.COMFORT}
     )
     """Verkaufsauftragsreferenz / Nummer der Auftragsbestätigung
 
@@ -54,10 +49,7 @@ class ContractReferencedDocument(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     issuer_assigned_id: str = field(
-        metadata={
-            "tag": "IssuerAssignedID",
-            "profile": Profile.BASIC_WL,
-        }
+        metadata={"tag": "IssuerAssignedID", "profile": Profile.BASIC_WL}
     )
     """Vertragsreferenz / Vertragsnummer
 
@@ -73,12 +65,8 @@ class UltimateCustomerOrderReferencedDocument(Element):
     tag: ClassVar[str] = "UltimateCustomerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    issuer_assigned_id: str = field(
-        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
-    )
-    issue_date_time: date = field(
-        metadata={"tag": "FormattedIssueDateTime", "ns": Namespace.ram}
-    )
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
+    issue_date_time: date = field(metadata={"tag": "FormattedIssueDateTime"})
 
 
 @dataclass(kw_only=True, slots=True)
@@ -159,10 +147,7 @@ class AdditionalReferencedDocument(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     issuer_assigned_id: str = field(
-        metadata={
-            "tag": "IssuerAssignedID",
-            "profile": Profile.COMFORT,
-        }
+        metadata={"tag": "IssuerAssignedID", "profile": Profile.COMFORT}
     )
     """Dokumentenkennung / Dokumentennummer
 
@@ -178,8 +163,7 @@ class AdditionalReferencedDocument(Element):
     EN 16931-ID: BT-17, BT-18, BT-122
     """
     uriid: str | None = field(
-        default=None,
-        metadata={"tag": "URIID", "profile": Profile.COMFORT},
+        default=None, metadata={"tag": "URIID", "profile": Profile.COMFORT}
     )
     """Bezugsort der rechnungsbgegründenden Unterlage
 
@@ -196,8 +180,7 @@ class AdditionalReferencedDocument(Element):
     EN 16931-ID: BT-124
     """
     type_code: UNTDID1001TypeCode | None = field(
-        default=None,
-        metadata={"tag": "TypeCode", "profile": Profile.COMFORT},
+        default=None, metadata={"tag": "TypeCode", "profile": Profile.COMFORT}
     )
     """Typ des referenzierten Dokuments
 
@@ -211,8 +194,7 @@ class AdditionalReferencedDocument(Element):
     EN 16931-ID: BT-17-0, BT-18-0, BT-122-0
     """
     name: str | None = field(
-        default=None,
-        metadata={"tag": "Name", "profile": Profile.COMFORT},
+        default=None, metadata={"tag": "Name", "profile": Profile.COMFORT}
     )
     """Beschreibung der rechnungsbegründenden Unterlage
 
@@ -230,24 +212,14 @@ class ProcuringProject(Element):
     tag: ClassVar[str] = "SpecifiedProcuringProject"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    id: str = field(
-        metadata={
-            "tag": "ID",
-            "profile": Profile.COMFORT,
-        }
-    )
+    id: str = field(metadata={"tag": "ID", "profile": Profile.COMFORT})
     """Projektreferenz
 
     Die Kennung des Projektes, auf das sich die Rechnung bezieht.
 
     EN 16931-ID: BT-11
     """
-    name: str = field(
-        metadata={
-            "tag": "Name",
-            "profile": Profile.COMFORT,
-        }
-    )
+    name: str = field(metadata={"tag": "Name", "profile": Profile.COMFORT})
     """Projektname
 
     Der Name des Projektes, auf das sich die Rechnung bezieht
@@ -263,9 +235,7 @@ class DespatchAdviceReferencedDocument(Element):
     tag: ClassVar[str] = "DespatchAdviceReferencedDocument"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    issuer_assigned_id: str = field(
-        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
-    )
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Lieferavisreferenz
 
     Eine Kennung für ein referenziertes Lieferavis
@@ -274,10 +244,7 @@ class DespatchAdviceReferencedDocument(Element):
     """
     issue_date_time: date | None = field(
         default=None,
-        metadata={
-            "tag": "FormattedIssueDateTime",
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
     )
     """Lieferavisdatum"""
 
@@ -289,9 +256,7 @@ class ReceivingAdviceReferencedDocument(Element):
     tag: ClassVar[str] = "ReceivingAdviceReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    issuer_assigned_id: str = field(
-        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
-    )
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Referenz auf die Wareneingangsmeldung / Wareneingangsnummer
 
     Eine Kennung für eine referenzierte Wareneingangsmeldung
@@ -300,10 +265,7 @@ class ReceivingAdviceReferencedDocument(Element):
     """
     issue_date_time: date | None = field(
         default=None,
-        metadata={
-            "tag": "FormattedIssueDateTime",
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
     )
     """Wareneingangsdatum"""
 
@@ -315,11 +277,9 @@ class DeliveryNoteReferencedDocument(Element):
     tag: ClassVar[str] = "DeliveryNoteReferencedDocument"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    issuer_assigned_id: str = field(
-        metadata={"tag": "IssuerAssignedID", "ns": Namespace.ram}
-    )
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Lieferscheinnummer"""
     issue_date_time: date | None = field(
-        default=None, metadata={"tag": "FormattedIssueDateTime", "ns": Namespace.ram}
+        default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
     """Lieferscheindatum"""

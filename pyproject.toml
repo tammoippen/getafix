@@ -67,9 +67,11 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["carthorse"]
+split-on-trailing-comma = false
 
 [tool.ruff.format]
 docstring-code-format = true
+skip-magic-trailing-comma = true
 
 [tool.basedpyright]
 # Use strict mode as the baseline
