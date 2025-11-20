@@ -91,3 +91,16 @@ class MIME(enum.StrEnum):
     csv = "text/csv"
     xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     odf = "application/vnd.oasis.opendocument.spreadsheet"
+
+
+@enum.unique
+class CategoryCode(enum.StrEnum):
+    S = "S"  # Umsatzsteuer fällt mit Normalsatz an
+    Z = "Z"  # nach dem Nullsatz zu versteuernde Waren
+    E = "E"  # Steuerbefreit
+    AE = "AE"  # Umkehrung der Steuerschuldnerschaft
+    K = "K"  # Kein Ausweis der Umsatzsteuer bei innergemeinschaftlichen Lieferungen
+    G = "G"  # Steuer nicht erhoben aufgrund von Export außerhalb der EU
+    O = "O"  # Außerhalb des Steueranwendungsbereichs
+    L = "L"  # IGIC (Kanarische Inseln)
+    M = "M"  # IPSI (Ceuta/Melilla)
