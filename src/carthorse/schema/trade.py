@@ -5,7 +5,7 @@ from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.element import Element, ValidationError
 from carthorse.schema.settlement import TradeSettlement
-from carthorse.schema.types import Profile
+from carthorse.schema.types import Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -27,6 +27,7 @@ class Trade(Element):
     """Gruppierung der Informationen zum Geschäftsvorfall"""
 
     tag: ClassVar[str] = "SupplyChainTradeTransaction"
+    namespace: ClassVar[Namespace] = Namespace.rsm
 
     agreement: TradeAgreement
     delivery: TradeDelivery

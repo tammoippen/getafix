@@ -266,7 +266,7 @@ def test_simple(minimum_doc):
         xml
         == """\
 <?xml version='1.0' encoding='UTF-8' ?>
-<rsm:CrossIndustryInvoiceType xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
+<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
   <rsm:ExchangedDocumentContext>
     <ram:GuidelineSpecifiedDocumentContextParameter>
       <ram:ID>
@@ -274,7 +274,7 @@ def test_simple(minimum_doc):
       </ram:ID>
     </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
-  <rsm:CrossIndustryInvoiceType>
+  <rsm:ExchangedDocument>
     <ram:ID>
       1234
     </ram:ID>
@@ -286,8 +286,8 @@ def test_simple(minimum_doc):
         20251116
       </udt:DateTimeString>
     </ram:IssueDateTime>
-  </rsm:CrossIndustryInvoiceType>
-  <ram:SupplyChainTradeTransaction>
+  </rsm:ExchangedDocument>
+  <rsm:SupplyChainTradeTransaction>
     <ram:ApplicableHeaderTradeAgreement>
       <ram:SellerTradeParty>
         <ram:Name>
@@ -333,8 +333,8 @@ def test_simple(minimum_doc):
         </ram:DuePayableAmount>
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
     </ram:ApplicableHeaderTradeSettlement>
-  </ram:SupplyChainTradeTransaction>
-</rsm:CrossIndustryInvoiceType>
+  </rsm:SupplyChainTradeTransaction>
+</rsm:CrossIndustryInvoice>
 """
     )
 
@@ -348,7 +348,7 @@ def test_full(full_doc):
         xml
         == """\
 <?xml version='1.0' encoding='UTF-8' ?>
-<rsm:CrossIndustryInvoiceType xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
+<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
   <rsm:ExchangedDocumentContext>
     <ram:TestIndicator>
       <udt:Indicator>
@@ -361,7 +361,7 @@ def test_full(full_doc):
       </ram:ID>
     </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
-  <rsm:CrossIndustryInvoiceType>
+  <rsm:ExchangedDocument>
     <ram:ID>
       1234
     </ram:ID>
@@ -401,8 +401,8 @@ def test_full(full_doc):
         </udt:DateTimeString>
       </ram:CompleteDateTime>
     </ram:EffectiveSpecifiedPeriod>
-  </rsm:CrossIndustryInvoiceType>
-  <ram:SupplyChainTradeTransaction>
+  </rsm:ExchangedDocument>
+  <rsm:SupplyChainTradeTransaction>
     <ram:ApplicableHeaderTradeAgreement>
       <ram:SellerTradeParty>
         <ram:Name>
@@ -887,8 +887,8 @@ def test_full(full_doc):
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
     </ram:ApplicableHeaderTradeSettlement>
     <ram:IncludedSupplyChainTradeLineItem />
-  </ram:SupplyChainTradeTransaction>
-</rsm:CrossIndustryInvoiceType>
+  </rsm:SupplyChainTradeTransaction>
+</rsm:CrossIndustryInvoice>
 """
     )
     assert Document.from_xml(etree.fromstring(xml.encode())) == full_doc  # pyright: ignore[reportArgumentType]

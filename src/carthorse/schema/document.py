@@ -134,7 +134,7 @@ class Header(Element):
     """Gruppierung der Eigenschaften, die das gesamte Dokument betreffen."""
 
     namespace: ClassVar[Namespace] = Namespace.rsm
-    tag: ClassVar[str] = "CrossIndustryInvoiceType"
+    tag: ClassVar[str] = "ExchangedDocument"
 
     id: str = field(metadata={"tag": "ID"})
     """Rechnungsnummer
@@ -216,7 +216,7 @@ class Document(Element):
     """
 
     namespace: ClassVar[Namespace] = Namespace.rsm
-    tag: ClassVar[str] = "CrossIndustryInvoiceType"
+    tag: ClassVar[str] = "CrossIndustryInvoice"
 
     context: Context
     header: Header
