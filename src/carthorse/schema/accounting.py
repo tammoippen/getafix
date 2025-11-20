@@ -8,6 +8,8 @@ from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.types import CategoryCode, Profile
 
 # TODO:
+# BR-CO-3 Rechnung
+# Das Datum der Steuerfälligkeit (BT-7) und der Code für das Datum der Steuerfälligkeit (BT-8) schließen sich gegenseitig aus.
 # BR-CO-10 Gesamtsummen auf Dokumentenebene
 # Summe der Nettobeträge aller Rechnungspositionen (BT-106) = Summe Nettobeträge der Rechnungsposition (BT-131).
 # BR-CO-11 Gesamtsummen auf Dokumentenebene
@@ -154,7 +156,7 @@ class MonetarySummation(Element):
     EN 16931-ID: BT-115
     """
     charge_total: Decimal | None = field(
-        metadata={"tag": "ChargeTotalAmount", "profile": Profile.BASIC_WL}
+        default=None, metadata={"tag": "ChargeTotalAmount", "profile": Profile.BASIC_WL}
     )
     """Summe der Zuschläge auf Dokumentenebene
 
@@ -166,7 +168,8 @@ class MonetarySummation(Element):
     EN 16931-ID: BT-108
     """
     allowance_total: Decimal | None = field(
-        metadata={"tag": "AllowanceTotalAmount", "profile": Profile.BASIC_WL}
+        default=None,
+        metadata={"tag": "AllowanceTotalAmount", "profile": Profile.BASIC_WL},
     )
     """Summe der Abschläge auf Dokumentenebene
 
@@ -178,7 +181,8 @@ class MonetarySummation(Element):
     EN 16931-ID: BT-107
     """
     prepaid_total: Decimal | None = field(
-        metadata={"tag": "TotalPrepaidAmount", "profile": Profile.BASIC_WL}
+        default=None,
+        metadata={"tag": "TotalPrepaidAmount", "profile": Profile.BASIC_WL},
     )
     """Vorauszahlungsbetrag / Anzahlungsbetrag
 
@@ -284,7 +288,19 @@ class ApplicableTradeTax(Element):
     Ausstellung der Rechnung nicht bekannt ist. Die Verwendung von BT-8 und BT-7
     schließt sich gegenseitig aus.
 
-    Codeliste: UNTDID 2475
+    Die in der Norm zitierten semantischen Werte, die durch die Werte 3, 35, 432
+    in UNTDID2005 repräsentiert werden, werden auf die folgenden Werte von
+    UNTDID2475 abgebildet, das ist die von CII 16B unterstützte relevante Codeliste:
+
+    - 5: Ausstellungsdatum des Rechnungsbelegs
+    - 29: Liefertermin, Ist-Zustand
+    - 72: Bis heute bezahlt
+
+    In Deutschland ist das Liefer- und Leistungsdatum maßgebend (BT-72)
+    SupplyChainTradeTransaction/ApplicableHeaderTradeDelivery/
+    ActualDeliverySupplyChainEvent/OccurrenceDateTime/DateTimeString).
+
+    Codeliste: UNTDID 2475 (Untermenge)
 
         https://service.unece.org/trade/untdid/d96a/uncl/uncl2475.htm
 

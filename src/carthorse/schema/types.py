@@ -95,12 +95,12 @@ class MIME(enum.StrEnum):
 
 @enum.unique
 class CategoryCode(enum.StrEnum):
-    S = "S"  # Umsatzsteuer fällt mit Normalsatz an
-    Z = "Z"  # nach dem Nullsatz zu versteuernde Waren
-    E = "E"  # Steuerbefreit
-    AE = "AE"  # Umkehrung der Steuerschuldnerschaft
-    K = "K"  # Kein Ausweis der Umsatzsteuer bei innergemeinschaftlichen Lieferungen
-    G = "G"  # Steuer nicht erhoben aufgrund von Export außerhalb der EU
-    O = "O"  # Außerhalb des Steueranwendungsbereichs
-    L = "L"  # IGIC (Kanarische Inseln)
-    M = "M"  # IPSI (Ceuta/Melilla)
+    T_S = "S"  # Umsatzsteuer fällt mit Normalsatz an
+    T_Z = "Z"  # nach dem Nullsatz zu versteuernde Waren
+    T_E = "E"  # Steuerbefreit
+    T_AE = "AE"  # Umkehrung der Steuerschuldnerschaft
+    T_K = "K"  # Kein Ausweis der Umsatzsteuer bei innergemeinschaftlichen Lieferungen
+    T_G = "G"  # Steuer nicht erhoben aufgrund von Export außerhalb der EU
+    T_O = "O"  # Außerhalb des Steueranwendungsbereichs
+    T_L = "L"  # IGIC (Kanarische Inseln)
+    T_M = "M"  # IPSI (Ceuta/Melilla)

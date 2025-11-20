@@ -15,6 +15,7 @@ from carthorse.schema import (
     Profile,
     TypeCode,
 )
+from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.element import ValidationError
@@ -46,9 +47,9 @@ from carthorse.schema.references import (
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
 )
-from carthorse.schema.settlement import MonetarySummation, TaxTotal, TradeSettlement
+from carthorse.schema.settlement import TradeSettlement
 from carthorse.schema.trade import Trade, TradeLineItem
-from carthorse.schema.types import MIME, UNTDID1001TypeCode
+from carthorse.schema.types import MIME, CategoryCode, UNTDID1001TypeCode
 
 
 @pt.fixture
@@ -247,6 +248,15 @@ def full_doc() -> Document:
                     grand_total=Decimal("146.91"),
                     due_amount=Decimal("146.91"),
                 ),
+                trade_taxes=[
+                    ApplicableTradeTax(
+                        calculated_amount=Decimal("23.43"),
+                        basis_amount=Decimal("123.45"),
+                        category_code=CategoryCode.T_S,
+                        due_date_code="5",
+                        rate_applicable_percent=Decimal("19"),
+                    )
+                ],
             ),
             items=[TradeLineItem()],
         ),
@@ -878,6 +888,26 @@ def test_full(full_doc):
           146.91
         </ram:DuePayableAmount>
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+      <ram:ApplicableTradeTax>
+        <ram:CalculatedAmount>
+          23.43
+        </ram:CalculatedAmount>
+        <ram:TypeCode>
+          VAT
+        </ram:TypeCode>
+        <ram:BasisAmount>
+          123.45
+        </ram:BasisAmount>
+        <ram:CategoryCode>
+          S
+        </ram:CategoryCode>
+        <ram:DueDateTypeCode>
+          5
+        </ram:DueDateTypeCode>
+        <ram:RateApplicablePercent>
+          19
+        </ram:RateApplicablePercent>
+      </ram:ApplicableTradeTax>
     </ram:ApplicableHeaderTradeSettlement>
     <ram:IncludedSupplyChainTradeLineItem />
   </rsm:SupplyChainTradeTransaction>
@@ -888,16 +918,15 @@ def test_full(full_doc):
     assert Document.from_xml(other_etree.fromstring(xml.encode())) == full_doc  # noqa: S314    # pyright: ignore[reportArgumentType]
 
 
-def test_br_16_error(minimum_doc: Document):
-    minimum_doc.context.guideline.id = Profile.BASIC
-    minimum_doc.trade.items.clear()
+def test_br_16_error(full_doc: Document):
+    full_doc.trade.items.clear()
 
     with pt.raises(ValidationError) as e:
-        minimum_doc.validate()
+        full_doc.validate()
 
     assert e.value.code == "BR-16"
 
-    minimum_doc.context.guideline.id = Profile.MINIMUM
-    minimum_doc.validate()
-    minimum_doc.context.guideline.id = Profile.BASIC_WL
-    minimum_doc.validate()
+    full_doc.context.guideline.id = Profile.MINIMUM
+    full_doc.validate()
+    full_doc.context.guideline.id = Profile.BASIC_WL
+    full_doc.validate()
