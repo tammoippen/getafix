@@ -195,22 +195,15 @@ class ApplicableTradeTax(Element):
     """Codierte Bezeichnung einer Umsatzsteuerkategorie
 
     Folgende Einträge aus UNTDID 5305 werden verwendet (nähere Angaben in Klammern):
-        — (S) Normalsatz (Umsatzsteuer fällt nach Normalverfahren an);
-        — (Z) nach dem Nullsatz zu versteuernde Waren (Umsatzsteuer fällt mit
-              einem Prozentsatz von null an);
-        — (E) steuerbefreit (USt./IGIC/IPSI);
-        — (AE) Umkehrung der Steuerschuldnerschaft (es gelten die Regeln zur
-               Umkehrung der Steuerschuldnerschaft bei USt./IGIC/IPSI);
-        — (K) umsatzsteuerumsatzsteuerbefreit für innergemeinschaftliche
-              Warenlieferungen (USt./IGIC/IPSI nicht erhoben aufgrund von Regeln
-              zu innergemeinschaftlichen Lieferungen);
-        — (G) freier Ausfuhrartikel, Steuer nicht erhoben (USt./IGIC/IPSI nicht
-              erhoben aufgrund von Export außerhalb der EU);
-        — (O) Dienstleistungen außerhalb des Steueranwendungsbereichs (Verkauf
-              unterliegt nicht der USt./IGIC/IPSI);
-        — (L) allgemeine indirekte Steuer der Kanarischen Inseln (IGIC-Steuer
-              fällt an);
-        — (M) IPSI (Steuer für Ceuta/Melilla) fällt an.
+    — (S) Normalsatz (Umsatzsteuer fällt nach Normalverfahren an);
+    — (Z) nach dem Nullsatz zu versteuernde Waren (Umsatzsteuer fällt mit einem Prozentsatz von null an);
+    — (E) steuerbefreit (USt./IGIC/IPSI);
+    — (AE) Umkehrung der Steuerschuldnerschaft (es gelten die Regeln zur Umkehrung der Steuerschuldnerschaft bei USt./IGIC/IPSI);
+    — (K) umsatzsteuerumsatzsteuerbefreit für innergemeinschaftliche Warenlieferungen (USt./IGIC/IPSI nicht erhoben aufgrund von Regeln zu innergemeinschaftlichen Lieferungen);
+    — (G) freier Ausfuhrartikel, Steuer nicht erhoben (USt./IGIC/IPSI nicht erhoben aufgrund von Export außerhalb der EU);
+    — (O) Dienstleistungen außerhalb des Steueranwendungsbereichs (Verkauf unterliegt nicht der USt./IGIC/IPSI);
+    — (L) allgemeine indirekte Steuer der Kanarischen Inseln (IGIC-Steuer fällt an);
+    — (M) IPSI (Steuer für Ceuta/Melilla) fällt an.
 
     Codeliste UNTID 5305
 
@@ -281,3 +274,167 @@ class ApplicableTradeTax(Element):
             and (self.due_date_code.isdigit() or self.due_date_code == "ZZZ")
         ):
             raise ValueError(f"DueDateCode cannot be UNTDID 2475: {self.due_date_code}")
+
+
+@dataclass(kw_only=True, slots=True)
+class CategoryTradeTax(Element):
+    """Detailinformationen zu Steuerangaben"""
+
+    tag: ClassVar[str] = "CategoryTradeTax"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
+    """Code für die Umsatzsteuerkategorie des Zu- oder Abschlages auf Dokumentenebene
+
+    In der EN 16931 wird nur die Steuerart „Umsatzsteuer“ mit dem Code „VAT“ unterstützt.
+
+    Sollen andere Steuerarten angegeben wie beispielsweise eine Versicherungssteuer
+    oder eine Mineralölsteuer werden, muss das EXTENDED Profil genutzt werden. Der
+    Code für die Steuerart muss dann der Codeliste UNTDID 5153 entnommen werden.
+
+    Codeliste: UNTDID 5153
+
+    EN 16931-ID: BT-95-0 (Abschlag), BT-102-0 (Zuschlag)
+    """
+    category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
+    """Code für die Umsatzsteuerkategorie des Zu- oder Abschlages auf Dokumentenebene
+
+    Folgende Einträge aus UNTDID 5305 werden verwendet (nähere Angaben in Klammern):
+
+    — (S) Normalsatz (Umsatzsteuer fällt nach Normalverfahren an);
+    — (Z) nach dem Nullsatz zu versteuernde Waren (Umsatzsteuer fällt mit einem Prozentsatz von null an);
+    — (E) steuerbefreit (USt./IGIC/IPSI);
+    — (AE) Umkehrung der Steuerschuldnerschaft (es gelten die Regeln zur Umkehrung der Steuerschuldnerschaft bei USt./IGIC/IPSI);
+    — (K) umsatzsteuerumsatzsteuerbefreit für innergemeinschaftliche Warenlieferungen (USt./IGIC/IPSI nicht erhoben aufgrund von Regeln zu innergemeinschaftlichen Lieferungen);
+    — (G) freier Ausfuhrartikel, Steuer nicht erhoben (USt./IGIC/IPSI nicht erhoben aufgrund von Export außerhalb der EU);
+    — (O) Dienstleistungen außerhalb des Steueranwendungsbereichs (Verkauf unterliegt nicht der USt./IGIC/IPSI);
+    — (L) allgemeine indirekte Steuer der Kanarischen Inseln (IGIC-Steuer fällt an);
+    — (M) IPSI (Steuer für Ceuta/Melilla) fällt an.
+
+    Codeliste UNTID 5305
+
+    EN 16931-ID: BT-95 (Abschlag), BT-102 (Zuschlag)
+    """
+    rate_applicable_percent: Decimal | None = field(
+        default=None, metadata={"tag": "RateApplicablePercent"}
+    )
+    """Umsatzsteuersatz für den Zu- oder Abschlag auf Dokumentenebene
+
+    Der für den Zu- oder Abschlag auf Dokumentenebene geltende und in Prozent
+    angegebene Umsatzsteuersatz.
+
+    Der anzugebende Wert ist der Prozentsatz. Zum Beispiel wird für 20% der
+    Wert 20 angegeben (und nicht 0.2).
+
+    EN 16931-ID: BT-96 (Abschlag), BT-103 (Zuschlag)
+    """
+
+    @override
+    def validate_internal(self, profile: Profile) -> None:
+        if self.type_code != "VAT" and self.profile != Profile.EXTENDED:
+            raise ValidationError(
+                "TypeCode",
+                "TypeCodes other than VAT for BT-95-0 / BT-102-0 are only allowed in the EXTENDED profile.",
+            )
+
+
+@dataclass(kw_only=True, slots=True)
+class TradeAllowanceCharge(Element):
+    """Zu- und Abschläge auf Dokumentenebene
+
+    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
+    Zu- und Abschläge enthält, die für die Rechnung als Ganzes gelten. Abzüge,
+    wie z. B. für einbehaltene Steuern, dürfen ebenfalls in dieser Gruppe
+    angegeben werden.
+
+    EN 16931-ID: BG-20 (Abschlag), BG-21 (Zuschlag)
+    """
+
+    tag: ClassVar[str] = "SpecifiedTradeAllowanceCharge"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    indicator: bool = field(metadata={"tag": "ChargeIndicator"})
+    """Schalter für Zu-/Abschlag
+
+    Schalter, der angibt, ob die nachfolgenden Daten sich auf einen Zu- oder
+    Abschlag beziehen.
+
+    - Im Fall eine Abschlags (BG-27) ist der Wert des ChargeIndicators auf "false" zu setzen.
+    - Im Fall eine Zuschlags (BG-28) ist der Wert des ChargeIndicators auf "true" zu setzen.
+
+    EN 16931-ID: BG-20-0, BG-21-0, BG-20-00, BG-21-00
+    """
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount"})
+    """Betrag des Zu- oder Abschlags auf Dokumentenebene
+
+    Der Betrag eines Zu- oder Abschlags ohne Umsatzsteuer.
+
+    EN 16931-ID: BT-92 (Abschlag), BT-99 (Zuschlag)
+     """
+    category_trade_tax: CategoryTradeTax
+    calculation_percent: Decimal | None = field(
+        default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
+    )
+    """Prozentualer Zu- oder Abschlag auf Dokumentenebene
+
+    Der Prozentsatz, der in Verbindung mit dem Grundbetrag des Zu- oder Abschlages
+    auf Dokumentenebene zur Berechnung des Betrags des Abschlages auf Dokumentenebene
+    verwendet werden darf.
+
+    Bis zum Level COMFORT wird nur das Endergebnis der Rabattierung
+    (Actual.Amount) übertragen.
+
+    EN 16931-ID: BT-94 (Abschlag), BT-101 (Zuschlag)
+    """
+    basis_amount: Decimal | None = field(
+        default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
+    )
+    """Grundbetrag des Zu- oder Abschlags auf Dokumentenebene
+
+    Der Grundbetrag, der in Verbindung mit dem Prozentsatz des Zu- oder
+    Abschlages auf Dokumentenebene zur Berechnung des Betrags des Abschlages
+    auf Dokumentenebene verwendet werden darf.
+
+    EN 16931-ID: BT-93 (Abschlag), BT-100 (Zuschlag)
+    """
+    reason: str | None = field(default=None, metadata={"tag": "Reason"})
+    """Grund für den Zu- oder Abschlag auf Dokumentenebene
+
+    Der in Textform angegebene Grund für den Zu- oder Abschlag auf Dokumentenebene.
+
+    EN 16931-ID: BT-97 (Abschlag), BT-104 (Zuschlag)
+    """
+    reason_code: str | None = field(default=None, metadata={"tag": "ReasonCode"})
+    """Code für den Grund für den Zu- oder Abschlag auf Dokumentenebene
+
+    Einträge aus der UNTDID 5189 Codeliste verwenden. Der Code des Grundes für
+    den Zu- oder Abschlag auf Dokumentenebene und der Grund für den Zu- oder
+    Abschlag auf Dokumentenebene müssen einander entsprechen.
+
+    Codelisten: UNTDID 5189
+
+        https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5189.htm
+
+    EN 16931-ID: BT-98 (Abschlag), BT-105 (Zuschlag)
+    """
+
+    @override
+    def validate_internal(self, profile: Profile) -> None:
+        if self.reason is None and self.reason_code is None:
+            if self.indicator:
+                # similar to BR-38
+                raise ValidationError(
+                    "BR-CO-22",
+                    "Jeder Zuschlag auf Dokumentenebene (BG-21) muss einen Grund für den Zuschlag auf Dokumentenebene (BT-104) oder einen Code des Grundes für den Zuschlag auf Dokumentenebene (BT-105) oder beides enthalten.",
+                )
+            else:
+                # similar to BR-33
+                raise ValidationError(
+                    "BR-CO-21",
+                    "Jeder Abschlag auf Dokumentenebene (BG-20) muss einen Grund für diesen Abschlag auf Dokumentenebene (BT-97) oder einen Code für den Grund für diesen Abschlag auf Dokumentenebene (BT-98) oder beides enthalten.",
+                )
+
+        # BR-CO-5 Abschläge auf Dokumentenebene
+        # Der Code des Grundes für den Abschlag auf Dokumentenebene (BT-98) und
+        # der Grund für den Abschlag auf Dokumentenebene (BT-97) müssen dieselbe
+        # Zuschlagsart anzeigen.

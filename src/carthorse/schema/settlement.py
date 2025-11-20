@@ -1,7 +1,11 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, override
 
-from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation
+from carthorse.schema.accounting import (
+    ApplicableTradeTax,
+    MonetarySummation,
+    TradeAllowanceCharge,
+)
 from carthorse.schema.element import Element, ValidationError
 from carthorse.schema.party import PayeeTradeParty
 from carthorse.schema.references import InvoiceReferencedDocument
@@ -65,6 +69,7 @@ class PayeePartyCreditorFinancialAccount(Element):
                 "BR-50",
                 "Falls in der Rechnung Überweisungsinformationen (BG-17) angegeben sind, muss eine Kennung des Zahlungskontos (BT-84) vorhanden sein.",
             )
+        # NOTE: what about both are given?
 
 
 @dataclass(kw_only=True, slots=True)
@@ -206,6 +211,7 @@ class TradeSettlement(Element):
     payee: PayeeTradeParty | None = None
     payment_means: list[PaymentMeans] | None = None
     trade_taxes: list[ApplicableTradeTax] | None = None
+    allowance_charge: list[TradeAllowanceCharge] | None = None
     invoice_referenced_document: InvoiceReferencedDocument | None = None
 
     @override
