@@ -16,14 +16,13 @@ from carthorse.schema.references import (
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
 )
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import Profile
 
 
 @dataclass(kw_only=True, slots=True)
 class TradeAgreement(Element):
     """Gruppierung der Vertragsangaben"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"
 
     seller: SellerTradeParty
@@ -40,7 +39,6 @@ class TradeAgreement(Element):
         default=None,
         metadata={
             "tag": "BuyerReference",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         },
     )

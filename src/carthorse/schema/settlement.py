@@ -43,7 +43,6 @@ class TaxTotal(Element):
     EN 16931-ID: BT-110, BT-111
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "TaxTotalAmount"
 
     amount: Decimal
@@ -103,7 +102,6 @@ class MonetarySummation(Element):
     EN 16931-ID: BG-22
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SpecifiedTradeSettlementHeaderMonetarySummation"
 
     line_total: Decimal = field(
@@ -158,7 +156,6 @@ class MonetarySummation(Element):
 class TradeSettlement(Element):
     """Gruppierung von Angaben zur Zahlung und Rechnungsausgleich"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
     currency_code: str = field(
@@ -178,6 +175,19 @@ class TradeSettlement(Element):
     EN 16931-ID: BT-5
     """
     monetary_summation: MonetarySummation
+    creditor_reference: str | None = field(
+        default=None,
+        metadata={"tag": "CreditorReferenceID", "profile": Profile.BASIC_WL},
+    )
+    """Kennung des Gläubigers / Gläubiger-ID für SEPA
+
+    Eindeutige Bankverbindungskennung des Zahlungsempfängers oder des Verkäufers,
+    die von der Bank des Zahlungsempfängers oder des Verkäufers zugewiesen wird
+
+    Wird verwendet, um den Käufer vorweg über eine SEPA-Lastschrift in Kenntnis zu setzen.
+
+    EN 16931-ID: BG19/BT-90
+    """
 
     @override
     def validate_internal(self, profile: Profile) -> None:

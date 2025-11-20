@@ -12,7 +12,6 @@ from carthorse.schema.types import MIME, Namespace, Profile, UNTDID1001TypeCode
 class BuyerOrderReferencedDocument(Element):
     """Detailangaben zur zugehörigen Bestellung"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
 
     issuer_assigned_id: str = field(
@@ -30,14 +29,12 @@ class BuyerOrderReferencedDocument(Element):
 class SellerOrderReferencedDocument(Element):
     """Detailangaben zur zugehörigen Auftragsbestätigung"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SellerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     issuer_assigned_id: str = field(
         metadata={
             "tag": "IssuerAssignedID",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         }
     )
@@ -53,14 +50,12 @@ class SellerOrderReferencedDocument(Element):
 class ContractReferencedDocument(Element):
     """Detailangaben zum zugehörigen Vertrag"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ContractReferencedDocument"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     issuer_assigned_id: str = field(
         metadata={
             "tag": "IssuerAssignedID",
-            "ns": Namespace.ram,
             "profile": Profile.BASIC_WL,
         }
     )
@@ -75,7 +70,6 @@ class ContractReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class UltimateCustomerOrderReferencedDocument(Element):
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "UltimateCustomerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
@@ -99,7 +93,6 @@ class AttachmentBinaryObject(Element):
     EN 16931-ID: BT-125
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "AttachmentBinaryObject"
     profile: ClassVar[Profile] = Profile.COMFORT
 
@@ -162,14 +155,12 @@ class AdditionalReferencedDocument(Element):
     EN 16931-ID: BG-24
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "AdditionalReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     issuer_assigned_id: str = field(
         metadata={
             "tag": "IssuerAssignedID",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         }
     )
@@ -188,7 +179,7 @@ class AdditionalReferencedDocument(Element):
     """
     uriid: str | None = field(
         default=None,
-        metadata={"tag": "URIID", "ns": Namespace.ram, "profile": Profile.COMFORT},
+        metadata={"tag": "URIID", "profile": Profile.COMFORT},
     )
     """Bezugsort der rechnungsbgegründenden Unterlage
 
@@ -206,7 +197,7 @@ class AdditionalReferencedDocument(Element):
     """
     type_code: UNTDID1001TypeCode | None = field(
         default=None,
-        metadata={"tag": "TypeCode", "ns": Namespace.ram, "profile": Profile.COMFORT},
+        metadata={"tag": "TypeCode", "profile": Profile.COMFORT},
     )
     """Typ des referenzierten Dokuments
 
@@ -221,7 +212,7 @@ class AdditionalReferencedDocument(Element):
     """
     name: str | None = field(
         default=None,
-        metadata={"tag": "Name", "ns": Namespace.ram, "profile": Profile.COMFORT},
+        metadata={"tag": "Name", "profile": Profile.COMFORT},
     )
     """Beschreibung der rechnungsbegründenden Unterlage
 
@@ -236,14 +227,12 @@ class AdditionalReferencedDocument(Element):
 class ProcuringProject(Element):
     """Detailangaben zu einer Projektreferenz"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SpecifiedProcuringProject"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     id: str = field(
         metadata={
             "tag": "ID",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         }
     )
@@ -256,7 +245,6 @@ class ProcuringProject(Element):
     name: str = field(
         metadata={
             "tag": "Name",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         }
     )
@@ -272,7 +260,6 @@ class ProcuringProject(Element):
 class DespatchAdviceReferencedDocument(Element):
     """Detailinformationen zum zugehörigen Lieferavis"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "DespatchAdviceReferencedDocument"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
@@ -289,7 +276,6 @@ class DespatchAdviceReferencedDocument(Element):
         default=None,
         metadata={
             "tag": "FormattedIssueDateTime",
-            "ns": Namespace.ram,
             "profile": Profile.EXTENDED,
         },
     )
@@ -300,7 +286,6 @@ class DespatchAdviceReferencedDocument(Element):
 class ReceivingAdviceReferencedDocument(Element):
     """Detailinformationen zur zugehörigen Wareneingangsmeldung"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ReceivingAdviceReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
@@ -317,7 +302,6 @@ class ReceivingAdviceReferencedDocument(Element):
         default=None,
         metadata={
             "tag": "FormattedIssueDateTime",
-            "ns": Namespace.ram,
             "profile": Profile.EXTENDED,
         },
     )
@@ -328,7 +312,6 @@ class ReceivingAdviceReferencedDocument(Element):
 class DeliveryNoteReferencedDocument(Element):
     """Detailinformationen zum zugehörigen Lieferschein"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "DeliveryNoteReferencedDocument"
     profile: ClassVar[Profile] = Profile.EXTENDED
 

@@ -35,8 +35,8 @@ class ValidationError(ValueError):
 
 @dataclass(kw_only=True, slots=True)
 class Element(ABC):
-    namespace: ClassVar[Namespace]
     tag: ClassVar[str]
+    namespace: ClassVar[Namespace] = Namespace.ram
     profile: ClassVar[Profile] = Profile.MINIMUM
 
     def validate_internal(self, profile: Profile) -> None:
@@ -168,7 +168,7 @@ def _get_non_none_type(field_type: Any) -> Any:
 def _render_bool(value: bool, field: Field[bool]) -> XML:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
-    ns = field.metadata["ns"]
+    ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
     p = field.metadata.get("profile", Profile.MINIMUM)
     assert isinstance(p, Profile)
@@ -179,7 +179,7 @@ def _render_bool(value: bool, field: Field[bool]) -> XML:
 def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
-    ns = field.metadata["ns"]
+    ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
 
     if el.tag != ns.get_qualified_tag(tag):
@@ -196,7 +196,7 @@ def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
 def _render_str(value: str, field: Field[str]) -> XML:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
-    ns = field.metadata["ns"]
+    ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
 
     return XML(f"{ns.name}:{tag}")[value]
@@ -207,7 +207,7 @@ def _parse_str[T: str](
 ) -> T | None:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
-    ns = field.metadata["ns"]
+    ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
 
     if el.tag != ns.get_qualified_tag(tag):
@@ -220,7 +220,7 @@ def _parse_str[T: str](
 def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
-    ns = field.metadata["ns"]
+    ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
 
     return XML(f"{ns.name}:{tag}")[
@@ -231,7 +231,7 @@ def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:
 def _parse_date(el: ETElement, field: Field[datetime.date]) -> dict[str, datetime.date]:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
-    ns = field.metadata["ns"]
+    ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
 
     if el.tag != ns.get_qualified_tag(tag):

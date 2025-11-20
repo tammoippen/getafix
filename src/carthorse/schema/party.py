@@ -23,7 +23,6 @@ from carthorse.schema.types import Namespace, Profile
 
 @dataclass(kw_only=True, slots=True)
 class SchemaID(Element):
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ID"
 
     id: str
@@ -74,7 +73,6 @@ class GlobalID(ISO6523SchemaId):
     EN 16931-ID: BT-29-1 (Seller), BT-46-1 (Buyer)
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "GlobalID"
     profile: ClassVar[Profile] = Profile.COMFORT
 
@@ -87,17 +85,15 @@ class URIID(SchemaID):
     EN 16931-ID: BT-34 (Seller), BT-49 (Buyer)
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "URIID"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
 
 @dataclass(kw_only=True, slots=True)
 class PostalTradeAddress(Element):
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "PostalTradeAddress"
 
-    country_id: str = field(metadata={"ns": Namespace.ram, "tag": "CountryID"})
+    country_id: str = field(metadata={"tag": "CountryID"})
     """Land (Code)
 
     Codeliste: ISO 3166-1, Nur die Alpha-2 Darstellung darf verwendet werden
@@ -107,7 +103,6 @@ class PostalTradeAddress(Element):
     postcode: str | None = field(
         default=None,
         metadata={
-            "ns": Namespace.ram,
             "tag": "PostcodeCode",
             "profile": Profile.BASIC_WL,
         },
@@ -115,7 +110,7 @@ class PostalTradeAddress(Element):
     """Postleitzahl"""
     line_one: str | None = field(
         default=None,
-        metadata={"ns": Namespace.ram, "tag": "LineOne", "profile": Profile.BASIC_WL},
+        metadata={"tag": "LineOne", "profile": Profile.BASIC_WL},
     )
     """Adresszeile 1
 
@@ -126,7 +121,7 @@ class PostalTradeAddress(Element):
     """
     line_two: str | None = field(
         default=None,
-        metadata={"ns": Namespace.ram, "tag": "LineTwo", "profile": Profile.BASIC_WL},
+        metadata={"tag": "LineTwo", "profile": Profile.BASIC_WL},
     )
     """Adresszeile 2
 
@@ -134,7 +129,7 @@ class PostalTradeAddress(Element):
     """
     line_three: str | None = field(
         default=None,
-        metadata={"ns": Namespace.ram, "tag": "LineThree", "profile": Profile.BASIC_WL},
+        metadata={"tag": "LineThree", "profile": Profile.BASIC_WL},
     )
     """Adresszeile 3
 
@@ -142,7 +137,7 @@ class PostalTradeAddress(Element):
     """
     city_name: str | None = field(
         default=None,
-        metadata={"ns": Namespace.ram, "tag": "CityName", "profile": Profile.BASIC_WL},
+        metadata={"tag": "CityName", "profile": Profile.BASIC_WL},
     )
     """Ort
     Beispiel: München
@@ -154,7 +149,6 @@ class PostalTradeAddressExtended(PostalTradeAddress):
     country_subdivision: str | None = field(
         default=None,
         metadata={
-            "ns": Namespace.ram,
             "tag": "CountrySubDivisionName",
             "profile": Profile.BASIC,
         },
@@ -169,13 +163,11 @@ class PostalTradeAddressExtended(PostalTradeAddress):
 
 @dataclass(kw_only=True, slots=True)
 class PhoneNumber(Element):
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "TelephoneUniversalCommunication"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     number: str = field(
         metadata={
-            "ns": Namespace.ram,
             "tag": "CompleteNumber",
             "profile": Profile.COMFORT,
         },
@@ -190,13 +182,11 @@ class PhoneNumber(Element):
 
 @dataclass(kw_only=True, slots=True)
 class FaxNumber(Element):
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "FaxUniversalCommunication"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     number: str = field(
         metadata={
-            "ns": Namespace.ram,
             "tag": "CompleteNumber",
             "profile": Profile.COMFORT,
         },
@@ -209,12 +199,11 @@ class FaxNumber(Element):
 
 @dataclass(kw_only=True, slots=True)
 class EmailURI(Element):
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "EmailURIUniversalCommunication"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     address: str | None = field(
-        metadata={"ns": Namespace.ram, "tag": "URIID", "profile": Profile.EXTENDED},
+        metadata={"tag": "URIID", "profile": Profile.EXTENDED},
     )
     """Eine E-Mailadresse der Kontaktstelle
 
@@ -226,7 +215,6 @@ class EmailURI(Element):
 
 @dataclass(kw_only=True, slots=True)
 class TradeContact(Element):
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "DefinedTradeContact"
     profile: ClassVar[Profile] = Profile.COMFORT
 
@@ -234,7 +222,6 @@ class TradeContact(Element):
         default=None,
         metadata={
             "tag": "PersonName",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         },
     )
@@ -249,7 +236,6 @@ class TradeContact(Element):
         default=None,
         metadata={
             "tag": "DepartmentName",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         },
     )
@@ -272,7 +258,6 @@ class TradeContact(Element):
 class LegalOrganization(Element):
     """Details zur Organisation"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SpecifiedLegalOrganization"
 
     id: ISO6523SchemaId | None = None
@@ -287,7 +272,6 @@ class LegalOrganization(Element):
         default=None,
         metadata={
             "tag": "TradingBusinessName",
-            "ns": Namespace.ram,
             "profile": Profile.BASIC_WL,
         },
     )
@@ -308,7 +292,6 @@ class LegalOrganization(Element):
 class URIUniversalCommunication(Element):
     """Details zur elektronischen Adresse"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "URIUniversalCommunication"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
@@ -338,7 +321,6 @@ class TaxSchemaId(ISO6523SchemaId):
 
     # TODO: check VA/FC in TradeParty
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "GlobalID"
 
     @override
@@ -353,7 +335,6 @@ class TaxSchemaId(ISO6523SchemaId):
 class SpecifiedTaxRegistration(Element):
     """Detailinformationen zu Steuerangaben des Käufers / Verkäufers"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SpecifiedTaxRegistration"
 
     id: TaxSchemaId
@@ -368,7 +349,6 @@ class SellerTradeParty(Element):
     EN 16931-ID: BG-4
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SellerTradeParty"
 
     name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
@@ -391,7 +371,7 @@ class SellerTradeParty(Element):
     """
     id: str | None = field(
         default=None,
-        metadata={"tag": "ID", "ns": Namespace.ram, "profile": Profile.COMFORT},
+        metadata={"tag": "ID", "profile": Profile.COMFORT},
     )
 
     """Kennung des Verkäufers / Durch den Kunden zugewiesene Lieferantennummer
@@ -420,7 +400,6 @@ class SellerTradeParty(Element):
         default=None,
         metadata={
             "tag": "Description",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         },
     )
@@ -463,7 +442,6 @@ class BuyerTradeParty(Element):
     EN 16931-ID: BG-7
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "BuyerTradeParty"
 
     name: str = field(metadata={"tag": "Name", "ns": Namespace.ram})
@@ -480,7 +458,7 @@ class BuyerTradeParty(Element):
     """
     id: str | None = field(
         default=None,
-        metadata={"tag": "ID", "ns": Namespace.ram, "profile": Profile.COMFORT},
+        metadata={"tag": "ID", "profile": Profile.COMFORT},
     )
 
     """Kennung des Käufers / Kundennummer
@@ -533,7 +511,6 @@ class SellerTaxRepresentativeTradeParty(Element):
     EN 16931-ID: BG-11
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SellerTaxRepresentativeTradeParty"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
@@ -565,7 +542,7 @@ class SellerTaxRepresentativeTradeParty(Element):
     """
     id: str | None = field(
         default=None,
-        metadata={"tag": "ID", "ns": Namespace.ram, "profile": Profile.EXTENDED},
+        metadata={"tag": "ID", "profile": Profile.EXTENDED},
     )
     """Identifier des Steuerbevollmächtigten"""
     global_ids: list[GlobalID] | None = field(
@@ -590,7 +567,6 @@ class SellerTaxRepresentativeTradeParty(Element):
 class ProductEndUserTradeParty(Element):
     """Detailinformationen zum abweichenden Endverbraucher"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ProductEndUserTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
@@ -632,7 +608,6 @@ class ShipToTradeParty(Element):
     EN 16931-ID: BG-13
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ShipToTradeParty"
     profile: ClassVar[Profile] = Profile.COMFORT
 
@@ -702,7 +677,6 @@ class ShipToTradeParty(Element):
 class ShipFromTradeParty(Element):
     """Identifikation des abweichenden Versenders"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ShipFromTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
@@ -741,7 +715,6 @@ class ShipFromTradeParty(Element):
 class UltimateShipToTradeParty(Element):
     """Detailinformationen zum abweichenden Endempfänger"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "UltimateShipToTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 

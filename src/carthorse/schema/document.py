@@ -13,7 +13,6 @@ from carthorse.schema.types import Namespace, Profile, TypeCode
 class BusinessDocument(Element):
     """Gruppierung der Geschäftsprozessinformationen"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "DocumentContextParameterType"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
@@ -34,7 +33,6 @@ class BusinessDocument(Element):
 class GuidelineDocument(Element):
     """Gruppierung der Anwendungsempfehlungsinformationen"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "GuidelineSpecifiedDocumentContextParameter"
 
     id: Profile = field(metadata={"tag": "ID", "ns": Namespace.ram})
@@ -66,7 +64,6 @@ class Context(Element):
         default=None,
         metadata={
             "tag": "TestIndicator",
-            "ns": Namespace.ram,
             "profile": Profile.EXTENDED,
         },
     )
@@ -90,7 +87,6 @@ class IncludedNote(Element):
     EN 16931-ID: BG-1
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "IncludedNote"
     profile: ClassVar[Profile] = Profile.BASIC
 
@@ -98,19 +94,17 @@ class IncludedNote(Element):
         default=None,
         metadata={
             "tag": "ContentCode",
-            "ns": Namespace.ram,
             "profile": Profile.EXTENDED,
         },
     )
     content: str | None = field(
         default=None,
-        metadata={"tag": "Content", "ns": Namespace.ram, "profile": Profile.BASIC},
+        metadata={"tag": "Content", "profile": Profile.BASIC},
     )
     subject_code: str | None = field(
         default=None,
         metadata={
             "tag": "SubjectCode",
-            "ns": Namespace.ram,
             "profile": Profile.COMFORT,
         },
     )
@@ -124,14 +118,12 @@ class EffectivePeriod(Element):
     Fälligkeitsdatum der Zahlung (z.B. bei SEPA-Lastschriften) abweicht.
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "EffectiveSpecifiedPeriod"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     complete: date = field(
         metadata={
             "tag": "CompleteDateTime",
-            "ns": Namespace.ram,
             "profile": Profile.EXTENDED,
         }
     )
@@ -144,7 +136,7 @@ class Header(Element):
     namespace: ClassVar[Namespace] = Namespace.rsm
     tag: ClassVar[str] = "CrossIndustryInvoiceType"
 
-    id: str = field(metadata={"ns": Namespace.ram, "tag": "ID"})
+    id: str = field(metadata={"tag": "ID"})
     """Rechnungsnummer
     
     Eine eindeutige Kennung der Rechnung
@@ -159,7 +151,7 @@ class Header(Element):
     EN 16931-ID: BT-1
     """
 
-    type_code: TypeCode = field(metadata={"ns": Namespace.ram, "tag": "TypeCode"})
+    type_code: TypeCode = field(metadata={"tag": "TypeCode"})
     """Code für den Rechnungstyp / Dokumentenart (Code)
     
     Handelsrechnungen und Gutschriften sind nach den Einträgen in UNTDID 1001 
@@ -185,7 +177,7 @@ class Header(Element):
 
     name: str | None = field(
         default=None,
-        metadata={"tag": "Name", "ns": Namespace.ram, "profile": Profile.BASIC},
+        metadata={"tag": "Name", "profile": Profile.BASIC},
     )
     """Dokumentenart (Freitext)
     
@@ -196,7 +188,6 @@ class Header(Element):
         default=None,
         metadata={
             "tag": "CopyIndicator",
-            "ns": Namespace.ram,
             "profile": Profile.EXTENDED,
         },
     )
@@ -204,7 +195,6 @@ class Header(Element):
         default=None,
         metadata={
             "tag": "LanguageID",
-            "ns": Namespace.ram,
             "profile": Profile.EXTENDED,
         },
     )

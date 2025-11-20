@@ -20,7 +20,6 @@ from carthorse.schema.types import Namespace, Profile
 class LogisticsTransportMovement(Element):
     """Detailinformationen zur Versandmethode"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SpecifiedLogisticsTransportMovement"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
@@ -34,7 +33,6 @@ class LogisticsTransportMovement(Element):
 class SupplyChainConsignment(Element):
     """Detailinformationen zur Konsignation oder Sendung"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "RelatedSupplyChainConsignment"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
@@ -45,7 +43,6 @@ class SupplyChainConsignment(Element):
 class SupplyChainEvent(Element):
     """Detailinformationen zur tatsächlichen Lieferung"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ActualDeliverySupplyChainEvent"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
@@ -53,7 +50,6 @@ class SupplyChainEvent(Element):
         default=None,
         metadata={
             "tag": "OccurrenceDateTime",
-            "ns": Namespace.ram,
             "profile": Profile.BASIC_WL,
         },
     )
@@ -74,7 +70,6 @@ class SupplyChainEvent(Element):
 class TradeDelivery(Element):
     """Gruppierung von Lieferangaben"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "ApplicableHeaderTradeDelivery"
 
     consignment: SupplyChainConsignment | None = None

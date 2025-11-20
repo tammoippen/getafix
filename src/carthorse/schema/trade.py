@@ -5,7 +5,7 @@ from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.element import Element, ValidationError
 from carthorse.schema.settlement import TradeSettlement
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -18,7 +18,6 @@ class TradeLineItem(Element):
     EN 16931-ID: BG-25
     """
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "IncludedSupplyChainTradeLineItem"
     profile: ClassVar[Profile] = Profile.BASIC
 
@@ -27,7 +26,6 @@ class TradeLineItem(Element):
 class Trade(Element):
     """Gruppierung der Informationen zum Geschäftsvorfall"""
 
-    namespace: ClassVar[Namespace] = Namespace.ram
     tag: ClassVar[str] = "SupplyChainTradeTransaction"
 
     agreement: TradeAgreement
