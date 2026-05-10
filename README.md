@@ -61,7 +61,7 @@ doc = Document(
 )
 
 xml = doc.to_xml().render(indent=True)        # serialise
-# doc.validate() — currently raises BR-CO-18 at MINIMUM, see Known gaps
+doc.validate()                                # raises ValidationError on BR-* failures
 
 # Round-trip back into a Document
 import lxml.etree as etree
@@ -206,12 +206,6 @@ Roughly in order of how often they come up when feeding real samples in:
   BR-CO-21/22, currency code, UNTDID 4461 form, VAT/FC schema id. The bulk
   of the BR-CO computational rules (BR-CO-10..17) are listed as TODOs in
   `schema/accounting.py` but not yet enforced.
-- **`Profile` ordering only overrides `__lt__`**, so `<=` / `>=` fall back
-  to lexicographic `StrEnum` compare and produce wrong answers (e.g.
-  `Profile.BASIC_WL <= Profile.MINIMUM` is `True`). This is why
-  `doc.validate()` raises `BR-CO-18` at MINIMUM. Fix by using
-  `functools.total_ordering` or implementing all four comparison dunders.
-
 ## ZUGFeRD references
 
 Specification:

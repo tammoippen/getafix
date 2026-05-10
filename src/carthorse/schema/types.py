@@ -16,14 +16,10 @@ class Profile(enum.StrEnum):
     (``BR-FXEXT-*``) that replaces some ``BR-CO-*`` rules with
     rounding-tolerance variants — see ``docs/VALIDATION.md``.
 
-    .. warning::
-
-        Only :py:meth:`__lt__` is overridden to ordinal-compare; the
-        remaining comparators (``__le__``, ``__gt__``, ``__ge__``) fall
-        back to ``StrEnum``'s lexicographic compare and produce
-        wrong answers (e.g. ``Profile.BASIC_WL <= Profile.MINIMUM`` is
-        ``True``). Use ``not (a < b)`` for ``a >= b`` semantics. See
-        ``docs/IMPLEMENTATION_PLAN.md §1 #8``.
+    All four order comparators are overridden to compare by the
+    declaration order of the members so e.g.
+    ``Profile.BASIC_WL >= Profile.MINIMUM`` is ``True`` (whereas the
+    inherited ``StrEnum`` lexicographic compare would say ``False``).
     """
 
     MINIMUM = "urn:factur-x.eu:1p0:minimum"
@@ -32,11 +28,24 @@ class Profile(enum.StrEnum):
     COMFORT = "urn:cen.eu:en16931:2017"
     EXTENDED = "urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended"
 
+    def _ordinal(self) -> int:
+        return list(Profile).index(self)
+
     @override
     def __lt__(self, value: str, /) -> bool:
-        p = Profile(value)
-        ps = list(Profile)
-        return ps.index(self) < ps.index(p)
+        return self._ordinal() < Profile(value)._ordinal()
+
+    @override
+    def __le__(self, value: str, /) -> bool:
+        return self._ordinal() <= Profile(value)._ordinal()
+
+    @override
+    def __gt__(self, value: str, /) -> bool:
+        return self._ordinal() > Profile(value)._ordinal()
+
+    @override
+    def __ge__(self, value: str, /) -> bool:
+        return self._ordinal() >= Profile(value)._ordinal()
 
 
 @enum.unique
