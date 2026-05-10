@@ -314,7 +314,17 @@ class TestBrIc:
     """
 
     def test_br_ic_2_line_passes_with_both_vats(self) -> None:
-        _make_doc(line_category=CategoryCode.T_K).validate()
+        from carthorse.schema.delivery import SupplyChainEvent
+        from carthorse.schema.party import ShipToTradeParty
+
+        # K (Intra-community) also needs BT-72 + BT-80 (BR-IC-11/12);
+        # supply both so we exercise BR-IC-2 cleanly.
+        doc = _make_doc(line_category=CategoryCode.T_K)
+        doc.trade.delivery.event = SupplyChainEvent(occurrence=date(2025, 1, 15))
+        doc.trade.delivery.ship_to = ShipToTradeParty(
+            address=PostalTradeAddressExtended(country_id="FR"),
+        )
+        doc.validate()
 
     def test_br_ic_2_line_fails_without_buyer_vat(self) -> None:
         # Buyer has no VAT and no legal id; per BR-IC-2 the legal id
@@ -628,3 +638,61 @@ class TestBrOSingleRate:
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code in {"BR-O-14", "BR-S-4"}
+
+
+class TestBrIcDelivery:
+    """BR-IC-11 / BR-IC-12 — intra-community supply needs evidence
+    of cross-border delivery."""
+
+    def _make_ic(self) -> Document:
+        # Both Seller and Buyer have VAT (so BR-IC-2 is satisfied) and
+        # the line carries category K. From there, BR-IC-11 (BT-72 or
+        # BG-14) and BR-IC-12 (BT-80) are the next checks.
+        return _make_doc(line_category=CategoryCode.T_K)
+
+    def test_br_ic_11_passes_with_actual_delivery_date(self) -> None:
+        from carthorse.schema.delivery import SupplyChainEvent
+
+        doc = self._make_ic()
+        doc.trade.delivery.event = SupplyChainEvent(occurrence=date(2025, 1, 15))
+        # BR-IC-12 still needs deliver-to country.
+        from carthorse.schema.party import ShipToTradeParty
+
+        doc.trade.delivery.ship_to = ShipToTradeParty(
+            address=PostalTradeAddressExtended(country_id="FR"),
+        )
+        doc.validate()
+
+    def test_br_ic_11_passes_with_billing_period(self) -> None:
+        from carthorse.schema.party import ShipToTradeParty
+        from carthorse.schema.settlement import BillingSpecifiedPeriod
+
+        doc = self._make_ic()
+        doc.trade.settlement.billing_period = BillingSpecifiedPeriod(
+            start=date(2025, 1, 1), end=date(2025, 1, 31)
+        )
+        doc.trade.delivery.ship_to = ShipToTradeParty(
+            address=PostalTradeAddressExtended(country_id="FR"),
+        )
+        doc.validate()
+
+    def test_br_ic_11_fires_without_date_or_period(self) -> None:
+        from carthorse.schema.party import ShipToTradeParty
+
+        doc = self._make_ic()
+        doc.trade.delivery.ship_to = ShipToTradeParty(
+            address=PostalTradeAddressExtended(country_id="FR"),
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-IC-11"
+
+    def test_br_ic_12_fires_without_ship_to_country(self) -> None:
+        from carthorse.schema.delivery import SupplyChainEvent
+
+        doc = self._make_ic()
+        doc.trade.delivery.event = SupplyChainEvent(occurrence=date(2025, 1, 15))
+        # No ship_to → no BT-80.
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-IC-12"

@@ -283,6 +283,46 @@ class Trade(Element):
                     "Buyer VAT identifier (BT-48).",
                 )
 
+        # BR-IC-11 / BR-IC-12 — intra-community supply needs evidence of
+        # cross-border delivery: a delivery date (BT-72) or invoicing
+        # period (BG-14), and the deliver-to country code (BT-80).
+        ic_in_use = any(
+            item.settlement.applicable_trade_tax.category_code == CategoryCode.T_K
+            for item in self.items
+        ) or any(
+            ac.category_trade_tax is not None
+            and ac.category_trade_tax.category_code == CategoryCode.T_K
+            for ac in self.settlement.allowance_charge or []
+        )
+        if ic_in_use:
+            event = self.delivery.event
+            has_delivery_date = event is not None and event.occurrence is not None
+            period = self.settlement.billing_period
+            has_period = period is not None and (
+                period.start is not None or period.end is not None
+            )
+            if not (has_delivery_date or has_period):
+                raise ValidationError(
+                    "BR-IC-11",
+                    "An Invoice with a VAT breakdown row of category "
+                    "'Intra-community supply' (K) shall contain the actual "
+                    "delivery date (BT-72) or the invoicing period (BG-14).",
+                )
+
+            ship_to = self.delivery.ship_to
+            has_ship_to_country = (
+                ship_to is not None
+                and ship_to.address is not None
+                and bool(ship_to.address.country_id)
+            )
+            if not has_ship_to_country:
+                raise ValidationError(
+                    "BR-IC-12",
+                    "An Invoice with a VAT breakdown row of category "
+                    "'Intra-community supply' (K) shall contain the "
+                    "deliver-to country code (BT-80).",
+                )
+
         # BR-O-11..14 — single-rate restriction. If any header BG-23 row
         # carries category 'O', the rest of the invoice must be O too:
         # no other BG-23 row, no non-O line / allowance / charge.
