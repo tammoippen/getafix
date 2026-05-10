@@ -930,3 +930,63 @@ def test_br_16_error(full_doc: Document):
     full_doc.validate()
     full_doc.context.guideline.id = Profile.BASIC_WL
     full_doc.validate()
+
+
+_NS_DECL = (
+    'xmlns:ram="urn:un:unece:uncefact:data:standard:'
+    'ReusableAggregateBusinessInformationEntity:100" '
+    'xmlns:udt="urn:un:unece:uncefact:data:standard:'
+    'UnqualifiedDataType:100"'
+)
+
+
+def _wrap_subtree(rendered: str, root_tag: str) -> bytes:
+    """Inject the ram/udt namespace bindings on the root element so a
+    sub-tree rendered via ``Element.to_xml_internal`` parses standalone."""
+    return rendered.replace(
+        f"<ram:{root_tag}>", f"<ram:{root_tag} {_NS_DECL}>", 1
+    ).encode()
+
+
+def test_exemption_reason_code_uses_distinct_tag():
+    """BT-121 (ExemptionReasonCode) must round-trip independently of BT-120
+    (ExemptionReason). Bug sweep #3."""
+    tax = ApplicableTradeTax(
+        calculated_amount=Decimal("0.00"),
+        basis_amount=Decimal("0.00"),
+        category_code=CategoryCode.T_E,
+        due_date_code="5",
+        exemption_reason="exempt-text",
+        exemption_reason_code="VATEX-EU-79-C",
+    )
+    xml = tax.to_xml_internal(Profile.BASIC_WL).render(indent=True)
+    assert "<ram:ExemptionReason>" in xml
+    assert "<ram:ExemptionReasonCode>" in xml
+    parsed = ApplicableTradeTax.from_xml(  # pyright: ignore[reportArgumentType]
+        etree.fromstring(_wrap_subtree(xml, "ApplicableTradeTax"))
+    )
+    assert parsed == tax
+
+
+def test_trade_allowance_charge_basis_amount_uses_correct_tag():
+    """BT-93 (BasisAmount) must render under <ram:BasisAmount>, not
+    <ram:CalculationPercent>. Bug sweep #4."""
+    from carthorse.schema.accounting import CategoryTradeTax, TradeAllowanceCharge
+
+    ac = TradeAllowanceCharge(
+        indicator=False,
+        actual_amount=Decimal("5.00"),
+        category_trade_tax=CategoryTradeTax(
+            category_code=CategoryCode.T_S, rate_applicable_percent=Decimal("19")
+        ),
+        calculation_percent=Decimal("5"),
+        basis_amount=Decimal("100.00"),
+        reason="x",
+    )
+    xml = ac.to_xml_internal(Profile.COMFORT).render(indent=True)
+    assert "<ram:BasisAmount>" in xml
+    assert "<ram:CalculationPercent>" in xml
+    parsed = TradeAllowanceCharge.from_xml(  # pyright: ignore[reportArgumentType]
+        etree.fromstring(_wrap_subtree(xml, "SpecifiedTradeAllowanceCharge"))
+    )
+    assert parsed == ac
