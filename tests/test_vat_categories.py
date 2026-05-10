@@ -11,6 +11,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest as pt
+
 from carthorse.schema import (
     Context,
     Document,
@@ -122,8 +123,7 @@ def _make_doc(
                 indicator=True,
                 actual_amount=Decimal("3.00"),
                 category_trade_tax=CategoryTradeTax(
-                    category_code=charge_category,
-                    rate_applicable_percent=Decimal("0"),
+                    category_code=charge_category, rate_applicable_percent=Decimal("0")
                 ),
                 reason="surcharge",
             )
@@ -131,9 +131,7 @@ def _make_doc(
     return Document(
         context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
         header=Header(
-            id="1",
-            type_code=TypeCode.T_Handelsrechnung,
-            issue_date=date(2025, 1, 1),
+            id="1", type_code=TypeCode.T_Handelsrechnung, issue_date=date(2025, 1, 1)
         ),
         trade=Trade(
             agreement=TradeAgreement(seller=seller, buyer=buyer),
@@ -164,12 +162,10 @@ def _make_doc(
                     associated_document=DocumentLineDocument(line_id="1"),
                     product=TradeProduct(name="W"),
                     agreement=LineTradeAgreement(
-                        net_price=NetTradePrice(charge_amount=Decimal("100")),
+                        net_price=NetTradePrice(charge_amount=Decimal("100"))
                     ),
                     delivery=LineTradeDelivery(
-                        billed_quantity=Quantity(
-                            value=Decimal("1"), unit_code="C62"
-                        ),
+                        billed_quantity=Quantity(value=Decimal("1"), unit_code="C62")
                     ),
                     settlement=LineTradeSettlement(
                         applicable_trade_tax=ApplicableTradeTax(
@@ -178,10 +174,10 @@ def _make_doc(
                             rate_applicable_percent=Decimal("0"),
                         ),
                         monetary_summation=LineMonetarySummation(
-                            line_total=Decimal("100"),
+                            line_total=Decimal("100")
                         ),
                     ),
-                ),
+                )
             ],
         ),
     )
@@ -205,25 +201,19 @@ class TestBrAe:
     def test_br_ae_2_passes_with_buyer_legal_only(self) -> None:
         # Buyer has no VAT id but has a legal registration id (BT-47).
         _make_doc(
-            line_category=CategoryCode.T_AE,
-            buyer_va=None,
-            buyer_legal_id="HRB12345",
+            line_category=CategoryCode.T_AE, buyer_va=None, buyer_legal_id="HRB12345"
         ).validate()
 
     def test_br_ae_2_requires_seller_vat_or_local_or_taxrep(self) -> None:
         # Drop every seller identifier — even with a buyer VAT, the line
         # needs the seller side identified per BR-AE-2.
-        doc = _make_doc(
-            line_category=CategoryCode.T_AE, seller_va=None, seller_fc=None
-        )
+        doc = _make_doc(line_category=CategoryCode.T_AE, seller_va=None, seller_fc=None)
         # BR-CO-26 fires first (seller must be identifiable at all).
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code == "BR-CO-26"
 
-    def test_br_ae_3_doc_level_allowance_requires_seller_and_buyer_vat(
-        self,
-    ) -> None:
+    def test_br_ae_3_doc_level_allowance_requires_seller_and_buyer_vat(self) -> None:
         # Allowance (BG-20) with category AE; buyer has no identifiers.
         doc = _make_doc(
             line_category=CategoryCode.T_S,
@@ -243,9 +233,7 @@ class TestBrAe:
             buyer_legal_id="HRB12345",
         ).validate()
 
-    def test_br_ae_4_doc_level_charge_requires_seller_and_buyer_vat(
-        self,
-    ) -> None:
+    def test_br_ae_4_doc_level_charge_requires_seller_and_buyer_vat(self) -> None:
         # Charge (BG-21) with category AE; buyer has no identifiers.
         doc = _make_doc(
             line_category=CategoryCode.T_S,
@@ -322,7 +310,7 @@ class TestBrIc:
         doc = _make_doc(line_category=CategoryCode.T_K)
         doc.trade.delivery.event = SupplyChainEvent(occurrence=date(2025, 1, 15))
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR"),
+            address=PostalTradeAddressExtended(country_id="FR")
         )
         doc.validate()
 
@@ -330,9 +318,7 @@ class TestBrIc:
         # Buyer has no VAT and no legal id; per BR-IC-2 the legal id
         # alone wouldn't help — IC requires a Buyer VAT identifier.
         doc = _make_doc(
-            line_category=CategoryCode.T_K,
-            buyer_va=None,
-            buyer_legal_id="HRB12345",
+            line_category=CategoryCode.T_K, buyer_va=None, buyer_legal_id="HRB12345"
         )
         with pt.raises(ValidationError) as e:
             doc.validate()
@@ -523,9 +509,7 @@ class TestBrO:
             seller_fc=None,
             buyer_va=None,
         )
-        from carthorse.schema.party import (
-            SellerTaxRepresentativeTradeParty,
-        )
+        from carthorse.schema.party import SellerTaxRepresentativeTradeParty
 
         doc.trade.agreement.seller_tax_representative_party = (
             SellerTaxRepresentativeTradeParty(
@@ -659,7 +643,7 @@ class TestBrIcDelivery:
         from carthorse.schema.party import ShipToTradeParty
 
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR"),
+            address=PostalTradeAddressExtended(country_id="FR")
         )
         doc.validate()
 
@@ -672,7 +656,7 @@ class TestBrIcDelivery:
             start=date(2025, 1, 1), end=date(2025, 1, 31)
         )
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR"),
+            address=PostalTradeAddressExtended(country_id="FR")
         )
         doc.validate()
 
@@ -681,7 +665,7 @@ class TestBrIcDelivery:
 
         doc = self._make_ic()
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR"),
+            address=PostalTradeAddressExtended(country_id="FR")
         )
         with pt.raises(ValidationError) as e:
             doc.validate()

@@ -13,6 +13,7 @@ Validation rules covered here:
   ``-2/-3/-4``) — see ``docs/VALIDATION.md §3.2``.
 """
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import ClassVar, override
 
@@ -26,14 +27,14 @@ from carthorse.schema.line import (
     LineTradeSettlement,
     TradeProduct,
 )
-from carthorse.schema.party import BuyerTradeParty, SellerTradeParty
+from carthorse.schema.party import BuyerTradeParty, SpecifiedTaxRegistration
 from carthorse.schema.settlement import TradeSettlement
 from carthorse.schema.types import CategoryCode, Namespace, Profile
 
 
 def _iter_tax_registrations(
-    registrations: object,
-):
+    registrations: (SpecifiedTaxRegistration | list[SpecifiedTaxRegistration] | None),
+) -> Iterator[SpecifiedTaxRegistration]:
     """Yield each SpecifiedTaxRegistration regardless of carthorse's
     inconsistent cardinality on the field (some parties carry a single
     registration, others a ``list[...] | None``)."""
@@ -65,8 +66,7 @@ def _has_vat_or_local_tax_id(party: object) -> bool:
 
 def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
     return (
-        buyer.legal_organization is not None
-        and buyer.legal_organization.id is not None
+        buyer.legal_organization is not None and buyer.legal_organization.id is not None
     )
 
 
@@ -137,9 +137,7 @@ class Trade(Element):
 
         # Predicates encoding the per-category required-party rules.
         # Returns True iff the rule is satisfied for the given parties.
-        s_vat_local_or_taxrep = _has_vat_or_local_tax_id(seller) or _has_vat_id(
-            tax_rep
-        )
+        s_vat_local_or_taxrep = _has_vat_or_local_tax_id(seller) or _has_vat_id(tax_rep)
         s_vat_or_taxrep = _has_vat_id(seller) or _has_vat_id(tax_rep)
         b_vat_or_legal = _has_vat_id(buyer) or _has_buyer_legal_id(buyer)
         b_vat = _has_vat_id(buyer)
@@ -150,9 +148,7 @@ class Trade(Element):
         ic_ok = s_vat_or_taxrep and b_vat  # Intra-community — both VAT.
 
         # category → (predicate-ok, message stem, (line/all/charge BR codes))
-        families: list[
-            tuple[CategoryCode, bool, str, tuple[str, str, str]]
-        ] = [
+        families: list[tuple[CategoryCode, bool, str, tuple[str, str, str]]] = [
             (
                 CategoryCode.T_AE,
                 ae_ok,
@@ -234,10 +230,7 @@ class Trade(Element):
                 continue
 
             for item in self.items:
-                if (
-                    item.settlement.applicable_trade_tax.category_code
-                    == category
-                ):
+                if item.settlement.applicable_trade_tax.category_code == category:
                     raise ValidationError(br_line, f"{br_line}: {msg}")
 
             for ac in self.settlement.allowance_charge or []:

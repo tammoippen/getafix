@@ -189,9 +189,9 @@ work are:
 2. **BR-CO-25** — if `due_amount > 0` then `PaymentTerms.due` (BT-9) or `PaymentTerms.description` (BT-20) must be present. *MINIMUM.*
 3. **BR-CO-26** — Seller automatic identification: at least one of `Seller.id` (BT-29), `Seller.legal_organization.id` (BT-30), `Seller.tax_registrations[VAT].id` (BT-31) must be present. *MINIMUM.*
 4. **BR-CO-3** — `TaxPointDate` (BT-7) and `DueDateTypeCode` (BT-8) are mutually exclusive. Add as a `validate_internal` on `ApplicableTradeTax` once BT-7 is modelled. *EN16931.*
-5. **BR-AE/BR-E/BR-G/BR-IC/BR-IG/BR-IP/BR-O/BR-S/BR-Z (the `-2/3/4` rules)** — VAT-category ⇒ required parties matrix. The matrix is uniform across categories and is documented in `docs/VALIDATION.md §3.2`; implement once on `Trade.validate_internal` after collecting the category set across lines, header allowances, and header charges. Watch for the spec quirk in `BR-O-2` (forbids buyer **ID** BT-46, while `BR-O-3/4` forbid buyer **VAT ID** BT-48).
-6. **BR-IC-11 / BR-IC-12** — `K` (intra-community) ⇒ `BT-72` *or* `BG-14` and `BT-80` (deliver-to country) must be present. *BASIC_WL.*
-7. **BR-O-11..14** — single-rate restriction for `O` (not subject to VAT). *BASIC_WL.*
+5. **BR-AE/BR-E/BR-G/BR-IC/BR-IG/BR-IP/BR-O/BR-S/BR-Z (the `-2/3/4` rules)** — VAT-category ⇒ required parties matrix — **done**. Implemented data-driven in `Trade._validate_vat_category_required_parties`; the BR-O family lives next to it (inverted predicate, including the BT-46 vs BT-48 spec quirk).
+6. **BR-IC-11 / BR-IC-12** — `K` (intra-community) ⇒ `BT-72` *or* `BG-14` and `BT-80` (deliver-to country) — **done**.
+7. **BR-O-11..14** — single-rate restriction for `O` (not subject to VAT) — **done**.
 8. **BR-CO-21..24 line side** (`TradeAllowanceCharge.validate_internal` already covers the doc-side) once line items are modelled.
 9. **BR-29 / BR-30** — period start ≤ end. *Once BG-14 / BG-26 are modelled.*
 10. **BR-CO-10..17** — sum/arithmetic identities on monetary totals. They need amounts and a working line-item model; defer until §2.BASIC is done.
