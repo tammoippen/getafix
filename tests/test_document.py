@@ -57,7 +57,7 @@ from carthorse.schema.references import (
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
 )
-from carthorse.schema.settlement import TradeSettlement
+from carthorse.schema.settlement import PaymentTerms, TradeSettlement
 from carthorse.schema.trade import Trade, TradeLineItem
 from carthorse.schema.types import MIME, CategoryCode, UNTDID1001TypeCode
 
@@ -269,6 +269,7 @@ def full_doc() -> Document:
                         rate_applicable_percent=Decimal("19"),
                     )
                 ],
+                terms=PaymentTerms(due=date(2025, 12, 16)),
             ),
             items=[
                 TradeLineItem(
@@ -938,6 +939,13 @@ def test_full(full_doc):
           19
         </ram:RateApplicablePercent>
       </ram:ApplicableTradeTax>
+      <ram:SpecifiedTradePaymentTerms>
+        <ram:DueDateDateTime>
+          <udt:DateTimeString format="102">
+            20251216
+          </udt:DateTimeString>
+        </ram:DueDateDateTime>
+      </ram:SpecifiedTradePaymentTerms>
     </ram:ApplicableHeaderTradeSettlement>
     <ram:IncludedSupplyChainTradeLineItem>
       <ram:AssociatedDocumentLineDocument>
@@ -1175,6 +1183,7 @@ def test_tax_currency_code_requires_matching_tax_total():
                 rate_applicable_percent=Decimal("19"),
             )
         ],
+        terms=PaymentTerms(due=date(2025, 12, 16)),
     )
     with pt.raises(ValidationError) as e:
         settlement.validate_internal(Profile.BASIC_WL)
@@ -1186,3 +1195,90 @@ def test_tax_currency_code_requires_matching_tax_total():
         TaxTotal(amount=Decimal("20.45"), currency_id="USD"),
     ]
     settlement.validate_internal(Profile.BASIC_WL)
+
+
+def test_br_co_9_vat_id_country_prefix():
+    """BR-CO-9: VAT identifiers must start with an ISO 3166-1 alpha-2
+    country prefix (with EL allowed for Greece)."""
+    bad = TaxSchemeId(id="1234567890", scheme_id="VA")
+    with pt.raises(ValidationError) as e:
+        bad.validate_internal(Profile.MINIMUM)
+    assert e.value.code == "BR-CO-9"
+
+    # Local tax identifiers (FC) are exempt — their codes are national.
+    TaxSchemeId(id="201/113/40209", scheme_id="FC").validate_internal(Profile.MINIMUM)
+
+    # German VAT prefix is fine.
+    TaxSchemeId(id="DE123456789", scheme_id="VA").validate_internal(Profile.MINIMUM)
+    # Greek 'EL' prefix is fine.
+    TaxSchemeId(id="EL123456789", scheme_id="VA").validate_internal(Profile.MINIMUM)
+
+
+def test_br_co_25_payment_terms_required_when_due():
+    """BR-CO-25: positive DuePayableAmount requires terms.due or
+    terms.description to be set."""
+    summation = MonetarySummation(
+        line_total=Decimal("100"),
+        tax_basis_total=Decimal("100"),
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        grand_total=Decimal("119"),
+        due_amount=Decimal("119"),
+    )
+
+    # No terms → BR-CO-25.
+    settlement = TradeSettlement(currency_code="EUR", monetary_summation=summation)
+    with pt.raises(ValidationError) as e:
+        settlement.validate_internal(Profile.MINIMUM)
+    assert e.value.code == "BR-CO-25"
+
+    # terms.due present → ok.
+    settlement.terms = PaymentTerms(due=date(2025, 12, 16))
+    settlement.validate_internal(Profile.MINIMUM)
+
+    # terms.description present, no due → ok.
+    settlement.terms = PaymentTerms(description="Net 30 days")
+    settlement.validate_internal(Profile.MINIMUM)
+
+    # due_amount = 0 → no requirement.
+    summation.due_amount = Decimal("0")
+    settlement.terms = None
+    settlement.validate_internal(Profile.MINIMUM)
+
+
+def test_br_co_26_seller_must_be_identifiable():
+    """BR-CO-26: at least one of BT-29 (Seller.id),
+    BT-30 (Seller.legal_organization.id) or BT-31
+    (Seller.tax_registrations[VAT]) must be present."""
+    addr = PostalTradeAddressExtended(country_id="DE")
+
+    # No identifier — fails.
+    seller = SellerTradeParty(name="Acme", address=addr)
+    with pt.raises(ValidationError) as e:
+        seller.validate_internal(Profile.MINIMUM)
+    assert e.value.code == "BR-CO-26"
+
+    # BT-29 set — ok.
+    seller.id = "S-1234"
+    seller.validate_internal(Profile.MINIMUM)
+
+    # BT-30 set (no BT-29) — ok.
+    seller.id = None
+    seller.legal_organization = LegalOrganization(
+        id=ISO6523SchemeId(id="0123456789", scheme_id="0021")
+    )
+    seller.validate_internal(Profile.MINIMUM)
+
+    # BT-31 set (no BT-29, no BT-30) — ok.
+    seller.legal_organization = None
+    seller.tax_registrations = [
+        SpecifiedTaxRegistration(id=TaxSchemeId(id="DE123456789", scheme_id="VA"))
+    ]
+    seller.validate_internal(Profile.MINIMUM)
+
+    # Only FC tax registration (no VA) doesn't satisfy BR-CO-26.
+    seller.tax_registrations = [
+        SpecifiedTaxRegistration(id=TaxSchemeId(id="201/113/40209", scheme_id="FC"))
+    ]
+    with pt.raises(ValidationError) as e:
+        seller.validate_internal(Profile.MINIMUM)
+    assert e.value.code == "BR-CO-26"

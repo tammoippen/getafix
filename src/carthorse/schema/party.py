@@ -332,6 +332,19 @@ class TaxSchemeId(ISO6523SchemeId):
             raise ValidationError(
                 code="Enum", message="Only values 'VA' or 'FC' allowed."
             )
+        # BR-CO-9: VAT identifiers must carry an ISO 3166-1 alpha-2
+        # country prefix (Greece may use 'EL'). Local tax identifiers
+        # (FC, BT-32) are exempt — they're national codes without the
+        # country prefix convention.
+        if self.scheme_id == "VA":
+            prefix = self.id[:2]
+            if len(self.id) < 3 or not prefix.isalpha() or prefix != prefix.upper():
+                raise ValidationError(
+                    "BR-CO-9",
+                    "Den Umsatzsteuer-Identifikationsnummern (BT-31, BT-63, BT-48) "
+                    "muss zur Kennzeichnung des Landes ein Präfix nach ISO 3166-1 "
+                    "Alpha-2 vorangestellt werden. Griechenland darf 'EL' verwenden.",
+                )
 
 
 @dataclass(kw_only=True, slots=True)
@@ -429,6 +442,30 @@ class SellerTradeParty(Element):
 
     EN 16931-ID: BT-31, BT-32
     """
+
+    @override
+    def validate_internal(self, profile: Profile) -> None:
+        # BR-CO-26: Seller automatic identification — at least one of
+        # BT-29 (Seller identifier), BT-30 (Seller legal registration
+        # identifier) or BT-31 (Seller VAT identifier) must be present.
+        has_id = self.id is not None
+        has_legal = (
+            self.legal_organization is not None
+            and self.legal_organization.id is not None
+        )
+        has_vat = bool(self.tax_registrations) and any(
+            tr.id.scheme_id == "VA" for tr in self.tax_registrations
+        )
+        if not (has_id or has_legal or has_vat):
+            raise ValidationError(
+                "BR-CO-26",
+                "Um dem Käufer eine automatische Identifizierung eines Lieferanten "
+                "zu ermöglichen, müssen die Kennung des Verkäufers (BT-29), die "
+                "Kennung der rechtlichen Registrierung des Verkäufers (BT-30) "
+                "und/oder die Umsatzsteuer-Identifikationsnummer des Verkäufers "
+                "(BT-31) angegeben werden.",
+            )
+        super(SellerTradeParty, self).validate_internal(profile)
 
 
 @dataclass(kw_only=True, slots=True)

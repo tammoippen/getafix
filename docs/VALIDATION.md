@@ -112,7 +112,7 @@ Status legend:
 | BR-CO-6    | BASIC_WL       | —      | same for document-level charge                                                               |
 | BR-CO-7    | BASIC          | —      | line allowance                                                                               |
 | BR-CO-8    | BASIC          | —      | line charge                                                                                  |
-| BR-CO-9    | MINIMUM        | △      | `TaxSchemeId.validate_internal` checks `VA`/`FC`, not the ISO 3166-1 alpha-2 prefix on the value (with `EL` for Greece) |
+| BR-CO-9    | MINIMUM        | ✓      | `TaxSchemeId.validate_internal` enforces the ISO 3166-1 alpha-2 country prefix on `VA`-scheme identifiers (with `EL` allowed for Greece). |
 | BR-CO-10   | BASIC          | —      | `BT-106 = ΣBT-131` — needs line items                                                        |
 | BR-CO-11   | BASIC_WL       | —      | `BT-107 = ΣBT-92`                                                                            |
 | BR-CO-12   | BASIC_WL       | —      | `BT-108 = ΣBT-99`                                                                            |
@@ -128,8 +128,8 @@ Status legend:
 | BR-CO-22   | BASIC_WL       | ✓      | same for charge                                                                              |
 | BR-CO-23   | BASIC          | —      | line allowance                                                                               |
 | BR-CO-24   | BASIC          | —      | line charge                                                                                  |
-| BR-CO-25   | MINIMUM        | —      | positive `BT-115` ⇒ `BT-9` or `BT-20` present                                                |
-| BR-CO-26   | MINIMUM        | —      | Seller identifiable via `BT-29` or `BT-30` or `BT-31`                                        |
+| BR-CO-25   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` checks that positive `due_amount` (BT-115) is paired with `terms.due` (BT-9) or `terms.description` (BT-20). |
+| BR-CO-26   | MINIMUM        | ✓      | `SellerTradeParty.validate_internal` raises if neither `id` (BT-29), `legal_organization.id` (BT-30) nor a VAT-scheme `tax_registrations[*]` (BT-31) is present. |
 
 ## 3. VAT-category families
 
