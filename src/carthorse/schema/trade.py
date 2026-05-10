@@ -110,40 +110,77 @@ class Trade(Element):
         For each line item / document-level allowance / document-level
         charge, the VAT category code constrains which Seller / Buyer
         identifiers must be present. The constraint matrix lives in
-        ``docs/VALIDATION.md §3.2``.
+        ``docs/VALIDATION.md §3.2``; this method walks every category
+        family in turn.
         """
         seller = self.agreement.seller
         buyer = self.agreement.buyer
         tax_rep = self.agreement.seller_tax_representative_party
 
-        seller_has_vat_or_local = _has_vat_or_local_tax_id(seller) or _has_vat_id(
+        # Predicates encoding the per-category required-party rules.
+        # Returns True iff the rule is satisfied for the given parties.
+        s_vat_local_or_taxrep = _has_vat_or_local_tax_id(seller) or _has_vat_id(
             tax_rep
         )
-        buyer_has_vat_or_legal = _has_vat_id(buyer) or _has_buyer_legal_id(buyer)
+        s_vat_or_taxrep = _has_vat_id(seller) or _has_vat_id(tax_rep)
+        b_vat_or_legal = _has_vat_id(buyer) or _has_buyer_legal_id(buyer)
+        b_vat = _has_vat_id(buyer)
 
-        # AE — Reverse charge: Seller must carry a VAT or local-tax id
-        # (or the tax-rep does), and Buyer must carry a VAT id or legal
-        # registration id. Same predicate, different rule code per the
-        # element it appears on.
-        ae_msg = (
-            "{0}: VAT category 'Reverse charge' (AE) requires the Seller "
-            "VAT identifier (BT-31), the Seller tax registration identifier "
-            "(BT-32) and/or the Seller tax representative VAT identifier "
-            "(BT-63), and the Buyer VAT identifier (BT-48) and/or the Buyer "
-            "legal registration identifier (BT-47)."
-        )
-        ae_predicate_ok = seller_has_vat_or_local and buyer_has_vat_or_legal
+        ae_ok = s_vat_local_or_taxrep and b_vat_or_legal
+        e_ok = s_vat_local_or_taxrep
+        g_ok = s_vat_or_taxrep  # Export outside EU — VAT only, not BT-32.
 
-        for item in self.items:
-            if item.settlement.applicable_trade_tax.category_code == CategoryCode.T_AE:
-                if not ae_predicate_ok:
-                    raise ValidationError("BR-AE-2", ae_msg.format("BR-AE-2"))
+        # category → (predicate-ok, message stem, (line/all/charge BR codes))
+        families: list[
+            tuple[CategoryCode, bool, str, tuple[str, str, str]]
+        ] = [
+            (
+                CategoryCode.T_AE,
+                ae_ok,
+                "VAT category 'Reverse charge' (AE) requires the Seller "
+                "VAT identifier (BT-31), the Seller tax registration "
+                "identifier (BT-32) and/or the Seller tax representative "
+                "VAT identifier (BT-63), and the Buyer VAT identifier "
+                "(BT-48) and/or the Buyer legal registration identifier "
+                "(BT-47).",
+                ("BR-AE-2", "BR-AE-3", "BR-AE-4"),
+            ),
+            (
+                CategoryCode.T_E,
+                e_ok,
+                "VAT category 'Exempt from VAT' (E) requires the Seller "
+                "VAT identifier (BT-31), the Seller tax registration "
+                "identifier (BT-32) and/or the Seller tax representative "
+                "VAT identifier (BT-63).",
+                ("BR-E-2", "BR-E-3", "BR-E-4"),
+            ),
+            (
+                CategoryCode.T_G,
+                g_ok,
+                "VAT category 'Export outside the EU' (G) requires the "
+                "Seller VAT identifier (BT-31) or the Seller tax "
+                "representative VAT identifier (BT-63). The local tax "
+                "identifier (BT-32) is *not* sufficient.",
+                ("BR-G-2", "BR-G-3", "BR-G-4"),
+            ),
+        ]
 
-        for ac in self.settlement.allowance_charge or []:
-            if ac.category_trade_tax is None:
+        for category, ok, msg, (br_line, br_alw, br_chg) in families:
+            if ok:
                 continue
-            if ac.category_trade_tax.category_code != CategoryCode.T_AE:
-                continue
-            if not ae_predicate_ok:
-                code = "BR-AE-4" if ac.indicator else "BR-AE-3"
-                raise ValidationError(code, ae_msg.format(code))
+
+            for item in self.items:
+                if (
+                    item.settlement.applicable_trade_tax.category_code
+                    == category
+                ):
+                    raise ValidationError(br_line, f"{br_line}: {msg}")
+
+            for ac in self.settlement.allowance_charge or []:
+                if (
+                    ac.category_trade_tax is None
+                    or ac.category_trade_tax.category_code != category
+                ):
+                    continue
+                code = br_chg if ac.indicator else br_alw
+                raise ValidationError(code, f"{code}: {msg}")

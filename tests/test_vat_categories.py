@@ -55,6 +55,7 @@ from carthorse.schema.types import CategoryCode
 def _make_doc(
     *,
     line_category: CategoryCode = CategoryCode.T_S,
+    seller_id: str | None = None,
     seller_va: str | None = "DE123456789",
     seller_fc: str | None = None,
     buyer_va: str | None = "DE987654321",
@@ -80,6 +81,7 @@ def _make_doc(
     seller = SellerTradeParty(
         name="Seller",
         address=PostalTradeAddressExtended(country_id="DE"),
+        id=seller_id,
         tax_registrations=seller_regs or None,
     )
     buyer_regs = (
@@ -254,3 +256,52 @@ class TestBrAe:
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code == "BR-AE-4"
+
+
+class TestBrE:
+    """BR-E — Exempt from VAT: Seller VAT/local/tax-rep required;
+    Buyer side unrestricted."""
+
+    def test_br_e_2_line_requires_seller_vat_or_local_or_taxrep(self) -> None:
+        # Seller has only an FC tax id (which counts for BR-E-2) plus a
+        # BT-29 to satisfy BR-CO-26; no VAT registration.
+        # Buyer has nothing — that's allowed for E.
+        _make_doc(
+            line_category=CategoryCode.T_E,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc="123/456/789",
+            buyer_va=None,
+        ).validate()
+
+    def test_br_e_2_fails_without_any_seller_tax_id(self) -> None:
+        # Seller has BT-29 (so BR-CO-26 passes) but no VAT and no FC.
+        doc = _make_doc(
+            line_category=CategoryCode.T_E,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-E-2"
+
+    def test_br_e_2_line_passes_with_seller_vat(self) -> None:
+        _make_doc(line_category=CategoryCode.T_E, buyer_va=None).validate()
+
+    def test_br_e_3_doc_level_allowance_with_e_passes_when_seller_identifiable(
+        self,
+    ) -> None:
+        _make_doc(
+            line_category=CategoryCode.T_S,
+            allowance_category=CategoryCode.T_E,
+            buyer_va=None,
+        ).validate()
+
+    def test_br_e_4_doc_level_charge_with_e_passes(self) -> None:
+        _make_doc(
+            line_category=CategoryCode.T_S,
+            charge_category=CategoryCode.T_E,
+            buyer_va=None,
+        ).validate()
