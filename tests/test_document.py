@@ -166,9 +166,11 @@ def full_doc() -> Document:
                     electronic_address=URIUniversalCommunication(
                         uri_id=URIID(id="http://example.com", scheme_id="baz")
                     ),
-                    tax_registrations=SpecifiedTaxRegistration(
-                        id=TaxSchemeId(id="DE76543210", scheme_id="VA")
-                    ),
+                    tax_registrations=[
+                        SpecifiedTaxRegistration(
+                            id=TaxSchemeId(id="DE76543210", scheme_id="VA")
+                        )
+                    ],
                 ),
                 seller_tax_representative_party=SellerTaxRepresentativeTradeParty(
                     name="Foo",
