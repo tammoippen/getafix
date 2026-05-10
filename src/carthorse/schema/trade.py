@@ -121,16 +121,29 @@ class Trade(Element):
         )
         buyer_has_vat_or_legal = _has_vat_id(buyer) or _has_buyer_legal_id(buyer)
 
-        # AE — Reverse charge (line side, BR-AE-2).
+        # AE — Reverse charge: Seller must carry a VAT or local-tax id
+        # (or the tax-rep does), and Buyer must carry a VAT id or legal
+        # registration id. Same predicate, different rule code per the
+        # element it appears on.
+        ae_msg = (
+            "{0}: VAT category 'Reverse charge' (AE) requires the Seller "
+            "VAT identifier (BT-31), the Seller tax registration identifier "
+            "(BT-32) and/or the Seller tax representative VAT identifier "
+            "(BT-63), and the Buyer VAT identifier (BT-48) and/or the Buyer "
+            "legal registration identifier (BT-47)."
+        )
+        ae_predicate_ok = seller_has_vat_or_local and buyer_has_vat_or_legal
+
         for item in self.items:
             if item.settlement.applicable_trade_tax.category_code == CategoryCode.T_AE:
-                if not (seller_has_vat_or_local and buyer_has_vat_or_legal):
-                    raise ValidationError(
-                        "BR-AE-2",
-                        "An Invoice line with VAT category 'Reverse charge' "
-                        "(AE) must contain the Seller VAT identifier (BT-31), "
-                        "the Seller tax registration identifier (BT-32) "
-                        "and/or the Seller tax representative VAT identifier "
-                        "(BT-63), and the Buyer VAT identifier (BT-48) "
-                        "and/or the Buyer legal registration identifier (BT-47).",
-                    )
+                if not ae_predicate_ok:
+                    raise ValidationError("BR-AE-2", ae_msg.format("BR-AE-2"))
+
+        for ac in self.settlement.allowance_charge or []:
+            if ac.category_trade_tax is None:
+                continue
+            if ac.category_trade_tax.category_code != CategoryCode.T_AE:
+                continue
+            if not ae_predicate_ok:
+                code = "BR-AE-4" if ac.indicator else "BR-AE-3"
+                raise ValidationError(code, ae_msg.format(code))
