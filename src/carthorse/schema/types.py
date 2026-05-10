@@ -4,6 +4,28 @@ from typing import override
 
 @enum.unique
 class Profile(enum.StrEnum):
+    """Factur-X 1.08 / ZUGFeRD 2.4 conformance profile.
+
+    The value of each member is the URN that goes into
+    ``<ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>``
+    (BT-24). The five profiles form a strict order from least to
+    most permissive: every element accepted at MINIMUM is also
+    accepted at BASIC_WL, BASIC adds line items on top of BASIC_WL,
+    and so on. Higher profiles inherit every business rule from
+    lower profiles, with EXTENDED additionally adding a CIUS overlay
+    (``BR-FXEXT-*``) that replaces some ``BR-CO-*`` rules with
+    rounding-tolerance variants — see ``docs/VALIDATION.md``.
+
+    .. warning::
+
+        Only :py:meth:`__lt__` is overridden to ordinal-compare; the
+        remaining comparators (``__le__``, ``__gt__``, ``__ge__``) fall
+        back to ``StrEnum``'s lexicographic compare and produce
+        wrong answers (e.g. ``Profile.BASIC_WL <= Profile.MINIMUM`` is
+        ``True``). Use ``not (a < b)`` for ``a >= b`` semantics. See
+        ``docs/IMPLEMENTATION_PLAN.md §1 #8``.
+    """
+
     MINIMUM = "urn:factur-x.eu:1p0:minimum"
     BASIC_WL = "urn:factur-x.eu:1p0:basicwl"
     BASIC = "urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic"
@@ -95,12 +117,19 @@ class MIME(enum.StrEnum):
 
 @enum.unique
 class CategoryCode(enum.StrEnum):
-    T_S = "S"  # Umsatzsteuer fällt mit Normalsatz an
-    T_Z = "Z"  # nach dem Nullsatz zu versteuernde Waren
-    T_E = "E"  # Steuerbefreit
-    T_AE = "AE"  # Umkehrung der Steuerschuldnerschaft
-    T_K = "K"  # Kein Ausweis der Umsatzsteuer bei innergemeinschaftlichen Lieferungen
-    T_G = "G"  # Steuer nicht erhoben aufgrund von Export außerhalb der EU
-    T_O = "O"  # Außerhalb des Steueranwendungsbereichs
-    T_L = "L"  # IGIC (Kanarische Inseln)
-    T_M = "M"  # IPSI (Ceuta/Melilla)
+    """UNTDID 5305 VAT category code (BT-95 / BT-102 / BT-118 / BT-151).
+
+    Determines which ``BR-*-2/3/4`` family applies for required-party
+    checks and which ``BR-*-5/6/7`` family constrains the rate. See
+    ``docs/VALIDATION.md §3.2`` for the full matrix.
+    """
+
+    T_S = "S"  # Standard rate (BR-S-*); rate must be > 0
+    T_Z = "Z"  # Zero rated (BR-Z-*); rate = 0; forbids exemption reason
+    T_E = "E"  # Exempt from VAT (BR-E-*); rate = 0; requires exemption reason
+    T_AE = "AE"  # Reverse charge (BR-AE-*); rate = 0; requires Buyer + Seller VAT IDs
+    T_K = "K"  # Intra-community supply (BR-IC-*); also requires BT-72 or BG-14, plus BT-80
+    T_G = "G"  # Export outside EU (BR-G-*); rate = 0; Seller VAT or tax-rep VAT (NOT BT-32)
+    T_O = "O"  # Not subject to VAT (BR-O-*); rate forbidden, exclusive (BR-O-11..14)
+    T_L = "L"  # IGIC — Canary Islands (BR-IG-*); rate ≥ 0
+    T_M = "M"  # IPSI — Ceuta / Melilla (BR-IP-*); rate ≥ 0
