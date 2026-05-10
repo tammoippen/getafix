@@ -3,7 +3,7 @@ import json
 import types
 from abc import ABC
 from collections.abc import Iterator
-from dataclasses import Field, dataclass, fields
+from dataclasses import Field, dataclass, field, fields
 from decimal import Decimal
 from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
 
@@ -39,9 +39,22 @@ class Element(ABC):
     namespace: ClassVar[Namespace] = Namespace.ram
     profile: ClassVar[Profile] = Profile.MINIMUM
 
+    # XML attributes captured on parse for leaf elements that can carry
+    # a wire attribute the model doesn't otherwise represent — chiefly
+    # ``currencyID`` on ``udt:AmountType`` amounts (BT-110-0, BT-111-0,
+    # and the optional currencyID on BT-106..BT-115 etc.). The dict is
+    # keyed by Python field name; on render the values are replayed as
+    # element attributes. Excluded from ``__init__``, ``repr`` and
+    # equality so it does not pollute the public API.
+    _xml_attrs: dict[str, dict[str, str]] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
+
     def validate_internal(self, profile: Profile) -> None:
-        for field in fields(self):
-            value = getattr(self, field.name)
+        for f in fields(self):
+            if f.name.startswith("_"):
+                continue
+            value = getattr(self, f.name)
             if value is None:
                 # not required
                 continue
@@ -61,13 +74,16 @@ class Element(ABC):
 
     def _children_xml(self, profile: Profile) -> list[XML]:
         children: list[XML] = []
-        for field in fields(self):
-            value = getattr(self, field.name)
+        for f in fields(self):
+            if f.name.startswith("_"):
+                # Internal bookkeeping (e.g. _xml_attrs); not a wire field.
+                continue
+            value = getattr(self, f.name)
             if value is None:
                 # not required
                 continue
 
-            p = field.metadata.get("profile")
+            p = f.metadata.get("profile")
             if p is None and isinstance(value, Element):
                 p = value.__class__.profile
             if p is None:
@@ -77,20 +93,21 @@ class Element(ABC):
             # TODO: check in validate and only ignore here?
             if profile < p:
                 raise ProfileMismatch(
-                    f"{self.__class__.__name__}.{field.name}: {profile} < {p}"
+                    f"{self.__class__.__name__}.{f.name}: {profile} < {p}"
                 )
             if not isinstance(value, list):
                 value = [value]
+            extra_attrs = self._xml_attrs.get(f.name)
             for v in value:
                 match v:
                     case str():
-                        children += [_render_str(v, field)]
+                        children += [_render_str(v, f, extra_attrs)]
                     case Decimal():
-                        children += [_render_str(str(v), field)]
+                        children += [_render_str(str(v), f, extra_attrs)]
                     case bool():
-                        children += [_render_bool(v, field)]
+                        children += [_render_bool(v, f)]
                     case datetime.date():
-                        children += [_render_date(v, field)]
+                        children += [_render_date(v, f)]
                     case Element():
                         children += [v.to_xml_internal(profile)]
                     case _:
@@ -115,10 +132,11 @@ class Element(ABC):
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
 
         params: dict[str, Any] = {}
-        fields_ = fields(cls)
+        captured_attrs: dict[str, dict[str, str]] = {}
+        fields_ = [f for f in fields(cls) if not f.name.startswith("_")]
         for el in elem:
-            for field in fields_:
-                curr_type = _get_non_none_type(field.type)
+            for f in fields_:
+                curr_type = _get_non_none_type(f.type)
                 origin = get_origin(curr_type)
                 is_list = False
                 if origin is list:
@@ -126,35 +144,42 @@ class Element(ABC):
                     curr_type = get_args(curr_type)[0]
 
                 if issubclass(curr_type, str):
-                    res = _parse_str(el, field, curr_type)
+                    res = _parse_str(el, f, curr_type)
                     if res is None:
                         continue
                     if is_list:
-                        before = params.get(field.name, [])
+                        before = params.get(f.name, [])
                         res = [*before, res]
-                    params[field.name] = res
+                    params[f.name] = res
+                    if el.attrib:
+                        captured_attrs[f.name] = dict(el.attrib)
                 elif issubclass(curr_type, Decimal):
-                    res = _parse_str(el, field, str)
+                    res = _parse_str(el, f, str)
                     if res is None:
                         continue
-                    params[field.name] = Decimal(res)
+                    params[f.name] = Decimal(res)
+                    if el.attrib:
+                        captured_attrs[f.name] = dict(el.attrib)
                 elif issubclass(curr_type, bool):
                     assert not is_list
-                    params.update(_parse_bool(el, field))
+                    params.update(_parse_bool(el, f))
                 elif issubclass(curr_type, datetime.date):
                     assert not is_list
-                    params.update(_parse_date(el, field))
+                    params.update(_parse_date(el, f))
                 else:
                     assert isinstance(curr_type, type), curr_type
                     assert issubclass(curr_type, Element)
                     if el.tag == curr_type.get_qualified_tag():
-                        if is_list and field.name not in params:
-                            params[field.name] = []
-                        if isinstance(params.get(field.name), list):
-                            params[field.name] += [curr_type.from_xml(el)]
+                        if is_list and f.name not in params:
+                            params[f.name] = []
+                        if isinstance(params.get(f.name), list):
+                            params[f.name] += [curr_type.from_xml(el)]
                         else:
-                            params[field.name] = curr_type.from_xml(el)
-        return cls(**params)
+                            params[f.name] = curr_type.from_xml(el)
+        instance = cls(**params)
+        if captured_attrs:
+            instance._xml_attrs.update(captured_attrs)
+        return instance
 
 
 def _get_non_none_type(field_type: Any) -> Any:
@@ -193,13 +218,16 @@ def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
     return {field.name: json.loads(el[0].text)}
 
 
-def _render_str(value: str, field: Field[str]) -> XML:
+def _render_str(
+    value: str, field: Field[str], extra_attrs: dict[str, str] | None = None
+) -> XML:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
     ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
 
-    return XML(f"{ns.name}:{tag}")[value]
+    attrs: dict[str, str | bool] = dict(extra_attrs) if extra_attrs else {}
+    return XML(f"{ns.name}:{tag}", attrs=attrs)[value]
 
 
 def _parse_str[T: str](

@@ -1015,3 +1015,26 @@ def test_monetary_summation_two_tax_totals():
         )
     )
     assert parsed == summation
+
+
+def test_amount_currency_id_round_trips():
+    """``currencyID`` attributes on udt:AmountType elements survive a
+    parse → render round-trip even though carthorse does not expose
+    them as dataclass fields. Bug sweep #7."""
+    src = (
+        "<ram:SpecifiedTradeSettlementHeaderMonetarySummation "
+        'xmlns:ram="urn:un:unece:uncefact:data:standard:'
+        'ReusableAggregateBusinessInformationEntity:100" '
+        'xmlns:udt="urn:un:unece:uncefact:data:standard:'
+        'UnqualifiedDataType:100">\n'
+        '  <ram:LineTotalAmount currencyID="EUR">100.00</ram:LineTotalAmount>\n'
+        '  <ram:TaxBasisTotalAmount currencyID="EUR">100.00</ram:TaxBasisTotalAmount>\n'
+        '  <ram:TaxTotalAmount currencyID="EUR">19.00</ram:TaxTotalAmount>\n'
+        '  <ram:GrandTotalAmount currencyID="EUR">119.00</ram:GrandTotalAmount>\n'
+        '  <ram:DuePayableAmount currencyID="EUR">119.00</ram:DuePayableAmount>\n'
+        "</ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
+    )
+    parsed = MonetarySummation.from_xml(etree.fromstring(src.encode()))  # pyright: ignore[reportArgumentType]
+    out = parsed.to_xml_internal(Profile.BASIC_WL).render(indent=True)
+    # Every amount element keeps its currencyID="EUR" attribute.
+    assert out.count('currencyID="EUR"') == 5

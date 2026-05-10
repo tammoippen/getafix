@@ -296,8 +296,8 @@ parties, and per-line logistics service charges.
 * **`udt:IDType` carries an optional `schemeID` attribute** when the
   spec marks the parent ID with one.
 * **`udt:AmountType` carries an optional `currencyID` attribute** for
-  every monetary BT. Carthorse currently round-trips this only on
-  `TaxTotal`; on every other amount the attribute is dropped.
+  every monetary BT. Preserved across parse → render via
+  ``Element._xml_attrs``; not exposed on the dataclass surface.
 * **`udt:IndicatorType`** wraps `<udt:Indicator>true|false</udt:Indicator>`.
 
 ## 5. Where to look next
