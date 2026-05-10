@@ -29,10 +29,10 @@ Validation rules covered (or missing) in this module:
 * △ ``BR-5`` — currency code shape only.
 * △ ``BR-49`` — ``PaymentMeans.type_code`` shape; not the BG-16
   presence rule.
+* ✓ ``BR-CO-25`` (positive ``DuePayableAmount`` ⇒ BT-9 or BT-20
+  present) — :meth:`TradeSettlement.validate_internal`.
 * — ``BR-61`` (SEPA / local / non-SEPA credit transfer requires BT-84):
   not enforced.
-* — ``BR-CO-25`` (positive ``DuePayableAmount`` ⇒ BT-9 or BT-20
-  present): not enforced.
 
 For the full BR-* catalogue see ``docs/VALIDATION.md``.
 """
@@ -169,24 +169,30 @@ class PaymentMeans(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PaymentTerms(Element):
-    """Detailinformationen zu Zahlungsbedingungen"""
+    """Detailinformationen zu Zahlungsbedingungen.
+
+    XSD field order is ``Description`` (BT-20), ``DueDateDateTime``
+    (BT-9), ``DirectDebitMandateID`` (BT-89).
+
+    EN 16931-ID: BT-20-00
+    """
 
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
+    description: str | None = field(default=None, metadata={"tag": "Description"})
+    """Free-text payment terms (BT-20)."""
     due: date | None = field(default=None, metadata={"tag": "DueDateDateTime"})
-    """Fälligkeitsdatum"""
+    """Fälligkeitsdatum (BT-9)."""
     debit_mandate_id: str | None = field(
         default=None, metadata={"tag": "DirectDebitMandateID"}
     )
-    """Kennung der Mandatsreferenz / Mandatsreferenz für SEPA
+    """Kennung der Mandatsreferenz / Mandatsreferenz für SEPA.
 
-    Eindeutige Kennung, die vom Zahlungsempfänger zur Referenz der Einzugsermächtigung
-    zugewiesen.
+    Wird verwendet, um den Käufer vorweg über eine SEPA-Lastschrift in
+    Kenntnis zu setzen.
 
-    Wird verwendet, um den Käufer vorweg über eine SEPA-Lastschrift in Kenntnis zu setzen.
-
-    EN 16931-ID: BG-19/BT-89
+    EN 16931-ID: BT-89
     """
 
 
@@ -382,5 +388,18 @@ class TradeSettlement(Element):
                     "(BT-6) vorhanden ist, muss der Steuergesamtbetrag in "
                     "Buchungswährung (BT-111) angegeben werden.",
                 )
+
+        # BR-CO-25: positive DuePayableAmount (BT-115) requires either a
+        # payment due date (BT-9) or payment terms description (BT-20).
+        if self.monetary_summation.due_amount > 0 and (
+            self.terms is None
+            or (self.terms.due is None and self.terms.description is None)
+        ):
+            raise ValidationError(
+                "BR-CO-25",
+                "Wenn der fällige Zahlungsbetrag (BT-115) positiv ist, müssen "
+                "entweder das Fälligkeitsdatum der Zahlung (BT-9) oder die "
+                "Zahlungsbedingungen (BT-20) angegeben sein.",
+            )
 
         super(TradeSettlement, self).validate_internal(profile)
