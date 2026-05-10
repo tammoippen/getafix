@@ -1282,3 +1282,29 @@ def test_br_co_26_seller_must_be_identifiable():
     with pt.raises(ValidationError) as e:
         seller.validate_internal(Profile.MINIMUM)
     assert e.value.code == "BR-CO-26"
+
+
+def test_br_co_3_tax_point_date_and_due_date_code_mutually_exclusive():
+    """BR-CO-3: BT-7 (TaxPointDate) and BT-8 (DueDateTypeCode) are
+    mutually exclusive on a single ApplicableTradeTax."""
+    tax = ApplicableTradeTax(
+        category_code=CategoryCode.T_S,
+        tax_point_date=date(2025, 1, 15),
+        due_date_code="5",  # also setting BT-8 → conflict
+        rate_applicable_percent=Decimal("19"),
+    )
+    with pt.raises(ValidationError) as e:
+        tax.validate_internal(Profile.COMFORT)
+    assert e.value.code == "BR-CO-3"
+
+    # Either alone is fine.
+    ApplicableTradeTax(
+        category_code=CategoryCode.T_S,
+        tax_point_date=date(2025, 1, 15),
+        rate_applicable_percent=Decimal("19"),
+    ).validate_internal(Profile.COMFORT)
+    ApplicableTradeTax(
+        category_code=CategoryCode.T_S,
+        due_date_code="5",
+        rate_applicable_percent=Decimal("19"),
+    ).validate_internal(Profile.COMFORT)
