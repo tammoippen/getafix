@@ -179,17 +179,9 @@ Per-profile reference material lives under `docs/`:
 
 ## Known gaps
 
-Roughly in order of how often they come up when feeding real samples in.
 The full backlog (with status per item) lives in
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md). Highlights:
 
-- **`MonetarySummation.line_total` is required**, but the **MINIMUM** profile
-  legitimately omits `LineTotalAmount`. The dataclass needs a profile-aware
-  `default=None` or per-profile splits.
-- **`currencyID` attribute on monetary amounts** (`TaxBasisTotalAmount`,
-  `GrandTotalAmount`, `DuePayableAmount`, …) is dropped by the parser —
-  `Decimal` fields are read as plain strings, the attribute is discarded.
-  Round-tripping a real sample loses this attribute.
 - **`TradeLineItem` is a stub.** Real BG-25 has product, agreement,
   delivery, settlement sub-trees that are not yet modelled — see
   `docs/IMPLEMENTATION_PLAN.md §2.BASIC` for the structure to fill in.
