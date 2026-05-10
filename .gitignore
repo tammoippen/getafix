@@ -14,3 +14,7 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+
+# Vendored Factur-X 1.08 / ZUGFeRD 2.4 documentation kit (large; XSDs we
+# need are extracted into tests/schemas/).
+ZF24_EN/
