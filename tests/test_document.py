@@ -76,7 +76,7 @@ def minimum_doc() -> Document:
                 monetary_summation=MonetarySummation(
                     # MINIMUM does not have BT-106 (LineTotalAmount).
                     tax_basis_total=Decimal("123.45"),
-                    tax_total=TaxTotal(amount=Decimal("23.46"), currency_id="EUR"),
+                    tax_total=[TaxTotal(amount=Decimal("23.46"), currency_id="EUR")],
                     grand_total=Decimal("146.91"),
                     due_amount=Decimal("146.91"),
                 ),
@@ -246,7 +246,7 @@ def full_doc() -> Document:
                 monetary_summation=MonetarySummation(
                     line_total=Decimal("123.45"),
                     tax_basis_total=Decimal("123.45"),
-                    tax_total=TaxTotal(amount=Decimal("23.46"), currency_id="EUR"),
+                    tax_total=[TaxTotal(amount=Decimal("23.46"), currency_id="EUR")],
                     grand_total=Decimal("146.91"),
                     due_amount=Decimal("146.91"),
                 ),
@@ -989,3 +989,29 @@ def test_trade_allowance_charge_basis_amount_uses_correct_tag():
         etree.fromstring(_wrap_subtree(xml, "SpecifiedTradeAllowanceCharge"))
     )
     assert parsed == ac
+
+
+def test_monetary_summation_two_tax_totals():
+    """BG-22 may carry both BT-110 (invoice currency) and BT-111 (VAT
+    accounting currency) as ``TaxTotalAmount`` siblings. Bug sweep #6."""
+    summation = MonetarySummation(
+        line_total=Decimal("100.00"),
+        tax_basis_total=Decimal("100.00"),
+        tax_total=[
+            TaxTotal(amount=Decimal("19.00"), currency_id="EUR"),
+            TaxTotal(amount=Decimal("20.45"), currency_id="USD"),
+        ],
+        grand_total=Decimal("119.00"),
+        due_amount=Decimal("119.00"),
+    )
+    xml = summation.to_xml_internal(Profile.BASIC_WL).render(indent=True)
+    # Both currency-tagged amounts must appear in the wire output.
+    assert xml.count("<ram:TaxTotalAmount") == 2
+    assert 'currencyID="EUR"' in xml
+    assert 'currencyID="USD"' in xml
+    parsed = MonetarySummation.from_xml(  # pyright: ignore[reportArgumentType]
+        etree.fromstring(
+            _wrap_subtree(xml, "SpecifiedTradeSettlementHeaderMonetarySummation")
+        )
+    )
+    assert parsed == summation
