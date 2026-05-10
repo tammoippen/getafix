@@ -53,7 +53,7 @@ Module map:
 | `schema/types.py`              | enums (`Profile`, `Namespace`, `TypeCode`, `CategoryCode`, `MIME`)     |
 | `schema/element.py`            | base `Element`, generic XML render/parse, `ProfileMismatch`, `ValidationError` |
 | `schema/document.py`           | `Document`, `Header`, `Context`, `IncludedNote`, `EffectivePeriod`, `BusinessDocument`, `GuidelineDocument` |
-| `schema/party.py`              | every `*TradeParty`, `PostalTradeAddress`, `LegalOrganization`, `TradeContact`, `URIUniversalCommunication`, `SchemaID` family |
+| `schema/party.py`              | every `*TradeParty`, `PostalTradeAddress`, `LegalOrganization`, `TradeContact`, `URIUniversalCommunication`, `SchemeID` family |
 | `schema/agreement.py`          | `TradeAgreement` (BT-10-00)                                            |
 | `schema/delivery.py`           | `TradeDelivery` (BG-13-00), `SupplyChainEvent`, `SupplyChainConsignment`, `LogisticsTransportMovement` |
 | `schema/settlement.py`         | `TradeSettlement` (BG-19), `PaymentMeans`, `PaymentTerms`, financial accounts, `ReceivableAccountingAccount` |
@@ -294,8 +294,7 @@ parties, and per-line logistics service charges.
 * **`udt:DateTimeType` always carries `format="102"`** (CCYYMMDD). The
   parser rejects any other format.
 * **`udt:IDType` carries an optional `schemeID` attribute** when the
-  spec marks the parent ID with one. Carthorse ⚠ currently spells the
-  attribute `schemaID` — see `docs/IMPLEMENTATION_PLAN.md §1 #1`.
+  spec marks the parent ID with one.
 * **`udt:AmountType` carries an optional `currencyID` attribute** for
   every monetary BT. Carthorse currently round-trips this only on
   `TaxTotal`; on every other amount the attribute is dropped.

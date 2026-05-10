@@ -16,13 +16,13 @@ Roles modelled:
 
 Sub-elements (``PostalTradeAddress``, ``LegalOrganization``,
 ``TradeContact``, ``URIUniversalCommunication``, ``GlobalID``,
-``ISO6523SchemaId``, ``TaxSchemaId``, ``SpecifiedTaxRegistration``)
+``ISO6523SchemeId``, ``TaxSchemeId``, ``SpecifiedTaxRegistration``)
 are factored at the top of the file because they're reused across
 party roles.
 
 Validation rules covered (or missing) in this module:
 
-* △ ``BR-CO-9`` — ``TaxSchemaId.validate_internal`` checks the
+* △ ``BR-CO-9`` — ``TaxSchemeId.validate_internal`` checks the
   ``schemeID ∈ {VA, FC}`` constraint, but does NOT yet check that the
   VAT identifier value starts with an ISO 3166-1 alpha-2 country
   prefix (Greece may use ``EL``). See
@@ -35,15 +35,8 @@ Validation rules covered (or missing) in this module:
 * — ``BR-62 / BR-63`` (electronic address requires ``schemeID``):
   required by the schema, not yet enforced at the dataclass level.
 
-Known wire-format bugs in this module:
-
-* :class:`SchemaID` renders / reads the attribute as ``schemaID``.
-  The XSD spells it ``schemeID``. Real ZUGFeRD samples therefore
-  break parsing. See ``docs/IMPLEMENTATION_PLAN.md §1 #1``.
-* :class:`TaxSchemaId` declares ``tag = "GlobalID"`` so its element
-  is rendered as ``<ram:GlobalID …>``. Real samples emit
-  ``<ram:ID schemeID="VA">`` inside ``SpecifiedTaxRegistration``. See
-  ``§1 #9``.
+All ``SchemeID`` / ``SchemeId`` / ``scheme_id`` names follow the XSD's
+``schemeID`` attribute spelling (no ``a`` after ``schem``).
 """
 
 from dataclasses import dataclass, field
@@ -56,34 +49,34 @@ from carthorse.schema.types import Profile
 
 
 @dataclass(kw_only=True, slots=True)
-class SchemaID(Element):
+class SchemeID(Element):
     tag: ClassVar[str] = "ID"
 
     id: str
-    schema_id: str
+    scheme_id: str
     """Kennung des Schemas"""
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
-        return XML(self.get_tag(), attrs={"schemaID": self.schema_id})[self.id]
+        return XML(self.get_tag(), attrs={"schemeID": self.scheme_id})[self.id]
 
     @override
     @classmethod
     def from_xml(cls, elem: ETElement) -> Self:
         if elem.tag != cls.get_qualified_tag():
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
-        if "schemaID" not in elem.attrib:
+        if "schemeID" not in elem.attrib:
             raise ValueError
         if elem.text is None:
             raise ValueError
-        schema_id = elem.attrib["schemaID"]
+        scheme_id = elem.attrib["schemeID"]
         value = elem.text.strip()
-        return cls(id=value, schema_id=schema_id)
+        return cls(id=value, scheme_id=scheme_id)
 
 
 @dataclass(kw_only=True, slots=True)
-class ISO6523SchemaId(SchemaID):
-    """ISO-6523 SchemaId
+class ISO6523SchemeId(SchemeID):
+    """ISO-6523 SchemeId
 
     Hinweis: Wird das Identifikationsschema verwendet, muss es aus den Einträgen
     der von der ISO/IEC 6523 Maintenance Agency veröffentlichten Liste ausgewählt werden.
@@ -100,10 +93,10 @@ class ISO6523SchemaId(SchemaID):
 
 
 @dataclass(kw_only=True, slots=True)
-class GlobalID(ISO6523SchemaId):
+class GlobalID(ISO6523SchemeId):
     """GlobalID
 
-    SchemaID:
+    SchemeID:
     EN 16931-ID: BT-29-1 (Seller), BT-46-1 (Buyer)
     """
 
@@ -112,10 +105,10 @@ class GlobalID(ISO6523SchemaId):
 
 
 @dataclass(kw_only=True, slots=True)
-class URIID(SchemaID):
+class URIID(SchemeID):
     """GlobalID
 
-    SchemaID:
+    SchemeID:
     EN 16931-ID: BT-34 (Seller), BT-49 (Buyer)
     """
 
@@ -263,7 +256,7 @@ class LegalOrganization(Element):
 
     tag: ClassVar[str] = "SpecifiedLegalOrganization"
 
-    id: ISO6523SchemaId | None = None
+    id: ISO6523SchemeId | None = None
     """Kennung der rechtlichen Registrierung des Verkäufers / Käufers
 
     Eine von einer offiziellen Registrierungsstelle ausgegebene Kennung, die den
@@ -307,25 +300,25 @@ class URIUniversalCommunication(Element):
 
 
 @dataclass(kw_only=True, slots=True)
-class TaxSchemaId(ISO6523SchemaId):
-    """Umsatzsteueridentnummer / Steuernummer
+class TaxSchemeId(ISO6523SchemeId):
+    """VAT identification number / local tax identifier (BT-31, BT-32, BT-48).
 
-    Zulässige Codes für schema_id:
-    - VA Umsatzsteuernummer (BT-31, BT-48)
-    - FC Steuernummer (BT-32)
+    Allowed ``scheme_id`` codes:
 
-    SchemaID:
-    EN 16931-ID: BT-31-0, BT-32-0 (Seller)
-    EN 16931-ID: BT-48 (Buyer)
+    * ``VA`` — VAT identification number (BT-31, BT-48)
+    * ``FC`` — local tax identifier / Steuernummer (BT-32)
+
+    Rendered as ``<ram:ID schemeID="VA|FC">…</ram:ID>`` inside
+    :class:`SpecifiedTaxRegistration`. The element name is plain ``ID``
+    (inherited from :class:`SchemeID`); earlier versions of this module
+    incorrectly emitted ``<ram:GlobalID>``.
+
+    EN 16931-ID: BT-31-0 / BT-32-0 (Seller); BT-48-0 (Buyer).
     """
-
-    # TODO: check VA/FC in TradeParty
-
-    tag: ClassVar[str] = "GlobalID"
 
     @override
     def validate_internal(self, profile: Profile) -> None:
-        if self.schema_id not in ("VA", "FC"):
+        if self.scheme_id not in ("VA", "FC"):
             raise ValidationError(
                 code="Enum", message="Only values 'VA' or 'FC' allowed."
             )
@@ -337,7 +330,7 @@ class SpecifiedTaxRegistration(Element):
 
     tag: ClassVar[str] = "SpecifiedTaxRegistration"
 
-    id: TaxSchemaId
+    id: TaxSchemeId
 
 
 @dataclass(kw_only=True, slots=True)

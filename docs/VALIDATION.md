@@ -112,7 +112,7 @@ Status legend:
 | BR-CO-6    | BASIC_WL       | —      | same for document-level charge                                                               |
 | BR-CO-7    | BASIC          | —      | line allowance                                                                               |
 | BR-CO-8    | BASIC          | —      | line charge                                                                                  |
-| BR-CO-9    | MINIMUM        | △      | `TaxSchemaId.validate_internal` checks `VA`/`FC`, not the ISO 3166-1 alpha-2 prefix on the value (with `EL` for Greece) |
+| BR-CO-9    | MINIMUM        | △      | `TaxSchemeId.validate_internal` checks `VA`/`FC`, not the ISO 3166-1 alpha-2 prefix on the value (with `EL` for Greece) |
 | BR-CO-10   | BASIC          | —      | `BT-106 = ΣBT-131` — needs line items                                                        |
 | BR-CO-11   | BASIC_WL       | —      | `BT-107 = ΣBT-92`                                                                            |
 | BR-CO-12   | BASIC_WL       | —      | `BT-108 = ΣBT-99`                                                                            |

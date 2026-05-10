@@ -179,14 +179,10 @@ Per-profile reference material lives under `docs/`:
 
 ## Known gaps
 
-Roughly in order of how often they come up when feeding real samples in:
+Roughly in order of how often they come up when feeding real samples in.
+The full backlog (with status per item) lives in
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
 
-- **`schemeID` vs `schemaID`** — real ZUGFeRD CII attributes are spelled
-  `schemeID` (no `a`). `carthorse.schema.party.SchemaID` hardcodes
-  `schemaID` in both render and parse, so any party identifier from upstream
-  fails to parse.
-- **`SpecifiedTaxRegistration` uses `<ram:ID>` in the wild**, not
-  `<ram:GlobalID>` as currently modelled.
 - **`MonetarySummation.line_total` is required**, but the **MINIMUM** profile
   legitimately omits `LineTotalAmount`. The dataclass needs a profile-aware
   `default=None` or per-profile splits.
@@ -195,17 +191,16 @@ Roughly in order of how often they come up when feeding real samples in:
   `Decimal` fields are read as plain strings, the attribute is discarded.
   Round-tripping a real sample loses this attribute.
 - **`TradeLineItem` is a stub.** Real BG-25 has product, agreement,
-  delivery, settlement sub-trees that are not yet modelled — see TODOs in
-  `schema/__init__.py` and `schema/trade.py`.
-- **Missing fields tracked in `schema/__init__.py`**: party fields,
-  agreement fields, reference fields.
+  delivery, settlement sub-trees that are not yet modelled — see
+  `docs/IMPLEMENTATION_PLAN.md §2.BASIC` for the structure to fill in.
 - **No PDF/A-3 packaging.** carthorse only handles the embedded
   `factur-x.xml`; embedding it into a PDF/A-3 invoice (or extracting it from
   one) is out of scope today. See `factur-x` (PyPI) or Mustang for that piece.
 - **Validation is partial.** Existing checks: BR-16, BR-50, BR-CO-18,
-  BR-CO-21/22, currency code, UNTDID 4461 form, VAT/FC schema id. The bulk
-  of the BR-CO computational rules (BR-CO-10..17) are listed as TODOs in
-  `schema/accounting.py` but not yet enforced.
+  BR-CO-21/22, currency code, UNTDID 4461 form, VAT/FC scheme id. The bulk
+  of the BR-CO computational rules (BR-CO-10..17) and the per-VAT-category
+  families are not yet enforced — see `docs/VALIDATION.md` for status.
+
 ## ZUGFeRD references
 
 Specification:
