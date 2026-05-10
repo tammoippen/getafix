@@ -129,6 +129,7 @@ class Trade(Element):
         ae_ok = s_vat_local_or_taxrep and b_vat_or_legal
         e_ok = s_vat_local_or_taxrep
         g_ok = s_vat_or_taxrep  # Export outside EU — VAT only, not BT-32.
+        ic_ok = s_vat_or_taxrep and b_vat  # Intra-community — both VAT.
 
         # category → (predicate-ok, message stem, (line/all/charge BR codes))
         families: list[
@@ -162,6 +163,15 @@ class Trade(Element):
                 "representative VAT identifier (BT-63). The local tax "
                 "identifier (BT-32) is *not* sufficient.",
                 ("BR-G-2", "BR-G-3", "BR-G-4"),
+            ),
+            (
+                CategoryCode.T_K,
+                ic_ok,
+                "VAT category 'Intra-community supply' (K) requires the "
+                "Seller VAT identifier (BT-31) or the Seller tax "
+                "representative VAT identifier (BT-63), and the Buyer VAT "
+                "identifier (BT-48).",
+                ("BR-IC-2", "BR-IC-3", "BR-IC-4"),
             ),
         ]
 
