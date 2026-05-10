@@ -150,7 +150,20 @@ class MonetarySummation(Element):
 
     EN 16931-ID: BT-109
     """
-    tax_total: TaxTotal
+    tax_total: list[TaxTotal] | None = None
+    """``ram:TaxTotalAmount`` — the row of currency-tagged VAT totals.
+
+    Up to two entries per the XSD: BT-110 carries the VAT total in
+    invoice currency (``currencyID == BT-5``), BT-111 carries the same
+    amount expressed in the seller's VAT accounting currency
+    (``currencyID == BT-6``) and is required when ``BT-6`` is set
+    (``BR-53``). MINIMUM permits at most one entry; from BASIC_WL
+    onwards both may appear in that order.
+
+    ``BR-53`` is not yet enforced.
+
+    EN 16931-ID: BT-110, BT-111
+    """
     grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount"})
     """Rechnungsgesamtbetrag einschließlich Umsatzsteuer / Bruttosumme
 
