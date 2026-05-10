@@ -4,26 +4,28 @@
 the ``SupplyChainTradeTransaction``. It carries:
 
 * the invoice currency (BT-5) and — at BASIC_WL+ — the optional VAT
-  accounting currency (BT-6), still missing in the carthorse model;
+  accounting currency (BT-6);
 * SEPA-specific creditor reference and remittance information;
 * payee details if different from seller (BG-10);
 * zero-or-more payment means (BG-16) with associated debtor/creditor
   financial accounts (BG-17);
 * one or more VAT breakdowns (BG-23) once at BASIC_WL+;
-* optional invoicing period (BG-14, ✗ not modelled);
+* optional invoicing period (BG-14);
 * zero-or-more allowance (BG-20) and charge (BG-21) groups;
 * optional payment terms (BT-20-00); EXTENDED upgrades this to a list;
 * the monetary summation (BG-22);
-* zero-or-more preceding-invoice references (BG-3) — carthorse
-  currently models only one;
+* zero-or-more preceding-invoice references (BG-3);
 * zero-or-more accounting references (BT-19-00).
 
 Validation rules covered (or missing) in this module:
 
 * ✓ ``BR-CO-18`` (at least one ``trade_taxes`` row at BASIC_WL+) — see
   :meth:`TradeSettlement.validate_internal`.
+* ✓ ``BR-29`` (BG-14 start ≤ end) and ``BR-CO-19`` (BG-14 start or end
+  required if used) — :class:`BillingSpecifiedPeriod`.
 * ✓ ``BR-50`` (account info requires IBAN or proprietary id) — see
   :meth:`PayeePartyCreditorFinancialAccount.validate_internal`.
+* ✓ ``BR-53`` (BT-6 set ⇒ a ``TaxTotal`` row with ``currency_id == BT-6``).
 * △ ``BR-5`` — currency code shape only.
 * △ ``BR-49`` — ``PaymentMeans.type_code`` shape; not the BG-16
   presence rule.
@@ -189,6 +191,54 @@ class PaymentTerms(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class BillingSpecifiedPeriod(Element):
+    """Invoicing period (BG-14 / BG-26) — start and/or end dates.
+
+    The element name is ``BillingSpecifiedPeriod`` at both header
+    (BG-14) and line (BG-26) level. The XSD allows either or both
+    endpoints; ``BR-CO-19`` requires at least one of them when the
+    group is used, and ``BR-29`` requires ``end >= start`` if both
+    are given.
+
+    EN 16931-ID: BG-14 (header), BG-26 (line)
+    """
+
+    tag: ClassVar[str] = "BillingSpecifiedPeriod"
+    profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    start: date | None = field(
+        default=None, metadata={"tag": "StartDateTime", "profile": Profile.BASIC_WL}
+    )
+    """Start of the invoicing period.
+
+    EN 16931-ID: BT-73 (header), BT-134 (line)
+    """
+    end: date | None = field(
+        default=None, metadata={"tag": "EndDateTime", "profile": Profile.BASIC_WL}
+    )
+    """End of the invoicing period.
+
+    EN 16931-ID: BT-74 (header), BT-135 (line)
+    """
+
+    @override
+    def validate_internal(self, profile: Profile) -> None:
+        if self.start is None and self.end is None:
+            raise ValidationError(
+                "BR-CO-19",
+                "Wenn die Rechnungsperiode (BG-14) verwendet wird, muss mindestens "
+                "eines der beiden Felder Start (BT-73) oder End (BT-74) ausgefüllt "
+                "sein.",
+            )
+        if self.start is not None and self.end is not None and self.end < self.start:
+            raise ValidationError(
+                "BR-29",
+                "Falls beide Daten angegeben sind, muss das Endedatum (BT-74) größer "
+                "oder gleich dem Startdatum (BT-73) sein.",
+            )
+
+
+@dataclass(kw_only=True, slots=True)
 class ReceivableAccountingAccount(Element):
     """Detailinformationen zur Buchungsreferenz"""
 
@@ -224,6 +274,19 @@ class TradeSettlement(Element):
     „Codes for the representation of currencies and funds” geführt.
 
     EN 16931-ID: BT-5
+    """
+    tax_currency_code: str | None = field(
+        default=None, metadata={"tag": "TaxCurrencyCode", "profile": Profile.BASIC_WL}
+    )
+    """VAT accounting currency code.
+
+    Optional from BASIC_WL onwards. When present, the seller's local
+    currency for VAT accounting (which differs from the invoice
+    currency BT-5). Triggers ``BR-53``: a ``TaxTotal`` entry with
+    ``currency_id == tax_currency_code`` (BT-111) must also be
+    provided in :attr:`monetary_summation`.
+
+    EN 16931-ID: BT-6
     """
     monetary_summation: MonetarySummation
     creditor_reference: str | None = field(
@@ -285,9 +348,12 @@ class TradeSettlement(Element):
     payee: PayeeTradeParty | None = None
     payment_means: list[PaymentMeans] | None = None
     trade_taxes: list[ApplicableTradeTax] | None = None
+    billing_period: BillingSpecifiedPeriod | None = None
+    """Header invoicing period (BG-14)."""
     allowance_charge: list[TradeAllowanceCharge] | None = None
     terms: PaymentTerms | None = None
-    invoice_referenced_document: InvoiceReferencedDocument | None = None
+    invoice_referenced_document: list[InvoiceReferencedDocument] | None = None
+    """Preceding invoice references (BG-3); zero or more."""
     accounting_account: list[ReceivableAccountingAccount] | None = None
 
     @override
@@ -306,3 +372,15 @@ class TradeSettlement(Element):
                 "BR-CO-18",
                 "Eine Rechnung muss mindestens eine Umsatzsteueraufschlüsselungsgruppe (BG-23) haben.",
             )
+
+        if self.tax_currency_code is not None:
+            tax_totals = self.monetary_summation.tax_total or []
+            if not any(t.currency_id == self.tax_currency_code for t in tax_totals):
+                raise ValidationError(
+                    "BR-53",
+                    "Falls der Code für die Währung der Umsatzsteuerbuchung "
+                    "(BT-6) vorhanden ist, muss der Steuergesamtbetrag in "
+                    "Buchungswährung (BT-111) angegeben werden.",
+                )
+
+        super(TradeSettlement, self).validate_internal(profile)
