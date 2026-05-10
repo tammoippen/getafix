@@ -84,16 +84,16 @@ class IncludedNote(Element):
     """
 
     tag: ClassVar[str] = "IncludedNote"
-    profile: ClassVar[Profile] = Profile.BASIC
+    profile: ClassVar[Profile] = Profile.BASIC_WL
 
     content_code: str | None = field(
         default=None, metadata={"tag": "ContentCode", "profile": Profile.EXTENDED}
     )
     content: str | None = field(
-        default=None, metadata={"tag": "Content", "profile": Profile.BASIC}
+        default=None, metadata={"tag": "Content", "profile": Profile.BASIC_WL}
     )
     subject_code: str | None = field(
-        default=None, metadata={"tag": "SubjectCode", "profile": Profile.COMFORT}
+        default=None, metadata={"tag": "SubjectCode", "profile": Profile.BASIC_WL}
     )
 
 

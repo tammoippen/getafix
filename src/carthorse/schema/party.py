@@ -50,28 +50,36 @@ from carthorse.schema.types import Profile
 
 @dataclass(kw_only=True, slots=True)
 class SchemeID(Element):
+    """``udt:IDType`` value with an optional ``schemeID`` attribute.
+
+    The XSD makes ``schemeID`` optional; the appendix narrative for
+    individual BTs (BT-30, BT-47, BT-46-1, …) flags whether the
+    attribute is required *for that BT*. This base class is permissive
+    — subclasses such as :class:`TaxSchemeId` enforce stricter
+    constraints in ``validate_internal``.
+    """
+
     tag: ClassVar[str] = "ID"
 
     id: str
-    scheme_id: str
-    """Kennung des Schemas"""
+    scheme_id: str | None = None
+    """Optional identification scheme code (``schemeID`` attribute)."""
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
-        return XML(self.get_tag(), attrs={"schemeID": self.scheme_id})[self.id]
+        attrs: dict[str, str | bool] = {}
+        if self.scheme_id is not None:
+            attrs["schemeID"] = self.scheme_id
+        return XML(self.get_tag(), attrs=attrs)[self.id]
 
     @override
     @classmethod
     def from_xml(cls, elem: ETElement) -> Self:
         if elem.tag != cls.get_qualified_tag():
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
-        if "schemeID" not in elem.attrib:
-            raise ValueError
         if elem.text is None:
             raise ValueError
-        scheme_id = elem.attrib["schemeID"]
-        value = elem.text.strip()
-        return cls(id=value, scheme_id=scheme_id)
+        return cls(id=elem.text.strip(), scheme_id=elem.attrib.get("schemeID"))
 
 
 @dataclass(kw_only=True, slots=True)
@@ -101,7 +109,7 @@ class GlobalID(ISO6523SchemeId):
     """
 
     tag: ClassVar[str] = "GlobalID"
-    profile: ClassVar[Profile] = Profile.COMFORT
+    profile: ClassVar[Profile] = Profile.BASIC_WL
 
 
 @dataclass(kw_only=True, slots=True)
@@ -167,7 +175,7 @@ class PostalTradeAddress(Element):
 class PostalTradeAddressExtended(PostalTradeAddress):
     country_subdivision: str | None = field(
         default=None,
-        metadata={"tag": "CountrySubDivisionName", "profile": Profile.BASIC},
+        metadata={"tag": "CountrySubDivisionName", "profile": Profile.BASIC_WL},
     )
     """Bundesland
 
@@ -206,9 +214,11 @@ class FaxNumber(Element):
 @dataclass(kw_only=True, slots=True)
 class EmailURI(Element):
     tag: ClassVar[str] = "EmailURIUniversalCommunication"
-    profile: ClassVar[Profile] = Profile.EXTENDED
+    profile: ClassVar[Profile] = Profile.COMFORT
 
-    address: str | None = field(metadata={"tag": "URIID", "profile": Profile.EXTENDED})
+    address: str | None = field(
+        default=None, metadata={"tag": "URIID", "profile": Profile.COMFORT}
+    )
     """Eine E-Mailadresse der Kontaktstelle
 
     Beispiel: karin.mustermann@seller.tld
@@ -363,7 +373,7 @@ class SellerTradeParty(Element):
     EN 16931-ID: BG-5
     """
     id: str | None = field(
-        default=None, metadata={"tag": "ID", "profile": Profile.COMFORT}
+        default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
     )
 
     """Kennung des Verkäufers / Durch den Kunden zugewiesene Lieferantennummer
@@ -445,7 +455,7 @@ class BuyerTradeParty(Element):
     EN 16931-ID: BG-8
     """
     id: str | None = field(
-        default=None, metadata={"tag": "ID", "profile": Profile.COMFORT}
+        default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
     )
 
     """Kennung des Käufers / Kundennummer
@@ -594,7 +604,7 @@ class ShipToTradeParty(Element):
     """
 
     tag: ClassVar[str] = "ShipToTradeParty"
-    profile: ClassVar[Profile] = Profile.COMFORT
+    profile: ClassVar[Profile] = Profile.BASIC_WL
 
     # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
@@ -637,7 +647,7 @@ class ShipToTradeParty(Element):
     )
     """Details zur Organisation"""
     contact: TradeContact | None = field(
-        default=None, metadata={"profile": Profile.EXTENDED}
+        default=None, metadata={"profile": Profile.COMFORT}
     )
     """Detailinformationen zum Ansprechpartner des Warenempfängers"""
     electronic_address: URIUniversalCommunication | None = field(

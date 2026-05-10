@@ -19,6 +19,16 @@ from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, T
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.element import ValidationError
+from carthorse.schema.line import (
+    DocumentLineDocument,
+    LineMonetarySummation,
+    LineTradeAgreement,
+    LineTradeDelivery,
+    LineTradeSettlement,
+    NetTradePrice,
+    Quantity,
+    TradeProduct,
+)
 from carthorse.schema.party import (
     URIID,
     BuyerTradeParty,
@@ -260,7 +270,28 @@ def full_doc() -> Document:
                     )
                 ],
             ),
-            items=[TradeLineItem()],
+            items=[
+                TradeLineItem(
+                    associated_document=DocumentLineDocument(line_id="1"),
+                    product=TradeProduct(name="Widget"),
+                    agreement=LineTradeAgreement(
+                        net_price=NetTradePrice(charge_amount=Decimal("100.00"))
+                    ),
+                    delivery=LineTradeDelivery(
+                        billed_quantity=Quantity(value=Decimal("1"), unit_code="C62")
+                    ),
+                    settlement=LineTradeSettlement(
+                        applicable_trade_tax=ApplicableTradeTax(
+                            category_code=CategoryCode.T_S,
+                            due_date_code="5",
+                            rate_applicable_percent=Decimal("19"),
+                        ),
+                        monetary_summation=LineMonetarySummation(
+                            line_total=Decimal("100.00")
+                        ),
+                    ),
+                )
+            ],
         ),
     )
 
@@ -859,9 +890,9 @@ def test_full(full_doc):
           some-id
         </ram:IssuerAssignedID>
         <ram:FormattedIssueDateTime>
-          <udt:DateTimeString format="102">
+          <qdt:DateTimeString format="102">
             20251117
-          </udt:DateTimeString>
+          </qdt:DateTimeString>
         </ram:FormattedIssueDateTime>
       </ram:UltimateCustomerOrderReferencedDocument>
     </ram:ApplicableHeaderTradeAgreement>
@@ -908,7 +939,51 @@ def test_full(full_doc):
         </ram:RateApplicablePercent>
       </ram:ApplicableTradeTax>
     </ram:ApplicableHeaderTradeSettlement>
-    <ram:IncludedSupplyChainTradeLineItem />
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>
+          1
+        </ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>
+          Widget
+        </ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>
+            100.00
+          </ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="C62">
+          1
+        </ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>
+            VAT
+          </ram:TypeCode>
+          <ram:CategoryCode>
+            S
+          </ram:CategoryCode>
+          <ram:DueDateTypeCode>
+            5
+          </ram:DueDateTypeCode>
+          <ram:RateApplicablePercent>
+            19
+          </ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>
+            100.00
+          </ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>
   </rsm:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoice>
 """

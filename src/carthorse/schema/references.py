@@ -244,7 +244,7 @@ class DespatchAdviceReferencedDocument(Element):
     """
     issue_date_time: date | None = field(
         default=None,
-        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
+        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.BASIC_WL},
     )
     """Lieferavisdatum"""
 
@@ -265,7 +265,7 @@ class ReceivingAdviceReferencedDocument(Element):
     """
     issue_date_time: date | None = field(
         default=None,
-        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
+        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.COMFORT},
     )
     """Wareneingangsdatum"""
 

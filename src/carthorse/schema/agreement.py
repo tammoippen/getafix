@@ -16,7 +16,6 @@ from carthorse.schema.references import (
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
 )
-from carthorse.schema.types import Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -36,7 +35,7 @@ class TradeAgreement(Element):
     EN 16931-ID: BG-7
     """
     buyer_reference: str | None = field(
-        default=None, metadata={"tag": "BuyerReference", "profile": Profile.COMFORT}
+        default=None, metadata={"tag": "BuyerReference"}
     )
     """Referenz des Käufers
 
