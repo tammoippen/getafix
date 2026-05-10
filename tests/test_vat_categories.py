@@ -218,3 +218,39 @@ class TestBrAe:
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code == "BR-CO-26"
+
+    def test_br_ae_3_doc_level_allowance_requires_seller_and_buyer_vat(
+        self,
+    ) -> None:
+        # Allowance (BG-20) with category AE; buyer has no identifiers.
+        doc = _make_doc(
+            line_category=CategoryCode.T_S,
+            allowance_category=CategoryCode.T_AE,
+            buyer_va=None,
+            buyer_legal_id=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-AE-3"
+
+    def test_br_ae_3_passes_with_buyer_legal_id(self) -> None:
+        _make_doc(
+            line_category=CategoryCode.T_S,
+            allowance_category=CategoryCode.T_AE,
+            buyer_va=None,
+            buyer_legal_id="HRB12345",
+        ).validate()
+
+    def test_br_ae_4_doc_level_charge_requires_seller_and_buyer_vat(
+        self,
+    ) -> None:
+        # Charge (BG-21) with category AE; buyer has no identifiers.
+        doc = _make_doc(
+            line_category=CategoryCode.T_S,
+            charge_category=CategoryCode.T_AE,
+            buyer_va=None,
+            buyer_legal_id=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-AE-4"
