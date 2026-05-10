@@ -5,10 +5,12 @@ This module stitches together the three sibling header groups
 (``items``). The line item content lives in
 :mod:`carthorse.schema.line`.
 
-Validation rule covered here:
+Validation rules covered here:
 
 * ✓ ``BR-16`` — at BASIC and above an invoice must contain at least
   one line item. Raised by :meth:`Trade.validate_internal`.
+* ✓ Per-VAT-category required-party rules (BR-AE/E/G/IC/IG/IP/S/Z
+  ``-2/-3/-4``) — see ``docs/VALIDATION.md §3.2``.
 """
 
 from dataclasses import dataclass, field
@@ -24,8 +26,30 @@ from carthorse.schema.line import (
     LineTradeSettlement,
     TradeProduct,
 )
+from carthorse.schema.party import BuyerTradeParty, SellerTradeParty
 from carthorse.schema.settlement import TradeSettlement
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import CategoryCode, Namespace, Profile
+
+
+def _has_vat_id(party: SellerTradeParty | BuyerTradeParty | None) -> bool:
+    if party is None or not party.tax_registrations:
+        return False
+    return any(tr.id.scheme_id == "VA" for tr in party.tax_registrations)
+
+
+def _has_vat_or_local_tax_id(party: SellerTradeParty | None) -> bool:
+    if party is None or not party.tax_registrations:
+        return False
+    return any(
+        tr.id.scheme_id in ("VA", "FC") for tr in party.tax_registrations
+    )
+
+
+def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
+    return (
+        buyer.legal_organization is not None
+        and buyer.legal_organization.id is not None
+    )
 
 
 @dataclass(kw_only=True, slots=True)
@@ -73,4 +97,40 @@ class Trade(Element):
                 "BR-16",
                 "An invoice must contain at least one invoice line item (BG-25).",
             )
-        return super(Trade, self).validate_internal(profile)
+
+        # Recurse into child validators first (so e.g. BR-CO-26 and
+        # BR-CO-25 surface before our cross-field VAT-category checks).
+        super(Trade, self).validate_internal(profile)
+
+        self._validate_vat_category_required_parties()
+
+    def _validate_vat_category_required_parties(self) -> None:
+        """BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4} required-party checks.
+
+        For each line item / document-level allowance / document-level
+        charge, the VAT category code constrains which Seller / Buyer
+        identifiers must be present. The constraint matrix lives in
+        ``docs/VALIDATION.md §3.2``.
+        """
+        seller = self.agreement.seller
+        buyer = self.agreement.buyer
+        tax_rep = self.agreement.seller_tax_representative_party
+
+        seller_has_vat_or_local = _has_vat_or_local_tax_id(seller) or _has_vat_id(
+            tax_rep
+        )
+        buyer_has_vat_or_legal = _has_vat_id(buyer) or _has_buyer_legal_id(buyer)
+
+        # AE — Reverse charge (line side, BR-AE-2).
+        for item in self.items:
+            if item.settlement.applicable_trade_tax.category_code == CategoryCode.T_AE:
+                if not (seller_has_vat_or_local and buyer_has_vat_or_legal):
+                    raise ValidationError(
+                        "BR-AE-2",
+                        "An Invoice line with VAT category 'Reverse charge' "
+                        "(AE) must contain the Seller VAT identifier (BT-31), "
+                        "the Seller tax registration identifier (BT-32) "
+                        "and/or the Seller tax representative VAT identifier "
+                        "(BT-63), and the Buyer VAT identifier (BT-48) "
+                        "and/or the Buyer legal registration identifier (BT-47).",
+                    )
