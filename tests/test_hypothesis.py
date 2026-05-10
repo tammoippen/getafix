@@ -12,10 +12,11 @@ Two checks per profile:
 2. ``test_parse_and_regenerate`` — feed the bytes into
    ``Document.from_xml`` and then ``Document.to_xml`` again. Currently
    ``xfail(strict=False)`` because real-world / structurally-correct XML
-   exercises parser/serialiser bugs (``schemeID`` vs ``schemaID``, MINIMUM
-   without ``LineTotalAmount``, ``currencyID`` lost on round-trip, etc.) we
-   already document in the README. As those are fixed individual examples
-   stop xfailing — Hypothesis surfaces the next blocker for free.
+   exercises parser/serialiser bugs we are working through (see
+   ``docs/IMPLEMENTATION_PLAN.md``: MINIMUM without ``LineTotalAmount``,
+   ``currencyID`` lost on round-trip, BG-25 line items not modelled,
+   …). As those gaps close individual examples stop xfailing — Hypothesis
+   surfaces the next blocker for free.
 """
 
 from __future__ import annotations

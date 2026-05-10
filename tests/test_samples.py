@@ -94,13 +94,11 @@ def test_sample_declares_known_profile(sample: Path):
     strict=False,
     reason=(
         "Parser is WIP. Known gaps surfaced by these samples include: "
-        "(a) attribute name 'schemeID' in real CII vs hardcoded 'schemaID' in "
-        "carthorse.schema.party.SchemaID; "
-        "(b) MonetarySummation.line_total is required but the MINIMUM profile "
-        "omits LineTotalAmount; "
-        "(c) SpecifiedTaxRegistration uses <ram:ID> not <ram:GlobalID>; "
-        "(d) currencyID attribute on monetary amounts (TaxBasisTotalAmount, "
-        "GrandTotalAmount, ...) is not yet preserved on parse."
+        "(a) MonetarySummation.line_total is required but the MINIMUM profile "
+        "omits LineTotalAmount (bug sweep #2); "
+        "(b) currencyID attribute on monetary amounts (TaxBasisTotalAmount, "
+        "GrandTotalAmount, ...) is not yet preserved on parse (bug sweep #7); "
+        "(c) BG-25 line items not modelled."
     ),
 )
 def test_sample_roundtrips_through_document(sample: Path):

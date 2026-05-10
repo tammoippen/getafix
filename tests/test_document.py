@@ -25,7 +25,7 @@ from carthorse.schema.party import (
     EmailURI,
     FaxNumber,
     GlobalID,
-    ISO6523SchemaId,
+    ISO6523SchemeId,
     LegalOrganization,
     PhoneNumber,
     PostalTradeAddress,
@@ -34,7 +34,7 @@ from carthorse.schema.party import (
     SellerTaxRepresentativeTradeParty,
     SellerTradeParty,
     SpecifiedTaxRegistration,
-    TaxSchemaId,
+    TaxSchemeId,
     TradeContact,
     URIUniversalCommunication,
 )
@@ -132,23 +132,23 @@ def full_doc() -> Document:
                     name="Foo",
                     address=address1,
                     id="1234",
-                    global_ids=[GlobalID(id="0234", schema_id="4321")],
+                    global_ids=[GlobalID(id="0234", scheme_id="4321")],
                     description="Some description",
                     legal_organization=LegalOrganization(
-                        id=ISO6523SchemaId(id="8765", schema_id="0021"),
+                        id=ISO6523SchemeId(id="8765", scheme_id="0021"),
                         trade_name="Some trade name",
                         trade_address=address2,
                     ),
                     contact=contact,
                     electronic_address=URIUniversalCommunication(
-                        uri_id=URIID(id="http:example.com", schema_id="baz")
+                        uri_id=URIID(id="http:example.com", scheme_id="baz")
                     ),
                     tax_registrations=[
                         SpecifiedTaxRegistration(
-                            id=TaxSchemaId(id="4321/5432/21", schema_id="FC")
+                            id=TaxSchemeId(id="4321/5432/21", scheme_id="FC")
                         ),
                         SpecifiedTaxRegistration(
-                            id=TaxSchemaId(id="DE1234567", schema_id="VA")
+                            id=TaxSchemeId(id="DE1234567", scheme_id="VA")
                         ),
                     ],
                 ),
@@ -156,54 +156,54 @@ def full_doc() -> Document:
                     name="Bar",
                     address=address1,
                     id="5678",
-                    global_ids=[GlobalID(id="5678", schema_id="6780")],
+                    global_ids=[GlobalID(id="5678", scheme_id="6780")],
                     legal_organization=LegalOrganization(
-                        id=ISO6523SchemaId(id="98765", schema_id="0021"),
+                        id=ISO6523SchemeId(id="98765", scheme_id="0021"),
                         trade_name="Some other trade name",
                         trade_address=address2,
                     ),
                     contact=contact,
                     electronic_address=URIUniversalCommunication(
-                        uri_id=URIID(id="http://example.com", schema_id="baz")
+                        uri_id=URIID(id="http://example.com", scheme_id="baz")
                     ),
                     tax_registrations=SpecifiedTaxRegistration(
-                        id=TaxSchemaId(id="DE76543210", schema_id="VA")
+                        id=TaxSchemeId(id="DE76543210", scheme_id="VA")
                     ),
                 ),
                 seller_tax_representative_party=SellerTaxRepresentativeTradeParty(
                     name="Foo",
                     address=address1,
                     id="1234",
-                    global_ids=[GlobalID(id="0234", schema_id="4321")],
+                    global_ids=[GlobalID(id="0234", scheme_id="4321")],
                     legal_organization=LegalOrganization(
-                        id=ISO6523SchemaId(id="8765", schema_id="0021"),
+                        id=ISO6523SchemeId(id="8765", scheme_id="0021"),
                         trade_name="Some trade name",
                         trade_address=address2,
                     ),
                     contact=contact,
                     electronic_address=URIUniversalCommunication(
-                        uri_id=URIID(id="http:example.com", schema_id="baz")
+                        uri_id=URIID(id="http:example.com", scheme_id="baz")
                     ),
                     tax_registrations=SpecifiedTaxRegistration(
-                        id=TaxSchemaId(id="DE1234567", schema_id="VA")
+                        id=TaxSchemeId(id="DE1234567", scheme_id="VA")
                     ),
                 ),
                 end_user=ProductEndUserTradeParty(
                     name="End User",
                     id="End1234",
-                    global_ids=[GlobalID(id="foo", schema_id="0012")],
+                    global_ids=[GlobalID(id="foo", scheme_id="0012")],
                     legal_organization=LegalOrganization(
-                        id=ISO6523SchemaId(id="8765", schema_id="0021"),
+                        id=ISO6523SchemeId(id="8765", scheme_id="0021"),
                         trade_name="Some trade name",
                         trade_address=address2,
                     ),
                     contact=contact,
                     address=address1,
                     electronic_address=URIUniversalCommunication(
-                        uri_id=URIID(id="ftp://example.com", schema_id="ftp")
+                        uri_id=URIID(id="ftp://example.com", scheme_id="ftp")
                     ),
                     tax_registrations=SpecifiedTaxRegistration(
-                        id=TaxSchemaId(id="1234/5678/90", schema_id="FC")
+                        id=TaxSchemeId(id="1234/5678/90", scheme_id="FC")
                     ),
                 ),
                 seller_order=SellerOrderReferencedDocument(issuer_assigned_id="1234"),
@@ -437,14 +437,14 @@ def test_full(full_doc):
         <ram:ID>
           1234
         </ram:ID>
-        <ram:GlobalID schemaID="4321">
+        <ram:GlobalID schemeID="4321">
           0234
         </ram:GlobalID>
         <ram:Description>
           Some description
         </ram:Description>
         <ram:SpecifiedLegalOrganization>
-          <ram:ID schemaID="0021">
+          <ram:ID schemeID="0021">
             8765
           </ram:ID>
           <ram:TradingBusinessName>
@@ -495,19 +495,19 @@ def test_full(full_doc):
           </ram:EmailURIUniversalCommunication>
         </ram:DefinedTradeContact>
         <ram:URIUniversalCommunication>
-          <ram:URIID schemaID="baz">
+          <ram:URIID schemeID="baz">
             http:example.com
           </ram:URIID>
         </ram:URIUniversalCommunication>
         <ram:SpecifiedTaxRegistration>
-          <ram:GlobalID schemaID="FC">
+          <ram:ID schemeID="FC">
             4321/5432/21
-          </ram:GlobalID>
+          </ram:ID>
         </ram:SpecifiedTaxRegistration>
         <ram:SpecifiedTaxRegistration>
-          <ram:GlobalID schemaID="VA">
+          <ram:ID schemeID="VA">
             DE1234567
-          </ram:GlobalID>
+          </ram:ID>
         </ram:SpecifiedTaxRegistration>
       </ram:SellerTradeParty>
       <ram:BuyerTradeParty>
@@ -540,11 +540,11 @@ def test_full(full_doc):
         <ram:ID>
           5678
         </ram:ID>
-        <ram:GlobalID schemaID="6780">
+        <ram:GlobalID schemeID="6780">
           5678
         </ram:GlobalID>
         <ram:SpecifiedLegalOrganization>
-          <ram:ID schemaID="0021">
+          <ram:ID schemeID="0021">
             98765
           </ram:ID>
           <ram:TradingBusinessName>
@@ -595,14 +595,14 @@ def test_full(full_doc):
           </ram:EmailURIUniversalCommunication>
         </ram:DefinedTradeContact>
         <ram:URIUniversalCommunication>
-          <ram:URIID schemaID="baz">
+          <ram:URIID schemeID="baz">
             http://example.com
           </ram:URIID>
         </ram:URIUniversalCommunication>
         <ram:SpecifiedTaxRegistration>
-          <ram:GlobalID schemaID="VA">
+          <ram:ID schemeID="VA">
             DE76543210
-          </ram:GlobalID>
+          </ram:ID>
         </ram:SpecifiedTaxRegistration>
       </ram:BuyerTradeParty>
       <ram:BuyerReference>
@@ -636,18 +636,18 @@ def test_full(full_doc):
           </ram:CountrySubDivisionName>
         </ram:PostalTradeAddress>
         <ram:SpecifiedTaxRegistration>
-          <ram:GlobalID schemaID="VA">
+          <ram:ID schemeID="VA">
             DE1234567
-          </ram:GlobalID>
+          </ram:ID>
         </ram:SpecifiedTaxRegistration>
         <ram:ID>
           1234
         </ram:ID>
-        <ram:GlobalID schemaID="4321">
+        <ram:GlobalID schemeID="4321">
           0234
         </ram:GlobalID>
         <ram:SpecifiedLegalOrganization>
-          <ram:ID schemaID="0021">
+          <ram:ID schemeID="0021">
             8765
           </ram:ID>
           <ram:TradingBusinessName>
@@ -698,7 +698,7 @@ def test_full(full_doc):
           </ram:EmailURIUniversalCommunication>
         </ram:DefinedTradeContact>
         <ram:URIUniversalCommunication>
-          <ram:URIID schemaID="baz">
+          <ram:URIID schemeID="baz">
             http:example.com
           </ram:URIID>
         </ram:URIUniversalCommunication>
@@ -710,11 +710,11 @@ def test_full(full_doc):
         <ram:ID>
           End1234
         </ram:ID>
-        <ram:GlobalID schemaID="0012">
+        <ram:GlobalID schemeID="0012">
           foo
         </ram:GlobalID>
         <ram:SpecifiedLegalOrganization>
-          <ram:ID schemaID="0021">
+          <ram:ID schemeID="0021">
             8765
           </ram:ID>
           <ram:TradingBusinessName>
@@ -788,14 +788,14 @@ def test_full(full_doc):
           </ram:CountrySubDivisionName>
         </ram:PostalTradeAddress>
         <ram:URIUniversalCommunication>
-          <ram:URIID schemaID="ftp">
+          <ram:URIID schemeID="ftp">
             ftp://example.com
           </ram:URIID>
         </ram:URIUniversalCommunication>
         <ram:SpecifiedTaxRegistration>
-          <ram:GlobalID schemaID="FC">
+          <ram:ID schemeID="FC">
             1234/5678/90
-          </ram:GlobalID>
+          </ram:ID>
         </ram:SpecifiedTaxRegistration>
       </ram:ProductEndUserTradeParty>
       <ram:SellerOrderReferencedDocument>
