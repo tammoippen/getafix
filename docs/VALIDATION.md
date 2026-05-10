@@ -181,7 +181,18 @@ Also:
   (BG-25), document-level allowance (BG-20) or document-level charge
   (BG-21) with a category code other than `O`.
 
-None of the per-category families are currently enforced by carthorse.
+**Enforcement status:**
+
+* ✓ Required-party `-2/-3/-4` rules across **AE / E / G / IC / IG / IP /
+  S / Z** — implemented in
+  :meth:`carthorse.schema.trade.Trade._validate_vat_category_required_parties`.
+* ✓ `BR-O-2/-3/-4` (forbid identifier set) — same hook.
+* ✓ `BR-O-11..14` single-rate restriction.
+* ✓ `BR-IC-11`, `BR-IC-12` (intra-community delivery date / period and
+  deliver-to country).
+* — Rate constraints (`BR-*-5/-6/-7`) and tax-amount math
+  (`BR-*-8/-9/-10`) are not yet enforced — they need the BR-CO-10..17
+  arithmetic pass over line / allowance / charge amounts.
 
 ## 4. EXTENDED (`BR-FXEXT-*`, `BR-FX-DE-*`)
 
