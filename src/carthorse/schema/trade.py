@@ -282,3 +282,43 @@ class Trade(Element):
                     "tax representative VAT identifier (BT-63) or the "
                     "Buyer VAT identifier (BT-48).",
                 )
+
+        # BR-O-11..14 — single-rate restriction. If any header BG-23 row
+        # carries category 'O', the rest of the invoice must be O too:
+        # no other BG-23 row, no non-O line / allowance / charge.
+        trade_taxes = self.settlement.trade_taxes or []
+        has_o_row = any(t.category_code == CategoryCode.T_O for t in trade_taxes)
+        if has_o_row:
+            if any(t.category_code != CategoryCode.T_O for t in trade_taxes):
+                raise ValidationError(
+                    "BR-O-11",
+                    "An Invoice with a VAT breakdown row of category "
+                    "'Not subject to VAT' (O) shall not contain other VAT "
+                    "breakdown rows (BG-23).",
+                )
+            for item in self.items:
+                if (
+                    item.settlement.applicable_trade_tax.category_code
+                    != CategoryCode.T_O
+                ):
+                    raise ValidationError(
+                        "BR-O-12",
+                        "An Invoice with a VAT breakdown row of category "
+                        "'Not subject to VAT' (O) shall not contain an "
+                        "Invoice line whose category code is not 'Not "
+                        "subject to VAT'.",
+                    )
+            for ac in self.settlement.allowance_charge or []:
+                if (
+                    ac.category_trade_tax is None
+                    or ac.category_trade_tax.category_code == CategoryCode.T_O
+                ):
+                    continue
+                code = "BR-O-14" if ac.indicator else "BR-O-13"
+                raise ValidationError(
+                    code,
+                    f"{code}: An Invoice with a VAT breakdown row of "
+                    "category 'Not subject to VAT' (O) shall not contain a "
+                    f"document-level {'charge' if ac.indicator else 'allowance'} "
+                    "whose VAT category code is not 'Not subject to VAT'.",
+                )

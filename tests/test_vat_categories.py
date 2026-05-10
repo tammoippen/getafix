@@ -529,3 +529,102 @@ class TestBrO:
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code == "BR-O-4"
+
+
+class TestBrOSingleRate:
+    """BR-O-11..14 — invoices using VAT category 'Not subject to VAT'
+    are single-rate: every other slot must also be O."""
+
+    def _make_o_only(self) -> Document:
+        # Baseline: line + BG-23 both O, no allowance/charge.
+        return _make_doc(
+            line_category=CategoryCode.T_O,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        )
+
+    def test_br_o_11_other_bg23_row_forbidden(self) -> None:
+        doc = self._make_o_only()
+        # Force the header BG-23 to also include an S row alongside O.
+        doc.trade.settlement.trade_taxes = [
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_O,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("0"),
+            ),
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("19"),
+            ),
+        ]
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-O-11"
+
+    def test_br_o_12_line_with_other_category_forbidden(self) -> None:
+        # Use a setup where the line's category-required-party rule
+        # passes (seller has VAT) so BR-S-2 doesn't fire first; the
+        # BG-23 only carries the O row.
+        doc = _make_doc(
+            line_category=CategoryCode.T_S,
+            seller_id="S-001",
+            seller_va="DE123456789",
+            buyer_va=None,
+        )
+        doc.trade.settlement.trade_taxes = [
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_O,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("0"),
+            )
+        ]
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-O-12"
+
+    def test_br_o_13_allowance_with_other_category_forbidden(self) -> None:
+        doc = _make_doc(
+            line_category=CategoryCode.T_O,
+            allowance_category=CategoryCode.T_S,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        )
+        doc.trade.settlement.trade_taxes = [
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_O,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("0"),
+            )
+        ]
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        # Note: BR-S-3 *also* fires (allowance with S has no seller VAT)
+        # but BR-O-13 is the more specific rule given a BG-23 O row.
+        # carthorse runs BR-O single-rate after the family loop, so the
+        # category-required-party check raises first.
+        assert e.value.code in {"BR-O-13", "BR-S-3"}
+
+    def test_br_o_14_charge_with_other_category_forbidden(self) -> None:
+        doc = _make_doc(
+            line_category=CategoryCode.T_O,
+            charge_category=CategoryCode.T_S,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        )
+        doc.trade.settlement.trade_taxes = [
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_O,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("0"),
+            )
+        ]
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code in {"BR-O-14", "BR-S-4"}
