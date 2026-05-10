@@ -74,7 +74,7 @@ def minimum_doc() -> Document:
             settlement=TradeSettlement(
                 currency_code="EUR",
                 monetary_summation=MonetarySummation(
-                    line_total=Decimal("123.45"),
+                    # MINIMUM does not have BT-106 (LineTotalAmount).
                     tax_basis_total=Decimal("123.45"),
                     tax_total=TaxTotal(amount=Decimal("23.46"), currency_id="EUR"),
                     grand_total=Decimal("146.91"),
@@ -321,9 +321,6 @@ def test_simple(minimum_doc):
         EUR
       </ram:InvoiceCurrencyCode>
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-        <ram:LineTotalAmount>
-          123.45
-        </ram:LineTotalAmount>
         <ram:TaxBasisTotalAmount>
           123.45
         </ram:TaxBasisTotalAmount>
