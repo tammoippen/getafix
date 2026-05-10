@@ -276,7 +276,7 @@ class ApplicableTradeTax(Element):
     EN 16931-ID: BT-120
     """
     exemption_reason_code: str | None = field(
-        default=None, metadata={"tag": "ExemptionReason"}
+        default=None, metadata={"tag": "ExemptionReasonCode"}
     )
     """Code für den Umsatzsteuerbefreiungsgrund
 
@@ -458,7 +458,7 @@ class TradeAllowanceCharge(Element):
     EN 16931-ID: BT-94 (Abschlag), BT-101 (Zuschlag)
     """
     basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
+        default=None, metadata={"tag": "BasisAmount", "profile": Profile.COMFORT}
     )
     """Grundbetrag des Zu- oder Abschlags auf Dokumentenebene
 
