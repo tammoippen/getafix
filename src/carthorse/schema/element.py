@@ -245,14 +245,30 @@ def _parse_str[T: str](
     return curr_type(el.text.strip())
 
 
+def _date_inner_namespace(tag: str) -> Namespace:
+    """Inner ``DateTimeString`` namespace for a date field's wrapper tag.
+
+    The CII XSD uses two date wrapper types: ``udt:DateTimeType`` (which
+    nests ``udt:DateTimeString``) for plain dates like BT-2 IssueDateTime,
+    BT-72 OccurrenceDateTime, BT-9 DueDateDateTime, BT-73/74 Start/EndDateTime,
+    BT-X-6 CompleteDateTime — and ``qdt:FormattedDateTimeType`` (which
+    nests ``qdt:DateTimeString``) for the formatted issue dates of
+    referenced documents (BT-26 etc.).
+    """
+    return Namespace.qdt if tag == "FormattedIssueDateTime" else Namespace.udt
+
+
 def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
     ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
+    inner_ns = _date_inner_namespace(tag)
 
     return XML(f"{ns.name}:{tag}")[
-        XML("udt:DateTimeString", attrs={"format": "102"})[value.strftime("%Y%m%d")]
+        XML(f"{inner_ns.name}:DateTimeString", attrs={"format": "102"})[
+            value.strftime("%Y%m%d")
+        ]
     ]
 
 
@@ -261,12 +277,13 @@ def _parse_date(el: ETElement, field: Field[datetime.date]) -> dict[str, datetim
     assert isinstance(tag, str)
     ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
+    inner_ns = _date_inner_namespace(tag)
 
     if el.tag != ns.get_qualified_tag(tag):
         return {}
     if len(el) != 1:
         raise ValueError
-    if el[0].tag != Namespace.udt.get_qualified_tag("DateTimeString"):
+    if el[0].tag != inner_ns.get_qualified_tag("DateTimeString"):
         raise ValueError
     if el[0].attrib.get("format") != "102":
         raise ValueError

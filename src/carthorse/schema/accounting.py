@@ -240,7 +240,9 @@ class ApplicableTradeTax(Element):
     tag: ClassVar[str] = "ApplicableTradeTax"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    calculated_amount: Decimal = field(metadata={"tag": "CalculatedAmount"})
+    calculated_amount: Decimal | None = field(
+        default=None, metadata={"tag": "CalculatedAmount"}
+    )
     """Kategoriespezifischer Steuerbetrag
 
     Der für die betreffende Umsatzsteuerkategorie zu entrichtende Gesamtbetrag.
@@ -264,7 +266,7 @@ class ApplicableTradeTax(Element):
 
     EN 16931-ID: BT-118-0
     """
-    basis_amount: Decimal = field(metadata={"tag": "BasisAmount"})
+    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
     """Steuerbasisbetrag
 
     EN 16931-ID: BT-116
@@ -461,9 +463,16 @@ class TradeAllowanceCharge(Element):
 
     EN 16931-ID: BT-92 (Abschlag), BT-99 (Zuschlag)
      """
-    category_trade_tax: CategoryTradeTax
+    category_trade_tax: CategoryTradeTax | None = None
+    """VAT category for the allowance / charge (BT-95-00 / BT-102-00).
+
+    Required at BASIC_WL per the appendix narrative; from BASIC the
+    XSD makes it optional. carthorse keeps it ``Optional`` so the
+    same dataclass works at every profile.
+    """
     calculation_percent: Decimal | None = field(
-        default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
+        default=None,
+        metadata={"tag": "CalculationPercent", "profile": Profile.BASIC_WL},
     )
     """Prozentualer Zu- oder Abschlag auf Dokumentenebene
 
@@ -477,7 +486,7 @@ class TradeAllowanceCharge(Element):
     EN 16931-ID: BT-94 (Abschlag), BT-101 (Zuschlag)
     """
     basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "profile": Profile.COMFORT}
+        default=None, metadata={"tag": "BasisAmount", "profile": Profile.BASIC_WL}
     )
     """Grundbetrag des Zu- oder Abschlags auf Dokumentenebene
 

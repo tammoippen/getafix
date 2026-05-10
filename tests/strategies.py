@@ -216,15 +216,24 @@ def _put_legal_org(draw, parent: etree._Element, profile: Profile) -> None:
 def _put_universal_communication(
     draw, parent: etree._Element, local: str, profile: Profile
 ) -> None:
+    """ram:UniversalCommunicationType.
+
+    Same XSD type for every parent element, but the *meaningful* child
+    differs by parent: ``TelephoneUniversalCommunication`` carries
+    ``CompleteNumber``; ``EmailURIUniversalCommunication`` and the
+    party-level ``URIUniversalCommunication`` carry ``URIID``. The
+    party-level one additionally requires a ``schemeID`` on the
+    URIID (BR-62 / BR-63). The carthorse model declares the
+    appropriate child as required for each role, so always emit it.
+    """
     comm = _sub(parent, "ram", local)
-    if profile in (Profile.COMFORT, Profile.EXTENDED):
-        # EN16931+: URIID and CompleteNumber both optional.
-        if draw(st.booleans()):
-            _put_id(comm, "ram", "URIID", draw(_token))
-        if draw(st.booleans()):
-            _put_text(comm, "ram", "CompleteNumber", draw(_text))
-    else:
+    if local == "TelephoneUniversalCommunication":
+        _put_text(comm, "ram", "CompleteNumber", draw(_text))
+    elif local == "EmailURIUniversalCommunication":
         _put_id(comm, "ram", "URIID", draw(_token))
+    else:
+        # Party-level URIUniversalCommunication — schemeID required.
+        _put_id(comm, "ram", "URIID", draw(_token), scheme=draw(_token))
 
 
 def _put_trade_contact(draw, parent: etree._Element) -> None:
@@ -260,11 +269,16 @@ def _put_trade_party(
     """ram:TradePartyType — fields per profile XSD."""
     party = _sub(parent, "ram", local)
 
-    if profile != Profile.MINIMUM:
-        # ID*  (BASIC_WL+: minOccurs=0, maxOccurs=unbounded; cap at 2)
+    # ID / GlobalID — present from BASIC_WL on Seller/Buyer/Payee/ShipTo,
+    # but the SellerTaxRepresentativeTradeParty (BG-11) only gets them
+    # at EXTENDED.
+    if local == "SellerTaxRepresentativeTradeParty":
+        emit_ids = profile == Profile.EXTENDED
+    else:
+        emit_ids = profile != Profile.MINIMUM
+    if emit_ids:
         for _ in range(draw(st.integers(min_value=0, max_value=2))):
             _put_id(party, "ram", "ID", draw(_token))
-        # GlobalID*
         for _ in range(draw(st.integers(min_value=0, max_value=2))):
             _put_id(party, "ram", "GlobalID", draw(_token), scheme=draw(_token))
 
@@ -276,22 +290,49 @@ def _put_trade_party(
     if profile in (Profile.COMFORT, Profile.EXTENDED) and draw(st.booleans()):
         _put_text(party, "ram", "Description", draw(_text))
 
-    if draw(st.booleans()):
+    # legal_organization, contact, electronic_address, tax_registrations
+    # — all "rich" sub-fields. SellerTaxRepresentativeTradeParty
+    # (BG-11) and ShipToTradeParty (BG-13) only carry these at
+    # EXTENDED; other roles allow them from BASIC_WL+.
+    rich_only_at_extended = local in (
+        "SellerTaxRepresentativeTradeParty",
+        "ShipToTradeParty",
+    )
+    rich_allowed = (not rich_only_at_extended) or profile == Profile.EXTENDED
+
+    if rich_allowed and draw(st.booleans()):
         _put_legal_org(draw, party, profile)
 
-    if profile in (Profile.COMFORT, Profile.EXTENDED) and draw(st.booleans()):
+    if (
+        rich_allowed
+        and profile in (Profile.COMFORT, Profile.EXTENDED)
+        and draw(st.booleans())
+    ):
         _put_trade_contact(draw, party)
 
     # PostalTradeAddress: optional everywhere per XSD, but at MINIMUM
     # carthorse requires it on Seller/Buyer; we always emit on those.
     _put_address(draw, party, profile)
 
-    if profile != Profile.MINIMUM and draw(st.booleans()):
+    if rich_allowed and profile != Profile.MINIMUM and draw(st.booleans()):
         _put_universal_communication(draw, party, "URIUniversalCommunication", profile)
 
-    # SpecifiedTaxRegistration: 0..2 across all profiles.
-    for _ in range(draw(st.integers(min_value=0, max_value=2))):
+    # SpecifiedTaxRegistration. At MINIMUM the appendix narrative
+    # restricts these to the Seller (BG-4) only — the Buyer block is
+    # Name + optional SpecifiedLegalOrganization. From BASIC_WL onwards
+    # any party may carry up to two registrations. The Seller tax
+    # representative party (BG-11) requires *at least one* (BR-56), so
+    # we always emit one for that role. ShipToTradeParty (BG-13) only
+    # carries them at EXTENDED.
+    if local == "SellerTaxRepresentativeTradeParty":
         _put_tax_registration(draw, party)
+    elif local == "ShipToTradeParty":
+        if profile == Profile.EXTENDED:
+            for _ in range(draw(st.integers(min_value=0, max_value=2))):
+                _put_tax_registration(draw, party)
+    elif local == "SellerTradeParty" or profile != Profile.MINIMUM:
+        for _ in range(draw(st.integers(min_value=0, max_value=2))):
+            _put_tax_registration(draw, party)
 
 
 def _put_referenced_document(
@@ -305,8 +346,10 @@ def _put_referenced_document(
     """
     ref = _sub(parent, "ram", local)
     if rich and profile in (Profile.COMFORT, Profile.EXTENDED):
-        if draw(st.booleans()):
-            _put_id(ref, "ram", "IssuerAssignedID", draw(_token))
+        # The XSD makes IssuerAssignedID optional in the rich form, but
+        # carthorse declares it required and every real-world BG-24
+        # instance carries one. Always emit.
+        _put_id(ref, "ram", "IssuerAssignedID", draw(_token))
         if draw(st.booleans()):
             _put_id(ref, "ram", "URIID", draw(_token))
         if draw(st.booleans()):
