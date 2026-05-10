@@ -1,3 +1,51 @@
+"""Trade parties — Seller, Buyer, and friends.
+
+This module owns every ``ram:*TradeParty`` element. The shape is the
+same across roles (``ram:TradePartyType`` in the XSD); the dataclasses
+specialise on which fields are required vs optional per profile and
+on which BT-IDs they map to.
+
+Roles modelled:
+
+* ``SellerTradeParty`` (BG-4) and ``BuyerTradeParty`` (BG-7) — header.
+* ``SellerTaxRepresentativeTradeParty`` (BG-11) — header, BASIC_WL+.
+* ``PayeeTradeParty`` (BG-10) — settlement, BASIC_WL+.
+* ``ShipToTradeParty`` (BG-13), ``ShipFromTradeParty`` (BG-X-30),
+  ``UltimateShipToTradeParty`` (BG-X-27) — delivery.
+* ``ProductEndUserTradeParty`` (BG-X-18) — agreement, EXTENDED.
+
+Sub-elements (``PostalTradeAddress``, ``LegalOrganization``,
+``TradeContact``, ``URIUniversalCommunication``, ``GlobalID``,
+``ISO6523SchemaId``, ``TaxSchemaId``, ``SpecifiedTaxRegistration``)
+are factored at the top of the file because they're reused across
+party roles.
+
+Validation rules covered (or missing) in this module:
+
+* △ ``BR-CO-9`` — ``TaxSchemaId.validate_internal`` checks the
+  ``schemeID ∈ {VA, FC}`` constraint, but does NOT yet check that the
+  VAT identifier value starts with an ISO 3166-1 alpha-2 country
+  prefix (Greece may use ``EL``). See
+  ``docs/IMPLEMENTATION_PLAN.md §3``.
+* — ``BR-CO-26`` (Seller automatic identification: BT-29 OR BT-30 OR
+  BT-31). Not enforced.
+* — ``BR-18 / BR-19 / BR-20 / BR-56`` (tax representative requires
+  name / address / country / VAT ID): all implicit through required
+  fields on :class:`SellerTaxRepresentativeTradeParty`.
+* — ``BR-62 / BR-63`` (electronic address requires ``schemeID``):
+  required by the schema, not yet enforced at the dataclass level.
+
+Known wire-format bugs in this module:
+
+* :class:`SchemaID` renders / reads the attribute as ``schemaID``.
+  The XSD spells it ``schemeID``. Real ZUGFeRD samples therefore
+  break parsing. See ``docs/IMPLEMENTATION_PLAN.md §1 #1``.
+* :class:`TaxSchemaId` declares ``tag = "GlobalID"`` so its element
+  is rendered as ``<ram:GlobalID …>``. Real samples emit
+  ``<ram:ID schemeID="VA">`` inside ``SpecifiedTaxRegistration``. See
+  ``§1 #9``.
+"""
+
 from dataclasses import dataclass, field
 from typing import ClassVar, Self, override
 
@@ -5,20 +53,6 @@ from tagic.xml import XML
 
 from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.types import Profile
-
-# Validation:
-# BR-CO-26 Verkäufer
-# Um dem Käufer eine automatische Identifizierung eines Lieferanten zu ermöglichen, müssen die Kennung des Verkäufers (BT-29), die Kennung der rechtlichen Registrierung des Verkäufers (BT-30) und/oder die Umsatzsteuer-Identifikationsnummer des Verkäufers (BT-31) angegeben werden.
-# BR-CO-9 Umsatzsteuer-Identifikationsnummern
-# Den Umsatzsteuer-Identifikationsnummern des Verkäufers (BT-31), des Steuerbevollmächtigten des Verkäufers (BT-63) und des Käufers (BT-48) muss zur Kennzeichnung des Landes, das sie erteilt hat, jeweils ein Präfix nach ISO 3166-1 Alpha-2 vorangestellt werden, durch das das Ausstellerland identifiziert werden kann. Griechenland wird jedoch ermächtigt, das Präfix „EL“ zu verwenden.
-# BR-18 Steuerbevollmächtigter des Verkäufers
-# Falls sich der Verkäufer (BG-4) durch einen Steuerbevollmächtigten (BG-11) vertreten lässt, muss dessen Name (BT-62) in der Rechnung angegeben werden.
-
-# BR-19 Steuerbevollmächtigter des Verkäufers
-# Falls sich der Verkäufer (BG-4) durch einen Steuerbevollmächtigten (BG-11) vertreten lässt, muss die Postanschrift des Steuerbevollmächtigten des Verkäufers (BG-12) in der Rechnung angegeben werden.
-
-# BR-56 Steuerbevollmächtigter des Verkäufers
-# Jeder Steuerbevollmächtigte des Verkäufers (BG-11) muss über eine Umsatzsteuer-Identifikationsnummer des Steuerbevollmächtigten des Verkäufers (BT-63) verfügen.
 
 
 @dataclass(kw_only=True, slots=True)

@@ -164,6 +164,19 @@ Sample provenance, license (Apache 2.0) and download URLs are in
 [ZUGFeRD/mustangproject](https://github.com/ZUGFeRD/mustangproject) and
 [ZUGFeRD/corpus](https://github.com/ZUGFeRD/corpus).
 
+## Reference docs
+
+Per-profile reference material lives under `docs/`:
+
+- [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — module → BG/BT field map,
+  profile applicability, and wire conventions.
+- [`docs/VALIDATION.md`](docs/VALIDATION.md) — every EN 16931 / Factur-X
+  business rule (`BR-1..65`, `BR-CO-3..26`, the per-VAT-category
+  families, and the EXTENDED `BR-FXEXT-*` overlay) with implementation
+  status.
+- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — gap
+  list and ordered roadmap for the missing structures and validators.
+
 ## Known gaps
 
 Roughly in order of how often they come up when feeding real samples in:

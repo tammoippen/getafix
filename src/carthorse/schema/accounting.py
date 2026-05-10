@@ -1,3 +1,42 @@
+"""Monetary totals and VAT breakdown.
+
+Owns the four BG groups that make up the financial spine of an invoice:
+
+* ``BG-22 SpecifiedTradeSettlementHeaderMonetarySummation`` — the
+  rectangular "totals" block at the bottom of the invoice. Eight
+  amounts: line total, charge total, allowance total, tax basis total,
+  tax total (one or two — invoice currency, optionally accounting
+  currency), grand total, prepaid total, due-payable amount.
+* ``BG-23 ApplicableTradeTax`` — one row per VAT category / rate
+  combination. Required at BASIC_WL+ (``BR-CO-18``).
+* ``BG-20 SpecifiedTradeAllowanceCharge[indicator=false]`` (Abschlag /
+  allowance) and ``BG-21 SpecifiedTradeAllowanceCharge[indicator=true]``
+  (Zuschlag / charge). Same shape, same dataclass; the
+  ``ChargeIndicator`` is what tells them apart.
+* ``CategoryTradeTax`` — the embedded VAT category block on each
+  allowance / charge.
+
+Validation rules covered (or missing) in this module:
+
+* ✓ ``BR-CO-18`` (at least one BG-23 ≥ BASIC_WL) — in
+  ``settlement.py``.
+* ✓ ``BR-CO-21`` / ``BR-CO-22`` — allowance/charge requires reason or
+  reason code, in :class:`TradeAllowanceCharge.validate_internal`.
+* △ ``BR-5`` — ``TaxTotal.currency_id`` shape only.
+* — ``BR-12`` (BT-106 required ≥ BASIC_WL): currently unconditionally
+  required by :class:`MonetarySummation`, which makes MINIMUM samples
+  break. See ``docs/IMPLEMENTATION_PLAN.md §1 #2``.
+* — ``BR-CO-3`` (BT-7 vs BT-8 mutually exclusive): BT-7 not modelled.
+* — ``BR-CO-10..17`` (sum identities): need line items.
+* — ``BR-53`` (BT-6 ⇒ BT-111): needs multi-``TaxTotal`` model
+  (``§1 #6``).
+* — ``BR-48`` (rate required unless not-subject-to-VAT): not enforced.
+
+For the per-VAT-category ``BR-AE/BR-E/BR-G/BR-IC/BR-IG/BR-IP/BR-O/
+BR-S/BR-Z`` rule families and the EXTENDED ``BR-FXEXT-*`` rounding-
+tolerance variants, see ``docs/VALIDATION.md``.
+"""
+
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import ClassVar, Self, override
@@ -6,33 +45,6 @@ from tagic.xml import XML
 
 from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.types import CategoryCode, Profile
-
-# TODO:
-# BR-CO-3 Rechnung
-# Das Datum der Steuerfälligkeit (BT-7) und der Code für das Datum der Steuerfälligkeit (BT-8) schließen sich gegenseitig aus.
-# BR-CO-10 Gesamtsummen auf Dokumentenebene
-# Summe der Nettobeträge aller Rechnungspositionen (BT-106) = Summe Nettobeträge der Rechnungsposition (BT-131).
-# BR-CO-11 Gesamtsummen auf Dokumentenebene
-# Summe der Abschläge auf Dokumentenebene (BT-107) = Summe Beträge des Abschlags auf Dokumentenebene (BT-92).
-# BR-CO-12 Gesamtsummen auf Dokumentenebene
-# Summe der Zuschläge auf Dokumentenebene (BT-108) = Summe Beträge des Zuschlags auf Dokumentenebene (BT-99).
-# BR-CO-13 Gesamtsummen auf Dokumentenebene
-# Rechnungsgesamtbetrag ohne Umsatzsteuer (BT-109) = Summe Nettobeträge der Rechnungsposition (BT-131) - Summe der Abschläge auf Dokumentenebene (BT-107) + Summe der Zuschläge auf Dokumentenebene (BT-108).
-# BR-CO-14 Gesamtsummen auf Dokumentenebene
-# Gesamtbetrag der Rechnungsumsatzsteuer (BT-110) = ?  kategoriespezifische Steuerbeträge (BT-117).
-# BR-CO-15 Gesamtsummen auf Dokumentenebene
-# Rechnungsgesamtbetrag einschließlich Umsatzsteuer (BT-112) = Rechnungsgesamtbetrag ohne Umsatzsteuer (BT-109) + Gesamtbetrag der Rechnungsumsatzsteuer (BT-110).
-# BR-CO-16 Gesamtsummen auf Dokumentenebene
-# Fälliger Zahlungsbetrag (BT-115) = Gesamtbetrag der Rechnungsumsatzsteuer (BT-112) - Vorauszahlungsbetrag (BT-113) + Rundungsbetrag (BT-114).
-# BR-CO-17 Umsatzsteueraufschlüsselung
-# Kategoriespezifischer Steuerbetrag (BT-117) = kategoriespezifischer Steuerbasisbetrag (BT-116) x (kategoriespezifischer Umsatzsteuersatz (BT-119)/100), gerundet auf zwei Dezimalstellen.
-
-# BR-12 Gesamtsummen auf  Dokumentenebene
-# Eine Rechnung muss die Summe der Nettobeträge aller Rechnungspositionen (BT-106) anzeigen.
-# BR-53 Gesamtsummen auf Dokumentenebene
-# Falls der Code für die Währung der Umsatzsteuerbuchung (BT-6) vorhanden ist, muss der Steuergesamtbetrag in Buchungswährung (BT-111) angegeben werden.
-# BR-48 Umsatzsteueraufschlüsselung
-# Jede Umsatzsteueraufschlüsselung (BG-23) muss einen kategoriespezifischen Umsatzsteuersatz (BT-119) haben, es sei denn, die Rechnung unterliegt nicht der Umsatzsteuer.
 
 
 @dataclass(kw_only=True, slots=True)

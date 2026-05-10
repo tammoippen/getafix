@@ -1,3 +1,40 @@
+"""Header trade settlement (BG-19) — currency, payment, totals.
+
+``ApplicableHeaderTradeSettlement`` (BG-19) is the third sibling of
+the ``SupplyChainTradeTransaction``. It carries:
+
+* the invoice currency (BT-5) and — at BASIC_WL+ — the optional VAT
+  accounting currency (BT-6), still missing in the carthorse model;
+* SEPA-specific creditor reference and remittance information;
+* payee details if different from seller (BG-10);
+* zero-or-more payment means (BG-16) with associated debtor/creditor
+  financial accounts (BG-17);
+* one or more VAT breakdowns (BG-23) once at BASIC_WL+;
+* optional invoicing period (BG-14, ✗ not modelled);
+* zero-or-more allowance (BG-20) and charge (BG-21) groups;
+* optional payment terms (BT-20-00); EXTENDED upgrades this to a list;
+* the monetary summation (BG-22);
+* zero-or-more preceding-invoice references (BG-3) — carthorse
+  currently models only one;
+* zero-or-more accounting references (BT-19-00).
+
+Validation rules covered (or missing) in this module:
+
+* ✓ ``BR-CO-18`` (at least one ``trade_taxes`` row at BASIC_WL+) — see
+  :meth:`TradeSettlement.validate_internal`.
+* ✓ ``BR-50`` (account info requires IBAN or proprietary id) — see
+  :meth:`PayeePartyCreditorFinancialAccount.validate_internal`.
+* △ ``BR-5`` — currency code shape only.
+* △ ``BR-49`` — ``PaymentMeans.type_code`` shape; not the BG-16
+  presence rule.
+* — ``BR-61`` (SEPA / local / non-SEPA credit transfer requires BT-84):
+  not enforced.
+* — ``BR-CO-25`` (positive ``DuePayableAmount`` ⇒ BT-9 or BT-20
+  present): not enforced.
+
+For the full BR-* catalogue see ``docs/VALIDATION.md``.
+"""
+
 from dataclasses import dataclass, field
 from datetime import date
 from typing import ClassVar, override
@@ -11,10 +48,6 @@ from carthorse.schema.element import Element, ValidationError
 from carthorse.schema.party import PayeeTradeParty
 from carthorse.schema.references import InvoiceReferencedDocument
 from carthorse.schema.types import Profile
-
-# TODO
-# BR-61 Zahlungsanweisungen
-# Ist der Zahlungsmitteltyp (BT-81) eine SEPA-Überweisung, eine örtliche Überweisung oder eine internationale Überweisung ohne SEPA, muss die Kennung des Zahlungskontos (BT-84) angegeben werden.
 
 
 @dataclass(kw_only=True, slots=True)
