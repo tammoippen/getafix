@@ -23,9 +23,9 @@ Validation rules covered (or missing) in this module:
 * ✓ ``BR-CO-21`` / ``BR-CO-22`` — allowance/charge requires reason or
   reason code, in :class:`TradeAllowanceCharge.validate_internal`.
 * △ ``BR-5`` — ``TaxTotal.currency_id`` shape only.
-* — ``BR-12`` (BT-106 required ≥ BASIC_WL): currently unconditionally
-  required by :class:`MonetarySummation`, which makes MINIMUM samples
-  break. See ``docs/IMPLEMENTATION_PLAN.md §1 #2``.
+* — ``BR-12`` (BT-106 required ≥ BASIC_WL): :class:`MonetarySummation`
+  treats ``line_total`` as optional and gates it on ``>= BASIC_WL`` for
+  rendering, but does not yet *require* it at BASIC_WL+.
 * — ``BR-CO-3`` (BT-7 vs BT-8 mutually exclusive): BT-7 not modelled.
 * — ``BR-CO-10..17`` (sum identities): need line items.
 * — ``BR-53`` (BT-6 ⇒ BT-111): needs multi-``TaxTotal`` model
@@ -129,8 +129,14 @@ class MonetarySummation(Element):
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementHeaderMonetarySummation"
 
-    line_total: Decimal = field(metadata={"tag": "LineTotalAmount"})
-    """Summe der Nettobeträge aller Rechnungspositionen
+    line_total: Decimal | None = field(
+        default=None, metadata={"tag": "LineTotalAmount", "profile": Profile.BASIC_WL}
+    )
+    """Summe der Nettobeträge aller Rechnungspositionen.
+
+    Optional in carthorse: the MINIMUM profile XSD does not include
+    ``LineTotalAmount`` at all. From BASIC_WL onwards the field is
+    expected per ``BR-12``; that rule isn't yet enforced here.
 
     EN 16931-ID: BT-106
     """
