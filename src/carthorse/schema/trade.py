@@ -173,6 +173,42 @@ class Trade(Element):
                 "identifier (BT-48).",
                 ("BR-IC-2", "BR-IC-3", "BR-IC-4"),
             ),
+            (
+                CategoryCode.T_L,
+                e_ok,  # IGIC: same predicate as Exempt — VAT/local/tax-rep.
+                "VAT category 'IGIC' (L, Canary Islands) requires the "
+                "Seller VAT identifier (BT-31), the Seller tax registration "
+                "identifier (BT-32) and/or the Seller tax representative "
+                "VAT identifier (BT-63).",
+                ("BR-IG-2", "BR-IG-3", "BR-IG-4"),
+            ),
+            (
+                CategoryCode.T_M,
+                e_ok,  # IPSI: same predicate.
+                "VAT category 'IPSI' (M, Ceuta/Melilla) requires the "
+                "Seller VAT identifier (BT-31), the Seller tax registration "
+                "identifier (BT-32) and/or the Seller tax representative "
+                "VAT identifier (BT-63).",
+                ("BR-IP-2", "BR-IP-3", "BR-IP-4"),
+            ),
+            (
+                CategoryCode.T_S,
+                e_ok,
+                "VAT category 'Standard rated' (S) requires the Seller "
+                "VAT identifier (BT-31), the Seller tax registration "
+                "identifier (BT-32) and/or the Seller tax representative "
+                "VAT identifier (BT-63).",
+                ("BR-S-2", "BR-S-3", "BR-S-4"),
+            ),
+            (
+                CategoryCode.T_Z,
+                e_ok,
+                "VAT category 'Zero rated' (Z) requires the Seller VAT "
+                "identifier (BT-31), the Seller tax registration identifier "
+                "(BT-32) and/or the Seller tax representative VAT "
+                "identifier (BT-63).",
+                ("BR-Z-2", "BR-Z-3", "BR-Z-4"),
+            ),
         ]
 
         for category, ok, msg, (br_line, br_alw, br_chg) in families:
