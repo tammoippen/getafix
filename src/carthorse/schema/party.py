@@ -479,15 +479,17 @@ class BuyerTradeParty(Element):
     """
     electronic_address: URIUniversalCommunication | None = None
     """Details zur elektronischen Adresse"""
-    tax_registrations: SpecifiedTaxRegistration | None = field(
+    tax_registrations: list[SpecifiedTaxRegistration] | None = field(
         default=None, metadata={"profile": Profile.BASIC_WL}
     )
-    """Umsatzsteuer-Identifikationsnummer des Käufers
+    """Steuernummer / Umsatzsteuer-Identifikationsnummer des Käufers.
 
-    Die Umsatzsteuer-Identifikationsnummer des Käufers. Umsatzsteuernummer mit
-    vorangestelltem Ländercode auf der Grundlage von EN ISO 3166-1, 2-ALPHA
-    
-    EN 16931-ID: BT-48
+    The XSD permits up to two ``SpecifiedTaxRegistration`` siblings on
+    ``ram:TradePartyType`` — one VAT identifier (``schemeID="VA"``,
+    BT-48) and one local tax identifier (``schemeID="FC"``).
+    Bilingual buyers therefore need a list, not a single value.
+
+    EN 16931-ID: BT-48 (VA), BT-48-0 (FC)
     """
 
 
