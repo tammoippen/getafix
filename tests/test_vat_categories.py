@@ -305,3 +305,58 @@ class TestBrE:
             charge_category=CategoryCode.T_E,
             buyer_va=None,
         ).validate()
+
+
+class TestBrIc:
+    """BR-IC — Intra-community supply (UNTDID code ``K``).
+
+    Requires Seller VAT (or tax-rep VAT) AND Buyer VAT.
+    """
+
+    def test_br_ic_2_line_passes_with_both_vats(self) -> None:
+        _make_doc(line_category=CategoryCode.T_K).validate()
+
+    def test_br_ic_2_line_fails_without_buyer_vat(self) -> None:
+        # Buyer has no VAT and no legal id; per BR-IC-2 the legal id
+        # alone wouldn't help — IC requires a Buyer VAT identifier.
+        doc = _make_doc(
+            line_category=CategoryCode.T_K,
+            buyer_va=None,
+            buyer_legal_id="HRB12345",
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-IC-2"
+
+    def test_br_ic_2_line_fails_when_seller_only_has_local_id(self) -> None:
+        # IC requires Seller VAT (or tax-rep VAT) — BT-32 (FC) doesn't
+        # count, unlike BR-E/AE.
+        doc = _make_doc(
+            line_category=CategoryCode.T_K,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc="123/456/789",
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-IC-2"
+
+    def test_br_ic_3_doc_level_allowance_with_k(self) -> None:
+        doc = _make_doc(
+            line_category=CategoryCode.T_S,
+            allowance_category=CategoryCode.T_K,
+            buyer_va=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-IC-3"
+
+    def test_br_ic_4_doc_level_charge_with_k(self) -> None:
+        doc = _make_doc(
+            line_category=CategoryCode.T_S,
+            charge_category=CategoryCode.T_K,
+            buyer_va=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-IC-4"
