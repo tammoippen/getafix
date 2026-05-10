@@ -360,3 +360,79 @@ class TestBrIc:
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code == "BR-IC-4"
+
+
+class TestBrSellerVatLocalTaxRep:
+    """BR-S, BR-Z, BR-IG, BR-IP — all four families share one
+    predicate: Seller has VAT, BT-32, *or* tax-rep VAT."""
+
+    @pt.mark.parametrize(
+        ("category", "code"),
+        [
+            (CategoryCode.T_S, "BR-S-2"),
+            (CategoryCode.T_Z, "BR-Z-2"),
+            (CategoryCode.T_L, "BR-IG-2"),
+            (CategoryCode.T_M, "BR-IP-2"),
+        ],
+    )
+    def test_line_requires_seller_tax_id(
+        self, category: CategoryCode, code: str
+    ) -> None:
+        doc = _make_doc(
+            line_category=category,
+            seller_id="S-001",  # satisfies BR-CO-26
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == code
+
+    @pt.mark.parametrize(
+        ("category", "code"),
+        [
+            (CategoryCode.T_S, "BR-S-3"),
+            (CategoryCode.T_Z, "BR-Z-3"),
+            (CategoryCode.T_L, "BR-IG-3"),
+            (CategoryCode.T_M, "BR-IP-3"),
+        ],
+    )
+    def test_doc_level_allowance_requires_seller_tax_id(
+        self, category: CategoryCode, code: str
+    ) -> None:
+        doc = _make_doc(
+            # T_O ("Not subject to VAT") is handled separately and lets
+            # the allowance rule below fire first.
+            line_category=CategoryCode.T_O,
+            allowance_category=category,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == code
+
+    @pt.mark.parametrize(
+        ("category", "code"),
+        [
+            (CategoryCode.T_S, "BR-S-4"),
+            (CategoryCode.T_Z, "BR-Z-4"),
+            (CategoryCode.T_L, "BR-IG-4"),
+            (CategoryCode.T_M, "BR-IP-4"),
+        ],
+    )
+    def test_doc_level_charge_requires_seller_tax_id(
+        self, category: CategoryCode, code: str
+    ) -> None:
+        doc = _make_doc(
+            line_category=CategoryCode.T_O,
+            charge_category=category,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == code
