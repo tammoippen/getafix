@@ -31,17 +31,35 @@ from carthorse.schema.settlement import TradeSettlement
 from carthorse.schema.types import CategoryCode, Namespace, Profile
 
 
-def _has_vat_id(party: SellerTradeParty | BuyerTradeParty | None) -> bool:
-    if party is None or not party.tax_registrations:
-        return False
-    return any(tr.id.scheme_id == "VA" for tr in party.tax_registrations)
+def _iter_tax_registrations(
+    registrations: object,
+):
+    """Yield each SpecifiedTaxRegistration regardless of carthorse's
+    inconsistent cardinality on the field (some parties carry a single
+    registration, others a ``list[...] | None``)."""
+    if registrations is None:
+        return
+    if isinstance(registrations, list):
+        yield from registrations
+    else:
+        yield registrations
 
 
-def _has_vat_or_local_tax_id(party: SellerTradeParty | None) -> bool:
-    if party is None or not party.tax_registrations:
+def _has_vat_id(party: object) -> bool:
+    if party is None:
         return False
     return any(
-        tr.id.scheme_id in ("VA", "FC") for tr in party.tax_registrations
+        tr.id.scheme_id == "VA"
+        for tr in _iter_tax_registrations(getattr(party, "tax_registrations", None))
+    )
+
+
+def _has_vat_or_local_tax_id(party: object) -> bool:
+    if party is None:
+        return False
+    return any(
+        tr.id.scheme_id in ("VA", "FC")
+        for tr in _iter_tax_registrations(getattr(party, "tax_registrations", None))
     )
 
 
@@ -230,3 +248,37 @@ class Trade(Element):
                     continue
                 code = br_chg if ac.indicator else br_alw
                 raise ValidationError(code, f"{code}: {msg}")
+
+        # BR-O — Not subject to VAT: inverted predicate. Each slot
+        # carrying category 'O' forbids a different identifier set.
+        s_has_vat_or_taxrep = _has_vat_id(seller) or _has_vat_id(tax_rep)
+
+        for item in self.items:
+            if item.settlement.applicable_trade_tax.category_code != CategoryCode.T_O:
+                continue
+            if s_has_vat_or_taxrep or buyer.id is not None:
+                raise ValidationError(
+                    "BR-O-2",
+                    "An Invoice line with VAT category 'Not subject to VAT' "
+                    "(O) shall not contain the Seller VAT identifier "
+                    "(BT-31), the Seller tax representative VAT identifier "
+                    "(BT-63) or the Buyer identifier (BT-46).",
+                )
+
+        for ac in self.settlement.allowance_charge or []:
+            if (
+                ac.category_trade_tax is None
+                or ac.category_trade_tax.category_code != CategoryCode.T_O
+            ):
+                continue
+            if s_has_vat_or_taxrep or _has_vat_id(buyer):
+                code = "BR-O-4" if ac.indicator else "BR-O-3"
+                raise ValidationError(
+                    code,
+                    f"{code}: A document-level "
+                    f"{'charge' if ac.indicator else 'allowance'} "
+                    "with VAT category 'Not subject to VAT' (O) shall not "
+                    "contain the Seller VAT identifier (BT-31), the Seller "
+                    "tax representative VAT identifier (BT-63) or the "
+                    "Buyer VAT identifier (BT-48).",
+                )

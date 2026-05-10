@@ -436,3 +436,96 @@ class TestBrSellerVatLocalTaxRep:
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code == code
+
+
+class TestBrO:
+    """BR-O — Not subject to VAT (UNTDID code ``O``).
+
+    The inverted predicate: when a line / allowance / charge carries
+    category O the invoice must *not* contain tax identifiers — the
+    seller isn't VAT-registered, so VAT IDs would be misleading.
+
+    * BR-O-2 (line)      forbids BT-31 / BT-63 and BT-46 (Buyer **id**).
+    * BR-O-3 (allowance) forbids BT-31 / BT-63 and BT-48 (Buyer **VAT**).
+    * BR-O-4 (charge)    forbids BT-31 / BT-63 and BT-48.
+    """
+
+    def test_br_o_2_line_passes_when_no_tax_ids_present(self) -> None:
+        # Seller has only BT-29 (id) — that's not a tax id, so BR-O-2 OK.
+        # Buyer has nothing.
+        _make_doc(
+            line_category=CategoryCode.T_O,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        ).validate()
+
+    def test_br_o_2_line_forbids_seller_vat(self) -> None:
+        doc = _make_doc(
+            line_category=CategoryCode.T_O,
+            seller_id="S-001",
+            seller_va="DE123456789",
+            buyer_va=None,
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-O-2"
+
+    def test_br_o_2_line_forbids_buyer_id(self) -> None:
+        # The spec quirk: BR-O-2 names BT-46 (Buyer ID), not BT-48.
+        doc = _make_doc(
+            line_category=CategoryCode.T_O,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        )
+        # Force a BT-46 directly (the helper doesn't expose it).
+        doc.trade.agreement.buyer.id = "B-001"
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-O-2"
+
+    def test_br_o_3_allowance_forbids_buyer_vat(self) -> None:
+        # Allowance with O — BT-48 forbidden.
+        doc = _make_doc(
+            line_category=CategoryCode.T_O,
+            allowance_category=CategoryCode.T_O,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va="DE987654321",
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-O-3"
+
+    def test_br_o_4_charge_forbids_seller_taxrep_vat(self) -> None:
+        # Charge with O. We add the tax-rep with a VAT id; the rule
+        # forbids BT-63 in this case. Use a line category that's
+        # satisfied by tax-rep VAT (T_S) so the line doesn't fire.
+        doc = _make_doc(
+            line_category=CategoryCode.T_S,
+            charge_category=CategoryCode.T_O,
+            seller_id="S-001",
+            seller_va=None,
+            seller_fc=None,
+            buyer_va=None,
+        )
+        from carthorse.schema.party import (
+            SellerTaxRepresentativeTradeParty,
+        )
+
+        doc.trade.agreement.seller_tax_representative_party = (
+            SellerTaxRepresentativeTradeParty(
+                name="TR",
+                address=PostalTradeAddressExtended(country_id="DE"),
+                tax_registrations=SpecifiedTaxRegistration(
+                    id=TaxSchemeId(id="DE111222333", scheme_id="VA")
+                ),
+            )
+        )
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-O-4"
