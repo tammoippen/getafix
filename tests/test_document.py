@@ -1038,3 +1038,76 @@ def test_amount_currency_id_round_trips():
     out = parsed.to_xml_internal(Profile.BASIC_WL).render(indent=True)
     # Every amount element keeps its currencyID="EUR" attribute.
     assert out.count('currencyID="EUR"') == 5
+
+
+def test_billing_specified_period_round_trips():
+    """BG-14 BillingSpecifiedPeriod with start + end round-trips."""
+    from carthorse.schema.settlement import BillingSpecifiedPeriod
+
+    period = BillingSpecifiedPeriod(start=date(2025, 1, 1), end=date(2025, 1, 31))
+    xml = period.to_xml_internal(Profile.BASIC_WL).render(indent=True)
+    assert "<ram:BillingSpecifiedPeriod>" in xml
+    assert "<ram:StartDateTime>" in xml
+    assert "<ram:EndDateTime>" in xml
+    parsed = BillingSpecifiedPeriod.from_xml(  # pyright: ignore[reportArgumentType]
+        etree.fromstring(_wrap_subtree(xml, "BillingSpecifiedPeriod"))
+    )
+    assert parsed == period
+
+
+def test_billing_specified_period_br_co_19_at_least_one_endpoint():
+    """BG-14 with neither start nor end set raises BR-CO-19."""
+    from carthorse.schema.settlement import BillingSpecifiedPeriod
+
+    period = BillingSpecifiedPeriod()
+    with pt.raises(ValidationError) as e:
+        period.validate_internal(Profile.BASIC_WL)
+    assert e.value.code == "BR-CO-19"
+
+
+def test_billing_specified_period_br_29_end_after_start():
+    """BG-14 with end < start raises BR-29."""
+    from carthorse.schema.settlement import BillingSpecifiedPeriod
+
+    period = BillingSpecifiedPeriod(start=date(2025, 2, 1), end=date(2025, 1, 1))
+    with pt.raises(ValidationError) as e:
+        period.validate_internal(Profile.BASIC_WL)
+    assert e.value.code == "BR-29"
+
+
+def test_tax_currency_code_requires_matching_tax_total():
+    """If BT-6 (TaxCurrencyCode) is set, MonetarySummation must carry a
+    TaxTotal whose currency_id == BT-6 (BR-53)."""
+    from carthorse.schema.settlement import TradeSettlement
+
+    summation = MonetarySummation(
+        line_total=Decimal("100"),
+        tax_basis_total=Decimal("100"),
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        grand_total=Decimal("119"),
+        due_amount=Decimal("119"),
+    )
+    settlement = TradeSettlement(
+        currency_code="EUR",
+        tax_currency_code="USD",
+        monetary_summation=summation,
+        trade_taxes=[
+            ApplicableTradeTax(
+                calculated_amount=Decimal("19"),
+                basis_amount=Decimal("100"),
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("19"),
+            )
+        ],
+    )
+    with pt.raises(ValidationError) as e:
+        settlement.validate_internal(Profile.BASIC_WL)
+    assert e.value.code == "BR-53"
+
+    # With matching second TaxTotal it passes.
+    settlement.monetary_summation.tax_total = [
+        TaxTotal(amount=Decimal("19"), currency_id="EUR"),
+        TaxTotal(amount=Decimal("20.45"), currency_id="USD"),
+    ]
+    settlement.validate_internal(Profile.BASIC_WL)
