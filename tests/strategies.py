@@ -1,7 +1,7 @@
 """Hypothesis strategies that emit Factur-X CII invoice XML.
 
 The strategies are driven by the per-profile XSDs vendored under
-``ZF24_EN/Schema/`` (Factur-X 1.08 / ZUGFeRD 2.4). One composite strategy per
+``tests/schemas/`` (Factur-X 1.08 / ZUGFeRD 2.4). One composite strategy per
 profile returns a ``bytes`` payload of UTF-8 XML that is structurally
 schema-conformant for that profile:
 

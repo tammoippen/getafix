@@ -2,7 +2,7 @@
 
 Each generated XML payload comes from a strategy in :mod:`tests.strategies`
 that is independent of the carthorse model and known XSD-valid against the
-vendored Factur-X 1.08 / ZUGFeRD 2.4 schemas under ``ZF24_EN/Schema/``.
+vendored Factur-X 1.08 / ZUGFeRD 2.4 schemas under ``tests/schemas/``.
 
 Two checks per profile:
 
@@ -30,21 +30,16 @@ from carthorse.schema import Document
 from carthorse.schema.types import Profile
 from tests.strategies import invoices_for
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+_SCHEMA_ROOT = Path(__file__).resolve().parent / "schemas"
 
-# Per-profile XSD entry points. These reference the vendored Factur-X 1.08
-# schemas pulled in from the ``docs`` branch (origin/docs).
+# Per-profile XSD entry points — vendored Factur-X 1.08 schemas (XSDs only,
+# stripped of the codedb/XSLT/XLSX assets that ship in the official kit).
 _XSD_PATHS = {
-    Profile.MINIMUM: REPO_ROOT
-    / "ZF24_EN/Schema/0_Factur-X_1.08_MINIMUM/FACTUR-X_MINIMUM.xsd",
-    Profile.BASIC_WL: REPO_ROOT
-    / "ZF24_EN/Schema/1_Factur-X_1.08_BASICWL/FACTUR-X_BASIC-WL.xsd",
-    Profile.BASIC: REPO_ROOT
-    / "ZF24_EN/Schema/2_Factur-X_1.08_BASIC/FACTUR-X_BASIC.xsd",
-    Profile.COMFORT: REPO_ROOT
-    / "ZF24_EN/Schema/3_Factur-X_1.08_EN16931/FACTUR-X_EN16931.xsd",
-    Profile.EXTENDED: REPO_ROOT
-    / "ZF24_EN/Schema/4_Factur-X_1.08_EXTENDED/FACTUR-X_EXTENDED.xsd",
+    Profile.MINIMUM: _SCHEMA_ROOT / "0_Factur-X_1.08_MINIMUM/FACTUR-X_MINIMUM.xsd",
+    Profile.BASIC_WL: _SCHEMA_ROOT / "1_Factur-X_1.08_BASICWL/FACTUR-X_BASIC-WL.xsd",
+    Profile.BASIC: _SCHEMA_ROOT / "2_Factur-X_1.08_BASIC/FACTUR-X_BASIC.xsd",
+    Profile.COMFORT: _SCHEMA_ROOT / "3_Factur-X_1.08_EN16931/FACTUR-X_EN16931.xsd",
+    Profile.EXTENDED: _SCHEMA_ROOT / "4_Factur-X_1.08_EXTENDED/FACTUR-X_EXTENDED.xsd",
 }
 
 
