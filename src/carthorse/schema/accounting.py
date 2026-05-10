@@ -26,7 +26,8 @@ Validation rules covered (or missing) in this module:
 * — ``BR-12`` (BT-106 required ≥ BASIC_WL): :class:`MonetarySummation`
   treats ``line_total`` as optional and gates it on ``>= BASIC_WL`` for
   rendering, but does not yet *require* it at BASIC_WL+.
-* — ``BR-CO-3`` (BT-7 vs BT-8 mutually exclusive): BT-7 not modelled.
+* ✓ ``BR-CO-3`` (BT-7 vs BT-8 mutually exclusive) —
+  :meth:`ApplicableTradeTax.validate_internal`.
 * — ``BR-CO-10..17`` (sum identities): need line items.
 * — ``BR-53`` (BT-6 ⇒ BT-111): needs multi-``TaxTotal`` model
   (``§1 #6``).
@@ -38,6 +39,7 @@ tolerance variants, see ``docs/VALIDATION.md``.
 """
 
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
 from typing import ClassVar, Self, override
 
@@ -307,6 +309,19 @@ class ApplicableTradeTax(Element):
 
     EN 16931-ID: BT-121
     """
+    tax_point_date: date | None = field(
+        default=None, metadata={"tag": "TaxPointDate", "profile": Profile.COMFORT}
+    )
+    """Tax point date (BT-7).
+
+    The date on which VAT becomes accountable for the Seller and the
+    Buyer, when this differs from the invoice issue date. Mutually
+    exclusive with :attr:`due_date_code` (BT-8) per ``BR-CO-3``.
+
+    First permitted from EN 16931 / COMFORT onwards.
+
+    EN 16931-ID: BT-7
+    """
     due_date_code: str | None = field(default=None, metadata={"tag": "DueDateTypeCode"})
     """Code für das Datum der Steuerfälligkeit
 
@@ -360,9 +375,20 @@ class ApplicableTradeTax(Element):
                 "TypeCode",
                 "TypeCodes other than VAT for BT-118-0 are only allowed in the EXTENDED profile.",
             )
-        if not (
-            self.due_date_code is not None
-            and len(self.due_date_code) <= 3
+        # BR-CO-3: BT-7 (TaxPointDate) and BT-8 (DueDateTypeCode) are
+        # mutually exclusive on a single ApplicableTradeTax.
+        if self.tax_point_date is not None and self.due_date_code is not None:
+            raise ValidationError(
+                "BR-CO-3",
+                "Das Datum der Steuerfälligkeit (BT-7) und der Code für "
+                "das Datum der Steuerfälligkeit (BT-8) schließen sich "
+                "gegenseitig aus.",
+            )
+        # If BT-8 is supplied, it must follow UNTDID 2475 (digits or ZZZ,
+        # max 3 chars). When absent — BR-CO-3 leaves the slot to BT-7,
+        # or both may be omitted entirely.
+        if self.due_date_code is not None and not (
+            len(self.due_date_code) <= 3
             and (self.due_date_code.isdigit() or self.due_date_code == "ZZZ")
         ):
             raise ValueError(f"DueDateCode cannot be UNTDID 2475: {self.due_date_code}")
