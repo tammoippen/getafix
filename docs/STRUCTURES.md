@@ -114,7 +114,7 @@ on the field, or via the field's element class `ClassVar`).
 | `Header.id`                            | BT-1          | MINIMUM         | required              | |
 | `Header.type_code`                     | BT-3          | MINIMUM         | required              | UNTDID 1001 |
 | `Header.issue_date`                    | BT-2          | MINIMUM         | required              | rendered as `udt:DateTimeString format="102"` |
-| `Header.name`                          | BT-X-2        | EXTENDED        | BASIC                 | ⚠ carthorse gates this on BASIC, but the appendix lists `Name` only at EXTENDED. Re-gate to EXTENDED. |
+| `Header.name`                          | BT-X-2        | EXTENDED        | EXTENDED              | Re-gated to EXTENDED to match the XSD. |
 | `Header.copyright_indicator`           | BT-X-3        | EXTENDED        | EXTENDED              | |
 | `Header.language_id`                   | BT-X-4        | EXTENDED        | EXTENDED              | |
 | `Header.notes`                         | BG-1          | BASIC_WL        | BASIC_WL              | Single `IncludedNote` element class, repeated. ``IncludedNote.profile = BASIC_WL`` now matches the spec. |
