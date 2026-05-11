@@ -20,34 +20,36 @@ from carthorse.schema.references import (
 
 @dataclass(kw_only=True, slots=True)
 class TradeAgreement(Element):
-    """Gruppierung der Vertragsangaben"""
+    """Header trade agreement (process and contract details)."""
 
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"
 
     seller: SellerTradeParty
-    """Detailinformationen zum Verkäufer (=Leistungserbringer)
+    """Seller details (supplier of the goods or services).
 
     EN 16931-ID: BG-4
     """
     buyer: BuyerTradeParty
-    """Detailinformationen zum Käufer (=Leistungsempfänger)
+    """Buyer details (recipient of the goods or services).
 
     EN 16931-ID: BG-7
     """
     buyer_reference: str | None = field(
         default=None, metadata={"tag": "BuyerReference"}
     )
-    """Referenz des Käufers
+    """Buyer reference.
 
-    Eine vom Käufer zugewiesene und für internes Routing benutzte Kennung
+    An identifier assigned by the Buyer and used for internal routing
+    purposes.
 
-    Hinweis: Die Referenz wird vom Käufer festgelegt (z. B. Kontaktdaten, Abteilung,
-    Bürokennung, Projektcode), vom Verkäufer aber in der Rechnung angegeben.
+    Note: The reference is set by the Buyer (e.g. contact data,
+    department, office identifier, project code) but is stated in the
+    Invoice by the Seller.
 
     EN 16931-ID: BT-10
     """
     seller_tax_representative_party: SellerTaxRepresentativeTradeParty | None = None
-    """Steuerbevollmächtigter des Verkäufers
+    """Seller tax representative party.
 
     EN 16931-ID: BG-11
     """

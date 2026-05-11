@@ -52,21 +52,20 @@ from carthorse.schema.types import CategoryCode, Profile
 
 @dataclass(kw_only=True, slots=True)
 class TaxTotal(Element):
-    """Gesamtbetrag der Rechnungsumsatzsteuer / Steuergesamtbetrag in Buchungswährung / Steuergesamtbetrag
+    """Invoice total VAT amount / Invoice total VAT amount in accounting currency.
 
-    Der Gesamtbetrag der Umsatzsteuer für die Rechnung.
+    The total VAT amount for the Invoice.
 
-    Der Steuergesamtbetrag in Buchungswährung, die im Land des Verkäufers gültig
-    ist oder verlangt wird.
+    The VAT total amount expressed in the accounting currency accepted or
+    required in the Seller's country.
 
-    Der Gesamtbetrag der Rechnungsumsatzsteuer ist die Summe aller Beträge für
-    die einzelnen Umsatzsteuerkategorien.
+    The Invoice total VAT amount is the sum of all VAT category tax amounts.
 
-    Zu verwenden, wenn der Code für die Währung der Umsatzsteuerbuchung (BT-6) nach
-    Artikel 230 der Richtlinie 2006/112/EG über Umsatzsteuer vom Code für die
-    Rechnungswährung (BT-5) abweicht.
-    Der Steuergesamtbetrag in Buchungswährung wird bei der Berechnung der
-    Rechnungssummen nicht berücksichtigt.
+    To be used when the VAT accounting currency code (BT-6) under
+    Article 230 of Council Directive 2006/112/EC on VAT differs from the
+    invoice currency code (BT-5).
+    The VAT total amount in the VAT accounting currency is not taken into
+    account when calculating the Invoice totals.
 
     EN 16931-ID: BT-110, BT-111
     """
@@ -74,17 +73,17 @@ class TaxTotal(Element):
     tag: ClassVar[str] = "TaxTotalAmount"
 
     amount: Decimal
-    """Der Gesamtbetrag der Rechnungsumsatzsteuer ist die Summe aller Beträge
-    für die einzelnen Umsatzsteuerkategorien.
+    """The Invoice total VAT amount is the sum of all VAT category tax
+    amounts.
     """
     currency_id: str
-    """Währung der Umsatzsteuer
+    """VAT currency.
 
-    Die Angabe von currencyID ist erforderlich, um zwischen dem Steuerbetrag
-    in Belegwährung und dem Steuerbetrag in Buchwährung zu unterscheiden.
+    ``currencyID`` is required to distinguish between the tax amount in
+    invoice currency and the tax amount in VAT accounting currency.
 
-    Code Liste: ISO 4217 Nur die alphabetische Darstellung darf verwendet werden.
-    Beispiel: EUR, USD
+    Code list: ISO 4217 — only the alphabetic representation may be used.
+    Example: EUR, USD
 
     EN 16931-ID: BT-110-0, BT-111-0
     """
@@ -129,10 +128,9 @@ class TaxTotal(Element):
 
 @dataclass(kw_only=True, slots=True)
 class MonetarySummation(Element):
-    """Gesamtsummen auf Dokumentenebene / Detailinformationen zu Belegsummen
+    """Document totals / Document level totals.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die die monetären
-    Gesamtsummen der Rechnung enthält
+    A group of business terms providing the monetary totals for the Invoice.
 
     EN 16931-ID: BG-22
     """
@@ -147,7 +145,7 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
-    """Summe der Nettobeträge aller Rechnungspositionen.
+    """Sum of Invoice line net amounts.
 
     Optional in carthorse: the MINIMUM profile XSD does not include
     ``LineTotalAmount`` at all. From BASIC_WL onwards the field is
@@ -158,12 +156,11 @@ class MonetarySummation(Element):
     tax_basis_total: Decimal = field(
         metadata={"tag": "TaxBasisTotalAmount", "amount": True}
     )
-    """Rechnungsgesamtbetrag ohne Umsatzsteuer
+    """Invoice total amount without VAT.
 
-    Die Gesamtsumme der Rechnung ohne Umsatzsteuer. Der Rechnungsgesamtbetrag ohne
-    Umsatzsteuer ist die Summe der Rechnungspositions-Nettobeträge abzüglich der
-    Summe der Zuschläge auf Dokumentenebene zuzüglich der Summe der Abschläge der
-    Dokumentenebene.
+    The total amount of the Invoice without VAT. The Invoice total amount
+    without VAT is the sum of Invoice line net amounts minus the sum of
+    document level allowances plus the sum of document level charges.
 
     EN 16931-ID: BT-109
     """
@@ -184,26 +181,27 @@ class MonetarySummation(Element):
     grand_total: Decimal = field(
         metadata={"tag": "GrandTotalAmount", "amount": True}
     )
-    """Rechnungsgesamtbetrag einschließlich Umsatzsteuer / Bruttosumme
+    """Invoice total amount with VAT / Grand total amount.
 
-    Der Rechnungsgesamtbetrag einschließlich Umsatzsteuer ist der Rechnungsgesamtbetrag
-    ohne Umsatzsteuer zuzüglich des Gesamtbetrages der Rechnungsumsatzsteuer.
+    The Invoice total amount with VAT is the Invoice total amount without
+    VAT plus the Invoice total VAT amount.
 
     EN 16931-ID: BT-112
     """
     due_amount: Decimal = field(
         metadata={"tag": "DuePayableAmount", "amount": True}
     )
-    """Fälliger Zahlungsbetrag / Zahlbetrag
+    """Amount due for payment.
 
-    Der ausstehende Betrag, um dessen Zahlung gebeten wird.
+    The outstanding amount that is requested to be paid.
 
-    Dieser Betrag ist der Rechnungsgesamtbetrag einschließlich Umsatzsteuer
-    abzüglich des im Voraus gezahlten Betrages. Im Falle einer vollständig
-    beglichenen Rechnung ist dieser Betrag gleich null. Der Betrag kann negativ
-    sein; in diesem Fall schuldet der Verkäufer dem Käufer den Betrag.
+    This amount is the Invoice total amount with VAT minus the paid amount
+    that has been paid in advance. If the Invoice has been fully paid, this
+    amount is zero. The amount may be negative; in that case the Seller
+    owes the Buyer the amount.
 
-    Bei geleisteten Anzahlungen kann dieser vom Rechnungsendbetrag abweichen.
+    When prepayments have been made, this amount may differ from the
+    Invoice grand total.
 
     EN 16931-ID: BT-115
     """
@@ -215,12 +213,12 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
-    """Summe der Zuschläge auf Dokumentenebene
+    """Sum of charges on document level.
 
-    Summe aller in der Rechnung enthaltenen Zuschläge der Dokumentenebene.
+    Sum of all charges on document level in the Invoice.
 
-    Zuschläge der Positionsebene sind in den Gesamtpositionsbeträgen enthalten,
-    die addiert werden, um den Gesamtnettobetrag der Positionen zu erhalten.
+    Charges on line level are included in the Invoice line net amounts
+    which are summed up into the Sum of Invoice line net amounts.
 
     EN 16931-ID: BT-108
     """
@@ -232,12 +230,12 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
-    """Summe der Abschläge auf Dokumentenebene
+    """Sum of allowances on document level.
 
-    Summe aller in der Rechnung enthaltenen Abschläge der Dokumentenebene.
+    Sum of all allowances on document level in the Invoice.
 
-    Abschläge auf der Positionsebene sind in den Gesamtpositionsbeträgen enthalten,
-    die addiert werden, um den Gesamtnettobetrag der Positionen zu erhalten.
+    Allowances on line level are included in the Invoice line net amounts
+    which are summed up into the Sum of Invoice line net amounts.
 
     EN 16931-ID: BT-107
     """
@@ -256,12 +254,12 @@ class MonetarySummation(Element):
     by callers building a Document programmatically when emitting
     ``currencyID`` on the totals is desired (the XSD allows omitting
     it)."""
-    """Vorauszahlungsbetrag / Anzahlungsbetrag
+    """Paid amount / Prepaid amount.
 
-    Die Summe der im Voraus gezahlten Beträge
+    The sum of amounts which have been paid in advance.
 
-    Dieser Betrag wird vom Rechnungsgesamtbetrag einschließlich Umsatzsteuer
-    subtrahiert, um den fälligen Zahlungsbetrag zu berechnen.
+    This amount is subtracted from the Invoice total amount with VAT to
+    calculate the Amount due for payment.
 
     EN 16931-ID: BT-113
     """
@@ -269,11 +267,10 @@ class MonetarySummation(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ApplicableTradeTax(Element):
-    """Umsatzsteueraufschlüsselung / Detailinformationen zu Steuerangaben
+    """VAT breakdown / VAT details.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
-    die Umsatzsteueraufschlüsselung in verschiedene Kategorien, Sätze und
-    Befreiungsgründe enthält
+    A group of business terms providing information about VAT breakdown
+    into different categories, rates and exemption reasons.
 
     EN 16931-ID: BG-23
     """
@@ -284,69 +281,73 @@ class ApplicableTradeTax(Element):
     calculated_amount: Decimal | None = field(
         default=None, metadata={"tag": "CalculatedAmount", "amount": True}
     )
-    """Kategoriespezifischer Steuerbetrag
+    """VAT category tax amount.
 
-    Der für die betreffende Umsatzsteuerkategorie zu entrichtende Gesamtbetrag.
+    The total VAT amount for a given VAT category.
 
-    Wird durch Multiplikation des nach der Umsatzsteuerkategorie zu versteuernden
-    Betrages mit dem für die betreffende Umsatzsteuerkategorie geltenden
-    Umsatzsteuersatz berechnet.
+    Calculated by multiplying the VAT category taxable amount with the
+    VAT category rate of the relevant VAT category.
 
     EN 16931-ID: BT-117
     """
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Code der Umsatzsteuerkategorie
+    """VAT category type code.
 
-    In der EN 16931 wird nur die Steuerart „Umsatzsteuer“ mit dem Code „VAT“ unterstützt.
+    EN 16931 only supports the tax type "VAT" with the code "VAT".
 
-    Sollen andere Steuerarten angegeben wie beispielsweise eine Versicherungssteuer
-    oder eine Mineralölsteuer werden, muss das EXTENDED Profil genutzt werden. Der
-    Code für die Steuerart muss dann der Codeliste UNTDID 5153 entnommen werden.
+    If other tax types — for example insurance tax or mineral oil tax —
+    are to be carried, the EXTENDED profile must be used. The tax type
+    code must then be taken from code list UNTDID 5153.
 
-    Codeliste: UNTDID 5153
+    Code list: UNTDID 5153
 
     EN 16931-ID: BT-118-0
     """
     basis_amount: Decimal | None = field(
         default=None, metadata={"tag": "BasisAmount", "amount": True}
     )
-    """Steuerbasisbetrag
+    """VAT category taxable amount.
 
     EN 16931-ID: BT-116
     """
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
-    """Codierte Bezeichnung einer Umsatzsteuerkategorie
+    """Coded identification of a VAT category.
 
-    Folgende Einträge aus UNTDID 5305 werden verwendet (nähere Angaben in Klammern):
-    — (S) Normalsatz (Umsatzsteuer fällt nach Normalverfahren an);
-    — (Z) nach dem Nullsatz zu versteuernde Waren (Umsatzsteuer fällt mit einem Prozentsatz von null an);
-    — (E) steuerbefreit (USt./IGIC/IPSI);
-    — (AE) Umkehrung der Steuerschuldnerschaft (es gelten die Regeln zur Umkehrung der Steuerschuldnerschaft bei USt./IGIC/IPSI);
-    — (K) umsatzsteuerumsatzsteuerbefreit für innergemeinschaftliche Warenlieferungen (USt./IGIC/IPSI nicht erhoben aufgrund von Regeln zu innergemeinschaftlichen Lieferungen);
-    — (G) freier Ausfuhrartikel, Steuer nicht erhoben (USt./IGIC/IPSI nicht erhoben aufgrund von Export außerhalb der EU);
-    — (O) Dienstleistungen außerhalb des Steueranwendungsbereichs (Verkauf unterliegt nicht der USt./IGIC/IPSI);
-    — (L) allgemeine indirekte Steuer der Kanarischen Inseln (IGIC-Steuer fällt an);
-    — (M) IPSI (Steuer für Ceuta/Melilla) fällt an.
+    The following entries from UNTDID 5305 are used (with notes in
+    parentheses):
+    — (S) Standard rate (VAT applies at the standard rate);
+    — (Z) Zero rated goods (VAT applies at a rate of zero per cent);
+    — (E) Exempt from VAT (VAT/IGIC/IPSI);
+    — (AE) Reverse charge (the rules on reverse charge of VAT/IGIC/IPSI apply);
+    — (K) VAT exempt for EEA intra-community supply of goods and services
+      (VAT/IGIC/IPSI not levied due to rules on intra-community supplies);
+    — (G) Free export item, VAT not charged (VAT/IGIC/IPSI not levied due
+      to export outside the EU);
+    — (O) Services outside scope of tax (sale not subject to VAT/IGIC/IPSI);
+    — (L) Canary Islands general indirect tax (IGIC tax applies);
+    — (M) Tax for production, services and importation in Ceuta and
+      Melilla (IPSI applies).
 
-    Codeliste UNTID 5305
+    Code list: UNTDID 5305
 
     EN 16931-ID: BT-118
     """
     exemption_reason: str | None = field(
         default=None, metadata={"tag": "ExemptionReason"}
     )
-    """Grund der Steuerbefreiung (Freitext)
+    """VAT exemption reason text (free text).
 
     EN 16931-ID: BT-120
     """
     exemption_reason_code: str | None = field(
         default=None, metadata={"tag": "ExemptionReasonCode"}
     )
-    """Code für den Umsatzsteuerbefreiungsgrund
+    """VAT exemption reason code.
 
-    In Codeform angegebener Grund für die Befreiung des Betrages von der Umsatzsteuerpflicht
+    A coded statement of the reason for why the amount is exempted from
+    VAT.
 
-    Codeliste VATEX
+    Code list: VATEX
 
     EN 16931-ID: BT-121
     """
@@ -364,32 +365,34 @@ class ApplicableTradeTax(Element):
     EN 16931-ID: BT-7
     """
     due_date_code: str | None = field(default=None, metadata={"tag": "DueDateTypeCode"})
-    """Code für das Datum der Steuerfälligkeit
+    """Value added tax point date code.
 
-    Der Code für das Datum, zu dem die Umsatzsteuer für den Verkäufer und für den Käufer abrechnungsrelevant wird
+    The code for the date on which VAT becomes accountable for the
+    Seller and for the Buyer.
 
-    Der Code muss zwischen den folgenden Einträgen aus UNTDID 2005 unterscheiden:
-        - Ausstellungsdatum des Rechnungsdokuments;
-        - tatsächliches Lieferdatum;
-        - Datum der Zahlung.
-    Der Code für das Steuererhebungsdatum für umsatzsteuerliche Zwecke wird
-    verwendet, wenn das Steuererhebungsdatum für umsatzsteuerliche Zwecke bei
-    Ausstellung der Rechnung nicht bekannt ist. Die Verwendung von BT-8 und BT-7
-    schließt sich gegenseitig aus.
+    The code shall distinguish between the following entries from
+    UNTDID 2005:
+        - Invoice document issue date;
+        - Actual delivery date;
+        - Payment date.
+    The Value added tax point date code is used when the Value added
+    tax point date is not known at the time of invoice issue. BT-7
+    (Value added tax point date) and BT-8 are mutually exclusive.
 
-    Die in der Norm zitierten semantischen Werte, die durch die Werte 3, 35, 432
-    in UNTDID2005 repräsentiert werden, werden auf die folgenden Werte von
-    UNTDID2475 abgebildet, das ist die von CII 16B unterstützte relevante Codeliste:
+    The semantic values cited in the standard, represented by the
+    values 3, 35, 432 in UNTDID 2005, are mapped to the following
+    values in UNTDID 2475 — the relevant code list supported by
+    CII 16B:
 
-    - 5: Ausstellungsdatum des Rechnungsbelegs
-    - 29: Liefertermin, Ist-Zustand
-    - 72: Bis heute bezahlt
+    - 5: Invoice document issue date
+    - 29: Delivery date, actual
+    - 72: Paid to date
 
-    In Deutschland ist das Liefer- und Leistungsdatum maßgebend (BT-72)
+    In Germany, the delivery and performance date is decisive (BT-72)
     SupplyChainTradeTransaction/ApplicableHeaderTradeDelivery/
     ActualDeliverySupplyChainEvent/OccurrenceDateTime/DateTimeString).
 
-    Codeliste: UNTDID 2475 (Untermenge)
+    Code list: UNTDID 2475 (subset)
 
         https://service.unece.org/trade/untdid/d96a/uncl/uncl2475.htm
 
@@ -398,13 +401,14 @@ class ApplicableTradeTax(Element):
     rate_applicable_percent: Decimal | None = field(
         default=None, metadata={"tag": "RateApplicablePercent"}
     )
-    """Kategoriespezifischer Umsatzsteuersatz / Steuerprozentsatz
+    """VAT category rate.
 
-    Der Umsatzsteuersatz, angegeben als für die betreffende Umsatzsteuerkategorie geltender Prozentsatz.
-    Der Code der Umsatzsteuerkategorie und der kategoriespezifische Umsatzsteuersatz müssen einander entsprechen.
+    The VAT rate, represented as a percentage that applies to the
+    relevant VAT category. The VAT category code and the VAT category
+    rate shall be consistent.
 
-    Der anzugebende Wert ist der Prozentsatz. Zum Beispiel wird für 20% der
-    Wert 20 amgegeben (und nicht 0.2)
+    The value to be provided is the percentage. For example, for 20%
+    the value 20 is given (not 0.2).
 
     EN 16931-ID: BT-119
     """
@@ -480,55 +484,59 @@ class ApplicableTradeTax(Element):
 
 @dataclass(kw_only=True, slots=True)
 class CategoryTradeTax(Element):
-    """Detailinformationen zu Steuerangaben"""
+    """VAT category details for a document level allowance or charge."""
 
     tag: ClassVar[str] = "CategoryTradeTax"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Code für die Umsatzsteuerkategorie des Zu- oder Abschlages auf Dokumentenebene
+    """Document level allowance/charge VAT category type code.
 
-    In der EN 16931 wird nur die Steuerart „Umsatzsteuer“ mit dem Code „VAT“ unterstützt.
+    EN 16931 only supports the tax type "VAT" with the code "VAT".
 
-    Sollen andere Steuerarten angegeben wie beispielsweise eine Versicherungssteuer
-    oder eine Mineralölsteuer werden, muss das EXTENDED Profil genutzt werden. Der
-    Code für die Steuerart muss dann der Codeliste UNTDID 5153 entnommen werden.
+    If other tax types — for example insurance tax or mineral oil tax —
+    are to be carried, the EXTENDED profile must be used. The tax type
+    code must then be taken from code list UNTDID 5153.
 
-    Codeliste: UNTDID 5153
+    Code list: UNTDID 5153
 
-    EN 16931-ID: BT-95-0 (Abschlag), BT-102-0 (Zuschlag)
+    EN 16931-ID: BT-95-0 (Allowance), BT-102-0 (Charge)
     """
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
-    """Code für die Umsatzsteuerkategorie des Zu- oder Abschlages auf Dokumentenebene
+    """Document level allowance/charge VAT category code.
 
-    Folgende Einträge aus UNTDID 5305 werden verwendet (nähere Angaben in Klammern):
+    The following entries from UNTDID 5305 are used (with notes in
+    parentheses):
 
-    — (S) Normalsatz (Umsatzsteuer fällt nach Normalverfahren an);
-    — (Z) nach dem Nullsatz zu versteuernde Waren (Umsatzsteuer fällt mit einem Prozentsatz von null an);
-    — (E) steuerbefreit (USt./IGIC/IPSI);
-    — (AE) Umkehrung der Steuerschuldnerschaft (es gelten die Regeln zur Umkehrung der Steuerschuldnerschaft bei USt./IGIC/IPSI);
-    — (K) umsatzsteuerumsatzsteuerbefreit für innergemeinschaftliche Warenlieferungen (USt./IGIC/IPSI nicht erhoben aufgrund von Regeln zu innergemeinschaftlichen Lieferungen);
-    — (G) freier Ausfuhrartikel, Steuer nicht erhoben (USt./IGIC/IPSI nicht erhoben aufgrund von Export außerhalb der EU);
-    — (O) Dienstleistungen außerhalb des Steueranwendungsbereichs (Verkauf unterliegt nicht der USt./IGIC/IPSI);
-    — (L) allgemeine indirekte Steuer der Kanarischen Inseln (IGIC-Steuer fällt an);
-    — (M) IPSI (Steuer für Ceuta/Melilla) fällt an.
+    — (S) Standard rate (VAT applies at the standard rate);
+    — (Z) Zero rated goods (VAT applies at a rate of zero per cent);
+    — (E) Exempt from VAT (VAT/IGIC/IPSI);
+    — (AE) Reverse charge (the rules on reverse charge of VAT/IGIC/IPSI apply);
+    — (K) VAT exempt for EEA intra-community supply of goods and services
+      (VAT/IGIC/IPSI not levied due to rules on intra-community supplies);
+    — (G) Free export item, VAT not charged (VAT/IGIC/IPSI not levied due
+      to export outside the EU);
+    — (O) Services outside scope of tax (sale not subject to VAT/IGIC/IPSI);
+    — (L) Canary Islands general indirect tax (IGIC tax applies);
+    — (M) Tax for production, services and importation in Ceuta and
+      Melilla (IPSI applies).
 
-    Codeliste UNTID 5305
+    Code list: UNTDID 5305
 
-    EN 16931-ID: BT-95 (Abschlag), BT-102 (Zuschlag)
+    EN 16931-ID: BT-95 (Allowance), BT-102 (Charge)
     """
     rate_applicable_percent: Decimal | None = field(
         default=None, metadata={"tag": "RateApplicablePercent"}
     )
-    """Umsatzsteuersatz für den Zu- oder Abschlag auf Dokumentenebene
+    """Document level allowance/charge VAT rate.
 
-    Der für den Zu- oder Abschlag auf Dokumentenebene geltende und in Prozent
-    angegebene Umsatzsteuersatz.
+    The VAT rate, expressed as a percentage, that applies to the
+    document level allowance or charge.
 
-    Der anzugebende Wert ist der Prozentsatz. Zum Beispiel wird für 20% der
-    Wert 20 angegeben (und nicht 0.2).
+    The value to be provided is the percentage. For example, for 20%
+    the value 20 is given (not 0.2).
 
-    EN 16931-ID: BT-96 (Abschlag), BT-103 (Zuschlag)
+    EN 16931-ID: BT-96 (Allowance), BT-103 (Charge)
     """
 
     @override
@@ -548,36 +556,35 @@ class CategoryTradeTax(Element):
 
 @dataclass(kw_only=True, slots=True)
 class TradeAllowanceCharge(Element):
-    """Zu- und Abschläge auf Dokumentenebene
+    """Document level allowances and charges.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
-    Zu- und Abschläge enthält, die für die Rechnung als Ganzes gelten. Abzüge,
-    wie z. B. für einbehaltene Steuern, dürfen ebenfalls in dieser Gruppe
-    angegeben werden.
+    A group of business terms providing information about allowances
+    and charges that apply to the Invoice as a whole. Deductions, such
+    as for withheld taxes, may also be given in this group.
 
-    EN 16931-ID: BG-20 (Abschlag), BG-21 (Zuschlag)
+    EN 16931-ID: BG-20 (Allowance), BG-21 (Charge)
     """
 
     tag: ClassVar[str] = "SpecifiedTradeAllowanceCharge"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
-    """Schalter für Zu-/Abschlag
+    """Allowance/Charge indicator.
 
-    Schalter, der angibt, ob die nachfolgenden Daten sich auf einen Zu- oder
-    Abschlag beziehen.
+    A flag indicating whether the data that follows refers to an
+    allowance or a charge.
 
-    - Im Fall eine Abschlags (BG-27) ist der Wert des ChargeIndicators auf "false" zu setzen.
-    - Im Fall eine Zuschlags (BG-28) ist der Wert des ChargeIndicators auf "true" zu setzen.
+    - For an allowance (BG-20) the ChargeIndicator value is "false".
+    - For a charge (BG-21) the ChargeIndicator value is "true".
 
     EN 16931-ID: BG-20-0, BG-21-0, BG-20-00, BG-21-00
     """
     actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
-    """Betrag des Zu- oder Abschlags auf Dokumentenebene
+    """Document level allowance/charge amount.
 
-    Der Betrag eines Zu- oder Abschlags ohne Umsatzsteuer.
+    The amount of an allowance or charge, without VAT.
 
-    EN 16931-ID: BT-92 (Abschlag), BT-99 (Zuschlag)
+    EN 16931-ID: BT-92 (Allowance), BT-99 (Charge)
      """
     category_trade_tax: CategoryTradeTax | None = None
     """VAT category for the allowance / charge (BT-95-00 / BT-102-00).
@@ -590,48 +597,49 @@ class TradeAllowanceCharge(Element):
         default=None,
         metadata={"tag": "CalculationPercent", "profile": Profile.BASIC_WL},
     )
-    """Prozentualer Zu- oder Abschlag auf Dokumentenebene
+    """Document level allowance/charge percentage.
 
-    Der Prozentsatz, der in Verbindung mit dem Grundbetrag des Zu- oder Abschlages
-    auf Dokumentenebene zur Berechnung des Betrags des Abschlages auf Dokumentenebene
-    verwendet werden darf.
+    The percentage that, in combination with the document level
+    allowance/charge base amount, may be used to calculate the
+    document level allowance/charge amount.
 
-    Bis zum Level COMFORT wird nur das Endergebnis der Rabattierung
-    (Actual.Amount) übertragen.
+    Up to COMFORT only the final result of the discounting
+    (ActualAmount) is transmitted.
 
-    EN 16931-ID: BT-94 (Abschlag), BT-101 (Zuschlag)
+    EN 16931-ID: BT-94 (Allowance), BT-101 (Charge)
     """
     basis_amount: Decimal | None = field(
         default=None,
         metadata={"tag": "BasisAmount", "profile": Profile.BASIC_WL, "amount": True},
     )
-    """Grundbetrag des Zu- oder Abschlags auf Dokumentenebene
+    """Document level allowance/charge base amount.
 
-    Der Grundbetrag, der in Verbindung mit dem Prozentsatz des Zu- oder
-    Abschlages auf Dokumentenebene zur Berechnung des Betrags des Abschlages
-    auf Dokumentenebene verwendet werden darf.
+    The base amount that, in combination with the document level
+    allowance/charge percentage, may be used to calculate the
+    document level allowance/charge amount.
 
-    EN 16931-ID: BT-93 (Abschlag), BT-100 (Zuschlag)
+    EN 16931-ID: BT-93 (Allowance), BT-100 (Charge)
     """
     reason: str | None = field(default=None, metadata={"tag": "Reason"})
-    """Grund für den Zu- oder Abschlag auf Dokumentenebene
+    """Document level allowance/charge reason.
 
-    Der in Textform angegebene Grund für den Zu- oder Abschlag auf Dokumentenebene.
+    The reason for the document level allowance or charge, expressed
+    as text.
 
-    EN 16931-ID: BT-97 (Abschlag), BT-104 (Zuschlag)
+    EN 16931-ID: BT-97 (Allowance), BT-104 (Charge)
     """
     reason_code: str | None = field(default=None, metadata={"tag": "ReasonCode"})
-    """Code für den Grund für den Zu- oder Abschlag auf Dokumentenebene
+    """Document level allowance/charge reason code.
 
-    Einträge aus der UNTDID 5189 Codeliste verwenden. Der Code des Grundes für
-    den Zu- oder Abschlag auf Dokumentenebene und der Grund für den Zu- oder
-    Abschlag auf Dokumentenebene müssen einander entsprechen.
+    Use entries from the UNTDID 5189 code list. The reason code and
+    the reason text for the document level allowance or charge shall
+    correspond.
 
-    Codelisten: UNTDID 5189
+    Code list: UNTDID 5189
 
         https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5189.htm
 
-    EN 16931-ID: BT-98 (Abschlag), BT-105 (Zuschlag)
+    EN 16931-ID: BT-98 (Allowance), BT-105 (Charge)
     """
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on
@@ -644,6 +652,6 @@ class TradeAllowanceCharge(Element):
     # header or line level. Keeping the check there means the same
     # ``TradeAllowanceCharge`` dataclass works in both contexts.
 
-    # Der Code des Grundes für den Abschlag auf Dokumentenebene (BT-98) und
-    # der Grund für den Abschlag auf Dokumentenebene (BT-97) müssen dieselbe
-    # Zuschlagsart anzeigen.
+    # The document level allowance reason code (BT-98) and the
+    # document level allowance reason (BT-97) shall indicate the same
+    # allowance type.

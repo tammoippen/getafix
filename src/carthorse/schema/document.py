@@ -11,48 +11,57 @@ from carthorse.schema.types import Namespace, Profile, TypeCode
 
 @dataclass(kw_only=True, slots=True)
 class BusinessDocument(Element):
-    """Gruppierung der Geschäftsprozessinformationen"""
+    """Business process information group."""
 
     tag: ClassVar[str] = "DocumentContextParameterType"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: str | None = field(default=None, metadata={"tag": "ID"})
-    """Geschäftsprozesstyp / Geschäftsprozess
+    """Business process type.
 
-    Identifiziert den Kontext des Geschäftsprozesses, in dem die Transaktion erfolgt, um es dem Käufer zu ermöglichen, die Rechnung in angemessener Weise zu verarbeiten
+    Identifies the business process context in which the transaction
+    appears, to enable the Buyer to process the Invoice in an
+    appropriate way.
 
-    Anwendung: Diese Daten ermöglichen es, den Zweck der Abrechnung (Rechnung des Bevollmächtigten, Vertragspartners, Subunternehmers, Abrechnungsbeleg für einen Bauauftrag usw.) zu definieren.
+    Application: This information allows the purpose of the settlement
+    (Invoice of an agent, contract partner, subcontractor, settlement
+    document for a construction contract, etc.) to be defined.
 
-    Beispiele: Produktionsmaterial, sonstiges Material, Frachtrechnung
+    Examples: production material, other material, freight invoice
 
-    EN 16931-ID: BG-23
+    EN 16931-ID: BT-23
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class GuidelineDocument(Element):
-    """Gruppierung der Anwendungsempfehlungsinformationen"""
+    """Specification identifier group."""
 
     tag: ClassVar[str] = "GuidelineSpecifiedDocumentContextParameter"
 
     id: Profile = field(metadata={"tag": "ID"})
-    """Spezifikationskennung / Anwendungsempfehlung
+    """Specification identifier.
 
-    Eine Kennung der Spezifikation, die das gesamte Regelwerk zum semantischen Inhalt, zu den Kardinalitäten und den Geschäftsregeln enthält und zu denen die im Instanzdokument enthaltenen Daten conformant sind
+    An identification of the specification containing the total set of
+    rules regarding semantic content, cardinalities and business rules
+    to which the data contained in the instance document conforms.
 
-    Hinweis: In diesem wird die Compliance oder Conformance der Instanz mit diesem Dokument angegeben. Rechnungen, die compliant sind, geben folgendes an: urn:cen.eu:en16931:2017. Rechnungen, die compliant mit einer Benutzerspezifikation sind, dürfen diese Benutzerspezifikation an dieser Stelle angeben.
-    Es ist kein Identifikationsschema zu verwenden.
+    Note: This identifies compliance or conformance of the instance to
+    this document. Invoices that are compliant state:
+    urn:cen.eu:en16931:2017. Invoices that comply with a user
+    specification may state that user specification here. No
+    identification scheme is to be used.
 
-    EN 16931-ID: BG-24
+    EN 16931-ID: BT-24
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class Context(Element):
-    """Prozesssteuerung
+    """Process control.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
-    den Geschäftsprozess und für das Rechnungsdokument geltende Regeln enthält
+    A group of business terms providing information on the business
+    process and rules applicable to the Invoice document.
 
     EN 16931-ID: BG-2
     """
@@ -63,10 +72,10 @@ class Context(Element):
     test_indicator: bool | None = field(
         default=None, metadata={"tag": "TestIndicator", "profile": Profile.EXTENDED}
     )
-    """Testkennzeichen
+    """Test indicator.
 
-    Das Testkennzeichen kann bei der Einführung eines neuen Systems verwendet
-    werden, um die Rechnung als "Testrechnung" zu kennzeichnen.
+    The test indicator may be used when introducing a new system, to
+    mark the Invoice as a "test invoice".
     """
 
     guideline: GuidelineDocument
@@ -75,10 +84,11 @@ class Context(Element):
 
 @dataclass(kw_only=True, slots=True)
 class IncludedNote(Element):
-    """Freitext zur Rechnung
+    """Invoice note (free text).
 
-    Eine Gruppierung betriebswirtschaftlicher Begriffe zur Angabe rechnungsrelevanter
-    Freitexte einschließlich einer Qualifizierung dieser
+    A group of business terms providing textual notes that are
+    relevant for the Invoice, together with an indication of the
+    subject of the note.
 
     EN 16931-ID: BG-1
     """
@@ -99,10 +109,10 @@ class IncludedNote(Element):
 
 @dataclass(kw_only=True, slots=True)
 class EffectivePeriod(Element):
-    """Vertragliches Fälligkeitsdatum der Rechnung
+    """Contractual due date of the Invoice.
 
-    Angabe nur erforderlich, falls das vertragliche Fälligkeitsdatum vom
-    Fälligkeitsdatum der Zahlung (z.B. bei SEPA-Lastschriften) abweicht.
+    Only required if the contractual due date differs from the payment
+    due date (for example with SEPA direct debits).
     """
 
     tag: ClassVar[str] = "EffectiveSpecifiedPeriod"
@@ -115,44 +125,44 @@ class EffectivePeriod(Element):
 
 @dataclass(kw_only=True, slots=True)
 class Header(Element):
-    """Gruppierung der Eigenschaften, die das gesamte Dokument betreffen."""
+    """Document-wide header properties."""
 
     namespace: ClassVar[Namespace] = Namespace.rsm
     tag: ClassVar[str] = "ExchangedDocument"
 
     id: str = field(metadata={"tag": "ID"})
-    """Rechnungsnummer
-    
-    Eine eindeutige Kennung der Rechnung
+    """Invoice number.
 
-    Hinweis: Die nach Artikel 226 (2) der Richtlinie 2006/112/EG geforderte 
-    fortlaufende Nummer, die zur Identifizierung der Rechnung innerhalb des 
-    Geschäftskontextes, des Zeitrahmens, der Betriebssysteme und der Aufzeichnungen 
-    des Verkäufers einmalig vergeben wird. Sie kann auf einer oder mehreren 
-    Reihen von Nummern basieren, die alphanumerische Zeichen enthalten dürfen. 
-    Es ist kein Identifikationsschema zu verwenden.
-    
+    A unique identification of the Invoice.
+
+    Note: The sequential number required in Article 226(2) of
+    Directive 2006/112/EC, to uniquely identify the Invoice within the
+    business context, time frame, operating systems and records of the
+    Seller. It may be based on one or more series of numbers which may
+    include alphanumeric characters. No identification scheme is to be
+    used.
+
     EN 16931-ID: BT-1
     """
 
     type_code: TypeCode = field(metadata={"tag": "TypeCode"})
-    """Code für den Rechnungstyp / Dokumentenart (Code)
-    
-    Handelsrechnungen und Gutschriften sind nach den Einträgen in UNTDID 1001 
-    definiert.
-    Andere Einträge aus UNTDID 1001 mit spezifischen Rechnungen oder 
-    Gutschriften dürfen, falls zutreffend, verwendet werden.
+    """Invoice type code / document type code.
 
-    Für die Profile BASIC WL und MINIMUM darf ausschließlich folgender Code verwendet werden:
-    751 : Buchungshilfe - KEINE Rechnung
+    Commercial Invoices and credit notes are defined according to the
+    entries in UNTDID 1001. Other entries from UNTDID 1001 with
+    specific invoices or credit notes may be used where applicable.
+
+    For the BASIC WL and MINIMUM profiles only the following code may
+    be used:
+    751 : Invoice information for accounting purposes — NOT an Invoice
 
     EN 16931-ID: BT-3
     """
 
     issue_date: date = field(metadata={"tag": "IssueDateTime"})
-    """Rechnungsdatum
+    """Invoice issue date.
 
-    Das Datum, an dem die Rechnung ausgestellt wurde
+    The date on which the Invoice was issued.
 
     EN 16931-ID: BT-2
     """
@@ -160,9 +170,9 @@ class Header(Element):
     name: str | None = field(
         default=None, metadata={"tag": "Name", "profile": Profile.BASIC}
     )
-    """Dokumentenart (Freitext)
-    
-    RECHNUNG, GUTSCHRIFT, BELASTUNGSANZEIGE, PROFORMARECHNUNG
+    """Document type (free text).
+
+    INVOICE, CREDIT NOTE, DEBIT NOTE, PROFORMA INVOICE
     """
 
     copyright_indicator: bool | None = field(
@@ -171,9 +181,9 @@ class Header(Element):
     language_id: str | None = field(
         default=None, metadata={"tag": "LanguageID", "profile": Profile.EXTENDED}
     )
-    """Sprachkennzeichen
+    """Language indicator.
 
-    Beispiel: de
+    Example: de
     """
     notes: list[IncludedNote] | None = None
     effective_period: EffectivePeriod | None = None
@@ -181,11 +191,11 @@ class Header(Element):
 
 @dataclass(kw_only=True, slots=True)
 class Document(Element):
-    """Rechnung
+    """Invoice.
 
-    Der Inhalt der ZUGFeRD-XML-Rechnung muss unabhängig vom Belegbild eine
-    vollständige, eigenständige Rechnung abbilden. Sie soll den gleichen
-    fachlichen Inhalt widerspiegeln, wie das Belegbild.
+    The content of the ZUGFeRD XML invoice must, independently of the
+    document image, represent a complete, self-contained Invoice. It
+    should reflect the same business content as the document image.
     """
 
     namespace: ClassVar[Namespace] = Namespace.rsm

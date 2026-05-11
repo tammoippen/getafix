@@ -84,18 +84,19 @@ class SchemeID(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ISO6523SchemeId(SchemeID):
-    """ISO-6523 SchemeId
+    """ISO 6523 SchemeId.
 
-    Hinweis: Wird das Identifikationsschema verwendet, muss es aus den Einträgen
-    der von der ISO/IEC 6523 Maintenance Agency veröffentlichten Liste ausgewählt werden.
+    Note: If the identification scheme is used, it shall be chosen
+    from the entries of the list published by the ISO/IEC 6523
+    Maintenance Agency.
 
-    Anwendung: Insbesondere können folgende Codes genutzt werden:
+    Application: In particular, the following codes may be used:
         0021 : SWIFT
         0088 : EAN
         0060 : DUNS
         0177 : ODETTE
 
-    Codeliste: ISO 6523
+    Code list: ISO 6523
     https://test-docs.peppol.eu/poacc/billing/3.0/2024-q4-release/codelist/ICD/
     """
 
@@ -129,45 +130,45 @@ class PostalTradeAddress(Element):
     tag: ClassVar[str] = "PostalTradeAddress"
 
     country_id: str = field(metadata={"tag": "CountryID"})
-    """Land (Code)
+    """Country code.
 
-    Codeliste: ISO 3166-1, Nur die Alpha-2 Darstellung darf verwendet werden
+    Code list: ISO 3166-1, only the alpha-2 representation may be used.
 
-    Beispiel: DE
+    Example: DE
     """
     postcode: str | None = field(
         default=None, metadata={"tag": "PostcodeCode", "profile": Profile.BASIC_WL}
     )
-    """Postleitzahl"""
+    """Postal code."""
     line_one: str | None = field(
         default=None, metadata={"tag": "LineOne", "profile": Profile.BASIC_WL}
     )
-    """Adresszeile 1
+    """Address line 1.
 
-    Hinweis: Angabe der Strasse oder des Postfachs. Bei Großkundenanschriften
-    muss dieses Feld mit "-" belegt werden.
+    Note: The street or PO box. For major customer addresses this
+    field must be set to "-".
 
-    Beispiel: Lieferantenstraße 20
+    Example: Lieferantenstraße 20
     """
     line_two: str | None = field(
         default=None, metadata={"tag": "LineTwo", "profile": Profile.BASIC_WL}
     )
-    """Adresszeile 2
+    """Address line 2.
 
-    Beispiel: Gebäude 3
+    Example: Gebäude 3
     """
     line_three: str | None = field(
         default=None, metadata={"tag": "LineThree", "profile": Profile.BASIC_WL}
     )
-    """Adresszeile 3
+    """Address line 3.
 
-    Beispiel: Tür B
+    Example: Tür B
     """
     city_name: str | None = field(
         default=None, metadata={"tag": "CityName", "profile": Profile.BASIC_WL}
     )
-    """Ort
-    Beispiel: München
+    """City.
+    Example: München
     """
 
 
@@ -177,9 +178,9 @@ class PostalTradeAddressExtended(PostalTradeAddress):
         default=None,
         metadata={"tag": "CountrySubDivisionName", "profile": Profile.BASIC_WL},
     )
-    """Bundesland
+    """Country subdivision (state / region).
 
-    Beispiel: NRW
+    Example: NRW
 
     EN 16931-ID: BT-68 (SellerTaxRepresentativeTradeParty)
     """
@@ -191,9 +192,9 @@ class PhoneNumber(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.COMFORT})
-    """Eine Telefonnummer der Kontaktstelle
+    """Telephone number of the contact.
 
-    Beispiel: +49 (123) 56789-0
+    Example: +49 (123) 56789-0
 
     EN 16931-ID: BT-42 (Seller), BT-57 (Buyer)
     """
@@ -205,9 +206,9 @@ class FaxNumber(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.COMFORT})
-    """Eine Faxnummer der Kontaktstelle
+    """Fax number of the contact.
 
-    Beispiel: +49 (123) 456789-999
+    Example: +49 (123) 456789-999
     """
 
 
@@ -219,9 +220,9 @@ class EmailURI(Element):
     address: str | None = field(
         default=None, metadata={"tag": "URIID", "profile": Profile.COMFORT}
     )
-    """Eine E-Mailadresse der Kontaktstelle
+    """Email address of the contact.
 
-    Beispiel: karin.mustermann@seller.tld
+    Example: karin.mustermann@seller.tld
 
     EN 16931-ID: BT-43 (Seller), BT-58 (Buyer)
     """
@@ -235,42 +236,42 @@ class TradeContact(Element):
     person_name: str | None = field(
         default=None, metadata={"tag": "PersonName", "profile": Profile.COMFORT}
     )
-    """Ansprechpartnername des Verkäufers / Käufers
+    """Seller / Buyer contact point name.
 
-    Eine Kontaktstelle für einen Rechtsträger oder eine juristische Person, wie
-    z. B. Personenname, Bezeichnung der Kontaktperson
+    A contact point for a legal entity or person, e.g. the name of the
+    contact person.
 
     EN 16931-ID: BT-41 (Seller), BT-56 (Buyer)
     """
     department_name: str | None = field(
         default=None, metadata={"tag": "DepartmentName", "profile": Profile.COMFORT}
     )
-    """Abteilungsname des Verkäufers / Käufers
+    """Seller / Buyer contact department name.
 
-    Eine Kontaktstelle für einen Rechtsträger oder eine juristische Person, wie
-    z. B. Bezeichnung der Abteilung oder des Büros
+    A contact point for a legal entity or person, e.g. the name of the
+    department or office.
 
     EN 16931-ID: BT-41-0 (Seller), BT-56-0 (Buyer)
     """
     telephone: PhoneNumber | None = None
-    """Telefonnummer des Verkäufers / Käufers"""
+    """Seller / Buyer telephone number."""
     fax: FaxNumber | None = None
-    """Faxnummer des Verkäufers / Käufers"""
+    """Seller / Buyer fax number."""
     email: EmailURI | None = None
-    """E-Mailadresse des Verkäufers / Käufers"""
+    """Seller / Buyer email address."""
 
 
 @dataclass(kw_only=True, slots=True)
 class LegalOrganization(Element):
-    """Details zur Organisation"""
+    """Legal organization details."""
 
     tag: ClassVar[str] = "SpecifiedLegalOrganization"
 
     id: ISO6523SchemeId | None = None
-    """Kennung der rechtlichen Registrierung des Verkäufers / Käufers
+    """Seller / Buyer legal registration identifier.
 
-    Eine von einer offiziellen Registrierungsstelle ausgegebene Kennung, die den
-    Verkäufer / Käufer als Rechtsträger oder juristische Person identifiziert
+    An identifier issued by an official registrar that identifies the
+    Seller / Buyer as a legal entity or person.
 
     EN 16931-ID: BT-30 (Seller), BT-47 (Buyer)
     """
@@ -278,32 +279,34 @@ class LegalOrganization(Element):
         default=None,
         metadata={"tag": "TradingBusinessName", "profile": Profile.BASIC_WL},
     )
-    """Handelsname des Verkäufers / Käufers
+    """Seller / Buyer trading name.
 
-    Ein Name, unter dem der Verkäufer / Käufer bekannt ist, sofern abweichend
-    vom Namen des Verkäufers / Käufer (auch als Firmenname bekannt)
+    A name by which the Seller / Buyer is known, if different from the
+    Seller's / Buyer's name (also known as Business name).
 
     EN 16931-ID: BT-28 (Seller), BT-45 (Buyer)
     """
     trade_address: PostalTradeAddress | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Detailinformationen zur Geschäftsanschrift"""
+    """Business address details."""
 
 
 @dataclass(kw_only=True, slots=True)
 class URIUniversalCommunication(Element):
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
 
     tag: ClassVar[str] = "URIUniversalCommunication"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     uri_id: URIID
-    """Elektronischen Adresse des Verkäufers / Käufers
+    """Seller / Buyer electronic address.
 
-    Seller: Gibt die elektronische Adresse des Verkäufers an, an die die Antwort auf die Rechnung auf Anwendungsebene gesendet werden kann.
+    Seller: identifies the electronic address of the Seller to which
+    the application level response to the Invoice may be sent.
 
-    Buyer: Gibt die elektronische Adresse des Käufers an, an die die Rechnung gesendet wird
+    Buyer: identifies the electronic address of the Buyer to which the
+    Invoice is sent.
 
     EN 16931-ID: BT-34 (Seller), BT-49 (Buyer)
     """
@@ -362,7 +365,7 @@ class TaxSchemeId(ISO6523SchemeId):
 
 @dataclass(kw_only=True, slots=True)
 class SpecifiedTaxRegistration(Element):
-    """Detailinformationen zu Steuerangaben des Käufers / Verkäufers"""
+    """Buyer / Seller tax registration details."""
 
     tag: ClassVar[str] = "SpecifiedTaxRegistration"
 
@@ -371,9 +374,9 @@ class SpecifiedTaxRegistration(Element):
 
 @dataclass(kw_only=True, slots=True)
 class SellerTradeParty(Element):
-    """Verkäufer / Detailinformationen zum Verkäufer (=Leistungserbringer)
+    """Seller — details about the Seller (supplier of goods or services).
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über den Verkäufer enthält
+    A group of business terms providing information about the Seller.
 
     EN 16931-ID: BG-4
     """
@@ -381,20 +384,20 @@ class SellerTradeParty(Element):
     tag: ClassVar[str] = "SellerTradeParty"
 
     name: str = field(metadata={"tag": "Name"})
-    """Name des Verkäufers
+    """Seller name.
 
-    Der volle formelle Name, unter dem der Verkäufer im nationalen Register für
-    juristische Personen oder als steuerpflichtige Person ein-getragen ist oder
-    anderweitig als Person(en) handelt
+    The full formal name by which the Seller is registered in the
+    national registry of legal entities or as a taxable person, or
+    otherwise trades as a person or persons.
 
     EN 16931-ID: BT-27
     """
     address: PostalTradeAddressExtended
-    """Postanschrift des Verkäufers
+    """Seller postal address.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über die
-    Verkäuferanschrift enthält. Um den rechtlichen Anforderungen zu entsprechen, muss
-    eine ausreichende Anzahl an Komponenten der Anschrift eingegeben werden
+    A group of business terms providing information about the Seller's
+    address. Sufficient components of the address are to be filled in
+    in order to comply with legal requirements.
 
     EN 16931-ID: BG-5
     """
@@ -402,56 +405,56 @@ class SellerTradeParty(Element):
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
     )
 
-    """Kennung des Verkäufers / Durch den Kunden zugewiesene Lieferantennummer
+    """Seller identifier / supplier number assigned by the customer.
 
-    Hinweis: Bei vielen Systemen ist die Verkäuferkennung eine Schlüsselinformation.
-    Es dürfen mehrere Verkäuferkennungen zugewiesen oder festgelegt werden. Sie dürfen
-    durch Verwendung verschiedener Identifikationsschemen differenziert werden. Wird
-    kein Schema angegeben, sollte sie dem Käufer und Verkäufer bekannt sein, z. B. eine
-    zuvor ausgetauschte, vom Käufer zugewiesene Kennung des Verkäufers.
+    Note: In many systems the Seller identifier is key information.
+    Several Seller identifiers may be assigned or specified. They may
+    be differentiated by using different identification schemes. If no
+    scheme is given, it should be known to Buyer and Seller, e.g. a
+    previously exchanged Seller identifier assigned by the Buyer.
 
-    Anwendung: Wenn der Verkäufer eine Global ID hat, soll diese genutzt werden. Ansonsten
-    wird das Feld ID genutzt.
+    Application: If the Seller has a Global ID it should be used.
+    Otherwise the ID field is used.
 
     EN 16931-ID: BT-29
     """
     global_ids: list[GlobalID] | None = None
-    """Globaler Identifier des Verkäufers: GLN, DUNS, BIC, ODETTE, ...
+    """Seller global identifier: GLN, DUNS, BIC, ODETTE, …
 
-    Hinweis: Das Identifikationsschema der Kennung des Verkäufers ist eine von
-    einer globalen Registrierungsorganisation eindeutig einem Verkäufer
-    zugewiesene Kennzeichnung.
+    Note: The identification scheme of the Seller identifier is an
+    identifier uniquely assigned to a Seller by a global registration
+    organisation.
 
     EN 16931-ID: BT-29-0
     """
     description: str | None = field(
         default=None, metadata={"tag": "Description", "profile": Profile.COMFORT}
     )
-    """Sonstige rechtliche Informationen des Verkäufers
+    """Seller additional legal information.
 
-    Weitere rechtliche Informationen, die für den Verkäufer maßgeblich sind, wie z. B. Aktienkapital
+    Additional legal information relevant for the Seller, such as
+    share capital.
 
     EN 16931-ID: BT-33
     """
     legal_organization: LegalOrganization | None = None
-    """Details zur Organisation"""
+    """Legal organization details."""
     contact: TradeContact | None = None
-    """Kontaktdaten des Verkäufers
+    """Seller contact details.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die für den Verkäufer
-    maßgebliche Kontaktinformationen enthält
+    A group of business terms providing contact information relevant
+    for the Seller.
 
     EN 16931-ID: BG-6
     """
     electronic_address: URIUniversalCommunication | None = None
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Steuernummer / Umsatzsteueridentnummer des Verkäufers
+    """Seller tax registration / VAT identifier.
 
-    Die örtliche Identifikation (definiert über die Verkäuferanschrift) des
-    Verkäufers für Steuerzwecke oder einer Referenz, die es dem Verkäufer
-    ermöglicht, seinen Meldestatus für Steuerzwecke anzugeben
-    Die Umsatzsteuer-Identifikationsnummer des Verkäufers
+    The local identification (defined by the Seller's address) of the
+    Seller for tax purposes, or a reference that enables the Seller to
+    state his registered tax status. The Seller VAT identifier.
 
     EN 16931-ID: BT-31, BT-32
     """
@@ -486,9 +489,9 @@ class SellerTradeParty(Element):
 
 @dataclass(kw_only=True, slots=True)
 class BuyerTradeParty(Element):
-    """Käufer / Detailinformationen zum Käufer (=Leistungsempfänger)
+    """Buyer — details about the Buyer (recipient of goods or services).
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über den Käufer enthält
+    A group of business terms providing information about the Buyer.
 
     EN 16931-ID: BG-7
     """
@@ -496,14 +499,14 @@ class BuyerTradeParty(Element):
     tag: ClassVar[str] = "BuyerTradeParty"
 
     name: str = field(metadata={"tag": "Name"})
-    """Name des Käufers
+    """Buyer name.
 
-    Der volle Name des Käufers
+    The full name of the Buyer.
 
     EN 16931-ID: BT-44
     """
     address: PostalTradeAddressExtended
-    """Postanschrift des Käufers
+    """Buyer postal address.
 
     EN 16931-ID: BG-8
     """
@@ -511,41 +514,43 @@ class BuyerTradeParty(Element):
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
     )
 
-    """Kennung des Käufers / Kundennummer
+    """Buyer identifier / customer number.
 
-    Hinweis: Wird kein Schema angegeben, sollte sie dem Käufer und Verkäufer bekannt sein, z. B. eine zuvor ausgetauschte, vom Verkäufer zugewiesene Kennung des Käufers.
+    Note: If no scheme is given, it should be known to Buyer and
+    Seller, e.g. a previously exchanged Buyer identifier assigned by
+    the Seller.
 
     EN 16931-ID: BT-46
     """
     global_ids: list[GlobalID] | None = None
-    """Globaler Identifier des Käufers: GLN, DUNS, BIC, ODETTE, ...
+    """Buyer global identifier: GLN, DUNS, BIC, ODETTE, …
 
-    Hinweis: Das Identifikationsschema der Kennung des Käufers ist eine von
-    einer globalen Registrierungsorganisation eindeutig einem Käufer
-    zugewiesene Kennzeichnung.
+    Note: The identification scheme of the Buyer identifier is an
+    identifier uniquely assigned to a Buyer by a global registration
+    organisation.
 
     EN 16931-ID: BT-46-0
     """
     legal_organization: LegalOrganization | None = None
-    """Details zur Organisation"""
+    """Legal organization details."""
     contact: TradeContact | None = None
-    """Kontaktdaten des Käufers
+    """Buyer contact details.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die für den Käufer
-    maßgebliche Kontaktinformationen enthält.
-    Kontaktdaten können vom Käufer bei der Bestellung angegeben oder vor der
-    Bestellung als Stammdaten ausgetauscht werden. Kontaktdaten sollten nicht
-    für die Zwecke der internen Lenkung der erhaltenen Rechnung durch den Empfänger
-    verwendet werden; hierfür sollte die Referenz des Käufers verwendet werden.
-    
+    A group of business terms providing contact information relevant
+    for the Buyer. Contact information may be given by the Buyer when
+    ordering, or exchanged before ordering as master data. Contact
+    information should not be used for internal routing of received
+    Invoices by the recipient; for this the Buyer reference should be
+    used.
+
     EN 16931-ID: BG-9
     """
     electronic_address: URIUniversalCommunication | None = None
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = field(
         default=None, metadata={"profile": Profile.BASIC_WL}
     )
-    """Steuernummer / Umsatzsteuer-Identifikationsnummer des Käufers.
+    """Buyer tax registration / VAT identifier.
 
     The XSD permits up to two ``SpecifiedTaxRegistration`` siblings on
     ``ram:TradePartyType`` — one VAT identifier (``schemeID="VA"``,
@@ -558,7 +563,7 @@ class BuyerTradeParty(Element):
 
 @dataclass(kw_only=True, slots=True)
 class SellerTaxRepresentativeTradeParty(Element):
-    """Steuerbevollmächtigter des Verkäufers
+    """Seller tax representative party.
 
     EN 16931-ID: BG-11
     """
@@ -567,91 +572,91 @@ class SellerTaxRepresentativeTradeParty(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     name: str = field(metadata={"tag": "Name"})
-    """Name des Steuerbevollmächtigten des Verkäufers
+    """Seller tax representative name.
 
     EN 16931-ID: BT-62
     """
     address: PostalTradeAddressExtended
-    """Postanschrift des Steuerbevollmächtigten des Verkäufers
+    """Seller tax representative postal address.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
-    die Postanschrift des Steuerbevollmächtigten enthält. Falls sich der
-    Verkäufer durch einen Steuerbevollmächtigten vertreten lässt, der für
-    Zahlung der fälligen Umsatzsteuer verantwortlich ist, muss der Name/die
-    Postanschrift des Steuerbevollmächtigten des Verkäufers in der Rechnung
-    angegeben werden. Um den rechtlichen Anforderungen zu entsprechen, muss
-    eine ausreichende Anzahl an Komponenten der Anschrift eingegeben werden.
+    A group of business terms providing information about the postal
+    address of the Seller's tax representative. If the Seller is
+    represented by a tax representative responsible for paying the VAT
+    due, the name and postal address of the Seller's tax
+    representative must be stated on the Invoice. Sufficient
+    components of the address are to be filled in in order to comply
+    with legal requirements.
 
     EN 16931-ID: BG-12
     """
     tax_registrations: SpecifiedTaxRegistration
-    """Detailinformationen zur Steuernummer des Steuerbevollmächtigten des Verkäufers
+    """Seller tax representative VAT identifier details.
 
-    Umsatzsteuernummer mit vorangestelltem Ländercode auf der Grundlage von EN ISO 3166-1, 2-ALPHA
-    „Codes for the representation of names of countries and their subdivisions“.
+    VAT identifier with country code prefix according to EN ISO 3166-1
+    alpha-2 "Codes for the representation of names of countries and
+    their subdivisions".
 
     EN 16931-ID: BT-63
     """
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.EXTENDED}
     )
-    """Identifier des Steuerbevollmächtigten"""
+    """Tax representative identifier."""
     global_ids: list[GlobalID] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Globaler Identifier des Steuerbevollmächtigten"""
+    """Tax representative global identifier."""
     legal_organization: LegalOrganization | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Details zur Organisation"""
+    """Legal organization details."""
     contact: TradeContact | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Detailinformationen zum Ansprechpartner"""
+    """Contact details."""
     electronic_address: URIUniversalCommunication | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
 
 
 @dataclass(kw_only=True, slots=True)
 class ProductEndUserTradeParty(Element):
-    """Detailinformationen zum abweichenden Endverbraucher"""
+    """Details about the product end user."""
 
     tag: ClassVar[str] = "ProductEndUserTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     name: str = field(metadata={"tag": "Name"})
-    """Name/Firmierung des Endverbrauchers"""
+    """End user name / business name."""
     id: str | None = field(default=None, metadata={"tag": "ID"})
 
-    """Identifikation des abweichenden Endverbrauchers"""
+    """Identifier of the product end user."""
     global_ids: list[GlobalID] | None = None
-    """Globaler Identifier des abweichenden Endverbrauchers"""
+    """Global identifier of the product end user."""
     legal_organization: LegalOrganization | None = None
-    """Details zur Organisation"""
+    """Legal organization details."""
     contact: TradeContact | None = None
-    """Detailinformationen zum Ansprechpartner des Endverbrauchers"""
+    """Product end user contact details."""
     address: PostalTradeAddressExtended | None = None
-    """Detailinformationen zur Anschrift des Endverbrauchers"""
+    """Product end user address details."""
     electronic_address: URIUniversalCommunication | None = None
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
     tax_registrations: SpecifiedTaxRegistration | None = field(
         default=None, metadata={"profile": Profile.BASIC_WL}
     )
-    """Detailinformationen zur Steuernummer des abweichenden Endverbrauchers
+    """Tax registration details for the product end user.
 
-    Steuernummer, Umsatzsteueridentnummer
+    Tax number, VAT identifier.
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class ShipToTradeParty(Element):
-    """Lieferinfomationen / ZUGFeRD10: Detailinformationen zum abweichenden Warenempfänger
+    """Deliver to party / ship-to details.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen darüber
-    enthält, wo und wann die in Rechnung gestellten Waren und Dienstleistungen
-    geliefert bzw. erbracht werden
+    A group of business terms providing information about where and
+    when the goods and services invoiced are delivered.
 
     EN 16931-ID: BG-13
     """
@@ -661,36 +666,41 @@ class ShipToTradeParty(Element):
 
     # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Kennung des Lieferorts / Identifikation des Warenempfängers
+    """Deliver to location identifier / ship-to party identifier.
 
-    Eine Kennung für den Ort, an den die Waren geliefert oder an dem die Dienstleistungen erbracht werden.
+    An identifier of the location to which the goods are delivered or
+    where the services are provided.
 
-    Wird kein Schema angegeben, sollte sie dem Käufer und Verkäufer bekannt sein,
-    z. B. eine zuvor ausgetauschte, vom Käufer oder Verkäufer zugewiesene Kennung.
-    
+    If no scheme is given, it should be known to Buyer and Seller,
+    e.g. a previously exchanged identifier assigned by the Buyer or
+    Seller.
+
     EN 16931-ID: BT-71
     """
     global_id: GlobalID | None = None
-    """Globaler Identifier der Kennung für den Lieferort
+    """Global identifier of the deliver-to location.
 
     EN 16931-ID: BT-71-0
     """
     name: str | None = field(default=None, metadata={"tag": "Name"})
-    """Name/Firmierung des Waren- oder Dienstleistungsempfängers
+    """Deliver to party name / business name.
 
-    Der Name der Partei, an die die Waren geliefert bzw. für die die
-    Dienstleistungen erbracht werden.
-    Muss verwendet werden, wenn der Waren- bzw. Dienstleistungsempfänger nicht
-    mit dem Käufer identisch ist.
+    The name of the party to which the goods are delivered or for
+    which the services are provided. Must be used if the deliver-to
+    party is not identical to the Buyer.
 
     EN 16931-ID: BT-70
     """
     address: PostalTradeAddressExtended | None = None
-    """Lieferanschrift
+    """Deliver to address.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über die Anschrift enthält, an die die in Rechnung gestellten Waren geliefert oder an der die in Rechnung gestellten Dienst-leistungen erbracht werden.
+    A group of business terms providing information about the address
+    to which goods invoiced are delivered or at which services
+    invoiced are provided.
 
-    Im Falle einer Abholung entspricht die Lieferanschrift der Abholanschrift. Um den rechtlichen Anforderungen zu entsprechen, muss eine ausreichende Anzahl an Komponenten der Anschrift eingegeben werden.
+    In the case of pickup, the deliver-to address is the pickup
+    address. Sufficient components of the address are to be filled in
+    in order to comply with legal requirements.
 
     EN 16931-ID: BG-15
     """
@@ -698,99 +708,99 @@ class ShipToTradeParty(Element):
     legal_organization: LegalOrganization | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Details zur Organisation"""
+    """Legal organization details."""
     contact: TradeContact | None = field(
         default=None, metadata={"profile": Profile.COMFORT}
     )
-    """Detailinformationen zum Ansprechpartner des Warenempfängers"""
+    """Deliver to party contact details."""
     electronic_address: URIUniversalCommunication | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Detailinformationen zu Steuerangaben des Warenempfängers
+    """Deliver to party tax registration details.
 
-    Steuernummer, Umsatzsteueridentnummer
+    Tax number, VAT identifier.
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class ShipFromTradeParty(Element):
-    """Identifikation des abweichenden Versenders"""
+    """Identification of the ship-from party."""
 
     tag: ClassVar[str] = "ShipFromTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Identifikation des Versenders
+    """Ship-from party identifier.
 
-    Der Identifier des Versenders ist eine eindeutige, bilateral vereinbarte
-    Kennzeichnung des Versenders.
+    The ship-from identifier is a unique, bilaterally agreed
+    identifier of the sender.
     """
     global_id: GlobalID | None = None
-    """Globaler Identifier des Versenders"""
+    """Global identifier of the ship-from party."""
     name: str | None = field(default=None, metadata={"tag": "Name"})
-    """Name/Firmierung des Versenders"""
+    """Ship-from party name / business name."""
     legal_organization: LegalOrganization | None = None
-    """Details zur Organisation"""
+    """Legal organization details."""
     contact: TradeContact | None = None
-    """Detailinformationen zum Ansprechpartner des Versenders"""
+    """Ship-from party contact details."""
     address: PostalTradeAddressExtended | None = None
-    """Detailinformationen zur Anschrift des Versenders"""
+    """Ship-from party address details."""
     electronic_address: URIUniversalCommunication | None = None
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Detailinformationen zu Steuerangaben des Versenders
+    """Ship-from party tax registration details.
 
-    Steuernummer, Umsatzsteueridentnummer
+    Tax number, VAT identifier.
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class UltimateShipToTradeParty(Element):
-    """Detailinformationen zum abweichenden Endempfänger"""
+    """Details about the ultimate ship-to party."""
 
     tag: ClassVar[str] = "UltimateShipToTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Identifikation des Endempfängers
+    """Ultimate ship-to party identifier.
 
-    Der Identifier des Endempfängers ist eine eindeutige, bilateral
-    vereinbarte Kennzeichnung des Endempfängers.
+    The ultimate ship-to identifier is a unique, bilaterally agreed
+    identifier of the final recipient.
     """
     global_ids: list[GlobalID] | None = None
-    """Globaler Identifier des Endempfängers"""
+    """Global identifier of the ultimate ship-to party."""
     name: str | None = field(default=None, metadata={"tag": "Name"})
-    """Name/Firmierung des Endempfängers"""
+    """Ultimate ship-to party name / business name."""
     legal_organization: LegalOrganization | None = None
-    """Details zur Organisation"""
+    """Legal organization details."""
     contact: TradeContact | None = None
-    """Detailinformationen zum Ansprechpartner des Endempfängers"""
+    """Ultimate ship-to party contact details."""
     address: PostalTradeAddressExtended | None = None
-    """Detailinformationen zur Anschrift des Endempfängers"""
+    """Ultimate ship-to party address details."""
     electronic_address: URIUniversalCommunication | None = None
-    """Details zur elektronischen Adresse"""
+    """Electronic address details."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Detailinformationen zu Steuerangaben des Endempfängers
+    """Ultimate ship-to party tax registration details.
 
-    Steuernummer, Umsatzsteueridentnummer
+    Tax number, VAT identifier.
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class PayeeTradeParty(Element):
-    """Abweichender Zahlungsempfänger
+    """Payee — party that receives the payment.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen
-    über den Zahlungsempfänger liefert, d. h. über die Stelle, die die Zahlung empfängt.
+    A group of business terms providing information about the Payee,
+    i.e. the party that receives the payment.
 
-    Die Rolle des Zahlungsempfängers darf auch von einer anderen Partei als dem
-    Verkäufer, z. B. von einem Factoringdienst, ausgeübt werden.
+    The role of Payee may also be filled by a party other than the
+    Seller, e.g. a factoring service.
 
     EN 16931-ID: BG-10
     """
@@ -799,38 +809,37 @@ class PayeeTradeParty(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     name: str = field(metadata={"tag": "Name"})
-    """Firmierung/Name des Zahlungsempfängers
+    """Payee name / business name.
 
-    Muss verwendet werden, wenn der Zahlungsempfänger nicht mit dem Verkäufer
-    identisch ist. Der Name des Zahlungsempfängers darf jedoch dem Namen des
-    Verkäufers entsprechen.
+    Must be used if the Payee is not identical to the Seller. The
+    Payee name may however be the same as the Seller name.
 
     EN 16931-ID: BT-59
     """
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Identifikation des Zahlungsempfängers
+    """Payee identifier.
 
-    Eine Kennung für den Zahlungsempfänger.
+    An identifier for the Payee.
 
-    Wird kein Schema angegeben, sollte sie dem Käufer und Verkäufer bekannt
-    sein, z. B. eine zuvor ausgetauschte, vom Käufer oder Verkäufer zugewiesene
-    Kennung.
+    If no scheme is given, it should be known to Buyer and Seller,
+    e.g. a previously exchanged identifier assigned by the Buyer or
+    Seller.
 
     EN 16931-ID: BT-60
     """
     global_id: GlobalID | None = None
-    """Globaler Identifier des Zahlungsempfängers"""
+    """Global identifier of the Payee."""
     legal_organization: LegalOrganization | None = None
-    """Details zur Organisation"""
+    """Legal organization details."""
 
     # contact: TradeContact | None = None
-    # """Detailinformationen zum Ansprechpartner des Endempfängers"""
+    # """Payee contact details."""
     # address: PostalTradeAddressExtended | None = None
-    # """Detailinformationen zur Anschrift des Endempfängers"""
+    # """Payee address details."""
     # electronic_address: URIUniversalCommunication | None = None
-    # """Details zur elektronischen Adresse"""
+    # """Electronic address details."""
     # tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    # """Detailinformationen zu Steuerangaben des Endempfängers
-
-    # Steuernummer, Umsatzsteueridentnummer
+    # """Payee tax registration details.
+    #
+    # Tax number, VAT identifier.
     # """

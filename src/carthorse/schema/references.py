@@ -10,14 +10,14 @@ from carthorse.schema.types import MIME, Profile, UNTDID1001TypeCode
 
 @dataclass(kw_only=True, slots=True)
 class BuyerOrderReferencedDocument(Element):
-    """Detailangaben zur zugehörigen Bestellung"""
+    """Details about the referenced purchase order."""
 
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Bestellreferenz / Bestellnummer
+    """Purchase order reference / purchase order number.
 
-    Eine vom Käufer ausgegebene Kennung für eine referenzierte Bestellung
+    An identifier of a referenced purchase order, issued by the Buyer.
 
     EN 16931-ID: BT-13
     """
@@ -25,7 +25,7 @@ class BuyerOrderReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class SellerOrderReferencedDocument(Element):
-    """Detailangaben zur zugehörigen Auftragsbestätigung"""
+    """Details about the referenced sales order confirmation."""
 
     tag: ClassVar[str] = "SellerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
@@ -33,9 +33,9 @@ class SellerOrderReferencedDocument(Element):
     issuer_assigned_id: str = field(
         metadata={"tag": "IssuerAssignedID", "profile": Profile.COMFORT}
     )
-    """Verkaufsauftragsreferenz / Nummer der Auftragsbestätigung
+    """Sales order reference / sales order confirmation number.
 
-    Eine vom Verkäufer ausgegebene Kennung für einen referenzierten Verkaufsauftrag
+    An identifier of a referenced sales order, issued by the Seller.
 
     EN 16931-ID: BT-14
     """
@@ -43,7 +43,7 @@ class SellerOrderReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ContractReferencedDocument(Element):
-    """Detailangaben zum zugehörigen Vertrag"""
+    """Details about the referenced contract."""
 
     tag: ClassVar[str] = "ContractReferencedDocument"
     profile: ClassVar[Profile] = Profile.BASIC_WL
@@ -51,10 +51,11 @@ class ContractReferencedDocument(Element):
     issuer_assigned_id: str = field(
         metadata={"tag": "IssuerAssignedID", "profile": Profile.BASIC_WL}
     )
-    """Vertragsreferenz / Vertragsnummer
+    """Contract reference / contract number.
 
-    Die Kennung eines Vertrags. Die Vertragsreferenz sollte im Kontext der
-    spezifischen Handelsbeziehung und für einen definierten Zeitraum einmalig vergeben sein.
+    The identifier of a contract. The contract reference should be
+    unique in the context of the specific trading relationship and for
+    a defined period.
 
     EN 16931-ID: BT-12
     """
@@ -71,12 +72,12 @@ class UltimateCustomerOrderReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class AttachmentBinaryObject(Element):
-    """Anhangsdokument / Binärdaten des zusätzlichen Dokuments
+    """Attached document / binary data of the supporting document.
 
-    Ein als Binärobjekt eingebettetes oder zusammen mit der Rechnung gesendetes
-    Anhangsdokument. Ein Anhangsdokument wird dann verwendet, wenn für die
-    zukünftige Bezugnahme oder für Auditierungszwecke eine Dokumentation in
-    Verbindung mit der Rechnung aufbewahrt werden muss.
+    A supporting document attached as a binary object or sent along
+    with the Invoice. A supporting document is used when documentation
+    needs to be kept together with the Invoice for future reference or
+    audit purposes.
 
     EN 16931-ID: BT-125
     """
@@ -85,17 +86,17 @@ class AttachmentBinaryObject(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     mime_code: MIME
-    """MIME-Code des Anhangsdokuments
+    """MIME code of the attached document.
 
     EN 16931-ID: BT-125-1
     """
     filename: str
-    """Dateiname des Anhangsdokuments
+    """File name of the attached document.
 
     EN 16931-ID: BT-125-2
     """
     object: str
-    """Encodetes Anhangsdokument"""
+    """Encoded attached document."""
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
@@ -127,18 +128,18 @@ class AttachmentBinaryObject(Element):
 
 @dataclass(kw_only=True, slots=True)
 class AdditionalReferencedDocument(Element):
-    """Rechnungsbegründende Unterlagen
+    """Additional supporting documents.
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
-    rechnungsbegründende Unterlagen enthält, die Belege für die in der Rechnung
-    gestellten Ansprüche enthalten.
-    Die rechnungsbegründenden Unterlagen können sowohl für die Referenz einer
-    Dokumentnummer, die dem Empfänger bekannt sein sollte, als auch eines
-    externen (durch einen URL referenzierten) Dokuments oder eines eingebetteten
-    Dokuments (wie z. B. eines Stundenzettels als PDF-Datei) verwendet werden.
-    Die Option der Verknüpfung mit einem externen Dokument ist z. B. dann
-    erforderlich, wenn es um große Anhänge und/oder um sensible Informationen,
-    z. B. bei personenbezogenen Diensten, geht, die von der Rechnung getrennt werden müssen.
+    A group of business terms providing information about additional
+    supporting documents substantiating the claims made in the
+    Invoice. The additional supporting documents can be used for both
+    referencing a document number that should be known to the
+    recipient, an external document (referenced by a URL) or an
+    embedded document (such as a time report in the form of a PDF).
+    The option of linking to an external document is, for example,
+    needed for very large attachments and/or sensitive information,
+    e.g. for personal services, that has to be separated from the
+    Invoice.
 
     EN 16931-ID: BG-24
     """
@@ -149,56 +150,57 @@ class AdditionalReferencedDocument(Element):
     issuer_assigned_id: str = field(
         metadata={"tag": "IssuerAssignedID", "profile": Profile.COMFORT}
     )
-    """Dokumentenkennung / Dokumentennummer
+    """Supporting document identifier / document number.
 
-    Die Kennung der Ausschreibung oder des Loses, auf die/das sich die Rechnung
-    bezieht, oder eine vom Verkäufer angegebene Kennung für ein Objekt, auf
-    dem die Rechnung basiert, oder eine Kennung der rechnungsbegründenden
-    Unterlage.
+    The identifier of the tender or lot the Invoice relates to, or an
+    identifier specified by the Seller for an object on which the
+    Invoice is based, or an identifier of the supporting document.
 
-    In manchen Ländern muss eine Referenz zu der Ausschreibung angegeben werden,
-    die zu dem Vertrag geführt hat. Das kann je nach Anwendung eine Abonnementnummer,
-    eine Telefonnummer, ein Zählerstand, ein Fahrzeug, eine Person usw. sein.
-    
+    In some countries a reference to the tender that led to the
+    contract must be given. Depending on the use case, this can be a
+    subscription number, a telephone number, a meter reading, a
+    vehicle, a person, etc.
+
     EN 16931-ID: BT-17, BT-18, BT-122
     """
     uriid: str | None = field(
         default=None, metadata={"tag": "URIID", "profile": Profile.COMFORT}
     )
-    """Bezugsort der rechnungsbgegründenden Unterlage
+    """Location of the supporting document.
 
-    Die URL (Uniform Resource Locator), unter der das externe Dokument verfügbar ist.
+    The URL (Uniform Resource Locator) under which the external
+    document is available.
 
-    Ein Mittel zur Auffindung der Ressource einschließlich des dafür vorgesehenen
-    primären Zugangsverfahrens, z. B. http:// oder ftp://.
-    Der Speicherort des externen Dokuments muss dann verwendet werden, wenn der
-    Käufer weitere Informationen als Belege für die in Rechnung gestellten Beträge
-    benötigt.
-    Externe Dokumente sind nicht Bestandteil der Rechnung. Der Zugriff auf externe
-    Dokumente kann gewisse Risiken bergen.
+    A means of locating the resource, including its primary access
+    method, e.g. http:// or ftp://. The location of the external
+    document must be used when the Buyer needs additional information
+    as evidence of the amounts invoiced. External documents are not
+    part of the Invoice. Access to external documents may bear certain
+    risks.
 
     EN 16931-ID: BT-124
     """
     type_code: UNTDID1001TypeCode | None = field(
         default=None, metadata={"tag": "TypeCode", "profile": Profile.COMFORT}
     )
-    """Typ des referenzierten Dokuments
+    """Type of the referenced document.
 
-    * Der Code  916 "Referenzpapier" wird benutzt, um die Kennung der
-      rechnungsbegründenden Unterlage zu referenzieren. (BT-122)
-    * Der Code 50 "Price/sales catalogue response" wird benutzt, um die
-      Ausschreibung oder das Los zu referenzieren. (BT-17)
-    * Der Code 130 "Rechnungsdatenblatt" wird benutzt, um eine vom Verkäufer
-      angegebene Kennung für ein Objekt zu referenzieren. (BT-18)
+    * Code 916 "Reference paper" is used to reference the identifier
+      of the supporting document. (BT-122)
+    * Code 50 "Price/sales catalogue response" is used to reference
+      the tender or lot. (BT-17)
+    * Code 130 "Invoicing data sheet" is used to reference an
+      identifier specified by the Seller for an object. (BT-18)
 
     EN 16931-ID: BT-17-0, BT-18-0, BT-122-0
     """
     name: str | None = field(
         default=None, metadata={"tag": "Name", "profile": Profile.COMFORT}
     )
-    """Beschreibung der rechnungsbegründenden Unterlage
+    """Description of the supporting document.
 
-    Eine Beschreibung der Unterlage, wie z. B. Stundenabrechnung, Nutzungs- oder Verbrauchsbericht usw.
+    A description of the document, such as a time sheet, usage or
+    consumption report, etc.
 
     EN 16931-ID: BT-123
     """
@@ -207,22 +209,22 @@ class AdditionalReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ProcuringProject(Element):
-    """Detailangaben zu einer Projektreferenz"""
+    """Project reference details."""
 
     tag: ClassVar[str] = "SpecifiedProcuringProject"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     id: str = field(metadata={"tag": "ID", "profile": Profile.COMFORT})
-    """Projektreferenz
+    """Project reference.
 
-    Die Kennung des Projektes, auf das sich die Rechnung bezieht.
+    The identifier of the project the Invoice refers to.
 
     EN 16931-ID: BT-11
     """
     name: str = field(metadata={"tag": "Name", "profile": Profile.COMFORT})
-    """Projektname
+    """Project name.
 
-    Der Name des Projektes, auf das sich die Rechnung bezieht
+    The name of the project the Invoice refers to.
 
     EN 16931-ID: BT-11-0
     """
@@ -230,15 +232,15 @@ class ProcuringProject(Element):
 
 @dataclass(kw_only=True, slots=True)
 class DespatchAdviceReferencedDocument(Element):
-    """Detailinformationen zum zugehörigen Lieferavis"""
+    """Details about the referenced despatch advice."""
 
     tag: ClassVar[str] = "DespatchAdviceReferencedDocument"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Lieferavisreferenz
+    """Despatch advice reference.
 
-    Eine Kennung für ein referenziertes Lieferavis
+    An identifier of a referenced despatch advice.
 
     EN 16931-ID: BT-16
     """
@@ -246,20 +248,20 @@ class DespatchAdviceReferencedDocument(Element):
         default=None,
         metadata={"tag": "FormattedIssueDateTime", "profile": Profile.BASIC_WL},
     )
-    """Lieferavisdatum"""
+    """Despatch advice date."""
 
 
 @dataclass(kw_only=True, slots=True)
 class ReceivingAdviceReferencedDocument(Element):
-    """Detailinformationen zur zugehörigen Wareneingangsmeldung"""
+    """Details about the referenced receiving advice."""
 
     tag: ClassVar[str] = "ReceivingAdviceReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Referenz auf die Wareneingangsmeldung / Wareneingangsnummer
+    """Receiving advice reference / receiving advice number.
 
-    Eine Kennung für eine referenzierte Wareneingangsmeldung
+    An identifier of a referenced receiving advice.
 
     EN 16931-ID: BT-15
     """
@@ -267,52 +269,51 @@ class ReceivingAdviceReferencedDocument(Element):
         default=None,
         metadata={"tag": "FormattedIssueDateTime", "profile": Profile.COMFORT},
     )
-    """Wareneingangsdatum"""
+    """Receiving advice date."""
 
 
 @dataclass(kw_only=True, slots=True)
 class DeliveryNoteReferencedDocument(Element):
-    """Detailinformationen zum zugehörigen Lieferschein"""
+    """Details about the referenced delivery note."""
 
     tag: ClassVar[str] = "DeliveryNoteReferencedDocument"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Lieferscheinnummer"""
+    """Delivery note number."""
     issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
-    """Lieferscheindatum"""
+    """Delivery note date."""
 
 
 @dataclass(kw_only=True, slots=True)
 class InvoiceReferencedDocument(Element):
-    """Referenz auf die vorausgegangene Rechnungen
+    """Reference to preceding Invoice(s).
 
-    Eine Gruppe von betriebswirtschaftlichen Begriffen, die Informationen über
-    eine oder mehrere vorausgegangene Rechnungen enthält.
+    A group of business terms providing information about one or more
+    preceding Invoices.
 
-    Zu verwenden falls:
-    — eine vorausgegangene Rechnung korrigiert wird;
-    — aus einer Schlußrechnung auf vorausgegangene Teilrechnungen Bezug genommen
-      wird;
-    — aus einer Schlußrechnung auf vorausgegangene Rechnungen für Vorauszahlungen
-      Bezug genommen wird.
+    To be used when:
+    — a preceding Invoice is being corrected;
+    — a final Invoice refers to preceding partial Invoices;
+    — a final Invoice refers to preceding Invoices for prepayments.
 
-    EN 16931-ID: BT-3
+    EN 16931-ID: BG-3
     """
 
     tag: ClassVar[str] = "InvoiceReferencedDocument"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Nummer der vorausgegangenen Rechnung
+    """Preceding Invoice number.
 
-    Die Identifikation einer Rechnung, die vom Verkäufer zuvor gesendet wurde
+    The identification of an Invoice that was previously sent by the
+    Seller.
 
     EN 16931-ID: BT-25
     """
     issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
-    """Rechnungsdatum"""
+    """Preceding Invoice date."""

@@ -99,7 +99,7 @@ class TradeLineItem(Element):
 
 @dataclass(kw_only=True, slots=True)
 class Trade(Element):
-    """Gruppierung der Informationen zum Geschäftsvorfall"""
+    """Supply chain trade transaction (header business transaction group)."""
 
     tag: ClassVar[str] = "SupplyChainTradeTransaction"
     namespace: ClassVar[Namespace] = Namespace.rsm
