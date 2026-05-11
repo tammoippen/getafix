@@ -393,6 +393,28 @@ class ApplicableTradeTax(Element):
         ):
             raise ValueError(f"DueDateCode cannot be UNTDID 2475: {self.due_date_code}")
 
+        # BR-CO-17: BT-117 = round(BT-116 * BT-119 / 100, 2). Dropped at
+        # EXTENDED (the per-VAT-category BR-FXEXT-*-09 family supersedes
+        # it). Skip when the rate is absent (e.g. category 'O').
+        if (
+            profile < Profile.EXTENDED
+            and self.rate_applicable_percent is not None
+            and self.basis_amount is not None
+            and self.calculated_amount is not None
+        ):
+            expected = (
+                self.basis_amount * self.rate_applicable_percent / Decimal("100")
+            ).quantize(Decimal("0.01"))
+            if self.calculated_amount.quantize(Decimal("0.01")) != expected:
+                raise ValidationError(
+                    "BR-CO-17",
+                    f"BT-117 (CalculatedAmount) = {self.calculated_amount} "
+                    f"weicht von round(BT-116 * BT-119 / 100, 2) "
+                    f"= round({self.basis_amount} * "
+                    f"{self.rate_applicable_percent} / 100, 2) "
+                    f"= {expected} ab.",
+                )
+
 
 @dataclass(kw_only=True, slots=True)
 class CategoryTradeTax(Element):

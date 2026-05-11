@@ -106,21 +106,21 @@ Status legend:
 
 | Rule       | Lowest profile | Status | Notes                                                                                       |
 |------------|----------------|--------|---------------------------------------------------------------------------------------------|
-| BR-CO-3    | EN16931        | —      | `TaxPointDate` (BT-7) and `DueDateTypeCode` (BT-8) mutually exclusive — BT-7 not modelled    |
+| BR-CO-3    | EN16931        | ✓      | `ApplicableTradeTax.validate_internal` — BT-7 (TaxPointDate) and BT-8 (DueDateTypeCode) on a single row are mutually exclusive. |
 | BR-CO-4    | BASIC          | —      | line item must have `BT-151` — line items not modelled                                       |
 | BR-CO-5    | BASIC_WL       | —      | reason ↔ reason-code coherence on document-level allowance                                   |
 | BR-CO-6    | BASIC_WL       | —      | same for document-level charge                                                               |
 | BR-CO-7    | BASIC          | —      | line allowance                                                                               |
 | BR-CO-8    | BASIC          | —      | line charge                                                                                  |
 | BR-CO-9    | MINIMUM        | ✓      | `TaxSchemeId.validate_internal` enforces the ISO 3166-1 alpha-2 country prefix on `VA`-scheme identifiers (with `EL` allowed for Greece). |
-| BR-CO-10   | BASIC          | —      | `BT-106 = ΣBT-131` — needs line items                                                        |
-| BR-CO-11   | BASIC_WL       | —      | `BT-107 = ΣBT-92`                                                                            |
-| BR-CO-12   | BASIC_WL       | —      | `BT-108 = ΣBT-99`                                                                            |
-| BR-CO-13   | BASIC          | —      | `BT-109 = ΣBT-131 − BT-107 + BT-108` — needs line items                                       |
-| BR-CO-14   | BASIC_WL       | —      | `BT-110 = ΣBT-117`                                                                           |
-| BR-CO-15   | MINIMUM        | —      | `BT-112 = BT-109 + BT-110`                                                                   |
-| BR-CO-16   | MINIMUM        | —      | `BT-115 = BT-112 − BT-113 + BT-114` (`BT-114` only from EN16931)                             |
-| BR-CO-17   | BASIC_WL       | —      | `BT-117 = round(BT-116 × BT-119 / 100, 2)` per VAT breakdown row. **Dropped at EXTENDED**, replaced by per-category `BR-FXEXT-S-09` etc. |
+| BR-CO-10   | BASIC          | ✓      | `Trade._validate_document_arithmetic` — `BT-106 = ΣBT-131`. Skipped when BT-106 absent or items list empty. |
+| BR-CO-11   | BASIC_WL       | ✓      | `Trade._validate_document_arithmetic` — `BT-107 = ΣBT-92`.                                   |
+| BR-CO-12   | BASIC_WL       | ✓      | `Trade._validate_document_arithmetic` — `BT-108 = ΣBT-99`.                                   |
+| BR-CO-13   | BASIC          | ✓      | `Trade._validate_document_arithmetic` — `BT-109 = ΣBT-131 − ΣBT-92 + ΣBT-99`. |
+| BR-CO-14   | BASIC_WL       | ✓      | `TradeSettlement.validate_internal` — BT-110 = sum of BT-117 across BG-23 rows.              |
+| BR-CO-15   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` — `BT-112 = BT-109 + BT-110`.                            |
+| BR-CO-16   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` — `BT-115 = BT-112 − BT-113 + BT-114`. BT-114 not yet modelled — treated as 0. |
+| BR-CO-17   | BASIC_WL       | ✓      | `ApplicableTradeTax.validate_internal` — `BT-117 = round(BT-116 × BT-119 / 100, 2)` per BG-23 row. **Dropped at EXTENDED**, replaced by per-category `BR-FXEXT-S-09` etc. |
 | BR-CO-18   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` raises `BR-CO-18` when no `trade_taxes` at `>= BASIC_WL`. **Note:** the comparator bug in `Profile.__lt__` makes this fire at MINIMUM as well today, see `docs/IMPLEMENTATION_PLAN.md §1 #8`. |
 | BR-CO-19   | BASIC_WL       | —      | if BG-14 used then BT-73 or BT-74 must be filled                                             |
 | BR-CO-20   | BASIC          | —      | line period analogue                                                                         |
