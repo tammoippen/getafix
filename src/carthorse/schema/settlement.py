@@ -100,13 +100,19 @@ class PayeePartyCreditorFinancialAccount(Element):
     """
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if self.iban_id is None and self.proprietary_id is None:
-            raise ValidationError(
-                "BR-50",
-                "Falls in der Rechnung Überweisungsinformationen (BG-17) angegeben sind, muss eine Kennung des Zahlungskontos (BT-84) vorhanden sein.",
+            errors.append(
+                ValidationError(
+                    "BR-50",
+                    "A Payment account identifier (BT-84) shall be present "
+                    "if Credit transfer (BG-16) information is provided in "
+                    "the Invoice.",
+                )
             )
-        # NOTE: what about both are given?
+        errors.extend(super(PayeePartyCreditorFinancialAccount, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -157,15 +163,21 @@ class PaymentMeans(Element):
     payee: PayeePartyCreditorFinancialAccount | None = None
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if not (
             len(self.type_code) <= 3
             and (self.type_code.isdigit() or self.type_code == "ZZZ")
         ):
-            raise ValidationError(
-                "UNTDID-4461",
-                f"Given TypeCode='{self.type_code}' cannot be a UNTDID-4461: 1-97 and ZZZ",
+            errors.append(
+                ValidationError(
+                    "BT-81",
+                    f"Payment means type code (BT-81) {self.type_code!r} "
+                    "is not a UNTDID 4461 code (digits up to 3 chars, or 'ZZZ').",
+                )
             )
+        errors.extend(super(PaymentMeans, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -229,20 +241,29 @@ class BillingSpecifiedPeriod(Element):
     """
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if self.start is None and self.end is None:
-            raise ValidationError(
-                "BR-CO-19",
-                "Wenn die Rechnungsperiode (BG-14) verwendet wird, muss mindestens "
-                "eines der beiden Felder Start (BT-73) oder End (BT-74) ausgefüllt "
-                "sein.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-19",
+                    "If Invoicing period (BG-14) is used, the Invoicing "
+                    "period start date (BT-73) or the Invoicing period end "
+                    "date (BT-74) shall be filled, or both.",
+                )
             )
         if self.start is not None and self.end is not None and self.end < self.start:
-            raise ValidationError(
-                "BR-29",
-                "Falls beide Daten angegeben sind, muss das Endedatum (BT-74) größer "
-                "oder gleich dem Startdatum (BT-73) sein.",
+            errors.append(
+                ValidationError(
+                    "BR-29",
+                    "If both Invoicing period start date (BT-73) and "
+                    "Invoicing period end date (BT-74) are given then the "
+                    "Invoicing period end date (BT-74) shall be later or "
+                    "equal to the Invoicing period start date (BT-73).",
+                )
             )
+        errors.extend(super(BillingSpecifiedPeriod, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -364,30 +385,40 @@ class TradeSettlement(Element):
     accounting_account: list[ReceivableAccountingAccount] | None = None
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if (
             len(self.currency_code) != 3
             or not self.currency_code.isalpha()
             or self.currency_code.upper() != self.currency_code
         ):
-            raise ValueError(
-                f"CurrencyID cannot be alpha-3 ISO 4217: {self.currency_code}"
+            errors.append(
+                ValidationError(
+                    "BR-5",
+                    "Invoice currency code (BT-5) must be an ISO 4217 "
+                    f"alpha-3 uppercase code; got {self.currency_code!r}.",
+                )
             )
 
-        if Profile.BASIC_WL <= profile and bool(self.trade_taxes) is False:
-            raise ValidationError(
-                "BR-CO-18",
-                "Eine Rechnung muss mindestens eine Umsatzsteueraufschlüsselungsgruppe (BG-23) haben.",
+        if Profile.BASIC_WL <= profile and not self.trade_taxes:
+            errors.append(
+                ValidationError(
+                    "BR-CO-18",
+                    "An Invoice shall at least have one VAT breakdown "
+                    "group (BG-23).",
+                )
             )
 
         if self.tax_currency_code is not None:
             tax_totals = self.monetary_summation.tax_total or []
             if not any(t.currency_id == self.tax_currency_code for t in tax_totals):
-                raise ValidationError(
-                    "BR-53",
-                    "Falls der Code für die Währung der Umsatzsteuerbuchung "
-                    "(BT-6) vorhanden ist, muss der Steuergesamtbetrag in "
-                    "Buchungswährung (BT-111) angegeben werden.",
+                errors.append(
+                    ValidationError(
+                        "BR-53",
+                        "If the VAT accounting currency code (BT-6) is "
+                        "present, then the Invoice total VAT amount in "
+                        "accounting currency (BT-111) shall be provided.",
+                    )
                 )
 
         # BR-CO-25: positive DuePayableAmount (BT-115) requires either a
@@ -396,11 +427,13 @@ class TradeSettlement(Element):
             self.terms is None
             or (self.terms.due is None and self.terms.description is None)
         ):
-            raise ValidationError(
-                "BR-CO-25",
-                "Wenn der fällige Zahlungsbetrag (BT-115) positiv ist, müssen "
-                "entweder das Fälligkeitsdatum der Zahlung (BT-9) oder die "
-                "Zahlungsbedingungen (BT-20) angegeben sein.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-25",
+                    "In case the Amount due for payment (BT-115) is "
+                    "positive, either the Payment due date (BT-9) or the "
+                    "Payment terms (BT-20) shall be present.",
+                )
             )
 
         # BR-CO-14: BT-110 (TaxTotalAmount in invoice currency) = sum of
@@ -421,11 +454,13 @@ class TradeSettlement(Element):
                     Decimal("0"),
                 )
                 if bt_110_in_invoice != bt_117_sum:
-                    raise ValidationError(
-                        "BR-CO-14",
-                        "Gesamtbetrag der Rechnungsumsatzsteuer (BT-110) "
-                        f"= {bt_110_in_invoice} weicht von Σ BT-117 "
-                        f"= {bt_117_sum} ab.",
+                    errors.append(
+                        ValidationError(
+                            "BR-CO-14",
+                            "Invoice total VAT amount (BT-110) "
+                            f"= {bt_110_in_invoice} differs from "
+                            f"sum(BT-117) = {bt_117_sum}.",
+                        )
                     )
 
         # BR-CO-15: BT-112 (GrandTotalAmount) = BT-109 (TaxBasisTotalAmount)
@@ -442,13 +477,15 @@ class TradeSettlement(Element):
         )
         expected_grand = self.monetary_summation.tax_basis_total + bt_110
         if self.monetary_summation.grand_total != expected_grand:
-            raise ValidationError(
-                "BR-CO-15",
-                "Rechnungsgesamtbetrag einschließlich Umsatzsteuer (BT-112) "
-                f"= {self.monetary_summation.grand_total} weicht von "
-                f"BT-109 + BT-110 = "
-                f"{self.monetary_summation.tax_basis_total} + {bt_110} "
-                f"= {expected_grand} ab.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-15",
+                    "Invoice total amount with VAT (BT-112) "
+                    f"= {self.monetary_summation.grand_total} differs from "
+                    f"BT-109 + BT-110 = "
+                    f"{self.monetary_summation.tax_basis_total} + {bt_110} "
+                    f"= {expected_grand}.",
+                )
             )
 
         # BR-CO-16: BT-115 (DuePayableAmount) = BT-112 - BT-113
@@ -458,13 +495,16 @@ class TradeSettlement(Element):
         prepaid = self.monetary_summation.prepaid_total or Decimal("0")
         expected_due = self.monetary_summation.grand_total - prepaid
         if self.monetary_summation.due_amount != expected_due:
-            raise ValidationError(
-                "BR-CO-16",
-                "Fälliger Zahlungsbetrag (BT-115) "
-                f"= {self.monetary_summation.due_amount} weicht von "
-                f"BT-112 - BT-113 = "
-                f"{self.monetary_summation.grand_total} - {prepaid} "
-                f"= {expected_due} ab.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-16",
+                    "Amount due for payment (BT-115) "
+                    f"= {self.monetary_summation.due_amount} differs from "
+                    f"BT-112 - BT-113 = "
+                    f"{self.monetary_summation.grand_total} - {prepaid} "
+                    f"= {expected_due}.",
+                )
             )
 
-        super(TradeSettlement, self).validate_internal(profile)
+        errors.extend(super(TradeSettlement, self).validate_internal(profile))
+        return errors

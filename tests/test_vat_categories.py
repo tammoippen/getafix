@@ -29,7 +29,7 @@ from carthorse.schema.accounting import (
 )
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
-from carthorse.schema.element import ValidationError
+from carthorse.schema.element import ValidationError, ValidationErrors
 from carthorse.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,
@@ -204,9 +204,9 @@ class TestBrAe:
         doc = _make_doc(
             line_category=CategoryCode.T_AE, buyer_va=None, buyer_legal_id=None
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-AE-2"
+        assert any(v.code == "BR-AE-2" for v in e.value.errors)
 
     def test_br_ae_2_passes_with_buyer_vat(self) -> None:
         _make_doc(line_category=CategoryCode.T_AE).validate()
@@ -222,9 +222,9 @@ class TestBrAe:
         # needs the seller side identified per BR-AE-2.
         doc = _make_doc(line_category=CategoryCode.T_AE, seller_va=None, seller_fc=None)
         # BR-CO-26 fires first (seller must be identifiable at all).
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-26"
+        assert any(v.code == "BR-CO-26" for v in e.value.errors)
 
     def test_br_ae_3_doc_level_allowance_requires_seller_and_buyer_vat(self) -> None:
         # Allowance (BG-20) with category AE; buyer has no identifiers.
@@ -234,9 +234,9 @@ class TestBrAe:
             buyer_va=None,
             buyer_legal_id=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-AE-3"
+        assert any(v.code == "BR-AE-3" for v in e.value.errors)
 
     def test_br_ae_3_passes_with_buyer_legal_id(self) -> None:
         _make_doc(
@@ -254,9 +254,9 @@ class TestBrAe:
             buyer_va=None,
             buyer_legal_id=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-AE-4"
+        assert any(v.code == "BR-AE-4" for v in e.value.errors)
 
 
 class TestBrE:
@@ -284,9 +284,9 @@ class TestBrE:
             seller_fc=None,
             buyer_va=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-E-2"
+        assert any(v.code == "BR-E-2" for v in e.value.errors)
 
     def test_br_e_2_line_passes_with_seller_vat(self) -> None:
         _make_doc(line_category=CategoryCode.T_E, buyer_va=None).validate()
@@ -333,9 +333,9 @@ class TestBrIc:
         doc = _make_doc(
             line_category=CategoryCode.T_K, buyer_va=None, buyer_legal_id="HRB12345"
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-IC-2"
+        assert any(v.code == "BR-IC-2" for v in e.value.errors)
 
     def test_br_ic_2_line_fails_when_seller_only_has_local_id(self) -> None:
         # IC requires Seller VAT (or tax-rep VAT) — BT-32 (FC) doesn't
@@ -346,9 +346,9 @@ class TestBrIc:
             seller_va=None,
             seller_fc="123/456/789",
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-IC-2"
+        assert any(v.code == "BR-IC-2" for v in e.value.errors)
 
     def test_br_ic_3_doc_level_allowance_with_k(self) -> None:
         doc = _make_doc(
@@ -356,9 +356,9 @@ class TestBrIc:
             allowance_category=CategoryCode.T_K,
             buyer_va=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-IC-3"
+        assert any(v.code == "BR-IC-3" for v in e.value.errors)
 
     def test_br_ic_4_doc_level_charge_with_k(self) -> None:
         doc = _make_doc(
@@ -366,9 +366,9 @@ class TestBrIc:
             charge_category=CategoryCode.T_K,
             buyer_va=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-IC-4"
+        assert any(v.code == "BR-IC-4" for v in e.value.errors)
 
 
 class TestBrSellerVatLocalTaxRep:
@@ -394,9 +394,9 @@ class TestBrSellerVatLocalTaxRep:
             seller_fc=None,
             buyer_va=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == code
+        assert any(v.code == code for v in e.value.errors)
 
     @pt.mark.parametrize(
         ("category", "code"),
@@ -419,9 +419,9 @@ class TestBrSellerVatLocalTaxRep:
             seller_va=None,
             seller_fc=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == code
+        assert any(v.code == code for v in e.value.errors)
 
     @pt.mark.parametrize(
         ("category", "code"),
@@ -442,9 +442,9 @@ class TestBrSellerVatLocalTaxRep:
             seller_va=None,
             seller_fc=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == code
+        assert any(v.code == code for v in e.value.errors)
 
 
 class TestBrO:
@@ -477,9 +477,9 @@ class TestBrO:
             seller_va="DE123456789",
             buyer_va=None,
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-O-2"
+        assert any(v.code == "BR-O-2" for v in e.value.errors)
 
     def test_br_o_2_line_forbids_buyer_id(self) -> None:
         # The spec quirk: BR-O-2 names BT-46 (Buyer ID), not BT-48.
@@ -492,9 +492,9 @@ class TestBrO:
         )
         # Force a BT-46 directly (the helper doesn't expose it).
         doc.trade.agreement.buyer.id = "B-001"
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-O-2"
+        assert any(v.code == "BR-O-2" for v in e.value.errors)
 
     def test_br_o_3_allowance_forbids_buyer_vat(self) -> None:
         # Allowance with O — BT-48 forbidden.
@@ -506,9 +506,9 @@ class TestBrO:
             seller_fc=None,
             buyer_va="DE987654321",
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-O-3"
+        assert any(v.code == "BR-O-3" for v in e.value.errors)
 
     def test_br_o_4_charge_forbids_seller_taxrep_vat(self) -> None:
         # Charge with O. We add the tax-rep with a VAT id; the rule
@@ -533,9 +533,9 @@ class TestBrO:
                 ),
             )
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-O-4"
+        assert any(v.code == "BR-O-4" for v in e.value.errors)
 
 
 class TestBrOSingleRate:
@@ -567,9 +567,9 @@ class TestBrOSingleRate:
                 rate_applicable_percent=Decimal("19"),
             ),
         ]
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-O-11"
+        assert any(v.code == "BR-O-11" for v in e.value.errors)
 
     def test_br_o_12_line_with_other_category_forbidden(self) -> None:
         # Use a setup where the line's category-required-party rule
@@ -588,9 +588,9 @@ class TestBrOSingleRate:
                 rate_applicable_percent=Decimal("0"),
             )
         ]
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-O-12"
+        assert any(v.code == "BR-O-12" for v in e.value.errors)
 
     def test_br_o_13_allowance_with_other_category_forbidden(self) -> None:
         doc = _make_doc(
@@ -608,13 +608,13 @@ class TestBrOSingleRate:
                 rate_applicable_percent=Decimal("0"),
             )
         ]
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
         # Note: BR-S-3 *also* fires (allowance with S has no seller VAT)
         # but BR-O-13 is the more specific rule given a BG-23 O row.
         # carthorse runs BR-O single-rate after the family loop, so the
         # category-required-party check raises first.
-        assert e.value.code in {"BR-O-13", "BR-S-3"}
+        assert any(v.code in {"BR-O-13", "BR-S-3"} for v in e.value.errors)
 
     def test_br_o_14_charge_with_other_category_forbidden(self) -> None:
         doc = _make_doc(
@@ -632,9 +632,9 @@ class TestBrOSingleRate:
                 rate_applicable_percent=Decimal("0"),
             )
         ]
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code in {"BR-O-14", "BR-S-4"}
+        assert any(v.code in {"BR-O-14", "BR-S-4"} for v in e.value.errors)
 
 
 class TestBrIcDelivery:
@@ -680,9 +680,9 @@ class TestBrIcDelivery:
         doc.trade.delivery.ship_to = ShipToTradeParty(
             address=PostalTradeAddressExtended(country_id="FR")
         )
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-IC-11"
+        assert any(v.code == "BR-IC-11" for v in e.value.errors)
 
     def test_br_ic_12_fires_without_ship_to_country(self) -> None:
         from carthorse.schema.delivery import SupplyChainEvent
@@ -690,9 +690,9 @@ class TestBrIcDelivery:
         doc = self._make_ic()
         doc.trade.delivery.event = SupplyChainEvent(occurrence=date(2025, 1, 15))
         # No ship_to → no BT-80.
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-IC-12"
+        assert any(v.code == "BR-IC-12" for v in e.value.errors)
 
 
 class TestBrCoArithmetic:
@@ -724,9 +724,9 @@ class TestBrCoArithmetic:
             )
         )
         # Sum of line totals = 100 + 50 = 150, but header still says 100.
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-10"
+        assert any(v.code == "BR-CO-10" for v in e.value.errors)
 
     def test_br_co_10_passes_when_totals_match(self) -> None:
         """Single-line doc: BT-106 should equal the one BT-131."""
@@ -745,9 +745,9 @@ class TestBrCoArithmetic:
         summation = doc.trade.settlement.monetary_summation
         # One allowance of 5.00 in the helper; declare BT-107 wrongly.
         summation.allowance_total = Decimal("99")
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-11"
+        assert any(v.code == "BR-CO-11" for v in e.value.errors)
 
         # Match the sum and BT-109 / BT-115 to keep the rest happy.
         summation.allowance_total = Decimal("5.00")
@@ -762,9 +762,9 @@ class TestBrCoArithmetic:
         summation = doc.trade.settlement.monetary_summation
         # One charge of 3.00 in the helper; declare BT-108 wrongly.
         summation.charge_total = Decimal("99")
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-12"
+        assert any(v.code == "BR-CO-12" for v in e.value.errors)
 
         summation.charge_total = Decimal("3.00")
         summation.tax_basis_total = Decimal("103")  # 100 + 3
@@ -784,9 +784,8 @@ class TestBrCoArithmetic:
             due_date_code="5",
             rate_applicable_percent=Decimal("19"),
         )
-        with pt.raises(ValidationError) as e:
-            bad.validate_internal(Profile.BASIC_WL)
-        assert e.value.code == "BR-CO-17"
+        errors = bad.validate_internal(Profile.BASIC_WL)
+        assert any(v.code == "BR-CO-17" for v in errors)
 
         # Correct arithmetic passes.
         ApplicableTradeTax(
@@ -846,16 +845,16 @@ class TestBrCoLineCoupling:
     def test_br_co_23_line_allowance_needs_reason_or_code(self) -> None:
         doc = _make_doc()
         self._add_line_allowance(doc, indicator=False)
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-23"
+        assert any(v.code == "BR-CO-23" for v in e.value.errors)
 
     def test_br_co_24_line_charge_needs_reason_or_code(self) -> None:
         doc = _make_doc()
         self._add_line_allowance(doc, indicator=True)
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-24"
+        assert any(v.code == "BR-CO-24" for v in e.value.errors)
 
     def test_br_co_23_passes_with_reason(self) -> None:
         doc = _make_doc()
@@ -893,9 +892,9 @@ class TestBrCoLineCoupling:
         # Keep BR-CO-15 / 16 happy.
         summation.grand_total = summation.tax_basis_total + Decimal("99")
         summation.due_amount = summation.grand_total
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-14"
+        assert any(v.code == "BR-CO-14" for v in e.value.errors)
 
         # Correct sum.
         summation.tax_total = [TaxTotal(amount=Decimal("15"), currency_id="EUR")]
@@ -915,9 +914,9 @@ class TestBrCoLineCoupling:
         summation.tax_basis_total = Decimal("999")
         summation.grand_total = Decimal("999")
         summation.due_amount = Decimal("999")
-        with pt.raises(ValidationError) as e:
+        with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert e.value.code == "BR-CO-13"
+        assert any(v.code == "BR-CO-13" for v in e.value.errors)
 
         # Real identity: 100 - 5 + 3 = 98.
         summation.tax_basis_total = Decimal("98")
