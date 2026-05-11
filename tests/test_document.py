@@ -1239,8 +1239,12 @@ def test_br_co_25_payment_terms_required_when_due():
     settlement.terms = PaymentTerms(description="Net 30 days")
     settlement.validate_internal(Profile.MINIMUM)
 
-    # due_amount = 0 → no requirement.
+    # due_amount = 0 → no requirement. Also adjust grand_total to keep
+    # BR-CO-16 (BT-115 == BT-112 - BT-113) satisfied.
     summation.due_amount = Decimal("0")
+    summation.grand_total = Decimal("0")
+    summation.tax_basis_total = Decimal("0")
+    summation.tax_total = None
     settlement.terms = None
     settlement.validate_internal(Profile.MINIMUM)
 
@@ -1383,6 +1387,63 @@ def test_br_co_15_uses_only_invoice_currency_tax_total():
     settlement = TradeSettlement(
         currency_code="EUR",
         tax_currency_code="USD",
+        monetary_summation=summation,
+        trade_taxes=[
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("19"),
+            )
+        ],
+        terms=PaymentTerms(due=date(2025, 2, 1)),
+    )
+    settlement.validate_internal(Profile.BASIC_WL)
+
+
+def test_br_co_16_due_amount_equals_grand_total_minus_prepaid():
+    """BR-CO-16: DuePayableAmount (BT-115) = GrandTotal (BT-112)
+    - PrepaidTotal (BT-113) + RoundingAmount (BT-114). BT-114 isn't
+    yet modelled in carthorse; treat it as 0."""
+    summation = MonetarySummation(
+        line_total=Decimal("100"),
+        tax_basis_total=Decimal("100"),
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        grand_total=Decimal("119"),
+        prepaid_total=Decimal("19"),
+        due_amount=Decimal("999"),  # WRONG — expected 100
+    )
+    settlement = TradeSettlement(
+        currency_code="EUR",
+        monetary_summation=summation,
+        trade_taxes=[
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("19"),
+            )
+        ],
+        terms=PaymentTerms(due=date(2025, 2, 1)),
+    )
+    with pt.raises(ValidationError) as e:
+        settlement.validate_internal(Profile.BASIC_WL)
+    assert e.value.code == "BR-CO-16"
+
+    summation.due_amount = Decimal("100")
+    settlement.validate_internal(Profile.BASIC_WL)
+
+
+def test_br_co_16_no_prepaid_total_means_due_equals_grand():
+    """When BT-113 is absent (default 0), BR-CO-16 reduces to
+    BT-115 == BT-112."""
+    summation = MonetarySummation(
+        line_total=Decimal("100"),
+        tax_basis_total=Decimal("100"),
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        grand_total=Decimal("119"),
+        due_amount=Decimal("119"),
+    )
+    settlement = TradeSettlement(
+        currency_code="EUR",
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
