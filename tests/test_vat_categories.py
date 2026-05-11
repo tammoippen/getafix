@@ -772,6 +772,42 @@ class TestBrCoArithmetic:
         summation.due_amount = Decimal("103")
         doc.validate()
 
+    def test_br_co_14_tax_total_equals_sum_of_tax_amounts(self) -> None:
+        """BT-110 = sum of BT-117 across the header BG-23 rows."""
+        doc = _make_doc()
+        summation = doc.trade.settlement.monetary_summation
+        # Two BG-23 rows: 10% on 50, 20% on 50 → sum 5 + 10 = 15.
+        doc.trade.settlement.trade_taxes = [
+            ApplicableTradeTax(
+                calculated_amount=Decimal("5"),
+                basis_amount=Decimal("50"),
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("10"),
+            ),
+            ApplicableTradeTax(
+                calculated_amount=Decimal("10"),
+                basis_amount=Decimal("50"),
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("20"),
+            ),
+        ]
+        # Declare wrong BT-110.
+        summation.tax_total = [TaxTotal(amount=Decimal("99"), currency_id="EUR")]
+        # Keep BR-CO-15 / 16 happy.
+        summation.grand_total = summation.tax_basis_total + Decimal("99")
+        summation.due_amount = summation.grand_total
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-CO-14"
+
+        # Correct sum.
+        summation.tax_total = [TaxTotal(amount=Decimal("15"), currency_id="EUR")]
+        summation.grand_total = summation.tax_basis_total + Decimal("15")
+        summation.due_amount = summation.grand_total
+        doc.validate()
+
     def test_br_co_13_tax_basis_identity(self) -> None:
         """BT-109 = ΣBT-131 - BT-107 + BT-108."""
         doc = _make_doc(
