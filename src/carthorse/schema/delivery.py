@@ -18,18 +18,18 @@ from carthorse.schema.types import Profile
 
 @dataclass(kw_only=True, slots=True)
 class LogisticsTransportMovement(Element):
-    """Detailinformationen zur Versandmethode"""
+    """Transport mode details."""
 
     tag: ClassVar[str] = "SpecifiedLogisticsTransportMovement"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     mode: str | None = field(default=None, metadata={"tag": "ModeCode"})
-    """Versandart (Code)"""
+    """Transport mode (code)."""
 
 
 @dataclass(kw_only=True, slots=True)
 class SupplyChainConsignment(Element):
-    """Detailinformationen zur Konsignation oder Sendung"""
+    """Consignment or shipment details."""
 
     tag: ClassVar[str] = "RelatedSupplyChainConsignment"
     profile: ClassVar[Profile] = Profile.EXTENDED
@@ -39,7 +39,7 @@ class SupplyChainConsignment(Element):
 
 @dataclass(kw_only=True, slots=True)
 class SupplyChainEvent(Element):
-    """Detailinformationen zur tatsächlichen Lieferung"""
+    """Actual delivery event details."""
 
     tag: ClassVar[str] = "ActualDeliverySupplyChainEvent"
     profile: ClassVar[Profile] = Profile.BASIC_WL
@@ -48,14 +48,15 @@ class SupplyChainEvent(Element):
         default=None,
         metadata={"tag": "OccurrenceDateTime", "profile": Profile.BASIC_WL},
     )
-    """Tatsächlicher Lieferungszeitpunkt / Liefer- und Leistungsdatum im umsatzsteuerrechtlichen Sinn
+    """Actual delivery date / delivery or performance date for VAT purposes.
 
-    Angabe entweder hier für die gesamte Rechnung oder alternativ je Position
+    Provided either here for the whole Invoice or alternatively per
+    line.
 
-    In Deutschland muss grundsätzlich der Liefer- und Leistungstermin in
-    Rechnungen angegeben werden. Eine Ausnahme bilden Vorauszahlungsrechnungen
-    (ExchangedDocument\\TypeCode = 386), bei denen zum Zeitpunkt der
-    Rechnungsstellung das Liefer- oder Leistungsdatum noch nicht fest steht.    
+    In Germany, the delivery and performance date must in principle
+    always be stated on Invoices. An exception is prepayment Invoices
+    (ExchangedDocument\\TypeCode = 386), where the delivery or
+    performance date is not yet known at the time of invoicing.
 
     EN 16931-ID: BT-72
     """
@@ -63,7 +64,7 @@ class SupplyChainEvent(Element):
 
 @dataclass(kw_only=True, slots=True)
 class TradeDelivery(Element):
-    """Gruppierung von Lieferangaben"""
+    """Header trade delivery group."""
 
     tag: ClassVar[str] = "ApplicableHeaderTradeDelivery"
 

@@ -55,26 +55,28 @@ from carthorse.schema.types import Profile
 
 @dataclass(kw_only=True, slots=True)
 class PayerPartyDebtorFinancialAccount(Element):
-    """Bankinstitut des Käufers"""
+    """Buyer's bank account (debited account)."""
 
     tag: ClassVar[str] = "PayerPartyDebtorFinancialAccount"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     iban_id: str = field(metadata={"tag": "IBANID"})
-    """Lastschriftverfahren: Kennung des zu belastenden Kontos
+    """Direct debit: debited account identifier.
 
-    Das durch die Lastschrift zu belastende Konto. Bei Lastschriftzahlung anzugeben
+    The account to be debited by the direct debit. To be provided in
+    case of direct debit payment.
 
-    EN 16931-ID: BG-19/BT-91
+    EN 16931-ID: BT-91
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class PayeePartyCreditorFinancialAccount(Element):
-    """Überweisung / Bankverbindung des Verkäufers
+    """Credit transfer / Seller bank account details.
 
-    Wenn mehrere Bankkonten für die Überweisung angegeben werden sollen, muss das
-    Element SpecifiedTradeSettlementPaymentMeans entsprechend wiederholt werden.
+    If several bank accounts are to be specified for credit transfer,
+    the SpecifiedTradeSettlementPaymentMeans element must be repeated
+    accordingly.
 
     EN 16931-ID: BG-17
     """
@@ -83,18 +85,22 @@ class PayeePartyCreditorFinancialAccount(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     iban_id: str | None = field(default=None, metadata={"tag": "IBANID"})
-    """Kennung des Zahlungskontos
+    """Payment account identifier.
 
-    Eine eindeutige Kennung für das bei einem Zahlungsdienstleister geführte Finanzkonto, auf das die Zahlung erfolgen sollte, wie z. B. eine IBAN (im Falle einer SEPA-Zahlung), für eine nationale Kontonummer ProprietaryID nutzen
+    A unique identifier of the financial account held at a payment
+    service provider to which the payment should be made, such as an
+    IBAN (in case of a SEPA payment). For a national account number,
+    use ProprietaryID.
 
-    In Bezug auf BR-50 und BR-61 muss entweder eine IBAN-ID oder eine ProprietaryID angegeben werden.
-    
+    With respect to BR-50 and BR-61, either an IBAN-ID or a
+    ProprietaryID must be provided.
+
     EN 16931-ID: BT-84
     """
     proprietary_id: str | None = field(default=None, metadata={"tag": "ProprietaryID"})
-    """Nationale Kontonummer (nicht für SEPA)
+    """National account number (not for SEPA).
 
-    Für SEPA-Zahlungen IBANID nutzen
+    For SEPA payments use IBANID.
 
     EN 16931-ID: BT-84-0
     """
@@ -117,14 +123,15 @@ class PayeePartyCreditorFinancialAccount(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PaymentMeans(Element):
-    """Zahlungsanweisungen
+    """Payment instructions.
 
-    Nur wenn mehrere Bankkonten für Überweisungen übertragen werden sollen,
-    kann das Element SpecifiedTradeSettlementPaymentMeans für jedes Bankkonto
-    wiederholt werden. Der Code für die Zahlungsart im Element Typecode (BT-81)
-    darf sich demzufolge in den Wiederholungen nicht unterscheiden.
-    Die Elemente ApplicableTradeSettlementFinancialCard und PayerPartyDebtorFinancialAccount
-    dürfen bei Banküberweisungen nicht angegeben werden.
+    Only when several bank accounts are to be transmitted for credit
+    transfers may the SpecifiedTradeSettlementPaymentMeans element be
+    repeated for each bank account. The payment means type code in the
+    TypeCode element (BT-81) must consequently not differ between the
+    repetitions. The ApplicableTradeSettlementFinancialCard and
+    PayerPartyDebtorFinancialAccount elements shall not be given for
+    credit transfers.
 
     EN 16931-ID: BG-16
     """
@@ -133,26 +140,26 @@ class PaymentMeans(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     type_code: str = field(metadata={"tag": "TypeCode"})
-    """Code für die Zahlungsart / Zahlungstyp
+    """Payment means type code.
 
-    Das als Code ausgedrückte erwartete oder genutzte Zahlungsmittel.
+    The expected or used means of payment, expressed as a code.
 
-    Die Einträge aus der UNTDID 4461 Codeliste müssen verwendet werden.
-    Es sollte zwischen SEPA- und Nicht-SEPA-Zahlungen unterschieden werden
-    sowie zwischen Kreditzahlungen, Lastschriften, Kartenzahlungen und anderen
-    Zahlungsmitteln.
+    Entries from the UNTDID 4461 code list must be used. A
+    distinction should be made between SEPA and non-SEPA payments and
+    between credit transfers, direct debits, card payments and other
+    payment means.
 
-    Codeliste: UNTDID 4461:
+    Code list: UNTDID 4461:
         https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred4461.htm
 
-    Insbesondere können folgende Codes verwendet werden:
-        10 : Bargeld
-        20 : Scheck
-        30 : Überweisung
+    In particular, the following codes may be used:
+        10 : In cash
+        20 : Cheque
+        30 : Credit transfer
         42 : Payment to bank account
-        48 : Kartenzahlung
-        49 : Lastschrift
-        57 : Dauerauftrag
+        48 : Bank card
+        49 : Direct debit
+        57 : Standing order
         58 : SEPA Credit Transfer
         59 : SEPA Direct Debit
         97 : Report
@@ -182,7 +189,7 @@ class PaymentMeans(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PaymentTerms(Element):
-    """Detailinformationen zu Zahlungsbedingungen.
+    """Payment terms details.
 
     XSD field order is ``Description`` (BT-20), ``DueDateDateTime``
     (BT-9), ``DirectDebitMandateID`` (BT-89).
@@ -196,14 +203,13 @@ class PaymentTerms(Element):
     description: str | None = field(default=None, metadata={"tag": "Description"})
     """Free-text payment terms (BT-20)."""
     due: date | None = field(default=None, metadata={"tag": "DueDateDateTime"})
-    """Fälligkeitsdatum (BT-9)."""
+    """Payment due date (BT-9)."""
     debit_mandate_id: str | None = field(
         default=None, metadata={"tag": "DirectDebitMandateID"}
     )
-    """Kennung der Mandatsreferenz / Mandatsreferenz für SEPA.
+    """Mandate reference identifier / SEPA mandate reference.
 
-    Wird verwendet, um den Käufer vorweg über eine SEPA-Lastschrift in
-    Kenntnis zu setzen.
+    Used to inform the Buyer in advance of a SEPA direct debit.
 
     EN 16931-ID: BT-89
     """
@@ -268,38 +274,39 @@ class BillingSpecifiedPeriod(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ReceivableAccountingAccount(Element):
-    """Detailinformationen zur Buchungsreferenz"""
+    """Buyer accounting reference details."""
 
     tag: ClassVar[str] = "ReceivableSpecifiedTradeAccountingAccount"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     id: str = field(metadata={"tag": "ID"})
-    """Buchungsreferenz des Käufers
+    """Buyer accounting reference.
 
-    Ein Textwert, der angibt, an welcher Stelle die betreffenden Daten in den
-    Finanzkonten des Käufers zu verbuchen sind.
+    A textual value that specifies where the relevant data is to be
+    posted in the Buyer's financial accounts.
 
-    EN 16931-ID: BG-19
+    EN 16931-ID: BT-19
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
-    """Gruppierung von Angaben zur Zahlung und Rechnungsausgleich"""
+    """Header trade settlement group (payment and settlement details)."""
 
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
     currency_code: str = field(metadata={"tag": "InvoiceCurrencyCode"})
-    """Code für die Rechnungswährung
+    """Invoice currency code.
 
-    Die Währung, in der alle Rechnungsbeträge angegeben werden, ausgenommen ist
-    Steuergesamtbetrag in Buchungswährung.
+    The currency in which all Invoice amounts are given, except for
+    the invoice VAT total in VAT accounting currency.
 
-    Die Rechnung ist in nur einer Währung auszustellen, ausgenommen hiervon ist
-    nach Artikel 230 der Richtlinie 2006/112/EG über Umsatzsteuer der Steuergesamtbetrag
-    in Buchungswährung (BT-111).
-    Die Listen der zugelassenen Währungen werden von der ISO 4217 Maintenance Agency
-    „Codes for the representation of currencies and funds” geführt.
+    The Invoice shall be issued in a single currency, with the
+    exception, under Article 230 of Council Directive 2006/112/EC on
+    VAT, of the invoice VAT total in VAT accounting currency
+    (BT-111). The lists of valid currencies are maintained by the ISO
+    4217 Maintenance Agency "Codes for the representation of
+    currencies and funds".
 
     EN 16931-ID: BT-5
     """
@@ -321,55 +328,58 @@ class TradeSettlement(Element):
         default=None,
         metadata={"tag": "CreditorReferenceID", "profile": Profile.BASIC_WL},
     )
-    """Kennung des Gläubigers / Gläubiger-ID für SEPA
+    """Bank assigned creditor identifier / SEPA creditor identifier.
 
-    Eindeutige Bankverbindungskennung des Zahlungsempfängers oder des Verkäufers,
-    die von der Bank des Zahlungsempfängers oder des Verkäufers zugewiesen wird
+    A unique banking reference identifier of the Payee or Seller
+    assigned by the Payee's or Seller's bank.
 
-    Wird verwendet, um den Käufer vorweg über eine SEPA-Lastschrift in Kenntnis zu setzen.
+    Used to inform the Buyer in advance of a SEPA direct debit.
 
-    EN 16931-ID: BG19/BT-90
+    EN 16931-ID: BT-90
     """
     payment_reference: str | None = field(
         default=None, metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL}
     )
-    """Verwendungszweck / Kassenzeichen
+    """Remittance information / payment reference.
 
-    Ein Textwert, der zur Verknüpfung der Zahlung mit der vom Verkäufer
-    ausgestellten Rechnung verwendet wird.
+    A textual value used to link the payment to the Invoice issued by
+    the Seller.
 
-    Diese Referenz hilft dem Verkäufer, eine eingehende Zahlung dem betreffenden
-    Zahlungsprozess zuzuordnen. Bei der Angabe des Textwertes, bei dem es sich
-    üblicherweise um die Rechnungs-nummer der zu zahlenden Rechnung handelt,
-    aber auch eine andere Verkäuferreferenz sein darf, sollte der Käufer diese
-    Referenz in seinem Zahlungsauftrag oder bei Durchführung der Zahlung angeben.
-    Bei einem Zahlungsvorgang wird diese Referenz dem Verkäufer als
-    Überweisungsinformation zurückübermittelt.
+    This reference helps the Seller to assign an incoming payment to
+    the relevant payment process. When stating the textual value —
+    usually the Invoice number of the Invoice to be paid, but it may
+    also be another Seller reference — the Buyer should include this
+    reference in the payment order or when making the payment. In a
+    payment transaction this reference is returned to the Seller as
+    remittance information.
 
-    Um eine automatische Verarbeitung von grenzüberschreitenden SEPA-Zahlungen zu
-    ermöglichen, sollten in diesem Feld ausschließlich lateinische Schriftzeichen
-    und maximal 140 Zeichen verwendet werden. Siehe 1.4 der SEPA Credit Transfer
-    und der SEPA Direct Debit Scheme Implementation Guides für weitere Angaben
-    zu den zulässigen Schriftzeichen. Gegebenenfalls gelten für SEPA-Zahlungen
-    innerhalb von Landesgrenzen andere Regeln.
+    To enable automatic processing of cross-border SEPA payments, only
+    Latin characters and a maximum of 140 characters should be used in
+    this field. See section 1.4 of the SEPA Credit Transfer and SEPA
+    Direct Debit Scheme Implementation Guides for further details on
+    the permissible characters. Different rules may apply for SEPA
+    payments within national borders.
 
-    Ist die Überweisungsinformation nach ISO 11649:2009 über die strukturierte
-    Referenz des Zahlungsempfängers strukturiert, so muss diese in SEPA-Zahlungsnachrichten
-    dem Feld Structured Remittance Information Creditor Reference zugeordnet werden.
+    If the remittance information is structured according to ISO
+    11649:2009 via the Payee structured reference, it shall be mapped
+    in SEPA payment messages to the Structured Remittance Information
+    Creditor Reference field.
 
-    Ist die Überweisungsinformation nach EACT-Norm für automatische Kontenabstimmung
-    strukturiert, so muss diese in SEPA-Zahlungsnachrichten dem Feld Unstructured
-    Remittance Information zugeordnet werden.
+    If the remittance information is structured according to the EACT
+    standard for automatic account reconciliation, it shall be mapped
+    in SEPA payment messages to the Unstructured Remittance
+    Information field.
 
-    Ist die Überweisungsinformation in SEPA-Zahlungsnachrichten dem Feld End To
-    End Identification oder dem Feld Structured Remittance Information Creditor
-    Reference zuzuordnen, darf der Inhalt, abgesehen von der Einschränkung auf
-    lateinische Schriftzeichen, nicht mit einem ,/' beginnen oder enden und
-    keine ,//' beinhalten.
+    If the remittance information is mapped in SEPA payment messages
+    to the End To End Identification field or to the Structured
+    Remittance Information Creditor Reference field, the content —
+    aside from the restriction to Latin characters — must not start or
+    end with a "/" and must not contain "//".
 
-    Im einfachsten Fall könnte dies zum Beispiel identisch mit der Rechnungsnummer sein.
-    Hinweis: Soll die Zahlungsreferenz in SEPA-Überweisungen bzw. Lastschriften
-    angegeben werden , darf nur der für SEPA erlaubte Zeichensatz verwendet werden.
+    In the simplest case this could, for example, be identical to the
+    Invoice number. Note: If the payment reference is to be stated in
+    SEPA credit transfers or direct debits, only the character set
+    permitted for SEPA may be used.
 
     EN 16931-ID: BT-83
     """
