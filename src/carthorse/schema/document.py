@@ -168,11 +168,16 @@ class Header(Element):
     """
 
     name: str | None = field(
-        default=None, metadata={"tag": "Name", "profile": Profile.BASIC}
+        default=None, metadata={"tag": "Name", "profile": Profile.EXTENDED}
     )
     """Document type (free text).
 
     INVOICE, CREDIT NOTE, DEBIT NOTE, PROFORMA INVOICE
+
+    The Factur-X 1.08 XSD only emits ``Name`` on
+    ``ExchangedDocumentType`` in the EXTENDED profile; the BASIC,
+    BASIC_WL, EN 16931 and MINIMUM profiles drop the field. Gated
+    accordingly.
     """
 
     copyright_indicator: bool | None = field(
