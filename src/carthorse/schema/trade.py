@@ -148,6 +148,51 @@ class Trade(Element):
                 f"= {sum_line_totals} ab.",
             )
 
+        # Header allowance / charge sums (BR-CO-11, BR-CO-12, BR-CO-13).
+        allowance_charges = self.settlement.allowance_charge or []
+        sum_allowances = sum(
+            (ac.actual_amount for ac in allowance_charges if not ac.indicator),
+            Decimal("0"),
+        )
+        sum_charges = sum(
+            (ac.actual_amount for ac in allowance_charges if ac.indicator), Decimal("0")
+        )
+
+        # BR-CO-11: BT-107 = ΣBT-92.
+        if (
+            summation.allowance_total is not None
+            and summation.allowance_total != sum_allowances
+        ):
+            raise ValidationError(
+                "BR-CO-11",
+                f"Summe der Abschläge auf Dokumentenebene (BT-107) "
+                f"= {summation.allowance_total} weicht von Σ BT-92 "
+                f"= {sum_allowances} ab.",
+            )
+
+        # BR-CO-12: BT-108 = ΣBT-99.
+        if summation.charge_total is not None and summation.charge_total != sum_charges:
+            raise ValidationError(
+                "BR-CO-12",
+                f"Summe der Zuschläge auf Dokumentenebene (BT-108) "
+                f"= {summation.charge_total} weicht von Σ BT-99 "
+                f"= {sum_charges} ab.",
+            )
+
+        # BR-CO-13: BT-109 = sum(BT-131) - sum(BT-92) + sum(BT-99). The
+        # line-totals sum is only meaningful when there are line items.
+        if self.items:
+            expected_basis = sum_line_totals - sum_allowances + sum_charges
+            if summation.tax_basis_total != expected_basis:
+                raise ValidationError(
+                    "BR-CO-13",
+                    f"Rechnungsgesamtbetrag ohne Umsatzsteuer (BT-109) "
+                    f"= {summation.tax_basis_total} weicht von Σ BT-131 "
+                    f"- Σ BT-92 + Σ BT-99 = {sum_line_totals} - "
+                    f"{sum_allowances} + {sum_charges} "
+                    f"= {expected_basis} ab.",
+                )
+
     def _validate_vat_category_required_parties(self) -> None:
         """BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4} required-party checks.
 
