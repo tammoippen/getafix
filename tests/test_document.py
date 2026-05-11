@@ -288,7 +288,7 @@ def full_doc() -> Document:
                             rate_applicable_percent=Decimal("19"),
                         ),
                         monetary_summation=LineMonetarySummation(
-                            line_total=Decimal("100.00")
+                            line_total=Decimal("123.45")
                         ),
                     ),
                 )
@@ -987,7 +987,7 @@ def test_full(full_doc):
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
           <ram:LineTotalAmount>
-            100.00
+            123.45
           </ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
