@@ -3,7 +3,7 @@ import json
 import types
 from abc import ABC
 from collections.abc import Iterator
-from dataclasses import Field, dataclass, field, fields
+from dataclasses import Field, dataclass, fields
 from decimal import Decimal
 from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
 
@@ -65,17 +65,6 @@ class Element(ABC):
     namespace: ClassVar[Namespace] = Namespace.ram
     profile: ClassVar[Profile] = Profile.MINIMUM
 
-    # XML attributes captured on parse for leaf elements that can carry
-    # a wire attribute the model doesn't otherwise represent — chiefly
-    # ``currencyID`` on ``udt:AmountType`` amounts (BT-110-0, BT-111-0,
-    # and the optional currencyID on BT-106..BT-115 etc.). The dict is
-    # keyed by Python field name; on render the values are replayed as
-    # element attributes. Excluded from ``__init__``, ``repr`` and
-    # equality so it does not pollute the public API.
-    _xml_attrs: dict[str, dict[str, str]] = field(
-        default_factory=dict, init=False, repr=False, compare=False
-    )
-
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
         """Collect every business-rule violation under this Element.
 
@@ -86,7 +75,7 @@ class Element(ABC):
         """
         errors: list[ValidationError] = []
         for f in fields(self):
-            if f.name.startswith("_"):
+            if f.name == "currency":
                 continue
             value = getattr(self, f.name)
             if value is None:
@@ -108,9 +97,14 @@ class Element(ABC):
 
     def _children_xml(self, profile: Profile) -> list[XML]:
         children: list[XML] = []
+        # Per-Element "currency" field provides the ``currencyID``
+        # attribute for every Decimal field marked ``"amount": True`` in
+        # metadata. Elements without amount fields don't declare it.
+        currency: str | None = getattr(self, "currency", None)
         for f in fields(self):
-            if f.name.startswith("_"):
-                # Internal bookkeeping (e.g. _xml_attrs); not a wire field.
+            if f.name == "currency":
+                # Internal: not rendered as its own element; it shows up
+                # as the ``currencyID`` attribute on amount fields.
                 continue
             value = getattr(self, f.name)
             if value is None:
@@ -131,7 +125,9 @@ class Element(ABC):
                 )
             if not isinstance(value, list):
                 value = [value]
-            extra_attrs = self._xml_attrs.get(f.name)
+            extra_attrs: dict[str, str] | None = None
+            if f.metadata.get("amount") and currency:
+                extra_attrs = {"currencyID": currency}
             for v in value:
                 match v:
                     case str():
@@ -166,10 +162,12 @@ class Element(ABC):
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
 
         params: dict[str, Any] = {}
-        captured_attrs: dict[str, dict[str, str]] = {}
-        fields_ = [f for f in fields(cls) if not f.name.startswith("_")]
+        has_currency_field = any(f.name == "currency" for f in fields(cls))
+        captured_currency: str | None = None
         for el in elem:
-            for f in fields_:
+            for f in fields(cls):
+                if f.name == "currency":
+                    continue
                 curr_type = _get_non_none_type(f.type)
                 origin = get_origin(curr_type)
                 is_list = False
@@ -185,15 +183,17 @@ class Element(ABC):
                         before = params.get(f.name, [])
                         res = [*before, res]
                     params[f.name] = res
-                    if el.attrib:
-                        captured_attrs[f.name] = dict(el.attrib)
                 elif issubclass(curr_type, Decimal):
                     res = _parse_str(el, f, str)
                     if res is None:
                         continue
                     params[f.name] = Decimal(res)
-                    if el.attrib:
-                        captured_attrs[f.name] = dict(el.attrib)
+                    if (
+                        has_currency_field
+                        and f.metadata.get("amount")
+                        and "currencyID" in el.attrib
+                    ):
+                        captured_currency = el.attrib["currencyID"]
                 elif issubclass(curr_type, bool):
                     assert not is_list
                     params.update(_parse_bool(el, f))
@@ -210,10 +210,9 @@ class Element(ABC):
                             params[f.name] += [curr_type.from_xml(el)]
                         else:
                             params[f.name] = curr_type.from_xml(el)
-        instance = cls(**params)
-        if captured_attrs:
-            instance._xml_attrs.update(captured_attrs)
-        return instance
+        if has_currency_field and captured_currency is not None:
+            params.setdefault("currency", captured_currency)
+        return cls(**params)
 
 
 def _get_non_none_type(field_type: Any) -> Any:

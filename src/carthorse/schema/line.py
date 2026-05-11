@@ -137,7 +137,7 @@ class AppliedTradeAllowanceCharge(Element):
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
     """``false`` for an allowance (the spec only allows allowance at
     price level)."""
-    actual_amount: Decimal = field(metadata={"tag": "ActualAmount"})
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
     """The price-level allowance amount.
 
     EN 16931-ID: BT-147
@@ -146,8 +146,12 @@ class AppliedTradeAllowanceCharge(Element):
         default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
     )
     basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "profile": Profile.COMFORT}
+        default=None,
+        metadata={"tag": "BasisAmount", "profile": Profile.COMFORT, "amount": True},
     )
+    currency: str | None = None
+    """Document currency (BT-5) echoed on the price-level amount(s).
+    Populated on parse; set explicitly when building programmatically."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -157,12 +161,15 @@ class GrossTradePrice(Element):
     tag: ClassVar[str] = "GrossPriceProductTradePrice"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount"})
+    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
     """Item gross price (BT-148). Must not be negative (BR-28)."""
     basis_quantity: BasisQuantity | None = None
     """Item price basis quantity (BT-149-1)."""
     applied_allowance_charge: AppliedTradeAllowanceCharge | None = None
     """Price-level allowance (BG-X-1 in carthorse parlance, BT-147-00 in EN16931)."""
+    currency: str | None = None
+    """Document currency (BT-5) echoed on the gross price amount.
+    Populated on parse; set explicitly when building programmatically."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -172,10 +179,13 @@ class NetTradePrice(Element):
     tag: ClassVar[str] = "NetPriceProductTradePrice"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount"})
+    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
     """Item net price (BT-146). Must not be negative (BR-27)."""
     basis_quantity: BasisQuantity | None = None
     """Item price basis quantity (BT-149)."""
+    currency: str | None = None
+    """Document currency (BT-5) echoed on the net price amount.
+    Populated on parse; set explicitly when building programmatically."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -259,11 +269,14 @@ class LineMonetarySummation(Element):
     tag: ClassVar[str] = "SpecifiedTradeSettlementLineMonetarySummation"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    line_total: Decimal = field(metadata={"tag": "LineTotalAmount"})
+    line_total: Decimal = field(metadata={"tag": "LineTotalAmount", "amount": True})
     """Sum of (net price * quantity +/- line allowances/charges).
 
     EN 16931-ID: BT-131
     """
+    currency: str | None = None
+    """Document currency (BT-5) echoed on the line total.
+    Populated on parse; set explicitly when building programmatically."""
 
 
 @dataclass(kw_only=True, slots=True)
