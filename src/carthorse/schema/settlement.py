@@ -39,6 +39,7 @@ For the full BR-* catalogue see ``docs/VALIDATION.md``.
 
 from dataclasses import dataclass, field
 from datetime import date
+from decimal import Decimal
 from typing import ClassVar, override
 
 from carthorse.schema.accounting import (
@@ -400,6 +401,29 @@ class TradeSettlement(Element):
                 "Wenn der fällige Zahlungsbetrag (BT-115) positiv ist, müssen "
                 "entweder das Fälligkeitsdatum der Zahlung (BT-9) oder die "
                 "Zahlungsbedingungen (BT-20) angegeben sein.",
+            )
+
+        # BR-CO-15: BT-112 (GrandTotalAmount) = BT-109 (TaxBasisTotalAmount)
+        # + BT-110 (the TaxTotalAmount in invoice currency). BT-111
+        # (TaxTotalAmount in VAT accounting currency) does NOT enter
+        # this identity.
+        bt_110 = next(
+            (
+                t.amount
+                for t in (self.monetary_summation.tax_total or [])
+                if t.currency_id == self.currency_code
+            ),
+            Decimal("0"),
+        )
+        expected_grand = self.monetary_summation.tax_basis_total + bt_110
+        if self.monetary_summation.grand_total != expected_grand:
+            raise ValidationError(
+                "BR-CO-15",
+                "Rechnungsgesamtbetrag einschließlich Umsatzsteuer (BT-112) "
+                f"= {self.monetary_summation.grand_total} weicht von "
+                f"BT-109 + BT-110 = "
+                f"{self.monetary_summation.tax_basis_total} + {bt_110} "
+                f"= {expected_grand} ab.",
             )
 
         super(TradeSettlement, self).validate_internal(profile)
