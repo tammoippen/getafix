@@ -403,6 +403,31 @@ class TradeSettlement(Element):
                 "Zahlungsbedingungen (BT-20) angegeben sein.",
             )
 
+        # BR-CO-14: BT-110 (TaxTotalAmount in invoice currency) = sum of
+        # BT-117 (CalculatedAmount on each BG-23 row). Computed only
+        # when both pieces are populated.
+        if self.monetary_summation.tax_total is not None and self.trade_taxes:
+            bt_110_in_invoice = next(
+                (
+                    t.amount
+                    for t in self.monetary_summation.tax_total
+                    if t.currency_id == self.currency_code
+                ),
+                None,
+            )
+            if bt_110_in_invoice is not None:
+                bt_117_sum = sum(
+                    (tt.calculated_amount or Decimal("0") for tt in self.trade_taxes),
+                    Decimal("0"),
+                )
+                if bt_110_in_invoice != bt_117_sum:
+                    raise ValidationError(
+                        "BR-CO-14",
+                        "Gesamtbetrag der Rechnungsumsatzsteuer (BT-110) "
+                        f"= {bt_110_in_invoice} weicht von Σ BT-117 "
+                        f"= {bt_117_sum} ab.",
+                    )
+
         # BR-CO-15: BT-112 (GrandTotalAmount) = BT-109 (TaxBasisTotalAmount)
         # + BT-110 (the TaxTotalAmount in invoice currency). BT-111
         # (TaxTotalAmount in VAT accounting currency) does NOT enter

@@ -262,7 +262,7 @@ def full_doc() -> Document:
                 ),
                 trade_taxes=[
                     ApplicableTradeTax(
-                        calculated_amount=Decimal("23.43"),
+                        calculated_amount=Decimal("23.46"),
                         basis_amount=Decimal("123.45"),
                         category_code=CategoryCode.T_S,
                         due_date_code="5",
@@ -921,7 +921,7 @@ def test_full(full_doc):
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
       <ram:ApplicableTradeTax>
         <ram:CalculatedAmount>
-          23.43
+          23.46
         </ram:CalculatedAmount>
         <ram:TypeCode>
           VAT
@@ -1329,6 +1329,8 @@ def test_br_co_15_grand_total_equals_tax_basis_plus_tax_total():
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
+                calculated_amount=Decimal("19"),
+                basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
                 due_date_code="5",
                 rate_applicable_percent=Decimal("19"),
@@ -1390,6 +1392,8 @@ def test_br_co_15_uses_only_invoice_currency_tax_total():
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
+                calculated_amount=Decimal("19"),
+                basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
                 due_date_code="5",
                 rate_applicable_percent=Decimal("19"),
@@ -1417,6 +1421,8 @@ def test_br_co_16_due_amount_equals_grand_total_minus_prepaid():
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
+                calculated_amount=Decimal("19"),
+                basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
                 due_date_code="5",
                 rate_applicable_percent=Decimal("19"),
@@ -1447,6 +1453,8 @@ def test_br_co_16_no_prepaid_total_means_due_equals_grand():
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
+                calculated_amount=Decimal("19"),
+                basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
                 due_date_code="5",
                 rate_applicable_percent=Decimal("19"),
