@@ -45,6 +45,7 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
+from carthorse.schema._numeric import round_half_away_from_zero
 from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.types import CategoryCode, Profile
 
@@ -402,10 +403,11 @@ class ApplicableTradeTax(Element):
             and self.basis_amount is not None
             and self.calculated_amount is not None
         ):
-            expected = (
+            # Factur-X §7.1.8 rounding: half away from zero.
+            expected = round_half_away_from_zero(
                 self.basis_amount * self.rate_applicable_percent / Decimal("100")
-            ).quantize(Decimal("0.01"))
-            if self.calculated_amount.quantize(Decimal("0.01")) != expected:
+            )
+            if round_half_away_from_zero(self.calculated_amount) != expected:
                 raise ValidationError(
                     "BR-CO-17",
                     f"BT-117 (CalculatedAmount) = {self.calculated_amount} "

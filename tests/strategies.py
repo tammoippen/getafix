@@ -175,14 +175,6 @@ def _put_formatted_date_time(
 # ---------------------------------------------------------------------------
 
 
-@st.composite
-def _maybe(draw, strategy):
-    """Return ``draw(strategy)`` ~50% of the time, else ``None``."""
-    if draw(st.booleans()):
-        return draw(strategy)
-    return None
-
-
 def _put_address(draw, parent: etree._Element, profile: Profile) -> None:
     """ram:TradeAddressType. Element ordering per XSD; CountryID required."""
     addr = _sub(parent, "ram", "PostalTradeAddress")
