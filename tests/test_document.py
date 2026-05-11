@@ -1308,3 +1308,89 @@ def test_br_co_3_tax_point_date_and_due_date_code_mutually_exclusive():
         due_date_code="5",
         rate_applicable_percent=Decimal("19"),
     ).validate_internal(Profile.COMFORT)
+
+
+def test_br_co_15_grand_total_equals_tax_basis_plus_tax_total():
+    """BR-CO-15: GrandTotalAmount (BT-112) = TaxBasisTotalAmount (BT-109)
+    + TaxTotalAmount in invoice currency (BT-110)."""
+    summation = MonetarySummation(
+        line_total=Decimal("100"),
+        tax_basis_total=Decimal("100"),
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        grand_total=Decimal("999"),  # WRONG — should be 119
+        due_amount=Decimal("999"),
+    )
+    settlement = TradeSettlement(
+        currency_code="EUR",
+        monetary_summation=summation,
+        trade_taxes=[
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("19"),
+            )
+        ],
+        terms=PaymentTerms(due=date(2025, 2, 1)),
+    )
+    with pt.raises(ValidationError) as e:
+        settlement.validate_internal(Profile.BASIC_WL)
+    assert e.value.code == "BR-CO-15"
+
+    # Fix the math → passes.
+    summation.grand_total = Decimal("119")
+    summation.due_amount = Decimal("119")
+    settlement.validate_internal(Profile.BASIC_WL)
+
+
+def test_br_co_15_with_no_tax_total_treats_bt_110_as_zero():
+    """When BT-110 is absent (e.g. a tax-exempt invoice), BR-CO-15
+    reduces to BT-112 == BT-109."""
+    summation = MonetarySummation(
+        line_total=Decimal("100"),
+        tax_basis_total=Decimal("100"),
+        tax_total=None,
+        grand_total=Decimal("100"),
+        due_amount=Decimal("100"),
+    )
+    settlement = TradeSettlement(
+        currency_code="EUR",
+        monetary_summation=summation,
+        trade_taxes=[
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_E,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("0"),
+                exemption_reason="Exempt",
+            )
+        ],
+        terms=PaymentTerms(due=date(2025, 2, 1)),
+    )
+    settlement.validate_internal(Profile.BASIC_WL)
+
+
+def test_br_co_15_uses_only_invoice_currency_tax_total():
+    """The BT-111 row (currency != BT-5) is not part of BR-CO-15."""
+    summation = MonetarySummation(
+        line_total=Decimal("100"),
+        tax_basis_total=Decimal("100"),
+        tax_total=[
+            TaxTotal(amount=Decimal("19"), currency_id="EUR"),  # BT-110
+            TaxTotal(amount=Decimal("20"), currency_id="USD"),  # BT-111
+        ],
+        grand_total=Decimal("119"),  # 100 + 19 only
+        due_amount=Decimal("119"),
+    )
+    settlement = TradeSettlement(
+        currency_code="EUR",
+        tax_currency_code="USD",
+        monetary_summation=summation,
+        trade_taxes=[
+            ApplicableTradeTax(
+                category_code=CategoryCode.T_S,
+                due_date_code="5",
+                rate_applicable_percent=Decimal("19"),
+            )
+        ],
+        terms=PaymentTerms(due=date(2025, 2, 1)),
+    )
+    settlement.validate_internal(Profile.BASIC_WL)
