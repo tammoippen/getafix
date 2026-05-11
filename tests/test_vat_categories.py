@@ -105,11 +105,14 @@ def _make_doc(
         ),
     )
     allowance_charges: list[TradeAllowanceCharge] = []
+    allowance_amount = Decimal("0")
+    charge_amount = Decimal("0")
     if allowance_category is not None:
+        allowance_amount = Decimal("5.00")
         allowance_charges.append(
             TradeAllowanceCharge(
                 indicator=False,
-                actual_amount=Decimal("5.00"),
+                actual_amount=allowance_amount,
                 category_trade_tax=CategoryTradeTax(
                     category_code=allowance_category,
                     rate_applicable_percent=Decimal("0"),
@@ -118,16 +121,24 @@ def _make_doc(
             )
         )
     if charge_category is not None:
+        charge_amount = Decimal("3.00")
         allowance_charges.append(
             TradeAllowanceCharge(
                 indicator=True,
-                actual_amount=Decimal("3.00"),
+                actual_amount=charge_amount,
                 category_trade_tax=CategoryTradeTax(
                     category_code=charge_category, rate_applicable_percent=Decimal("0")
                 ),
                 reason="surcharge",
             )
         )
+
+    # Keep the header totals self-consistent under BR-CO-10..16:
+    # tax_basis_total = lines - allowances + charges, grand_total +
+    # due_amount track tax_basis_total since the helper's lines /
+    # allowances / charges carry rate 0%.
+    line_total = Decimal("100")
+    tax_basis = line_total - allowance_amount + charge_amount
     return Document(
         context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
         header=Header(
@@ -139,11 +150,13 @@ def _make_doc(
             settlement=TradeSettlement(
                 currency_code="EUR",
                 monetary_summation=MonetarySummation(
-                    line_total=Decimal("100"),
-                    tax_basis_total=Decimal("100"),
+                    line_total=line_total,
+                    allowance_total=allowance_amount or None,
+                    charge_total=charge_amount or None,
+                    tax_basis_total=tax_basis,
                     tax_total=[TaxTotal(amount=Decimal("0"), currency_id="EUR")],
-                    grand_total=Decimal("100"),
-                    due_amount=Decimal("100"),
+                    grand_total=tax_basis,
+                    due_amount=tax_basis,
                 ),
                 trade_taxes=[
                     ApplicableTradeTax(
@@ -724,4 +737,59 @@ class TestBrCoArithmetic:
         rule is unenforceable then."""
         doc = _make_doc()
         doc.trade.settlement.monetary_summation.line_total = None
+        doc.validate()
+
+    def test_br_co_11_allowance_total_matches_sum(self) -> None:
+        """BT-107 = sum of document-level allowance BT-92."""
+        doc = _make_doc(allowance_category=CategoryCode.T_S)
+        summation = doc.trade.settlement.monetary_summation
+        # One allowance of 5.00 in the helper; declare BT-107 wrongly.
+        summation.allowance_total = Decimal("99")
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-CO-11"
+
+        # Match the sum and BT-109 / BT-115 to keep the rest happy.
+        summation.allowance_total = Decimal("5.00")
+        summation.tax_basis_total = Decimal("95")  # 100 - 5
+        summation.grand_total = Decimal("95")
+        summation.due_amount = Decimal("95")
+        doc.validate()
+
+    def test_br_co_12_charge_total_matches_sum(self) -> None:
+        """BT-108 = sum of document-level charge BT-99."""
+        doc = _make_doc(charge_category=CategoryCode.T_S)
+        summation = doc.trade.settlement.monetary_summation
+        # One charge of 3.00 in the helper; declare BT-108 wrongly.
+        summation.charge_total = Decimal("99")
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-CO-12"
+
+        summation.charge_total = Decimal("3.00")
+        summation.tax_basis_total = Decimal("103")  # 100 + 3
+        summation.grand_total = Decimal("103")
+        summation.due_amount = Decimal("103")
+        doc.validate()
+
+    def test_br_co_13_tax_basis_identity(self) -> None:
+        """BT-109 = ΣBT-131 - BT-107 + BT-108."""
+        doc = _make_doc(
+            allowance_category=CategoryCode.T_S, charge_category=CategoryCode.T_S
+        )
+        summation = doc.trade.settlement.monetary_summation
+        # Keep tax_basis_total / grand_total / due_amount in sync so
+        # BR-CO-15 + BR-CO-16 stay satisfied; only break the BT-109
+        # vs ΣBT-131 identity that BR-CO-13 watches.
+        summation.tax_basis_total = Decimal("999")
+        summation.grand_total = Decimal("999")
+        summation.due_amount = Decimal("999")
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-CO-13"
+
+        # Real identity: 100 - 5 + 3 = 98.
+        summation.tax_basis_total = Decimal("98")
+        summation.grand_total = Decimal("98")
+        summation.due_amount = Decimal("98")
         doc.validate()
