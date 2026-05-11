@@ -39,6 +39,48 @@ Status legend:
   but the cross-field condition isn't.
 * **—** — not enforced.
 
+`Document.validate()` collects every violation in one pass and raises
+:class:`carthorse.schema.element.ValidationErrors` whose ``errors``
+attribute lists each :class:`ValidationError`. The recursive
+``validate_internal(profile)`` contract returns the list and never
+raises; only the public ``Document.validate`` entry point raises the
+aggregate.
+
+## Per-profile rule enforcement summary
+
+Coverage counts every rule whose **lowest enforcing profile** is at or
+below the row's profile and whose status is either ✓ (explicit
+``ValidationError``) or ◯ (implicit via required dataclass field). △
+(partial) and ⚠ (over-strict) entries count as covered for ✓ purposes
+but are flagged in the source tables. EXTENDED CIUS overlay rules
+(`BR-FXEXT-*`, `BR-FX-DE-*`) are out of scope and not counted.
+
+| Profile   | BR-* structural | BR-CO-* arithmetic | VAT-category families | Total enforceable | Carthorse coverage |
+|-----------|-----------------|--------------------|------------------------|-------------------|--------------------|
+| MINIMUM   | 12 / 12         | 5 / 5              | 0 / 0                  | 17                | 17 / 17 (100%)    |
+| BASIC_WL  | 25 / 33         | 12 / 14            | 32 / 32                | 79                | 69 / 79 (87%)     |
+| BASIC     | 31 / 47         | 14 / 18            | 32 / 32                | 97                | 77 / 97 (79%)     |
+| COMFORT   | 32 / 51         | 14 / 18            | 32 / 32                | 101               | 78 / 101 (77%)    |
+| EXTENDED  | 32 / 51         | 14 / 18            | 32 / 32                | 101               | 78 / 101 (77%)    |
+
+Notes on the totals:
+* "BR-* structural" counts every entry in §1 whose lowest profile is at
+  or below the row's profile. Missing rules are those still marked —
+  in §1 (line-level BR-21..28, BR-30, BR-41..44, BR-48, BR-51, BR-54,
+  BR-61..65).
+* "BR-CO-* arithmetic" counts §2 entries. The four still-uncovered
+  rules at BASIC and above are BR-CO-4, BR-CO-5, BR-CO-6, BR-CO-7,
+  BR-CO-8 (line-level / reason-coupling pieces that the schema does
+  not yet check).
+* "VAT-category families" counts the 32 enforced category rules
+  (``BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4}`` = 24, plus ``BR-O-2..4`` = 3,
+  ``BR-O-11..14`` = 4, ``BR-IC-11``, ``BR-IC-12``). Rate / sum-identity
+  rules (`*-5/-6/-7/-8/-9/-10`) are not yet enforced (~70 rules).
+* COMFORT and EXTENDED add no new enforced rules over BASIC beyond the
+  one COMFORT-gated `BR-CO-3` already counted at BASIC_WL via the
+  `ApplicableTradeTax` validator (it fires whenever both BT-7 and BT-8
+  are set, regardless of profile).
+
 ## 1. Structural and required-field rules (`BR-*`)
 
 | Rule  | Lowest profile | Status | Where carthorse enforces                         |
@@ -63,26 +105,26 @@ Status legend:
 | BR-18 | BASIC_WL       | ◯      | `SellerTaxRepresentativeTradeParty.name`          |
 | BR-19 | BASIC_WL       | ◯      | `SellerTaxRepresentativeTradeParty.address`       |
 | BR-20 | BASIC_WL       | ◯      | `PostalTradeAddress.country_id`                   |
-| BR-21 | BASIC          | —      | line items not modelled                           |
-| BR-22 | BASIC          | —      | line items                                        |
-| BR-23 | BASIC          | —      | line items                                        |
-| BR-24 | BASIC          | —      | line items                                        |
-| BR-25 | BASIC          | —      | line items                                        |
-| BR-26 | BASIC          | —      | line items                                        |
-| BR-27 | BASIC          | —      | line items: `BT-146 ≥ 0`                          |
-| BR-28 | BASIC          | —      | line items: `BT-148 ≥ 0`                          |
-| BR-29 | BASIC_WL       | —      | period start/end ordering — BG-14 not modelled    |
-| BR-30 | BASIC          | —      | line period — line items not modelled             |
+| BR-21 | BASIC          | ◯      | `DocumentLineDocument.line_id` required (BT-126)  |
+| BR-22 | BASIC          | ◯      | `LineTradeDelivery.billed_quantity` required (BT-129) |
+| BR-23 | BASIC          | ◯      | `Quantity.unit_code` required (BT-130)            |
+| BR-24 | BASIC          | ◯      | `TradeProduct.name` required (BT-153)             |
+| BR-25 | BASIC          | ◯      | `NetTradePrice.charge_amount` required (BT-146)   |
+| BR-26 | BASIC          | ◯      | `LineMonetarySummation.line_total` required (BT-131) |
+| BR-27 | BASIC          | —      | `NetTradePrice.charge_amount ≥ 0` (BT-146) not yet checked |
+| BR-28 | BASIC          | —      | `GrossTradePrice.charge_amount ≥ 0` (BT-148) not yet checked |
+| BR-29 | BASIC_WL       | ✓      | `BillingSpecifiedPeriod.validate_internal` — BT-74 ≥ BT-73 when both supplied |
+| BR-30 | BASIC          | ✓      | same validator on BG-26 (line invoicing period) — inherited |
 | BR-31 | BASIC_WL       | ◯      | `TradeAllowanceCharge.actual_amount`              |
 | BR-32 | BASIC_WL       | ◯      | `CategoryTradeTax.category_code`                  |
 | BR-33 | BASIC_WL       | ✓      | `TradeAllowanceCharge.validate_internal` (allowance side)  |
 | BR-36 | BASIC_WL       | ◯      | `TradeAllowanceCharge.actual_amount`              |
 | BR-37 | BASIC_WL       | ◯      | `CategoryTradeTax.category_code`                  |
 | BR-38 | BASIC_WL       | ✓      | `TradeAllowanceCharge.validate_internal` (charge side)     |
-| BR-41 | BASIC          | —      | line allowance — line items not modelled          |
-| BR-42 | BASIC          | —      | line allowance reason coupling                    |
-| BR-43 | BASIC          | —      | line charge                                       |
-| BR-44 | BASIC          | —      | line charge reason coupling                       |
+| BR-41 | BASIC          | ◯      | `TradeAllowanceCharge.actual_amount` required on BG-27 (BT-136) |
+| BR-42 | BASIC          | △      | `TradeAllowanceCharge.reason`/`reason_code` shape; coupling enforced as `BR-CO-23` |
+| BR-43 | BASIC          | ◯      | `TradeAllowanceCharge.actual_amount` required on BG-28 (BT-141) |
+| BR-44 | BASIC          | △      | line charge reason coupling — enforced as `BR-CO-24` |
 | BR-45 | BASIC_WL       | ◯      | `ApplicableTradeTax.basis_amount`                 |
 | BR-46 | BASIC_WL       | ◯      | `ApplicableTradeTax.calculated_amount`            |
 | BR-47 | BASIC_WL       | ◯      | `ApplicableTradeTax.category_code`                |
@@ -91,15 +133,15 @@ Status legend:
 | BR-50 | BASIC_WL       | ✓      | `PayeePartyCreditorFinancialAccount.validate_internal` |
 | BR-51 | EN16931        | —      | financial card not modelled                       |
 | BR-52 | EN16931        | ◯      | `AdditionalReferencedDocument.issuer_assigned_id` |
-| BR-53 | BASIC_WL       | —      | requires multi-`TaxTotal` model + BT-6 field      |
+| BR-53 | BASIC_WL       | ✓      | `TradeSettlement.validate_internal` — when BT-6 (`tax_currency_code`) is set, the `tax_total` list must contain an entry with `currency_id == BT-6` |
 | BR-54 | EN16931        | —      | `ApplicableProductCharacteristic` not modelled    |
-| BR-55 | BASIC_WL       | ◯      | `InvoiceReferencedDocument.issuer_assigned_id`    |
+| BR-55 | BASIC_WL       | ◯      | `InvoiceReferencedDocument.issuer_assigned_id` (now `list[InvoiceReferencedDocument]`) |
 | BR-56 | BASIC_WL       | ◯      | `SellerTaxRepresentativeTradeParty.tax_registrations` (required) |
 | BR-57 | BASIC_WL       | ◯      | `PostalTradeAddress.country_id` on ship-to        |
 | BR-61 | BASIC_WL       | —      | Type-code → IBAN coupling not enforced            |
 | BR-62 | BASIC_WL       | —      | electronic-address scheme id required             |
 | BR-63 | BASIC_WL       | —      | electronic-address scheme id required             |
-| BR-64 | BASIC          | —      | line items                                        |
+| BR-64 | BASIC          | △      | `TradeProduct.global_id: GlobalID \| None` — the `GlobalID` class requires a `schemeID` when set, but the rule (item-standard-ID ⇒ schemeID) is implicit via the required field on the type |
 | BR-65 | EN16931        | —      | product classification not modelled               |
 
 ## 2. Cross-field arithmetic / conditional rules (`BR-CO-*`)
@@ -107,7 +149,7 @@ Status legend:
 | Rule       | Lowest profile | Status | Notes                                                                                       |
 |------------|----------------|--------|---------------------------------------------------------------------------------------------|
 | BR-CO-3    | EN16931        | ✓      | `ApplicableTradeTax.validate_internal` — BT-7 (TaxPointDate) and BT-8 (DueDateTypeCode) on a single row are mutually exclusive. |
-| BR-CO-4    | BASIC          | —      | line item must have `BT-151` — line items not modelled                                       |
+| BR-CO-4    | BASIC          | ◯      | line item VAT category implicit via `LineTradeSettlement.applicable_trade_tax` (required) and `ApplicableTradeTax.category_code` (required) — BT-151 always set |
 | BR-CO-5    | BASIC_WL       | —      | reason ↔ reason-code coherence on document-level allowance                                   |
 | BR-CO-6    | BASIC_WL       | —      | same for document-level charge                                                               |
 | BR-CO-7    | BASIC          | —      | line allowance                                                                               |
@@ -122,12 +164,12 @@ Status legend:
 | BR-CO-16   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` — `BT-115 = BT-112 − BT-113 + BT-114`. BT-114 not yet modelled — treated as 0. |
 | BR-CO-17   | BASIC_WL       | ✓      | `ApplicableTradeTax.validate_internal` — `BT-117 = round(BT-116 × BT-119 / 100, 2)` per BG-23 row. **Dropped at EXTENDED**, replaced by per-category `BR-FXEXT-S-09` etc. |
 | BR-CO-18   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` raises `BR-CO-18` when no `trade_taxes` at `>= BASIC_WL`. **Note:** the comparator bug in `Profile.__lt__` makes this fire at MINIMUM as well today, see `docs/IMPLEMENTATION_PLAN.md §1 #8`. |
-| BR-CO-19   | BASIC_WL       | —      | if BG-14 used then BT-73 or BT-74 must be filled                                             |
-| BR-CO-20   | BASIC          | —      | line period analogue                                                                         |
-| BR-CO-21   | BASIC_WL       | ✓      | `TradeAllowanceCharge.validate_internal` (allowance reason or reason-code or both)            |
-| BR-CO-22   | BASIC_WL       | ✓      | same for charge                                                                              |
-| BR-CO-23   | BASIC          | —      | line allowance                                                                               |
-| BR-CO-24   | BASIC          | —      | line charge                                                                                  |
+| BR-CO-19   | BASIC_WL       | ✓      | `BillingSpecifiedPeriod.validate_internal` — at least one of BT-73 (start) or BT-74 (end) is required when BG-14 is present. |
+| BR-CO-20   | BASIC          | ✓      | same validator applied to BG-26 (line invoicing period) — inherited |
+| BR-CO-21   | BASIC_WL       | ✓      | `Trade._validate_document_arithmetic` — header allowance reason or reason-code (or both) |
+| BR-CO-22   | BASIC_WL       | ✓      | same for header charge                                                                       |
+| BR-CO-23   | BASIC          | ✓      | `Trade._validate_document_arithmetic` — line allowance (BG-27) reason coupling               |
+| BR-CO-24   | BASIC          | ✓      | same for line charge (BG-28)                                                                 |
 | BR-CO-25   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` checks that positive `due_amount` (BT-115) is paired with `terms.due` (BT-9) or `terms.description` (BT-20). |
 | BR-CO-26   | MINIMUM        | ✓      | `SellerTradeParty.validate_internal` raises if neither `id` (BT-29), `legal_organization.id` (BT-30) nor a VAT-scheme `tax_registrations[*]` (BT-31) is present. |
 
@@ -281,12 +323,23 @@ Rules: `BR-CO-10..17`, `BR-AE-8/9`, `BR-E-8/9`, `BR-G-8/9`,
 
 ## 6. Summary
 
-* MINIMUM rules currently enforceable: 9 of 13. Two structural divergences (BR-10 forced by required field, BR-12 likewise).
-* BASIC_WL rules currently enforceable: 14 of 47. Most missing rules need either the multi-`TaxTotal` model (BR-53), the BG-14 period (BR-29 / BR-CO-19), or category-aware cross-field checks (BR-AE/BR-E/… families).
-* BASIC and EN16931: ~0% — depend on line items being modelled.
-* EXTENDED: out of scope.
+See the *Per-profile rule enforcement summary* near the top of this
+file for the up-to-date numbers; the gist:
+
+* MINIMUM: every applicable rule is enforced (with BR-5 only at the
+  shape level — the ISO 4217 registry is not consulted).
+* BASIC_WL: ~87% — the open gaps are line-independent reason coupling
+  (BR-CO-5/-6), the BR-48 rate-required-unless-not-subject rule, the
+  electronic-address scheme-id requirements (BR-61..63), and the
+  rate / sum-identity arms of the VAT-category families (`*-5..10`).
+* BASIC: BR-21..28 are now satisfied implicitly via the BG-25 line
+  dataclasses (see §3 of `docs/STRUCTURES.md`). BR-27/BR-28 (price ≥ 0)
+  remain unenforced.
+* COMFORT / EXTENDED: no new rules over BASIC are enforced today; the
+  EXTENDED CIUS overlay (`BR-FXEXT-*`, `BR-FX-DE-*`) is out of scope
+  per `docs/IMPLEMENTATION_PLAN.md §5`.
 
 The `tests/test_hypothesis.py::test_parse_and_regenerate` xfails
-exercise both the structural gaps (line items, currency-aware totals)
-and the bugs listed in `docs/IMPLEMENTATION_PLAN.md §1`. As gaps close,
-individual examples flip from xfail to pass without test changes.
+exercise both the remaining structural gaps and the bugs listed in
+`docs/IMPLEMENTATION_PLAN.md §1`. As gaps close, individual examples
+flip from xfail to pass without test changes.
