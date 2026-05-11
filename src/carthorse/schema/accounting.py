@@ -565,23 +565,12 @@ class TradeAllowanceCharge(Element):
     EN 16931-ID: BT-98 (Abschlag), BT-105 (Zuschlag)
     """
 
-    @override
-    def validate_internal(self, profile: Profile) -> None:
-        if self.reason is None and self.reason_code is None:
-            if self.indicator:
-                # similar to BR-38
-                raise ValidationError(
-                    "BR-CO-22",
-                    "Jeder Zuschlag auf Dokumentenebene (BG-21) muss einen Grund für den Zuschlag auf Dokumentenebene (BT-104) oder einen Code des Grundes für den Zuschlag auf Dokumentenebene (BT-105) oder beides enthalten.",
-                )
-            else:
-                # similar to BR-33
-                raise ValidationError(
-                    "BR-CO-21",
-                    "Jeder Abschlag auf Dokumentenebene (BG-20) muss einen Grund für diesen Abschlag auf Dokumentenebene (BT-97) oder einen Code für den Grund für diesen Abschlag auf Dokumentenebene (BT-98) oder beides enthalten.",
-                )
+    # Note: BR-CO-21/22 (header reason coupling) and BR-CO-23/24 (line
+    # reason coupling) are enforced by ``Trade._validate_document_arithmetic``
+    # because they need to know whether this allowance/charge is at
+    # header or line level. Keeping the check there means the same
+    # ``TradeAllowanceCharge`` dataclass works in both contexts.
 
-        # BR-CO-5 Abschläge auf Dokumentenebene
-        # Der Code des Grundes für den Abschlag auf Dokumentenebene (BT-98) und
-        # der Grund für den Abschlag auf Dokumentenebene (BT-97) müssen dieselbe
-        # Zuschlagsart anzeigen.
+    # Der Code des Grundes für den Abschlag auf Dokumentenebene (BT-98) und
+    # der Grund für den Abschlag auf Dokumentenebene (BT-97) müssen dieselbe
+    # Zuschlagsart anzeigen.

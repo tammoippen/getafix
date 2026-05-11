@@ -150,6 +150,32 @@ class Trade(Element):
 
         # Header allowance / charge sums (BR-CO-11, BR-CO-12, BR-CO-13).
         allowance_charges = self.settlement.allowance_charge or []
+        # BR-CO-21 / BR-CO-22 — header allowance / charge needs reason
+        # text or reason code (or both).
+        for ac in allowance_charges:
+            if ac.reason is None and ac.reason_code is None:
+                code = "BR-CO-22" if ac.indicator else "BR-CO-21"
+                noun = "Zuschlag" if ac.indicator else "Abschlag"
+                raise ValidationError(
+                    code,
+                    f"Jeder {noun} auf Dokumentenebene muss einen Grund "
+                    "(BT-97 / BT-104) oder einen Code des Grundes "
+                    "(BT-98 / BT-105) — oder beides — enthalten.",
+                )
+        # BR-CO-23 / BR-CO-24 — same coupling but at line level
+        # (BG-27 / BG-28). Different rule code per spec context.
+        for item in self.items:
+            for ac in item.settlement.allowance_charge or []:
+                if ac.reason is None and ac.reason_code is None:
+                    code = "BR-CO-24" if ac.indicator else "BR-CO-23"
+                    noun = "Zuschlag" if ac.indicator else "Abschlag"
+                    raise ValidationError(
+                        code,
+                        f"Jeder {noun} auf Positionsebene muss einen Grund "
+                        "(BT-139 / BT-144) oder einen Code des Grundes "
+                        "(BT-140 / BT-145) — oder beides — enthalten.",
+                    )
+
         sum_allowances = sum(
             (ac.actual_amount for ac in allowance_charges if not ac.indicator),
             Decimal("0"),
