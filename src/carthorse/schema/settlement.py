@@ -426,4 +426,20 @@ class TradeSettlement(Element):
                 f"= {expected_grand} ab.",
             )
 
+        # BR-CO-16: BT-115 (DuePayableAmount) = BT-112 - BT-113
+        # (TotalPrepaidAmount) + BT-114 (RoundingAmount). BT-114 is
+        # not yet modelled in carthorse — treat it as 0 (it's optional
+        # in EN 16931 anyway).
+        prepaid = self.monetary_summation.prepaid_total or Decimal("0")
+        expected_due = self.monetary_summation.grand_total - prepaid
+        if self.monetary_summation.due_amount != expected_due:
+            raise ValidationError(
+                "BR-CO-16",
+                "Fälliger Zahlungsbetrag (BT-115) "
+                f"= {self.monetary_summation.due_amount} weicht von "
+                f"BT-112 - BT-113 = "
+                f"{self.monetary_summation.grand_total} - {prepaid} "
+                f"= {expected_due} ab.",
+            )
+
         super(TradeSettlement, self).validate_internal(profile)
