@@ -327,10 +327,16 @@ class TaxSchemeId(ISO6523SchemeId):
     """
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if self.scheme_id not in ("VA", "FC"):
-            raise ValidationError(
-                code="Enum", message="Only values 'VA' or 'FC' allowed."
+            errors.append(
+                ValidationError(
+                    "BT-31-0/BT-32-0",
+                    "schemeID on a SpecifiedTaxRegistration must be 'VA' "
+                    f"(VAT identifier) or 'FC' (local tax id); got "
+                    f"{self.scheme_id!r}.",
+                )
             )
         # BR-CO-9: VAT identifiers must carry an ISO 3166-1 alpha-2
         # country prefix (Greece may use 'EL'). Local tax identifiers
@@ -339,12 +345,19 @@ class TaxSchemeId(ISO6523SchemeId):
         if self.scheme_id == "VA":
             prefix = self.id[:2]
             if len(self.id) < 3 or not prefix.isalpha() or prefix != prefix.upper():
-                raise ValidationError(
-                    "BR-CO-9",
-                    "Den Umsatzsteuer-Identifikationsnummern (BT-31, BT-63, BT-48) "
-                    "muss zur Kennzeichnung des Landes ein Präfix nach ISO 3166-1 "
-                    "Alpha-2 vorangestellt werden. Griechenland darf 'EL' verwenden.",
+                errors.append(
+                    ValidationError(
+                        "BR-CO-9",
+                        "The Seller VAT identifier (BT-31), the Seller tax "
+                        "representative VAT identifier (BT-63) and the Buyer "
+                        "VAT identifier (BT-48) must each carry a prefix "
+                        "according to ISO 3166-1 alpha-2 by which the "
+                        "country of issue may be identified. Greece may use "
+                        "the prefix 'EL'.",
+                    )
                 )
+        errors.extend(super(TaxSchemeId, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -444,7 +457,8 @@ class SellerTradeParty(Element):
     """
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         # BR-CO-26: Seller automatic identification — at least one of
         # BT-29 (Seller identifier), BT-30 (Seller legal registration
         # identifier) or BT-31 (Seller VAT identifier) must be present.
@@ -457,15 +471,17 @@ class SellerTradeParty(Element):
             tr.id.scheme_id == "VA" for tr in self.tax_registrations
         )
         if not (has_id or has_legal or has_vat):
-            raise ValidationError(
-                "BR-CO-26",
-                "Um dem Käufer eine automatische Identifizierung eines Lieferanten "
-                "zu ermöglichen, müssen die Kennung des Verkäufers (BT-29), die "
-                "Kennung der rechtlichen Registrierung des Verkäufers (BT-30) "
-                "und/oder die Umsatzsteuer-Identifikationsnummer des Verkäufers "
-                "(BT-31) angegeben werden.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-26",
+                    "In order for the buyer to automatically identify a "
+                    "supplier, the Seller identifier (BT-29), the Seller "
+                    "legal registration identifier (BT-30) and/or the "
+                    "Seller VAT identifier (BT-31) shall be present.",
+                )
             )
-        super(SellerTradeParty, self).validate_internal(profile)
+        errors.extend(super(SellerTradeParty, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)

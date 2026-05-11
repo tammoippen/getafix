@@ -18,7 +18,7 @@ from carthorse.schema import (
 from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
-from carthorse.schema.element import ValidationError
+from carthorse.schema.element import ValidationError, ValidationErrors
 from carthorse.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,
@@ -1003,10 +1003,10 @@ def test_full(full_doc):
 def test_br_16_error(full_doc: Document):
     full_doc.trade.items.clear()
 
-    with pt.raises(ValidationError) as e:
+    with pt.raises(ValidationErrors) as e:
         full_doc.validate()
 
-    assert e.value.code == "BR-16"
+    assert any(v.code == "BR-16" for v in e.value.errors)
 
     full_doc.context.guideline.id = Profile.MINIMUM
     full_doc.validate()
@@ -1143,9 +1143,8 @@ def test_billing_specified_period_br_co_19_at_least_one_endpoint():
     from carthorse.schema.settlement import BillingSpecifiedPeriod
 
     period = BillingSpecifiedPeriod()
-    with pt.raises(ValidationError) as e:
-        period.validate_internal(Profile.BASIC_WL)
-    assert e.value.code == "BR-CO-19"
+    errors = period.validate_internal(Profile.BASIC_WL)
+    assert any(v.code == "BR-CO-19" for v in errors)
 
 
 def test_billing_specified_period_br_29_end_after_start():
@@ -1153,9 +1152,8 @@ def test_billing_specified_period_br_29_end_after_start():
     from carthorse.schema.settlement import BillingSpecifiedPeriod
 
     period = BillingSpecifiedPeriod(start=date(2025, 2, 1), end=date(2025, 1, 1))
-    with pt.raises(ValidationError) as e:
-        period.validate_internal(Profile.BASIC_WL)
-    assert e.value.code == "BR-29"
+    errors = period.validate_internal(Profile.BASIC_WL)
+    assert any(v.code == "BR-29" for v in errors)
 
 
 def test_tax_currency_code_requires_matching_tax_total():
@@ -1185,9 +1183,8 @@ def test_tax_currency_code_requires_matching_tax_total():
         ],
         terms=PaymentTerms(due=date(2025, 12, 16)),
     )
-    with pt.raises(ValidationError) as e:
-        settlement.validate_internal(Profile.BASIC_WL)
-    assert e.value.code == "BR-53"
+    errors = settlement.validate_internal(Profile.BASIC_WL)
+    assert any(v.code == "BR-53" for v in errors)
 
     # With matching second TaxTotal it passes.
     settlement.monetary_summation.tax_total = [
@@ -1201,9 +1198,8 @@ def test_br_co_9_vat_id_country_prefix():
     """BR-CO-9: VAT identifiers must start with an ISO 3166-1 alpha-2
     country prefix (with EL allowed for Greece)."""
     bad = TaxSchemeId(id="1234567890", scheme_id="VA")
-    with pt.raises(ValidationError) as e:
-        bad.validate_internal(Profile.MINIMUM)
-    assert e.value.code == "BR-CO-9"
+    errors = bad.validate_internal(Profile.MINIMUM)
+    assert any(v.code == "BR-CO-9" for v in errors)
 
     # Local tax identifiers (FC) are exempt — their codes are national.
     TaxSchemeId(id="201/113/40209", scheme_id="FC").validate_internal(Profile.MINIMUM)
@@ -1227,9 +1223,8 @@ def test_br_co_25_payment_terms_required_when_due():
 
     # No terms → BR-CO-25.
     settlement = TradeSettlement(currency_code="EUR", monetary_summation=summation)
-    with pt.raises(ValidationError) as e:
-        settlement.validate_internal(Profile.MINIMUM)
-    assert e.value.code == "BR-CO-25"
+    errors = settlement.validate_internal(Profile.MINIMUM)
+    assert any(v.code == "BR-CO-25" for v in errors)
 
     # terms.due present → ok.
     settlement.terms = PaymentTerms(due=date(2025, 12, 16))
@@ -1257,9 +1252,8 @@ def test_br_co_26_seller_must_be_identifiable():
 
     # No identifier — fails.
     seller = SellerTradeParty(name="Acme", address=addr)
-    with pt.raises(ValidationError) as e:
-        seller.validate_internal(Profile.MINIMUM)
-    assert e.value.code == "BR-CO-26"
+    errors = seller.validate_internal(Profile.MINIMUM)
+    assert any(v.code == "BR-CO-26" for v in errors)
 
     # BT-29 set — ok.
     seller.id = "S-1234"
@@ -1283,9 +1277,8 @@ def test_br_co_26_seller_must_be_identifiable():
     seller.tax_registrations = [
         SpecifiedTaxRegistration(id=TaxSchemeId(id="201/113/40209", scheme_id="FC"))
     ]
-    with pt.raises(ValidationError) as e:
-        seller.validate_internal(Profile.MINIMUM)
-    assert e.value.code == "BR-CO-26"
+    errors = seller.validate_internal(Profile.MINIMUM)
+    assert any(v.code == "BR-CO-26" for v in errors)
 
 
 def test_br_co_3_tax_point_date_and_due_date_code_mutually_exclusive():
@@ -1297,9 +1290,8 @@ def test_br_co_3_tax_point_date_and_due_date_code_mutually_exclusive():
         due_date_code="5",  # also setting BT-8 → conflict
         rate_applicable_percent=Decimal("19"),
     )
-    with pt.raises(ValidationError) as e:
-        tax.validate_internal(Profile.COMFORT)
-    assert e.value.code == "BR-CO-3"
+    errors = tax.validate_internal(Profile.COMFORT)
+    assert any(v.code == "BR-CO-3" for v in errors)
 
     # Either alone is fine.
     ApplicableTradeTax(
@@ -1338,9 +1330,8 @@ def test_br_co_15_grand_total_equals_tax_basis_plus_tax_total():
         ],
         terms=PaymentTerms(due=date(2025, 2, 1)),
     )
-    with pt.raises(ValidationError) as e:
-        settlement.validate_internal(Profile.BASIC_WL)
-    assert e.value.code == "BR-CO-15"
+    errors = settlement.validate_internal(Profile.BASIC_WL)
+    assert any(v.code == "BR-CO-15" for v in errors)
 
     # Fix the math → passes.
     summation.grand_total = Decimal("119")
@@ -1430,9 +1421,8 @@ def test_br_co_16_due_amount_equals_grand_total_minus_prepaid():
         ],
         terms=PaymentTerms(due=date(2025, 2, 1)),
     )
-    with pt.raises(ValidationError) as e:
-        settlement.validate_internal(Profile.BASIC_WL)
-    assert e.value.code == "BR-CO-16"
+    errors = settlement.validate_internal(Profile.BASIC_WL)
+    assert any(v.code == "BR-CO-16" for v in errors)
 
     summation.due_amount = Decimal("100")
     settlement.validate_internal(Profile.BASIC_WL)

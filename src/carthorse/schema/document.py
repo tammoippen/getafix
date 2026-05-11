@@ -213,5 +213,17 @@ class Document(Element):
         return self.to_xml_internal(profile)
 
     def validate(self) -> None:
+        """Validate every business rule recursively.
+
+        Collects every :class:`ValidationError` from this document and
+        raises a single :class:`ValidationErrors` if any was found.
+        Callers can inspect ``exc.errors`` to see every violation in
+        one pass, rather than fixing one error only to discover the
+        next on the following run.
+        """
+        from carthorse.schema.element import ValidationErrors
+
         profile = self.context.guideline.id
-        return self.validate_internal(profile)
+        errors = self.validate_internal(profile)
+        if errors:
+            raise ValidationErrors(errors)

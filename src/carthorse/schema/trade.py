@@ -110,23 +110,30 @@ class Trade(Element):
     items: list[TradeLineItem] = field(default_factory=list)
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if Profile.BASIC_WL < profile and len(self.items) == 0:
-            raise ValidationError(
-                "BR-16",
-                "An invoice must contain at least one invoice line item (BG-25).",
+            errors.append(
+                ValidationError(
+                    "BR-16",
+                    "An Invoice shall have at least one Invoice line (BG-25).",
+                )
             )
 
         # Recurse into child validators first (so e.g. BR-CO-26 and
-        # BR-CO-25 surface before our cross-field VAT-category checks).
-        super(Trade, self).validate_internal(profile)
+        # BR-CO-25 land in the list before our cross-field checks).
+        errors.extend(super(Trade, self).validate_internal(profile))
 
-        self._validate_vat_category_required_parties()
-        self._validate_document_arithmetic()
+        self._validate_vat_category_required_parties(errors)
+        self._validate_document_arithmetic(errors)
+        return errors
 
-    def _validate_document_arithmetic(self) -> None:
-        """BR-CO-10..13 — sums and identities across line items, header
-        allowances/charges, and the header monetary summation."""
+    def _validate_document_arithmetic(
+        self, errors: list[ValidationError]
+    ) -> None:
+        """BR-CO-10..13 and BR-CO-21..24 — sums and reason coupling
+        across line items, header allowances/charges, and the header
+        monetary summation. Appends to ``errors`` in document order."""
         summation = self.settlement.monetary_summation
         sum_line_totals = sum(
             (item.settlement.monetary_summation.line_total for item in self.items),
@@ -141,11 +148,13 @@ class Trade(Element):
             and summation.line_total is not None
             and summation.line_total != sum_line_totals
         ):
-            raise ValidationError(
-                "BR-CO-10",
-                f"Summe der Nettobeträge aller Rechnungspositionen (BT-106) "
-                f"= {summation.line_total} weicht von Σ BT-131 "
-                f"= {sum_line_totals} ab.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-10",
+                    "Sum of Invoice line net amount (BT-106) = "
+                    f"{summation.line_total} differs from sum(BT-131) = "
+                    f"{sum_line_totals}.",
+                )
             )
 
         # Header allowance / charge sums (BR-CO-11, BR-CO-12, BR-CO-13).
@@ -154,27 +163,51 @@ class Trade(Element):
         # text or reason code (or both).
         for ac in allowance_charges:
             if ac.reason is None and ac.reason_code is None:
-                code = "BR-CO-22" if ac.indicator else "BR-CO-21"
-                noun = "Zuschlag" if ac.indicator else "Abschlag"
-                raise ValidationError(
-                    code,
-                    f"Jeder {noun} auf Dokumentenebene muss einen Grund "
-                    "(BT-97 / BT-104) oder einen Code des Grundes "
-                    "(BT-98 / BT-105) — oder beides — enthalten.",
-                )
+                if ac.indicator:
+                    errors.append(
+                        ValidationError(
+                            "BR-CO-22",
+                            "Each Document level charge (BG-21) shall "
+                            "contain a Document level charge reason "
+                            "(BT-104) or a Document level charge reason "
+                            "code (BT-105), or both.",
+                        )
+                    )
+                else:
+                    errors.append(
+                        ValidationError(
+                            "BR-CO-21",
+                            "Each Document level allowance (BG-20) shall "
+                            "contain a Document level allowance reason "
+                            "(BT-97) or a Document level allowance reason "
+                            "code (BT-98), or both.",
+                        )
+                    )
         # BR-CO-23 / BR-CO-24 — same coupling but at line level
         # (BG-27 / BG-28). Different rule code per spec context.
         for item in self.items:
             for ac in item.settlement.allowance_charge or []:
                 if ac.reason is None and ac.reason_code is None:
-                    code = "BR-CO-24" if ac.indicator else "BR-CO-23"
-                    noun = "Zuschlag" if ac.indicator else "Abschlag"
-                    raise ValidationError(
-                        code,
-                        f"Jeder {noun} auf Positionsebene muss einen Grund "
-                        "(BT-139 / BT-144) oder einen Code des Grundes "
-                        "(BT-140 / BT-145) — oder beides — enthalten.",
-                    )
+                    if ac.indicator:
+                        errors.append(
+                            ValidationError(
+                                "BR-CO-24",
+                                "Each Invoice line charge (BG-28) shall "
+                                "contain an Invoice line charge reason "
+                                "(BT-144) or an Invoice line charge "
+                                "reason code (BT-145), or both.",
+                            )
+                        )
+                    else:
+                        errors.append(
+                            ValidationError(
+                                "BR-CO-23",
+                                "Each Invoice line allowance (BG-27) shall "
+                                "contain an Invoice line allowance reason "
+                                "(BT-139) or an Invoice line allowance "
+                                "reason code (BT-140), or both.",
+                            )
+                        )
 
         sum_allowances = sum(
             (ac.actual_amount for ac in allowance_charges if not ac.indicator),
@@ -184,25 +217,29 @@ class Trade(Element):
             (ac.actual_amount for ac in allowance_charges if ac.indicator), Decimal("0")
         )
 
-        # BR-CO-11: BT-107 = ΣBT-92.
+        # BR-CO-11: BT-107 = sum(BT-92).
         if (
             summation.allowance_total is not None
             and summation.allowance_total != sum_allowances
         ):
-            raise ValidationError(
-                "BR-CO-11",
-                f"Summe der Abschläge auf Dokumentenebene (BT-107) "
-                f"= {summation.allowance_total} weicht von Σ BT-92 "
-                f"= {sum_allowances} ab.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-11",
+                    "Sum of allowances on document level (BT-107) = "
+                    f"{summation.allowance_total} differs from sum(BT-92) = "
+                    f"{sum_allowances}.",
+                )
             )
 
-        # BR-CO-12: BT-108 = ΣBT-99.
+        # BR-CO-12: BT-108 = sum(BT-99).
         if summation.charge_total is not None and summation.charge_total != sum_charges:
-            raise ValidationError(
-                "BR-CO-12",
-                f"Summe der Zuschläge auf Dokumentenebene (BT-108) "
-                f"= {summation.charge_total} weicht von Σ BT-99 "
-                f"= {sum_charges} ab.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-12",
+                    "Sum of charges on document level (BT-108) = "
+                    f"{summation.charge_total} differs from sum(BT-99) = "
+                    f"{sum_charges}.",
+                )
             )
 
         # BR-CO-13: BT-109 = sum(BT-131) - sum(BT-92) + sum(BT-99). The
@@ -210,16 +247,20 @@ class Trade(Element):
         if self.items:
             expected_basis = sum_line_totals - sum_allowances + sum_charges
             if summation.tax_basis_total != expected_basis:
-                raise ValidationError(
-                    "BR-CO-13",
-                    f"Rechnungsgesamtbetrag ohne Umsatzsteuer (BT-109) "
-                    f"= {summation.tax_basis_total} weicht von Σ BT-131 "
-                    f"- Σ BT-92 + Σ BT-99 = {sum_line_totals} - "
-                    f"{sum_allowances} + {sum_charges} "
-                    f"= {expected_basis} ab.",
+                errors.append(
+                    ValidationError(
+                        "BR-CO-13",
+                        "Invoice total amount without VAT (BT-109) = "
+                        f"{summation.tax_basis_total} differs from "
+                        f"sum(BT-131) - sum(BT-92) + sum(BT-99) = "
+                        f"{sum_line_totals} - {sum_allowances} + "
+                        f"{sum_charges} = {expected_basis}.",
+                    )
                 )
 
-    def _validate_vat_category_required_parties(self) -> None:
+    def _validate_vat_category_required_parties(
+        self, errors: list[ValidationError]
+    ) -> None:
         """BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4} required-party checks.
 
         For each line item / document-level allowance / document-level
@@ -322,13 +363,22 @@ class Trade(Element):
             ),
         ]
 
+        emitted: set[str] = set()
+
+        def _emit(code: str, message: str) -> None:
+            if code in emitted:
+                return
+            emitted.add(code)
+            errors.append(ValidationError(code, f"{code}: {message}"))
+
         for category, ok, msg, (br_line, br_alw, br_chg) in families:
             if ok:
                 continue
 
             for item in self.items:
                 if item.settlement.applicable_trade_tax.category_code == category:
-                    raise ValidationError(br_line, f"{br_line}: {msg}")
+                    _emit(br_line, msg)
+                    break
 
             for ac in self.settlement.allowance_charge or []:
                 if (
@@ -336,8 +386,7 @@ class Trade(Element):
                     or ac.category_trade_tax.category_code != category
                 ):
                     continue
-                code = br_chg if ac.indicator else br_alw
-                raise ValidationError(code, f"{code}: {msg}")
+                _emit(br_chg if ac.indicator else br_alw, msg)
 
         # BR-O — Not subject to VAT: inverted predicate. Each slot
         # carrying category 'O' forbids a different identifier set.
@@ -347,13 +396,14 @@ class Trade(Element):
             if item.settlement.applicable_trade_tax.category_code != CategoryCode.T_O:
                 continue
             if s_has_vat_or_taxrep or buyer.id is not None:
-                raise ValidationError(
+                _emit(
                     "BR-O-2",
                     "An Invoice line with VAT category 'Not subject to VAT' "
                     "(O) shall not contain the Seller VAT identifier "
                     "(BT-31), the Seller tax representative VAT identifier "
                     "(BT-63) or the Buyer identifier (BT-46).",
                 )
+                break
 
         for ac in self.settlement.allowance_charge or []:
             if (
@@ -363,14 +413,13 @@ class Trade(Element):
                 continue
             if s_has_vat_or_taxrep or _has_vat_id(buyer):
                 code = "BR-O-4" if ac.indicator else "BR-O-3"
-                raise ValidationError(
+                kind = "charge" if ac.indicator else "allowance"
+                _emit(
                     code,
-                    f"{code}: A document-level "
-                    f"{'charge' if ac.indicator else 'allowance'} "
-                    "with VAT category 'Not subject to VAT' (O) shall not "
-                    "contain the Seller VAT identifier (BT-31), the Seller "
-                    "tax representative VAT identifier (BT-63) or the "
-                    "Buyer VAT identifier (BT-48).",
+                    f"A document-level {kind} with VAT category 'Not subject "
+                    "to VAT' (O) shall not contain the Seller VAT identifier "
+                    "(BT-31), the Seller tax representative VAT identifier "
+                    "(BT-63) or the Buyer VAT identifier (BT-48).",
                 )
 
         # BR-IC-11 / BR-IC-12 — intra-community supply needs evidence of
@@ -392,7 +441,7 @@ class Trade(Element):
                 period.start is not None or period.end is not None
             )
             if not (has_delivery_date or has_period):
-                raise ValidationError(
+                _emit(
                     "BR-IC-11",
                     "An Invoice with a VAT breakdown row of category "
                     "'Intra-community supply' (K) shall contain the actual "
@@ -406,7 +455,7 @@ class Trade(Element):
                 and bool(ship_to.address.country_id)
             )
             if not has_ship_to_country:
-                raise ValidationError(
+                _emit(
                     "BR-IC-12",
                     "An Invoice with a VAT breakdown row of category "
                     "'Intra-community supply' (K) shall contain the "
@@ -420,7 +469,7 @@ class Trade(Element):
         has_o_row = any(t.category_code == CategoryCode.T_O for t in trade_taxes)
         if has_o_row:
             if any(t.category_code != CategoryCode.T_O for t in trade_taxes):
-                raise ValidationError(
+                _emit(
                     "BR-O-11",
                     "An Invoice with a VAT breakdown row of category "
                     "'Not subject to VAT' (O) shall not contain other VAT "
@@ -431,13 +480,14 @@ class Trade(Element):
                     item.settlement.applicable_trade_tax.category_code
                     != CategoryCode.T_O
                 ):
-                    raise ValidationError(
+                    _emit(
                         "BR-O-12",
                         "An Invoice with a VAT breakdown row of category "
                         "'Not subject to VAT' (O) shall not contain an "
                         "Invoice line whose category code is not 'Not "
                         "subject to VAT'.",
                     )
+                    break
             for ac in self.settlement.allowance_charge or []:
                 if (
                     ac.category_trade_tax is None
@@ -445,10 +495,11 @@ class Trade(Element):
                 ):
                     continue
                 code = "BR-O-14" if ac.indicator else "BR-O-13"
-                raise ValidationError(
+                kind = "charge" if ac.indicator else "allowance"
+                _emit(
                     code,
-                    f"{code}: An Invoice with a VAT breakdown row of "
-                    "category 'Not subject to VAT' (O) shall not contain a "
-                    f"document-level {'charge' if ac.indicator else 'allowance'} "
-                    "whose VAT category code is not 'Not subject to VAT'.",
+                    "An Invoice with a VAT breakdown row of category 'Not "
+                    "subject to VAT' (O) shall not contain a document-level "
+                    f"{kind} whose VAT category code is not 'Not subject to "
+                    "VAT'.",
                 )

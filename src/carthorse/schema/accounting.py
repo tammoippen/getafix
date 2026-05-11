@@ -90,15 +90,22 @@ class TaxTotal(Element):
     """
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if (
             len(self.currency_id) != 3
             or not self.currency_id.isalpha()
             or self.currency_id.upper() != self.currency_id
         ):
-            raise ValueError(
-                f"CurrencyID cannot be alpha-3 ISO 4217: {self.currency_id}"
+            errors.append(
+                ValidationError(
+                    "BR-5",
+                    "Invoice currency code (BT-5) must be an ISO 4217 "
+                    f"alpha-3 uppercase code; got {self.currency_id!r}.",
+                )
             )
+        errors.extend(super(TaxTotal, self).validate_internal(profile))
+        return errors
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
@@ -370,20 +377,25 @@ class ApplicableTradeTax(Element):
     """
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if self.type_code != "VAT" and self.profile != Profile.EXTENDED:
-            raise ValidationError(
-                "TypeCode",
-                "TypeCodes other than VAT for BT-118-0 are only allowed in the EXTENDED profile.",
+            errors.append(
+                ValidationError(
+                    "BT-118-0",
+                    "Tax type codes other than 'VAT' on BT-118-0 are only "
+                    "allowed in the EXTENDED profile.",
+                )
             )
         # BR-CO-3: BT-7 (TaxPointDate) and BT-8 (DueDateTypeCode) are
         # mutually exclusive on a single ApplicableTradeTax.
         if self.tax_point_date is not None and self.due_date_code is not None:
-            raise ValidationError(
-                "BR-CO-3",
-                "Das Datum der Steuerfälligkeit (BT-7) und der Code für "
-                "das Datum der Steuerfälligkeit (BT-8) schließen sich "
-                "gegenseitig aus.",
+            errors.append(
+                ValidationError(
+                    "BR-CO-3",
+                    "Value added tax point date (BT-7) and Value added "
+                    "tax point date code (BT-8) are mutually exclusive.",
+                )
             )
         # If BT-8 is supplied, it must follow UNTDID 2475 (digits or ZZZ,
         # max 3 chars). When absent — BR-CO-3 leaves the slot to BT-7,
@@ -392,7 +404,13 @@ class ApplicableTradeTax(Element):
             len(self.due_date_code) <= 3
             and (self.due_date_code.isdigit() or self.due_date_code == "ZZZ")
         ):
-            raise ValueError(f"DueDateCode cannot be UNTDID 2475: {self.due_date_code}")
+            errors.append(
+                ValidationError(
+                    "BT-8",
+                    "Value added tax point date code (BT-8) must be a "
+                    f"UNTDID 2475 code (digits or 'ZZZ'); got {self.due_date_code!r}.",
+                )
+            )
 
         # BR-CO-17: BT-117 = round(BT-116 * BT-119 / 100, 2). Dropped at
         # EXTENDED (the per-VAT-category BR-FXEXT-*-09 family supersedes
@@ -408,14 +426,19 @@ class ApplicableTradeTax(Element):
                 self.basis_amount * self.rate_applicable_percent / Decimal("100")
             )
             if round_half_away_from_zero(self.calculated_amount) != expected:
-                raise ValidationError(
-                    "BR-CO-17",
-                    f"BT-117 (CalculatedAmount) = {self.calculated_amount} "
-                    f"weicht von round(BT-116 * BT-119 / 100, 2) "
-                    f"= round({self.basis_amount} * "
-                    f"{self.rate_applicable_percent} / 100, 2) "
-                    f"= {expected} ab.",
+                errors.append(
+                    ValidationError(
+                        "BR-CO-17",
+                        "VAT category tax amount (BT-117) = "
+                        f"{self.calculated_amount} differs from "
+                        "round(BT-116 * BT-119 / 100, 2) = "
+                        f"round({self.basis_amount} * "
+                        f"{self.rate_applicable_percent} / 100, 2) = "
+                        f"{expected}.",
+                    )
                 )
+        errors.extend(super(ApplicableTradeTax, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -472,12 +495,18 @@ class CategoryTradeTax(Element):
     """
 
     @override
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
         if self.type_code != "VAT" and self.profile != Profile.EXTENDED:
-            raise ValidationError(
-                "TypeCode",
-                "TypeCodes other than VAT for BT-95-0 / BT-102-0 are only allowed in the EXTENDED profile.",
+            errors.append(
+                ValidationError(
+                    "BT-95-0/BT-102-0",
+                    "Tax type codes other than 'VAT' on BT-95-0 / BT-102-0 "
+                    "are only allowed in the EXTENDED profile.",
+                )
             )
+        errors.extend(super(CategoryTradeTax, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)

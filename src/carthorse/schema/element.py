@@ -27,10 +27,36 @@ class ProfileMismatch(ValueError): ...
 
 
 class ValidationError(ValueError):
+    """A single business-rule violation.
+
+    ``code`` is the rule identifier (``BR-CO-15`` etc.) and ``message``
+    a human-readable explanation. Subclassing ``ValueError`` keeps
+    backwards-compat with code that catches ``ValueError`` broadly, but
+    the public ``Document.validate`` entry point raises the plural
+    :class:`ValidationErrors` instead so callers can see every
+    violation in one pass.
+    """
+
     def __init__(self, code: str, message: str):
         super().__init__(f"{code}: {message}")
         self.code: str = code
         self.message: str = message
+
+
+class ValidationErrors(ValueError):
+    """Aggregate exception holding every ValidationError from a single
+    ``Document.validate`` pass.
+
+    ``errors`` is the list, in document order. Callers can check for a
+    specific rule with::
+
+        assert any(e.code == "BR-CO-15" for e in exc.errors)
+    """
+
+    def __init__(self, errors: list[ValidationError]):
+        joined = "; ".join(f"{e.code}: {e.message}" for e in errors)
+        super().__init__(joined)
+        self.errors: list[ValidationError] = errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -50,19 +76,27 @@ class Element(ABC):
         default_factory=dict, init=False, repr=False, compare=False
     )
 
-    def validate_internal(self, profile: Profile) -> None:
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        """Collect every business-rule violation under this Element.
+
+        Subclasses override this to append their own local rules to the
+        returned list and then call ``super().validate_internal(profile)``
+        to fold in the children's errors. The Document root raises
+        :class:`ValidationErrors` if the final list is non-empty.
+        """
+        errors: list[ValidationError] = []
         for f in fields(self):
             if f.name.startswith("_"):
                 continue
             value = getattr(self, f.name)
             if value is None:
-                # not required
                 continue
             if not isinstance(value, list):
                 value = [value]
             for v in value:
                 if isinstance(v, Element):
-                    v.validate_internal(profile)
+                    errors.extend(v.validate_internal(profile))
+        return errors
 
     @classmethod
     def get_tag(cls) -> str:
