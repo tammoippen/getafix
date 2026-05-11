@@ -680,3 +680,48 @@ class TestBrIcDelivery:
         with pt.raises(ValidationError) as e:
             doc.validate()
         assert e.value.code == "BR-IC-12"
+
+
+class TestBrCoArithmetic:
+    """BR-CO-10..14 — document-level totals match the sums of their
+    line / allowance / charge / tax-breakdown contributions."""
+
+    def test_br_co_10_line_total_equals_sum_of_line_amounts(self) -> None:
+        """BT-106 = sum of BT-131 across line items."""
+        # Add a second line so we exercise the sum (not just one row).
+        doc = _make_doc()
+        doc.trade.items.append(
+            TradeLineItem(
+                associated_document=DocumentLineDocument(line_id="2"),
+                product=TradeProduct(name="Widget 2"),
+                agreement=LineTradeAgreement(
+                    net_price=NetTradePrice(charge_amount=Decimal("50"))
+                ),
+                delivery=LineTradeDelivery(
+                    billed_quantity=Quantity(value=Decimal("1"), unit_code="C62")
+                ),
+                settlement=LineTradeSettlement(
+                    applicable_trade_tax=ApplicableTradeTax(
+                        category_code=CategoryCode.T_S,
+                        due_date_code="5",
+                        rate_applicable_percent=Decimal("19"),
+                    ),
+                    monetary_summation=LineMonetarySummation(line_total=Decimal("50")),
+                ),
+            )
+        )
+        # Sum of line totals = 100 + 50 = 150, but header still says 100.
+        with pt.raises(ValidationError) as e:
+            doc.validate()
+        assert e.value.code == "BR-CO-10"
+
+    def test_br_co_10_passes_when_totals_match(self) -> None:
+        """Single-line doc: BT-106 should equal the one BT-131."""
+        _make_doc().validate()
+
+    def test_br_co_10_skipped_when_line_total_absent(self) -> None:
+        """At MINIMUM ``line_total`` may legitimately be omitted; the
+        rule is unenforceable then."""
+        doc = _make_doc()
+        doc.trade.settlement.monetary_summation.line_total = None
+        doc.validate()

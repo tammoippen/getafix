@@ -15,6 +15,7 @@ Validation rules covered here:
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import ClassVar, override
 
 from carthorse.schema.agreement import TradeAgreement
@@ -121,6 +122,31 @@ class Trade(Element):
         super(Trade, self).validate_internal(profile)
 
         self._validate_vat_category_required_parties()
+        self._validate_document_arithmetic()
+
+    def _validate_document_arithmetic(self) -> None:
+        """BR-CO-10..13 — sums and identities across line items, header
+        allowances/charges, and the header monetary summation."""
+        summation = self.settlement.monetary_summation
+        sum_line_totals = sum(
+            (item.settlement.monetary_summation.line_total for item in self.items),
+            Decimal("0"),
+        )
+
+        # BR-CO-10: BT-106 = sum of BT-131. Two guards: (1) BT-106 is
+        # carthorse-optional (MINIMUM doesn't have it); (2) without
+        # line items the spec rule is moot — let BR-16 surface that.
+        if (
+            self.items
+            and summation.line_total is not None
+            and summation.line_total != sum_line_totals
+        ):
+            raise ValidationError(
+                "BR-CO-10",
+                f"Summe der Nettobeträge aller Rechnungspositionen (BT-106) "
+                f"= {summation.line_total} weicht von Σ BT-131 "
+                f"= {sum_line_totals} ab.",
+            )
 
     def _validate_vat_category_required_parties(self) -> None:
         """BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4} required-party checks.
