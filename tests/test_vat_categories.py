@@ -772,6 +772,53 @@ class TestBrCoArithmetic:
         summation.due_amount = Decimal("103")
         doc.validate()
 
+    def test_br_co_17_per_row_calculated_equals_basis_times_rate(self) -> None:
+        """BT-117 (CalculatedAmount) = round(BT-116 * BT-119 / 100, 2)
+        for each BG-23 row at <= COMFORT. EXTENDED replaces this with
+        the per-category BR-FXEXT-*-09 rounding-tolerance form."""
+        # Wrong arithmetic: 100 * 19 / 100 = 19, but we declare 17.
+        bad = ApplicableTradeTax(
+            calculated_amount=Decimal("17"),
+            basis_amount=Decimal("100"),
+            category_code=CategoryCode.T_S,
+            due_date_code="5",
+            rate_applicable_percent=Decimal("19"),
+        )
+        with pt.raises(ValidationError) as e:
+            bad.validate_internal(Profile.BASIC_WL)
+        assert e.value.code == "BR-CO-17"
+
+        # Correct arithmetic passes.
+        ApplicableTradeTax(
+            calculated_amount=Decimal("19.00"),
+            basis_amount=Decimal("100"),
+            category_code=CategoryCode.T_S,
+            due_date_code="5",
+            rate_applicable_percent=Decimal("19"),
+        ).validate_internal(Profile.BASIC_WL)
+
+        # Rounded-to-2dp also passes — 99.99 * 19 / 100 = 18.9981 → 19.00.
+        ApplicableTradeTax(
+            calculated_amount=Decimal("19.00"),
+            basis_amount=Decimal("99.99"),
+            category_code=CategoryCode.T_S,
+            due_date_code="5",
+            rate_applicable_percent=Decimal("19"),
+        ).validate_internal(Profile.BASIC_WL)
+
+        # EXTENDED: BR-CO-17 is dropped (replaced by BR-FXEXT-S-09 et al.)
+        bad.validate_internal(Profile.EXTENDED)
+
+    def test_br_co_17_skipped_without_rate(self) -> None:
+        """When BT-119 is absent (e.g. 'Not subject to VAT'), BR-CO-17
+        is moot."""
+        ApplicableTradeTax(
+            calculated_amount=Decimal("0"),
+            basis_amount=Decimal("100"),
+            category_code=CategoryCode.T_O,
+            due_date_code="5",
+        ).validate_internal(Profile.BASIC_WL)
+
     def test_br_co_14_tax_total_equals_sum_of_tax_amounts(self) -> None:
         """BT-110 = sum of BT-117 across the header BG-23 rows."""
         doc = _make_doc()
