@@ -140,7 +140,12 @@ class MonetarySummation(Element):
     tag: ClassVar[str] = "SpecifiedTradeSettlementHeaderMonetarySummation"
 
     line_total: Decimal | None = field(
-        default=None, metadata={"tag": "LineTotalAmount", "profile": Profile.BASIC_WL}
+        default=None,
+        metadata={
+            "tag": "LineTotalAmount",
+            "profile": Profile.BASIC_WL,
+            "amount": True,
+        },
     )
     """Summe der Nettobeträge aller Rechnungspositionen.
 
@@ -150,7 +155,9 @@ class MonetarySummation(Element):
 
     EN 16931-ID: BT-106
     """
-    tax_basis_total: Decimal = field(metadata={"tag": "TaxBasisTotalAmount"})
+    tax_basis_total: Decimal = field(
+        metadata={"tag": "TaxBasisTotalAmount", "amount": True}
+    )
     """Rechnungsgesamtbetrag ohne Umsatzsteuer
 
     Die Gesamtsumme der Rechnung ohne Umsatzsteuer. Der Rechnungsgesamtbetrag ohne
@@ -174,7 +181,9 @@ class MonetarySummation(Element):
 
     EN 16931-ID: BT-110, BT-111
     """
-    grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount"})
+    grand_total: Decimal = field(
+        metadata={"tag": "GrandTotalAmount", "amount": True}
+    )
     """Rechnungsgesamtbetrag einschließlich Umsatzsteuer / Bruttosumme
 
     Der Rechnungsgesamtbetrag einschließlich Umsatzsteuer ist der Rechnungsgesamtbetrag
@@ -182,7 +191,9 @@ class MonetarySummation(Element):
 
     EN 16931-ID: BT-112
     """
-    due_amount: Decimal = field(metadata={"tag": "DuePayableAmount"})
+    due_amount: Decimal = field(
+        metadata={"tag": "DuePayableAmount", "amount": True}
+    )
     """Fälliger Zahlungsbetrag / Zahlbetrag
 
     Der ausstehende Betrag, um dessen Zahlung gebeten wird.
@@ -197,7 +208,12 @@ class MonetarySummation(Element):
     EN 16931-ID: BT-115
     """
     charge_total: Decimal | None = field(
-        default=None, metadata={"tag": "ChargeTotalAmount", "profile": Profile.BASIC_WL}
+        default=None,
+        metadata={
+            "tag": "ChargeTotalAmount",
+            "profile": Profile.BASIC_WL,
+            "amount": True,
+        },
     )
     """Summe der Zuschläge auf Dokumentenebene
 
@@ -210,7 +226,11 @@ class MonetarySummation(Element):
     """
     allowance_total: Decimal | None = field(
         default=None,
-        metadata={"tag": "AllowanceTotalAmount", "profile": Profile.BASIC_WL},
+        metadata={
+            "tag": "AllowanceTotalAmount",
+            "profile": Profile.BASIC_WL,
+            "amount": True,
+        },
     )
     """Summe der Abschläge auf Dokumentenebene
 
@@ -223,8 +243,19 @@ class MonetarySummation(Element):
     """
     prepaid_total: Decimal | None = field(
         default=None,
-        metadata={"tag": "TotalPrepaidAmount", "profile": Profile.BASIC_WL},
+        metadata={
+            "tag": "TotalPrepaidAmount",
+            "profile": Profile.BASIC_WL,
+            "amount": True,
+        },
     )
+    currency: str | None = None
+    """Document currency (BT-5) echoed as ``currencyID`` on every amount
+    in this group. Populated automatically on parse from the
+    ``currencyID`` attribute of the first amount element; set explicitly
+    by callers building a Document programmatically when emitting
+    ``currencyID`` on the totals is desired (the XSD allows omitting
+    it)."""
     """Vorauszahlungsbetrag / Anzahlungsbetrag
 
     Die Summe der im Voraus gezahlten Beträge
@@ -251,7 +282,7 @@ class ApplicableTradeTax(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     calculated_amount: Decimal | None = field(
-        default=None, metadata={"tag": "CalculatedAmount"}
+        default=None, metadata={"tag": "CalculatedAmount", "amount": True}
     )
     """Kategoriespezifischer Steuerbetrag
 
@@ -276,7 +307,9 @@ class ApplicableTradeTax(Element):
 
     EN 16931-ID: BT-118-0
     """
-    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
+    basis_amount: Decimal | None = field(
+        default=None, metadata={"tag": "BasisAmount", "amount": True}
+    )
     """Steuerbasisbetrag
 
     EN 16931-ID: BT-116
@@ -375,6 +408,10 @@ class ApplicableTradeTax(Element):
 
     EN 16931-ID: BT-119
     """
+    currency: str | None = None
+    """Document currency (BT-5) echoed as ``currencyID`` on
+    ``BasisAmount`` (BT-116) and ``CalculatedAmount`` (BT-117).
+    Populated on parse; set explicitly when building programmatically."""
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
@@ -535,7 +572,7 @@ class TradeAllowanceCharge(Element):
 
     EN 16931-ID: BG-20-0, BG-21-0, BG-20-00, BG-21-00
     """
-    actual_amount: Decimal = field(metadata={"tag": "ActualAmount"})
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
     """Betrag des Zu- oder Abschlags auf Dokumentenebene
 
     Der Betrag eines Zu- oder Abschlags ohne Umsatzsteuer.
@@ -565,7 +602,8 @@ class TradeAllowanceCharge(Element):
     EN 16931-ID: BT-94 (Abschlag), BT-101 (Zuschlag)
     """
     basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "profile": Profile.BASIC_WL}
+        default=None,
+        metadata={"tag": "BasisAmount", "profile": Profile.BASIC_WL, "amount": True},
     )
     """Grundbetrag des Zu- oder Abschlags auf Dokumentenebene
 
@@ -595,6 +633,10 @@ class TradeAllowanceCharge(Element):
 
     EN 16931-ID: BT-98 (Abschlag), BT-105 (Zuschlag)
     """
+    currency: str | None = None
+    """Document currency (BT-5) echoed as ``currencyID`` on
+    ``ActualAmount`` (BT-92 / BT-99) and ``BasisAmount`` (BT-93 / BT-100).
+    Populated on parse; set explicitly when building programmatically."""
 
     # Note: BR-CO-21/22 (header reason coupling) and BR-CO-23/24 (line
     # reason coupling) are enforced by ``Trade._validate_document_arithmetic``
