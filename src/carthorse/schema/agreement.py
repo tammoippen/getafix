@@ -20,20 +20,21 @@ from carthorse.schema.references import (
 
 @dataclass(kw_only=True, slots=True)
 class TradeAgreement(Element):
-    """Header trade agreement (process and contract details)."""
+    """Header trade agreement (process and contract details).
+
+    Field order follows the Factur-X ``HeaderTradeAgreementType`` XSD
+    ``<xs:sequence>``: ``BuyerReference``, ``SellerTradeParty``,
+    ``BuyerTradeParty``, ``SellerTaxRepresentativeTradeParty``,
+    ``ProductEndUserTradeParty`` (EXTENDED),
+    ``SellerOrderReferencedDocument``,
+    ``BuyerOrderReferencedDocument``,
+    ``ContractReferencedDocument``,
+    ``AdditionalReferencedDocument``, ``SpecifiedProcuringProject``,
+    ``UltimateCustomerOrderReferencedDocument``.
+    """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"
 
-    seller: SellerTradeParty
-    """Seller details (supplier of the goods or services).
-
-    EN 16931-ID: BG-4
-    """
-    buyer: BuyerTradeParty
-    """Buyer details (recipient of the goods or services).
-
-    EN 16931-ID: BG-7
-    """
     buyer_reference: str | None = field(
         default=None, metadata={"tag": "BuyerReference"}
     )
@@ -47,6 +48,16 @@ class TradeAgreement(Element):
     Invoice by the Seller.
 
     EN 16931-ID: BT-10
+    """
+    seller: SellerTradeParty
+    """Seller details (supplier of the goods or services).
+
+    EN 16931-ID: BG-4
+    """
+    buyer: BuyerTradeParty
+    """Buyer details (recipient of the goods or services).
+
+    EN 16931-ID: BG-7
     """
     seller_tax_representative_party: SellerTaxRepresentativeTradeParty | None = None
     """Seller tax representative party.

@@ -64,13 +64,22 @@ class SupplyChainEvent(Element):
 
 @dataclass(kw_only=True, slots=True)
 class TradeDelivery(Element):
-    """Header trade delivery group."""
+    """Header trade delivery group.
+
+    Field order follows the Factur-X ``HeaderTradeDeliveryType`` XSD
+    ``<xs:sequence>``: ``RelatedSupplyChainConsignment`` (EXTENDED),
+    ``ShipToTradeParty``, ``UltimateShipToTradeParty`` (EXTENDED),
+    ``ShipFromTradeParty`` (EXTENDED), ``ActualDeliverySupplyChainEvent``,
+    ``DespatchAdviceReferencedDocument``,
+    ``ReceivingAdviceReferencedDocument``,
+    ``DeliveryNoteReferencedDocument`` (EXTENDED).
+    """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeDelivery"
 
     consignment: SupplyChainConsignment | None = None
-    ultimate_ship_to: UltimateShipToTradeParty | None = None
     ship_to: ShipToTradeParty | None = None
+    ultimate_ship_to: UltimateShipToTradeParty | None = None
     ship_from: ShipFromTradeParty | None = None
     event: SupplyChainEvent | None = None
     despatch_advice: DespatchAdviceReferencedDocument | None = None

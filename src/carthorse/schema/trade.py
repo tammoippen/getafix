@@ -104,10 +104,10 @@ class Trade(Element):
     tag: ClassVar[str] = "SupplyChainTradeTransaction"
     namespace: ClassVar[Namespace] = Namespace.rsm
 
+    items: list[TradeLineItem] = field(default_factory=list)
     agreement: TradeAgreement
     delivery: TradeDelivery
     settlement: TradeSettlement
-    items: list[TradeLineItem] = field(default_factory=list)
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:

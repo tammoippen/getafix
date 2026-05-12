@@ -348,3 +348,19 @@ The `tests/test_hypothesis.py::test_parse_and_regenerate` xfails
 exercise both the remaining structural gaps and the bugs listed in
 `docs/IMPLEMENTATION_PLAN.md §1`. As gaps close, individual examples
 flip from xfail to pass without test changes.
+
+## 7. Wire-conformance entry
+
+The XSD ``<xs:sequence>`` ordering for every CII complexType is a
+*design* invariant rather than a runtime business rule, so it doesn't
+get a ``BR-*`` code. It is enforced by structure: each
+``@dataclass(kw_only=True, slots=True)`` declares its XML fields in
+the same order as the corresponding XSD complexType, and
+``Element._children_xml`` iterates that order at render time. The
+quality gate is ``tests/test_xsd_validity.py``: every sample under
+``tests/samples/*.xml`` is parsed via ``Document.from_xml``,
+re-rendered via ``Document.to_xml().render(indent=True)``, and the
+rendered XML is validated against the matching profile XSD using
+``lxml.etree.XMLSchema``. Any structural drift between the dataclass
+declarations and the XSD ``<xs:sequence>`` surfaces immediately as a
+failed assertion. See ``docs/STRUCTURES.md §4``.

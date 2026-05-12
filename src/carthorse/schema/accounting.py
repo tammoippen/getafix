@@ -132,6 +132,13 @@ class MonetarySummation(Element):
 
     A group of business terms providing the monetary totals for the Invoice.
 
+    Field order follows the
+    ``TradeSettlementHeaderMonetarySummationType`` XSD ``<xs:sequence>``:
+    ``LineTotalAmount``, ``ChargeTotalAmount``, ``AllowanceTotalAmount``,
+    ``TaxBasisTotalAmount``, ``TaxTotalAmount``, ``RoundingAmount``
+    (COMFORT+), ``GrandTotalAmount``, ``TotalPrepaidAmount``,
+    ``DuePayableAmount``.
+
     EN 16931-ID: BG-22
     """
 
@@ -152,58 +159,6 @@ class MonetarySummation(Element):
     expected per ``BR-12``; that rule isn't yet enforced here.
 
     EN 16931-ID: BT-106
-    """
-    tax_basis_total: Decimal = field(
-        metadata={"tag": "TaxBasisTotalAmount", "amount": True}
-    )
-    """Invoice total amount without VAT.
-
-    The total amount of the Invoice without VAT. The Invoice total amount
-    without VAT is the sum of Invoice line net amounts minus the sum of
-    document level allowances plus the sum of document level charges.
-
-    EN 16931-ID: BT-109
-    """
-    tax_total: list[TaxTotal] | None = None
-    """``ram:TaxTotalAmount`` — the row of currency-tagged VAT totals.
-
-    Up to two entries per the XSD: BT-110 carries the VAT total in
-    invoice currency (``currencyID == BT-5``), BT-111 carries the same
-    amount expressed in the seller's VAT accounting currency
-    (``currencyID == BT-6``) and is required when ``BT-6`` is set
-    (``BR-53``). MINIMUM permits at most one entry; from BASIC_WL
-    onwards both may appear in that order.
-
-    ``BR-53`` is not yet enforced.
-
-    EN 16931-ID: BT-110, BT-111
-    """
-    grand_total: Decimal = field(
-        metadata={"tag": "GrandTotalAmount", "amount": True}
-    )
-    """Invoice total amount with VAT / Grand total amount.
-
-    The Invoice total amount with VAT is the Invoice total amount without
-    VAT plus the Invoice total VAT amount.
-
-    EN 16931-ID: BT-112
-    """
-    due_amount: Decimal = field(
-        metadata={"tag": "DuePayableAmount", "amount": True}
-    )
-    """Amount due for payment.
-
-    The outstanding amount that is requested to be paid.
-
-    This amount is the Invoice total amount with VAT minus the paid amount
-    that has been paid in advance. If the Invoice has been fully paid, this
-    amount is zero. The amount may be negative; in that case the Seller
-    owes the Buyer the amount.
-
-    When prepayments have been made, this amount may differ from the
-    Invoice grand total.
-
-    EN 16931-ID: BT-115
     """
     charge_total: Decimal | None = field(
         default=None,
@@ -239,6 +194,58 @@ class MonetarySummation(Element):
 
     EN 16931-ID: BT-107
     """
+    tax_basis_total: Decimal = field(
+        metadata={"tag": "TaxBasisTotalAmount", "amount": True}
+    )
+    """Invoice total amount without VAT.
+
+    The total amount of the Invoice without VAT. The Invoice total amount
+    without VAT is the sum of Invoice line net amounts minus the sum of
+    document level allowances plus the sum of document level charges.
+
+    EN 16931-ID: BT-109
+    """
+    tax_total: list[TaxTotal] | None = None
+    """``ram:TaxTotalAmount`` — the row of currency-tagged VAT totals.
+
+    Up to two entries per the XSD: BT-110 carries the VAT total in
+    invoice currency (``currencyID == BT-5``), BT-111 carries the same
+    amount expressed in the seller's VAT accounting currency
+    (``currencyID == BT-6``) and is required when ``BT-6`` is set
+    (``BR-53``). MINIMUM permits at most one entry; from BASIC_WL
+    onwards both may appear in that order.
+
+    EN 16931-ID: BT-110, BT-111
+    """
+    rounding_amount: Decimal | None = field(
+        default=None,
+        metadata={
+            "tag": "RoundingAmount",
+            "profile": Profile.COMFORT,
+            "amount": True,
+        },
+    )
+    """Rounding amount (BT-114).
+
+    The amount to be added to the invoice total to round the amount to
+    be paid. First permitted from COMFORT (EN 16931) onwards per the
+    Factur-X XSD ``<xs:sequence>`` (sits between ``TaxTotalAmount`` and
+    ``GrandTotalAmount``).
+
+    Enters the ``BR-CO-16`` identity: ``BT-115 = BT-112 - BT-113 + BT-114``.
+
+    EN 16931-ID: BT-114
+    """
+    grand_total: Decimal = field(
+        metadata={"tag": "GrandTotalAmount", "amount": True}
+    )
+    """Invoice total amount with VAT / Grand total amount.
+
+    The Invoice total amount with VAT is the Invoice total amount without
+    VAT plus the Invoice total VAT amount.
+
+    EN 16931-ID: BT-112
+    """
     prepaid_total: Decimal | None = field(
         default=None,
         metadata={
@@ -247,6 +254,23 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
+    due_amount: Decimal = field(
+        metadata={"tag": "DuePayableAmount", "amount": True}
+    )
+    """Amount due for payment.
+
+    The outstanding amount that is requested to be paid.
+
+    This amount is the Invoice total amount with VAT minus the paid amount
+    that has been paid in advance. If the Invoice has been fully paid, this
+    amount is zero. The amount may be negative; in that case the Seller
+    owes the Buyer the amount.
+
+    When prepayments have been made, this amount may differ from the
+    Invoice grand total.
+
+    EN 16931-ID: BT-115
+    """
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on every amount
     in this group. Populated automatically on parse from the
@@ -313,6 +337,13 @@ class ApplicableTradeTax(Element):
 
     EN 16931-ID: BT-118-0
     """
+    exemption_reason: str | None = field(
+        default=None, metadata={"tag": "ExemptionReason"}
+    )
+    """VAT exemption reason text (free text).
+
+    EN 16931-ID: BT-120
+    """
     basis_amount: Decimal | None = field(
         default=None, metadata={"tag": "BasisAmount", "amount": True}
     )
@@ -341,13 +372,6 @@ class ApplicableTradeTax(Element):
     Code list: UNTDID 5305
 
     EN 16931-ID: BT-118
-    """
-    exemption_reason: str | None = field(
-        default=None, metadata={"tag": "ExemptionReason"}
-    )
-    """VAT exemption reason text (free text).
-
-    EN 16931-ID: BT-120
     """
     exemption_reason_code: str | None = field(
         default=None, metadata={"tag": "ExemptionReasonCode"}
@@ -589,20 +613,6 @@ class TradeAllowanceCharge(Element):
 
     EN 16931-ID: BG-20-0, BG-21-0, BG-20-00, BG-21-00
     """
-    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
-    """Document level allowance/charge amount.
-
-    The amount of an allowance or charge, without VAT.
-
-    EN 16931-ID: BT-92 (Allowance), BT-99 (Charge)
-     """
-    category_trade_tax: CategoryTradeTax | None = None
-    """VAT category for the allowance / charge (BT-95-00 / BT-102-00).
-
-    Required at BASIC_WL per the appendix narrative; from BASIC the
-    XSD makes it optional. carthorse keeps it ``Optional`` so the
-    same dataclass works at every profile.
-    """
     calculation_percent: Decimal | None = field(
         default=None,
         metadata={"tag": "CalculationPercent", "profile": Profile.BASIC_WL},
@@ -630,14 +640,13 @@ class TradeAllowanceCharge(Element):
 
     EN 16931-ID: BT-93 (Allowance), BT-100 (Charge)
     """
-    reason: str | None = field(default=None, metadata={"tag": "Reason"})
-    """Document level allowance/charge reason.
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
+    """Document level allowance/charge amount.
 
-    The reason for the document level allowance or charge, expressed
-    as text.
+    The amount of an allowance or charge, without VAT.
 
-    EN 16931-ID: BT-97 (Allowance), BT-104 (Charge)
-    """
+    EN 16931-ID: BT-92 (Allowance), BT-99 (Charge)
+     """
     reason_code: str | None = field(default=None, metadata={"tag": "ReasonCode"})
     """Document level allowance/charge reason code.
 
@@ -650,6 +659,21 @@ class TradeAllowanceCharge(Element):
         https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5189.htm
 
     EN 16931-ID: BT-98 (Allowance), BT-105 (Charge)
+    """
+    reason: str | None = field(default=None, metadata={"tag": "Reason"})
+    """Document level allowance/charge reason.
+
+    The reason for the document level allowance or charge, expressed
+    as text.
+
+    EN 16931-ID: BT-97 (Allowance), BT-104 (Charge)
+    """
+    category_trade_tax: CategoryTradeTax | None = None
+    """VAT category for the allowance / charge (BT-95-00 / BT-102-00).
+
+    Required at BASIC_WL per the appendix narrative; from BASIC the
+    XSD makes it optional. carthorse keeps it ``Optional`` so the
+    same dataclass works at every profile.
     """
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on
