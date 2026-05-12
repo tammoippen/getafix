@@ -463,3 +463,317 @@ class TestBasicRechnungskorrektur:
 
     def test_roundtrip(self, basic_rechnungskorrektur: Document) -> None:
         _roundtrip(basic_rechnungskorrektur)
+
+
+# ===========================================================================
+# COMFORT (EN 16931) examples
+# ===========================================================================
+# COMFORT lifts most of the EN 16931 enrichments over BASIC: contact info
+# (BG-6 / BG-9), electronic addresses (BT-34 / BT-49), full reference
+# documents (BG-24, BT-12-00, BT-13-00, BT-14, BT-15-00), product
+# ``Description`` / ``SellerAssignedID`` / ``BuyerAssignedID``, line-level
+# ``TaxPointDate`` (BT-7), and the seven non-S VAT categories.
+
+
+# ---------------------------------------------------------------------------
+# EN16931_zf24_Rabatte — document-level allowance and charge (BG-20 / BG-21)
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def en16931_rabatte() -> Document:
+    return _load("EN16931_zf24_Rabatte.xml")
+
+
+class TestEN16931Rabatte:
+    """COMFORT invoice exercising document-level allowances + charges and a
+    multi-rate VAT breakdown.
+
+    Highlights: two BG-23 rows (S/7% and S/19%), three BG-20/BG-21 entries
+    (two allowances + one charge), per-line tax category, BR-CO-11/-12/-13
+    arithmetic over real numbers."""
+
+    def test_profile_is_comfort(self, en16931_rabatte: Document) -> None:
+        assert en16931_rabatte.context.guideline.id == Profile.COMFORT
+
+    def test_multi_rate_breakdown(self, en16931_rabatte: Document) -> None:
+        taxes = en16931_rabatte.trade.settlement.trade_taxes or []
+        # BG-23 × 2: standard rate at 7% and 19% on the same invoice.
+        rates = {t.rate_applicable_percent: t.basis_amount for t in taxes}
+        assert rates == {
+            Decimal("7.00"): Decimal("129.37"),
+            Decimal("19.00"): Decimal("64.40"),
+        }
+        for t in taxes:
+            assert t.category_code == "S"
+
+    def test_two_allowances_and_one_charge(self, en16931_rabatte: Document) -> None:
+        # BG-20 ChargeIndicator=false → allowance, BG-21 ChargeIndicator=true → charge.
+        acs = en16931_rabatte.trade.settlement.allowance_charge or []
+        allowances = [a for a in acs if not a.indicator]
+        charges = [a for a in acs if a.indicator]
+        assert len(allowances) == 2
+        assert len(charges) == 1
+        # BR-33 / BR-38: reason text required when reason_code is absent.
+        for ac in acs:
+            assert ac.reason is not None  # BT-97 / BT-104
+            assert ac.category_trade_tax is not None  # BT-95-00 / BT-102-00
+
+    def test_validate_clean(self, en16931_rabatte: Document) -> None:
+        en16931_rabatte.validate()
+
+    def test_roundtrip(self, en16931_rabatte: Document) -> None:
+        _roundtrip(en16931_rabatte)
+
+
+# ---------------------------------------------------------------------------
+# EN16931_zf24_Innergemeinschaftliche — VAT category K (intra-community)
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def en16931_innergemeinschaftliche() -> Document:
+    return _load("EN16931_zf24_Innergemeinschaftliche.xml")
+
+
+class TestEN16931Innergemeinschaftliche:
+    """COMFORT intra-community-supply invoice (UNTDID 5305 = K).
+
+    Highlights: category K triggers ``BR-IC-2`` (Seller VAT + Buyer VAT
+    required), ``BR-IC-11`` (actual delivery date BT-72 or invoicing
+    period BG-14) and ``BR-IC-12`` (deliver-to country BT-80). The
+    example carries Seller VAT in GB (Brexit-aware) and Buyer VAT in
+    DE; rate is 0% with an exemption reason."""
+
+    def test_profile_is_comfort(
+        self, en16931_innergemeinschaftliche: Document
+    ) -> None:
+        assert (
+            en16931_innergemeinschaftliche.context.guideline.id == Profile.COMFORT
+        )
+
+    def test_seller_and_buyer_vat_ids(
+        self, en16931_innergemeinschaftliche: Document
+    ) -> None:
+        seller = en16931_innergemeinschaftliche.trade.agreement.seller
+        buyer = en16931_innergemeinschaftliche.trade.agreement.buyer
+        assert any(
+            tr.id.scheme_id == "VA" and tr.id.id.startswith("GB")
+            for tr in (seller.tax_registrations or [])
+        )
+        assert any(
+            tr.id.scheme_id == "VA" and tr.id.id.startswith("DE")
+            for tr in (buyer.tax_registrations or [])
+        )
+
+    def test_vat_category_k_zero_rate_with_reason(
+        self, en16931_innergemeinschaftliche: Document
+    ) -> None:
+        taxes = en16931_innergemeinschaftliche.trade.settlement.trade_taxes or []
+        assert len(taxes) == 1
+        t = taxes[0]
+        assert t.category_code == "K"
+        assert t.rate_applicable_percent == Decimal("0")
+        assert t.exemption_reason is not None  # BT-120
+
+    def test_delivery_evidence_present(
+        self, en16931_innergemeinschaftliche: Document
+    ) -> None:
+        # BR-IC-11: BT-72 (actual delivery date) OR BG-14 (period) required.
+        delivery = en16931_innergemeinschaftliche.trade.delivery
+        billing_period = en16931_innergemeinschaftliche.trade.settlement.billing_period
+        has_date = delivery.event is not None and delivery.event.occurrence is not None
+        has_period = billing_period is not None and (
+            billing_period.start is not None or billing_period.end is not None
+        )
+        assert has_date or has_period
+
+    def test_validate_clean(self, en16931_innergemeinschaftliche: Document) -> None:
+        en16931_innergemeinschaftliche.validate()
+
+    def test_roundtrip(self, en16931_innergemeinschaftliche: Document) -> None:
+        _roundtrip(en16931_innergemeinschaftliche)
+
+
+# ---------------------------------------------------------------------------
+# EN16931_zf24_Auslandslieferung — VAT category E (Exempt from VAT)
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def en16931_auslandslieferung() -> Document:
+    return _load("EN16931_zf24_Auslandslieferung.xml")
+
+
+class TestEN16931Auslandslieferung:
+    """COMFORT VAT-exempt export invoice (UNTDID 5305 = E).
+
+    Highlights: category E (`steuerfreie Ausfuhrlieferung`) at 0%, exemption
+    reason text required, Seller carries both BT-32 (FC) and BT-31 (VA)
+    so BR-E-2 (Seller VAT or local tax) is satisfied via either path.
+    Buyer-side contact info, electronic address, and DefinedTradeContact
+    on the Seller are all populated — typical EN 16931 surface."""
+
+    def test_profile_is_comfort(self, en16931_auslandslieferung: Document) -> None:
+        assert en16931_auslandslieferung.context.guideline.id == Profile.COMFORT
+
+    def test_seller_contact_and_electronic_address(
+        self, en16931_auslandslieferung: Document
+    ) -> None:
+        seller = en16931_auslandslieferung.trade.agreement.seller
+        # BG-6 DefinedTradeContact — COMFORT enrichment.
+        assert seller.contact is not None
+        assert seller.contact.person_name == "Max Verkäufer"  # BT-41
+        assert seller.contact.email is not None
+        assert seller.contact.email.address == "mv@firma.de"  # BT-43
+        # BT-34 electronic address with ISO 6523 schemeID (0088 = EAN/GS1).
+        assert seller.electronic_address is not None
+        assert seller.electronic_address.uri_id.scheme_id == "0088"
+
+    def test_vat_category_e_with_exemption_reason(
+        self, en16931_auslandslieferung: Document
+    ) -> None:
+        taxes = en16931_auslandslieferung.trade.settlement.trade_taxes or []
+        assert len(taxes) == 1
+        t = taxes[0]
+        assert t.category_code == "E"
+        assert t.rate_applicable_percent == Decimal("0.00")
+        # BR-E-10: exemption reason required.
+        assert t.exemption_reason and "Ausfuhrlieferung" in t.exemption_reason
+
+    def test_validate_clean(self, en16931_auslandslieferung: Document) -> None:
+        en16931_auslandslieferung.validate()
+
+    def test_roundtrip(self, en16931_auslandslieferung: Document) -> None:
+        _roundtrip(en16931_auslandslieferung)
+
+
+# ---------------------------------------------------------------------------
+# EN16931_zf24_Kleinunternehmer — small business without VAT id (category E)
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def en16931_kleinunternehmer() -> Document:
+    return _load("EN16931_zf24_Kleinunternehmer.xml")
+
+
+class TestEN16931Kleinunternehmer:
+    """COMFORT small-business invoice — no VAT identifier on the Seller.
+
+    Highlights: §19 UStG small businesses do not issue VAT — the Seller
+    has only BT-32 (local tax id, schemeID="FC") and no BT-31; category
+    E still requires *some* Seller tax identifier, satisfied here by
+    BT-32. Exemption reason text is mandatory. Demonstrates BR-CO-26
+    (Seller identifiable via BT-32) and BR-E-2 satisfied by local id."""
+
+    def test_profile_is_comfort(self, en16931_kleinunternehmer: Document) -> None:
+        assert en16931_kleinunternehmer.context.guideline.id == Profile.COMFORT
+
+    def test_seller_has_only_local_tax_id(
+        self, en16931_kleinunternehmer: Document
+    ) -> None:
+        seller = en16931_kleinunternehmer.trade.agreement.seller
+        regs = seller.tax_registrations or []
+        scheme_ids = {r.id.scheme_id for r in regs}
+        # Critical: BT-32 (FC) present, BT-31 (VA) absent.
+        assert "FC" in scheme_ids
+        assert "VA" not in scheme_ids
+
+    def test_vat_category_e_with_kleinunternehmer_reason(
+        self, en16931_kleinunternehmer: Document
+    ) -> None:
+        taxes = en16931_kleinunternehmer.trade.settlement.trade_taxes or []
+        assert len(taxes) == 1
+        t = taxes[0]
+        assert t.category_code == "E"
+        assert t.rate_applicable_percent == Decimal("0.00")
+        # §19 UStG exemption-reason text mentions "Kleinunternehmer".
+        assert t.exemption_reason and "Kleinu" in t.exemption_reason
+
+    def test_validate_clean(self, en16931_kleinunternehmer: Document) -> None:
+        # BR-CO-26 satisfied because BT-32 is present even though BT-31
+        # is not; BR-E-2 satisfied by Seller's BT-32 (FC).
+        en16931_kleinunternehmer.validate()
+
+    def test_roundtrip(self, en16931_kleinunternehmer: Document) -> None:
+        _roundtrip(en16931_kleinunternehmer)
+
+
+# ---------------------------------------------------------------------------
+# EN16931_zf24_ElektronischeAdresse — BT-34 electronic address with schemeID
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def en16931_elektronische_adresse() -> Document:
+    return _load("EN16931_zf24_ElektronischeAdresse.xml")
+
+
+class TestEN16931ElektronischeAdresse:
+    """COMFORT invoice highlighting BT-34 ``URIUniversalCommunication`` with
+    a SchemeID-tagged GLN.
+
+    Highlights: Seller carries electronic address ``1234567890128``
+    with ``schemeID="0088"`` (GS1 GLN) — covers BR-62 narrative."""
+
+    def test_profile_is_comfort(
+        self, en16931_elektronische_adresse: Document
+    ) -> None:
+        assert (
+            en16931_elektronische_adresse.context.guideline.id == Profile.COMFORT
+        )
+
+    def test_seller_has_gln_electronic_address(
+        self, en16931_elektronische_adresse: Document
+    ) -> None:
+        seller = en16931_elektronische_adresse.trade.agreement.seller
+        addr = seller.electronic_address
+        assert addr is not None
+        # BR-62 narrative: BT-34-1 schemeID is required on URIID. The
+        # example uses ISO 6523 "0088" (GS1 GLN).
+        assert addr.uri_id.scheme_id == "0088"
+        assert addr.uri_id.id == "1234567890128"
+
+    def test_validate_clean(self, en16931_elektronische_adresse: Document) -> None:
+        en16931_elektronische_adresse.validate()
+
+    def test_roundtrip(self, en16931_elektronische_adresse: Document) -> None:
+        _roundtrip(en16931_elektronische_adresse)
+
+
+# ---------------------------------------------------------------------------
+# EN16931_zf24_OEPNV — exercises the empty-element parse fix
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def en16931_oepnv() -> Document:
+    return _load("EN16931_zf24_OEPNV.xml")
+
+
+class TestEN16931OePNV:
+    """COMFORT public-transport invoice — exercises empty / self-closing
+    XML elements (``<ram:LineTwo/>``, ``<ram:BICID/>``).
+
+    The Factur-X 1.08 specification's informational rule
+    PEPPOL-EN16931-R008 warns against empty elements, but real-world
+    ZUGFeRD samples ship them anyway. The parser treats an empty
+    element as absent for the corresponding optional field."""
+
+    def test_profile_is_comfort(self, en16931_oepnv: Document) -> None:
+        assert en16931_oepnv.context.guideline.id == Profile.COMFORT
+
+    def test_empty_line_two_treated_as_absent(self, en16931_oepnv: Document) -> None:
+        # The buyer's PostalTradeAddress contains <ram:LineTwo/> with no
+        # text. The parser should set line_two to None (not crash) so the
+        # round-trip simply drops the empty element on re-render.
+        buyer_addr = en16931_oepnv.trade.agreement.buyer.address
+        assert buyer_addr is not None
+        assert buyer_addr.line_two is None
+
+    def test_validate_clean(self, en16931_oepnv: Document) -> None:
+        en16931_oepnv.validate()
+
+    def test_roundtrip(self, en16931_oepnv: Document) -> None:
+        _roundtrip(en16931_oepnv)

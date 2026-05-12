@@ -274,7 +274,11 @@ def _parse_str[T: str](
     if el.tag != ns.get_qualified_tag(tag):
         return None
     if el.text is None:
-        raise ValueError
+        # Self-closing or whitespace-only element (e.g. ``<ram:LineTwo/>``)
+        # — treat as absent rather than crashing on parse. The
+        # PEPPOL-EN16931-R008 informational rule warns against empty
+        # elements, but real-world ZUGFeRD samples ship them anyway.
+        return None
     return curr_type(el.text.strip())
 
 

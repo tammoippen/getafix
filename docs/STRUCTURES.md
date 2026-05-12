@@ -381,6 +381,12 @@ TradeLineItem (BG-25)                                profile = BASIC
   ``currencyID`` attribute; ``Element.from_xml`` captures the first
   parsed ``currencyID`` back into ``currency``.
 * **`udt:IndicatorType`** wraps `<udt:Indicator>true|false</udt:Indicator>`.
+* **Empty / self-closing string elements** (e.g. ``<ram:LineTwo/>``,
+  ``<ram:BICID/>``) parse as the same value as a *missing* element —
+  i.e. ``None`` for the corresponding optional field. PEPPOL-EN16931-R008
+  warns against empty elements but real-world ZUGFeRD samples ship
+  them, so the parser is lenient. On render the field is simply
+  omitted.
 
 ## 5. Where to look next
 
