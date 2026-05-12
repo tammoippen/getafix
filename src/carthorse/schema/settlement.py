@@ -433,9 +433,16 @@ class TradeSettlement(Element):
 
         # BR-CO-25: positive DuePayableAmount (BT-115) requires either a
         # payment due date (BT-9) or payment terms description (BT-20).
-        if self.monetary_summation.due_amount > 0 and (
-            self.terms is None
-            or (self.terms.due is None and self.terms.description is None)
+        # Both source fields live inside ``SpecifiedTradePaymentTerms``
+        # which the MINIMUM XSD does not include — the rule is therefore
+        # unenforceable at MINIMUM and only kicks in from BASIC_WL up.
+        if (
+            profile >= Profile.BASIC_WL
+            and self.monetary_summation.due_amount > 0
+            and (
+                self.terms is None
+                or (self.terms.due is None and self.terms.description is None)
+            )
         ):
             errors.append(
                 ValidationError(

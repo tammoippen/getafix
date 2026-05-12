@@ -254,15 +254,25 @@ class MonetarySummation(Element):
     by callers building a Document programmatically when emitting
     ``currencyID`` on the totals is desired (the XSD allows omitting
     it)."""
-    """Paid amount / Prepaid amount.
 
-    The sum of amounts which have been paid in advance.
-
-    This amount is subtracted from the Invoice total amount with VAT to
-    calculate the Amount due for payment.
-
-    EN 16931-ID: BT-113
-    """
+    @override
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
+        # BR-12: An Invoice shall have the Sum of Invoice line net amount
+        # (BT-106). The MINIMUM profile drops BT-106 from the XSD, so the
+        # rule is checkable only from BASIC_WL up.
+        if profile >= Profile.BASIC_WL and self.line_total is None:
+            errors.append(
+                ValidationError(
+                    "BR-12",
+                    "An Invoice shall have the Sum of Invoice line net "
+                    "amount (BT-106).",
+                )
+            )
+        errors.extend(
+            super(MonetarySummation, self).validate_internal(profile)
+        )
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)

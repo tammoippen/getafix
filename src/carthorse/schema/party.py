@@ -505,8 +505,14 @@ class BuyerTradeParty(Element):
 
     EN 16931-ID: BT-44
     """
-    address: PostalTradeAddressExtended
+    address: PostalTradeAddressExtended | None = None
     """Buyer postal address.
+
+    Optional at MINIMUM (the Factur-X 1.08 MINIMUM XSD makes the whole
+    ``PostalTradeAddress`` element ``minOccurs="0"`` on ``TradePartyType``,
+    and the MINIMUM appendix narrative does NOT list BG-8 as required).
+    BR-10 enforces presence from BASIC_WL onwards in
+    :meth:`BuyerTradeParty.validate_internal`.
 
     EN 16931-ID: BG-8
     """
@@ -559,6 +565,24 @@ class BuyerTradeParty(Element):
 
     EN 16931-ID: BT-48 (VA), BT-48-0 (FC)
     """
+
+    @override
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
+        # BR-10: An Invoice shall contain the Buyer postal address (BG-8).
+        # The MINIMUM XSD lets the element be omitted; EN 16931 / BASIC_WL
+        # and above require it.
+        if profile > Profile.MINIMUM and self.address is None:
+            errors.append(
+                ValidationError(
+                    "BR-10",
+                    "An Invoice shall contain the Buyer postal address (BG-8).",
+                )
+            )
+        errors.extend(
+            super(BuyerTradeParty, self).validate_internal(profile)
+        )
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)

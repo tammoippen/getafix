@@ -14,6 +14,10 @@ compatible with redistribution as long as attribution is preserved (this file).
 | File | Profile | Upstream |
 |------|---------|----------|
 | `MINIMUM_facturFrMinimum.xml` | MINIMUM | [ZUGFeRD/mustangproject `cii/facturFrMinimum.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/cii/facturFrMinimum.xml) |
+| `MINIMUM_zf24_Rechnung.xml` | MINIMUM | ZF24 distribution `Examples/0. MINIMUM/MINIMUM_Rechnung` (commercial invoice, TypeCode=380; FeRD specification) |
+| `MINIMUM_zf24_Buchungshilfe.xml` | MINIMUM | ZF24 distribution `Examples/0. MINIMUM/MINIMUM_Buchungshilfe` (accounting voucher, TypeCode=751; FeRD specification) |
+| `BASICWL_zf24_Einfach.xml` | BASIC_WL | ZF24 distribution `Examples/1. BASIC WL/BASIC-WL_Einfach` (simple invoice; FeRD specification) |
+| `BASICWL_zf24_Buchungshilfe.xml` | BASIC_WL | ZF24 distribution `Examples/1. BASIC WL/BASIC-WL_Buchungshilfe` (accounting voucher; FeRD specification) |
 | `BASIC_Factur-X_basic.xml` | BASIC | [ZUGFeRD/mustangproject `cii/Factur-X_basic.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/cii/Factur-X_basic.xml) |
 | `EN16931_factur-x.xml` | COMFORT (EN 16931) | [ZUGFeRD/mustangproject `factur-x.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/factur-x.xml) |
 | `EN16931_Einfach.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_Einfach.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_Einfach.cii.xml) |
@@ -29,10 +33,11 @@ compatible with redistribution as long as attribution is preserved (this file).
 To refresh, re-download from the URLs above. They are intentionally pinned to
 upstream `master` — bump only when something interesting changes.
 
-The BASIC_WL profile is currently **not represented**. Public BASIC_WL XML
-samples are scarce (BASIC_WL is mostly a "without lines" subset of BASIC).
-If/when one is found, drop it in here as `BASICWL_<name>.xml` and add a row
-above.
+The `*_zf24_*` files come from the official FeRD ZUGFeRD 2.4 / Factur-X 1.08
+distribution; refresh them from the `ZF24_EN/Examples/` directory of the
+distribution archive. They have dedicated assertions in
+`tests/test_zf24_examples.py` that pin the BT-* / BG-* values each example
+was crafted to demonstrate.
 
 ## Where the samples come from upstream
 

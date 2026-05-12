@@ -25,16 +25,16 @@ def test_br_co_25_payment_terms_required_when_due():
 
     # No terms → BR-CO-25.
     settlement = TradeSettlement(currency_code="EUR", monetary_summation=summation)
-    errors = settlement.validate_internal(Profile.MINIMUM)
+    errors = settlement.validate_internal(Profile.BASIC_WL)
     assert any(v.code == "BR-CO-25" for v in errors)
 
     # terms.due present → ok.
     settlement.terms = PaymentTerms(due=date(2025, 12, 16))
-    settlement.validate_internal(Profile.MINIMUM)
+    settlement.validate_internal(Profile.BASIC_WL)
 
     # terms.description present, no due → ok.
     settlement.terms = PaymentTerms(description="Net 30 days")
-    settlement.validate_internal(Profile.MINIMUM)
+    settlement.validate_internal(Profile.BASIC_WL)
 
     # due_amount = 0 → no requirement. Also adjust grand_total to keep
     # BR-CO-16 (BT-115 == BT-112 - BT-113) satisfied.
@@ -43,7 +43,7 @@ def test_br_co_25_payment_terms_required_when_due():
     summation.tax_basis_total = Decimal("0")
     summation.tax_total = None
     settlement.terms = None
-    settlement.validate_internal(Profile.MINIMUM)
+    settlement.validate_internal(Profile.BASIC_WL)
 
 
 def test_br_co_3_tax_point_date_and_due_date_code_mutually_exclusive():

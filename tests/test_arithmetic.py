@@ -231,11 +231,16 @@ class TestBrCoArithmetic:
         make_vat_doc().validate()
 
     def test_br_co_10_skipped_when_line_total_absent(self) -> None:
-        """At MINIMUM ``line_total`` may legitimately be omitted; the
-        rule is unenforceable then."""
+        """When ``line_total`` (BT-106) is absent, BR-CO-10 cannot fire —
+        BR-12 takes over and complains about the missing field instead.
+        Keeping these two rules independent matters because at MINIMUM
+        BT-106 is not part of the XSD and neither rule should fire."""
         doc = make_vat_doc()
         doc.trade.settlement.monetary_summation.line_total = None
-        doc.validate()
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert any(v.code == "BR-12" for v in e.value.errors)
+        assert not any(v.code == "BR-CO-10" for v in e.value.errors)
 
     def test_br_co_11_allowance_total_matches_sum(self) -> None:
         """BT-107 = sum of document-level allowance BT-92."""
