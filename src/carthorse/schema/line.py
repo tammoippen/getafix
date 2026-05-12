@@ -50,7 +50,7 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from carthorse.schema.accounting import ApplicableTradeTax, TradeAllowanceCharge
-from carthorse.schema.element import Element, ETElement
+from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.party import GlobalID
 from carthorse.schema.settlement import BillingSpecifiedPeriod
 from carthorse.schema.types import Profile
@@ -171,6 +171,22 @@ class GrossTradePrice(Element):
     """Document currency (BT-5) echoed on the gross price amount.
     Populated on parse; set explicitly when building programmatically."""
 
+    @override
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
+        # BR-28: The Item gross price (BT-148) shall NOT be negative.
+        if self.charge_amount < 0:
+            errors.append(
+                ValidationError(
+                    "BR-28",
+                    "The Item gross price (BT-148) shall NOT be negative.",
+                )
+            )
+        errors.extend(
+            super(GrossTradePrice, self).validate_internal(profile)
+        )
+        return errors
+
 
 @dataclass(kw_only=True, slots=True)
 class NetTradePrice(Element):
@@ -186,6 +202,20 @@ class NetTradePrice(Element):
     currency: str | None = None
     """Document currency (BT-5) echoed on the net price amount.
     Populated on parse; set explicitly when building programmatically."""
+
+    @override
+    def validate_internal(self, profile: Profile) -> list[ValidationError]:
+        errors: list[ValidationError] = []
+        # BR-27: The Item net price (BT-146) shall NOT be negative.
+        if self.charge_amount < 0:
+            errors.append(
+                ValidationError(
+                    "BR-27",
+                    "The Item net price (BT-146) shall NOT be negative.",
+                )
+            )
+        errors.extend(super(NetTradePrice, self).validate_internal(profile))
+        return errors
 
 
 @dataclass(kw_only=True, slots=True)
