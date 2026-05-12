@@ -57,29 +57,32 @@ but are flagged in the source tables. EXTENDED CIUS overlay rules
 
 | Profile   | BR-* structural | BR-CO-* arithmetic | VAT-category families | Total enforceable | Carthorse coverage |
 |-----------|-----------------|--------------------|------------------------|-------------------|--------------------|
-| MINIMUM   | 12 / 12         | 5 / 5              | 0 / 0                  | 17                | 17 / 17 (100%)    |
-| BASIC_WL  | 25 / 33         | 12 / 14            | 32 / 32                | 79                | 69 / 79 (87%)     |
-| BASIC     | 31 / 47         | 14 / 18            | 32 / 32                | 97                | 77 / 97 (79%)     |
-| COMFORT   | 32 / 51         | 14 / 18            | 32 / 32                | 101               | 78 / 101 (77%)    |
-| EXTENDED  | 32 / 51         | 14 / 18            | 32 / 32                | 101               | 78 / 101 (77%)    |
+| MINIMUM   | 12 / 12         | 4 / 4              | 0 / 0                  | 16                | 16 / 16 (100%)    |
+| BASIC_WL  | 25 / 33         | 13 / 14            | 32 / 32                | 79                | 70 / 79 (89%)     |
+| BASIC     | 33 / 49         | 15 / 18            | 32 / 32                | 99                | 80 / 99 (81%)     |
+| COMFORT   | 34 / 53         | 15 / 18            | 32 / 32                | 103               | 81 / 103 (79%)    |
+| EXTENDED  | 34 / 53         | 15 / 18            | 32 / 32                | 103               | 81 / 103 (79%)    |
 
 Notes on the totals:
 * "BR-* structural" counts every entry in §1 whose lowest profile is at
   or below the row's profile. Missing rules are those still marked —
-  in §1 (line-level BR-21..28, BR-30, BR-41..44, BR-48, BR-51, BR-54,
-  BR-61..65).
-* "BR-CO-* arithmetic" counts §2 entries. The four still-uncovered
-  rules at BASIC and above are BR-CO-4, BR-CO-5, BR-CO-6, BR-CO-7,
-  BR-CO-8 (line-level / reason-coupling pieces that the schema does
-  not yet check).
+  in §1 (BR-41..44 line allowance/charge reason coupling, BR-48 rate-
+  required, BR-51 financial card, BR-54 product characteristic, BR-61..63
+  payment-means / electronic-address coupling, BR-65 product
+  classification).
+* "BR-CO-* arithmetic" counts §2 entries. ``BR-CO-25`` is no longer
+  enforceable at MINIMUM (its source fields BT-9 / BT-20 live in
+  ``SpecifiedTradePaymentTerms`` which the MINIMUM XSD omits — the
+  validator is gated on BASIC_WL+). The four still-uncovered rules at
+  BASIC and above are BR-CO-5, BR-CO-6, BR-CO-7, BR-CO-8 (reason ↔
+  code coherence at document / line level).
 * "VAT-category families" counts the 32 enforced category rules
   (``BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4}`` = 24, plus ``BR-O-2..4`` = 3,
   ``BR-O-11..14`` = 4, ``BR-IC-11``, ``BR-IC-12``). Rate / sum-identity
   rules (`*-5/-6/-7/-8/-9/-10`) are not yet enforced (~70 rules).
-* COMFORT and EXTENDED add no new enforced rules over BASIC beyond the
-  one COMFORT-gated `BR-CO-3` already counted at BASIC_WL via the
-  `ApplicableTradeTax` validator (it fires whenever both BT-7 and BT-8
-  are set, regardless of profile).
+* COMFORT and EXTENDED add ``BR-51``, ``BR-52``, ``BR-54``, ``BR-65``
+  to the BASIC totals (3 of those are still uncovered). EXTENDED CIUS
+  overlay rules (``BR-FXEXT-*``, ``BR-FX-DE-*``) are out of scope.
 
 ## 1. Structural and required-field rules (`BR-*`)
 
@@ -94,9 +97,9 @@ Notes on the totals:
 | BR-7  | MINIMUM        | ◯      | `BuyerTradeParty.name` (required)                 |
 | BR-8  | MINIMUM        | ◯      | `SellerTradeParty.address` (required)             |
 | BR-9  | MINIMUM        | ◯      | `PostalTradeAddress.country_id` (required)        |
-| BR-10 | BASIC_WL       | ⚠      | `BuyerTradeParty.address` is required at MINIMUM too — see implementation plan §1 |
+| BR-10 | BASIC_WL       | ✓      | `BuyerTradeParty.validate_internal` — ``address: PostalTradeAddressExtended \| None`` is optional at MINIMUM (matching the XSD) and the validator fires when ``profile > MINIMUM and self.address is None`` |
 | BR-11 | BASIC_WL       | ◯      | `PostalTradeAddress.country_id`                   |
-| BR-12 | BASIC_WL       | ⚠      | `MonetarySummation.line_total` required even at MINIMUM (where BT-106 is not part of the XSD) |
+| BR-12 | BASIC_WL       | ✓      | `MonetarySummation.validate_internal` — raises when ``profile >= BASIC_WL`` and ``line_total`` (BT-106) is None |
 | BR-13 | MINIMUM        | ◯      | `MonetarySummation.tax_basis_total`               |
 | BR-14 | MINIMUM        | ◯      | `MonetarySummation.grand_total`                   |
 | BR-15 | MINIMUM        | ◯      | `MonetarySummation.due_amount`                    |
@@ -111,8 +114,8 @@ Notes on the totals:
 | BR-24 | BASIC          | ◯      | `TradeProduct.name` required (BT-153)             |
 | BR-25 | BASIC          | ◯      | `NetTradePrice.charge_amount` required (BT-146)   |
 | BR-26 | BASIC          | ◯      | `LineMonetarySummation.line_total` required (BT-131) |
-| BR-27 | BASIC          | —      | `NetTradePrice.charge_amount ≥ 0` (BT-146) not yet checked |
-| BR-28 | BASIC          | —      | `GrossTradePrice.charge_amount ≥ 0` (BT-148) not yet checked |
+| BR-27 | BASIC          | ✓      | `NetTradePrice.validate_internal` — raises when ``charge_amount`` (BT-146) is negative |
+| BR-28 | BASIC          | ✓      | `GrossTradePrice.validate_internal` — raises when ``charge_amount`` (BT-148) is negative |
 | BR-29 | BASIC_WL       | ✓      | `BillingSpecifiedPeriod.validate_internal` — BT-74 ≥ BT-73 when both supplied |
 | BR-30 | BASIC          | ✓      | same validator on BG-26 (line invoicing period) — inherited |
 | BR-31 | BASIC_WL       | ◯      | `TradeAllowanceCharge.actual_amount`              |
@@ -170,7 +173,7 @@ Notes on the totals:
 | BR-CO-22   | BASIC_WL       | ✓      | same for header charge                                                                       |
 | BR-CO-23   | BASIC          | ✓      | `Trade._validate_document_arithmetic` — line allowance (BG-27) reason coupling               |
 | BR-CO-24   | BASIC          | ✓      | same for line charge (BG-28)                                                                 |
-| BR-CO-25   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` checks that positive `due_amount` (BT-115) is paired with `terms.due` (BT-9) or `terms.description` (BT-20). |
+| BR-CO-25   | BASIC_WL       | ✓      | `TradeSettlement.validate_internal` — gated on ``profile >= BASIC_WL`` since the source fields BT-9 / BT-20 live in ``SpecifiedTradePaymentTerms`` which the MINIMUM XSD does not include. Checks that positive ``due_amount`` (BT-115) is paired with ``terms.due`` (BT-9) or ``terms.description`` (BT-20). |
 | BR-CO-26   | MINIMUM        | ✓      | `SellerTradeParty.validate_internal` raises if neither `id` (BT-29), `legal_organization.id` (BT-30) nor a VAT-scheme `tax_registrations[*]` (BT-31) is present. |
 
 ## 3. VAT-category families
@@ -326,15 +329,17 @@ Rules: `BR-CO-10..17`, `BR-AE-8/9`, `BR-E-8/9`, `BR-G-8/9`,
 See the *Per-profile rule enforcement summary* near the top of this
 file for the up-to-date numbers; the gist:
 
-* MINIMUM: every applicable rule is enforced (with BR-5 only at the
+* MINIMUM: every applicable rule is enforced (16 / 16; BR-5 only at the
   shape level — the ISO 4217 registry is not consulted).
-* BASIC_WL: ~87% — the open gaps are line-independent reason coupling
-  (BR-CO-5/-6), the BR-48 rate-required-unless-not-subject rule, the
-  electronic-address scheme-id requirements (BR-61..63), and the
-  rate / sum-identity arms of the VAT-category families (`*-5..10`).
-* BASIC: BR-21..28 are now satisfied implicitly via the BG-25 line
-  dataclasses (see §3 of `docs/STRUCTURES.md`). BR-27/BR-28 (price ≥ 0)
-  remain unenforced.
+* BASIC_WL: 70 / 79 ≈ 89% — open gaps are document-level reason
+  coupling (BR-CO-5/-6), the BR-48 rate-required-unless-not-subject
+  rule, the electronic-address scheme-id requirements (BR-61..63), and
+  the rate / sum-identity arms of the VAT-category families (`*-5..10`).
+* BASIC: 80 / 99 ≈ 81% — BR-21..26 satisfied implicitly via the BG-25
+  line dataclasses (see §3 of `docs/STRUCTURES.md`); BR-27 / BR-28
+  (price ≥ 0) explicitly enforced on `NetTradePrice` / `GrossTradePrice`.
+  Open gaps: line-level reason coupling (BR-CO-7/-8) and the
+  free-form-flagged BR-42 / BR-44.
 * COMFORT / EXTENDED: no new rules over BASIC are enforced today; the
   EXTENDED CIUS overlay (`BR-FXEXT-*`, `BR-FX-DE-*`) is out of scope
   per `docs/IMPLEMENTATION_PLAN.md §5`.

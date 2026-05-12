@@ -159,9 +159,15 @@ SellerTradeParty (BG-4)
       schemeID="FC"                   BT-32-0 required
 ```
 
-`BuyerTradeParty` (BG-7) mirrors the same structure with single
-`SpecifiedTaxRegistration` (BT-48) — see implementation plan `§1 #5`
-for the cardinality bug.
+`BuyerTradeParty` (BG-7) mirrors the same structure, with
+``PostalTradeAddress`` (BG-8) typed as ``PostalTradeAddressExtended | None``:
+the MINIMUM Factur-X XSD makes the address optional on every
+``TradePartyType``, and the MINIMUM appendix does NOT list BG-8 as
+required. ``BR-10`` (Buyer postal address required) is enforced from
+BASIC_WL upwards in :meth:`BuyerTradeParty.validate_internal`.
+``SpecifiedTaxRegistration`` is now ``list[SpecifiedTaxRegistration] |
+None`` (matching the XSD ``maxOccurs="2"`` for VA + FC entries side by
+side).
 
 ### 3.3 Tax representative, payee, ship-to
 
@@ -239,7 +245,7 @@ TradeSettlement (BG-19)
 
 | Field                  | BT id  | XSD min profile | Carthorse           |
 |------------------------|--------|-----------------|---------------------|
-| `line_total`           | BT-106 | BASIC_WL        | required at MINIMUM ⚠ |
+| `line_total`           | BT-106 | BASIC_WL        | optional `BASIC_WL`; BR-12 raises when missing at BASIC_WL+ |
 | `charge_total`         | BT-108 | BASIC_WL        | optional `BASIC_WL` |
 | `allowance_total`      | BT-107 | BASIC_WL        | optional `BASIC_WL` |
 | `tax_basis_total`      | BT-109 | MINIMUM         | required            |
