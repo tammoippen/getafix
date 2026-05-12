@@ -19,6 +19,9 @@ compatible with redistribution as long as attribution is preserved (this file).
 | `BASICWL_zf24_Einfach.xml` | BASIC_WL | ZF24 distribution `Examples/1. BASIC WL/BASIC-WL_Einfach` (simple invoice; FeRD specification) |
 | `BASICWL_zf24_Buchungshilfe.xml` | BASIC_WL | ZF24 distribution `Examples/1. BASIC WL/BASIC-WL_Buchungshilfe` (accounting voucher; FeRD specification) |
 | `BASIC_Factur-X_basic.xml` | BASIC | [ZUGFeRD/mustangproject `cii/Factur-X_basic.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/cii/Factur-X_basic.xml) |
+| `BASIC_zf24_Einfach.xml` | BASIC | ZF24 distribution `Examples/2. BASIC/BASIC_Einfach` (simple one-line invoice, GS1 GTIN; FeRD specification) |
+| `BASIC_zf24_Taxifahrt.xml` | BASIC | ZF24 distribution `Examples/2. BASIC/BASIC_Taxifahrt` (two lines with distinct unit codes H87/KMT; FeRD specification) |
+| `BASIC_zf24_Rechnungskorrektur.xml` | BASIC | ZF24 distribution `Examples/2. BASIC/BASIC_Rechnungskorrektur` (corrected invoice, TypeCode=384; FeRD specification) |
 | `EN16931_factur-x.xml` | COMFORT (EN 16931) | [ZUGFeRD/mustangproject `factur-x.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/factur-x.xml) |
 | `EN16931_Einfach.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_Einfach.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_Einfach.cii.xml) |
 | `EN16931_Gutschrift.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_Gutschrift.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_Gutschrift.cii.xml) |

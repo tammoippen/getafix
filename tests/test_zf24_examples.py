@@ -278,3 +278,188 @@ class TestBasicWlBuchungshilfe:
 
     def test_roundtrip(self, basicwl_buchungshilfe: Document) -> None:
         _roundtrip(basicwl_buchungshilfe)
+
+
+# ---------------------------------------------------------------------------
+# BASIC_zf24_Einfach — first line-item-bearing profile
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def basic_einfach() -> Document:
+    return _load("BASIC_zf24_Einfach.xml")
+
+
+class TestBasicEinfach:
+    """ZF24 BASIC simple invoice: one line item with VAT 19% standard rate.
+
+    Highlights: BG-25 line items first appear at BASIC. The example
+    demonstrates ``AssociatedDocumentLineDocument`` (BT-126), product
+    GlobalID with schemeID, BilledQuantity with unitCode (BT-129 +
+    BT-130), line tax category, line monetary summation (BT-131)."""
+
+    def test_profile_is_basic(self, basic_einfach: Document) -> None:
+        assert basic_einfach.context.guideline.id == Profile.BASIC
+
+    def test_single_line_item(self, basic_einfach: Document) -> None:
+        # BR-16: at BASIC and above the Invoice must contain at least
+        # one BG-25 line item. The Einfach example carries exactly one.
+        assert len(basic_einfach.trade.items) == 1
+
+    def test_line_carries_global_id_with_scheme(
+        self, basic_einfach: Document
+    ) -> None:
+        item = basic_einfach.trade.items[0]
+        assert item.associated_document.line_id == "1"  # BT-126
+        # BT-157 / BT-157-1: item global identifier with schemeID. The
+        # ZF24 example uses GS1 GTIN-13 (schemeID="0160" per ISO 6523).
+        product = item.product
+        assert product.name.startswith("GTIN: 4012345001235")  # BT-153
+        assert product.global_id is not None
+        assert product.global_id.id == "4012345001235"
+        assert product.global_id.scheme_id == "0160"
+
+    def test_line_quantity_and_unit_code(self, basic_einfach: Document) -> None:
+        # BT-129 BilledQuantity + BT-130 UnitCode (UN/ECE Rec 20). H87 = piece.
+        delivery = basic_einfach.trade.items[0].delivery
+        assert delivery.billed_quantity.value == Decimal("20.0000")
+        assert delivery.billed_quantity.unit_code == "H87"
+
+    def test_line_vat_category_standard(self, basic_einfach: Document) -> None:
+        # Line VAT category (BG-30) — standard rate, 19%.
+        tax = basic_einfach.trade.items[0].settlement.applicable_trade_tax
+        assert tax.type_code == "VAT"
+        assert tax.category_code == "S"
+        assert tax.rate_applicable_percent == Decimal("19")
+
+    def test_line_total(self, basic_einfach: Document) -> None:
+        # BT-131: line net amount = 20 × 9.90 = 198.00.
+        item = basic_einfach.trade.items[0]
+        assert item.agreement.net_price.charge_amount == Decimal("9.90")  # BT-146
+        assert item.settlement.monetary_summation.line_total == Decimal("198.00")
+
+    def test_header_arithmetic(self, basic_einfach: Document) -> None:
+        # BR-CO-10 / BR-CO-13: BT-106 = sum(BT-131); BT-109 = BT-106 - BT-107 + BT-108.
+        m = basic_einfach.trade.settlement.monetary_summation
+        assert m.line_total == Decimal("198.00")
+        assert m.tax_basis_total == Decimal("198.00")
+        assert m.grand_total == Decimal("235.62")
+        assert m.due_amount == Decimal("235.62")
+
+    def test_validate_clean(self, basic_einfach: Document) -> None:
+        basic_einfach.validate()
+
+    def test_roundtrip(self, basic_einfach: Document) -> None:
+        _roundtrip(basic_einfach)
+
+
+# ---------------------------------------------------------------------------
+# BASIC_zf24_Taxifahrt — two line items, distinct unit codes (H87, KMT)
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def basic_taxifahrt() -> Document:
+    return _load("BASIC_zf24_Taxifahrt.xml")
+
+
+class TestBasicTaxifahrt:
+    """ZF24 BASIC taxi-fare invoice: two lines with distinct unit codes.
+
+    Highlights: a flat-fare line (unitCode H87 = piece) and a per-kilometer
+    line (unitCode KMT = kilometre) — exercises the BT-130 UnitCode
+    namespace breadth. Reduced-rate 7% VAT throughout."""
+
+    def test_profile_is_basic(self, basic_taxifahrt: Document) -> None:
+        assert basic_taxifahrt.context.guideline.id == Profile.BASIC
+
+    def test_two_line_items(self, basic_taxifahrt: Document) -> None:
+        assert len(basic_taxifahrt.trade.items) == 2
+
+    def test_first_line_is_flat_fare(self, basic_taxifahrt: Document) -> None:
+        item = basic_taxifahrt.trade.items[0]
+        assert item.associated_document.line_id == "1"
+        assert item.product.name == "Grundpreis (Pauschale)"
+        assert item.delivery.billed_quantity.unit_code == "H87"
+        assert item.delivery.billed_quantity.value == Decimal("1")
+        assert item.agreement.net_price.charge_amount == Decimal("3.90")
+        assert item.settlement.monetary_summation.line_total == Decimal("3.90")
+
+    def test_second_line_is_per_km(self, basic_taxifahrt: Document) -> None:
+        item = basic_taxifahrt.trade.items[1]
+        assert item.associated_document.line_id == "2"
+        # UN/ECE Rec 20 code "KMT" = kilometre. Decimal-precision quantity.
+        assert item.delivery.billed_quantity.unit_code == "KMT"
+        assert item.delivery.billed_quantity.value == Decimal("6.50")
+        assert item.agreement.net_price.charge_amount == Decimal("2.00")
+        # 6.50 km × 2.00 EUR/km = 13.00, but the example renders as "13".
+        assert item.settlement.monetary_summation.line_total == Decimal("13")
+
+    def test_both_lines_share_reduced_rate(self, basic_taxifahrt: Document) -> None:
+        for item in basic_taxifahrt.trade.items:
+            tax = item.settlement.applicable_trade_tax
+            assert tax.category_code == "S"
+            assert tax.rate_applicable_percent == Decimal("7")
+
+    def test_validate_clean(self, basic_taxifahrt: Document) -> None:
+        basic_taxifahrt.validate()
+
+    def test_roundtrip(self, basic_taxifahrt: Document) -> None:
+        _roundtrip(basic_taxifahrt)
+
+
+# ---------------------------------------------------------------------------
+# BASIC_zf24_Rechnungskorrektur — TypeCode=384 (credit note / correction)
+# ---------------------------------------------------------------------------
+
+
+@pt.fixture(scope="module")
+def basic_rechnungskorrektur() -> Document:
+    return _load("BASIC_zf24_Rechnungskorrektur.xml")
+
+
+class TestBasicRechnungskorrektur:
+    """ZF24 BASIC credit note / correction invoice (UNTDID 1001 = 384).
+
+    Highlights: ``TypeCode=384`` flags the document as a corrected
+    invoice, six BG-1 IncludedNotes give a rich free-text context, two
+    line items demonstrate multi-line BG-25 rendering at BASIC."""
+
+    def test_profile_is_basic(self, basic_rechnungskorrektur: Document) -> None:
+        assert basic_rechnungskorrektur.context.guideline.id == Profile.BASIC
+
+    def test_type_code_is_correction(
+        self, basic_rechnungskorrektur: Document
+    ) -> None:
+        # UNTDID 1001 code 384 = "Corrected invoice"; matches our enum.
+        assert (
+            basic_rechnungskorrektur.header.type_code
+            == TypeCode.T_Rechnungskorrektur
+        )
+
+    def test_six_included_notes(self, basic_rechnungskorrektur: Document) -> None:
+        notes = basic_rechnungskorrektur.header.notes
+        assert notes is not None and len(notes) == 6
+
+    def test_two_line_items(self, basic_rechnungskorrektur: Document) -> None:
+        assert len(basic_rechnungskorrektur.trade.items) == 2
+
+    def test_each_line_carries_required_basic_fields(
+        self, basic_rechnungskorrektur: Document
+    ) -> None:
+        for idx, item in enumerate(basic_rechnungskorrektur.trade.items, start=1):
+            # BR-22 / BR-23 / BR-24 / BR-25 / BR-26 / BR-CO-4 — all
+            # required line-level BTs must be populated.
+            assert item.associated_document.line_id == str(idx)
+            assert item.product.name  # BT-153
+            assert item.delivery.billed_quantity.unit_code  # BT-130
+            assert item.delivery.billed_quantity.value is not None  # BT-129
+            assert item.agreement.net_price.charge_amount is not None  # BT-146
+            assert item.settlement.applicable_trade_tax.category_code  # BT-151
+            assert item.settlement.monetary_summation.line_total is not None  # BT-131
+
+    def test_validate_clean(self, basic_rechnungskorrektur: Document) -> None:
+        basic_rechnungskorrektur.validate()
+
+    def test_roundtrip(self, basic_rechnungskorrektur: Document) -> None:
+        _roundtrip(basic_rechnungskorrektur)
