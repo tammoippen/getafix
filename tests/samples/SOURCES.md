@@ -22,6 +22,12 @@ compatible with redistribution as long as attribution is preserved (this file).
 | `BASIC_zf24_Einfach.xml` | BASIC | ZF24 distribution `Examples/2. BASIC/BASIC_Einfach` (simple one-line invoice, GS1 GTIN; FeRD specification) |
 | `BASIC_zf24_Taxifahrt.xml` | BASIC | ZF24 distribution `Examples/2. BASIC/BASIC_Taxifahrt` (two lines with distinct unit codes H87/KMT; FeRD specification) |
 | `BASIC_zf24_Rechnungskorrektur.xml` | BASIC | ZF24 distribution `Examples/2. BASIC/BASIC_Rechnungskorrektur` (corrected invoice, TypeCode=384; FeRD specification) |
+| `EN16931_zf24_Rabatte.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Rabatte` (multi-rate VAT, document-level allowance + charge; FeRD specification) |
+| `EN16931_zf24_Innergemeinschaftliche.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Innergemeinschaftliche_Lieferungen` (VAT category K intra-community; FeRD specification) |
+| `EN16931_zf24_Auslandslieferung.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_steuerbefreite Auslandslieferung` (VAT category E export outside EU; FeRD specification) |
+| `EN16931_zf24_Kleinunternehmer.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Kleinunternehmer_ohne_USt_ID` (§19 UStG small business, BT-32 only; FeRD specification) |
+| `EN16931_zf24_ElektronischeAdresse.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_ElektronischeAdresse` (BT-34 with GS1 GLN schemeID; FeRD specification) |
+| `EN16931_zf24_OEPNV.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_OEPNV` (public transport; exercises empty self-closing elements; FeRD specification) |
 | `EN16931_factur-x.xml` | COMFORT (EN 16931) | [ZUGFeRD/mustangproject `factur-x.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/factur-x.xml) |
 | `EN16931_Einfach.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_Einfach.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_Einfach.cii.xml) |
 | `EN16931_Gutschrift.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_Gutschrift.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_Gutschrift.cii.xml) |
