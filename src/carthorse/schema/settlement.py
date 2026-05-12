@@ -291,39 +291,21 @@ class ReceivableAccountingAccount(Element):
 
 @dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
-    """Header trade settlement group (payment and settlement details)."""
+    """Header trade settlement group (payment and settlement details).
+
+    Field order follows the ``HeaderTradeSettlementType`` XSD
+    ``<xs:sequence>``: ``CreditorReferenceID``, ``PaymentReference``,
+    ``TaxCurrencyCode``, ``InvoiceCurrencyCode``, ``PayeeTradeParty``,
+    ``SpecifiedTradeSettlementPaymentMeans``*, ``ApplicableTradeTax``+,
+    ``BillingSpecifiedPeriod``, ``SpecifiedTradeAllowanceCharge``*,
+    ``SpecifiedTradePaymentTerms``,
+    ``SpecifiedTradeSettlementHeaderMonetarySummation``,
+    ``InvoiceReferencedDocument``*,
+    ``ReceivableSpecifiedTradeAccountingAccount``.
+    """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
-    currency_code: str = field(metadata={"tag": "InvoiceCurrencyCode"})
-    """Invoice currency code.
-
-    The currency in which all Invoice amounts are given, except for
-    the invoice VAT total in VAT accounting currency.
-
-    The Invoice shall be issued in a single currency, with the
-    exception, under Article 230 of Council Directive 2006/112/EC on
-    VAT, of the invoice VAT total in VAT accounting currency
-    (BT-111). The lists of valid currencies are maintained by the ISO
-    4217 Maintenance Agency "Codes for the representation of
-    currencies and funds".
-
-    EN 16931-ID: BT-5
-    """
-    tax_currency_code: str | None = field(
-        default=None, metadata={"tag": "TaxCurrencyCode", "profile": Profile.BASIC_WL}
-    )
-    """VAT accounting currency code.
-
-    Optional from BASIC_WL onwards. When present, the seller's local
-    currency for VAT accounting (which differs from the invoice
-    currency BT-5). Triggers ``BR-53``: a ``TaxTotal`` entry with
-    ``currency_id == tax_currency_code`` (BT-111) must also be
-    provided in :attr:`monetary_summation`.
-
-    EN 16931-ID: BT-6
-    """
-    monetary_summation: MonetarySummation
     creditor_reference: str | None = field(
         default=None,
         metadata={"tag": "CreditorReferenceID", "profile": Profile.BASIC_WL},
@@ -383,6 +365,34 @@ class TradeSettlement(Element):
 
     EN 16931-ID: BT-83
     """
+    tax_currency_code: str | None = field(
+        default=None, metadata={"tag": "TaxCurrencyCode", "profile": Profile.BASIC_WL}
+    )
+    """VAT accounting currency code.
+
+    Optional from BASIC_WL onwards. When present, the seller's local
+    currency for VAT accounting (which differs from the invoice
+    currency BT-5). Triggers ``BR-53``: a ``TaxTotal`` entry with
+    ``currency_id == tax_currency_code`` (BT-111) must also be
+    provided in :attr:`monetary_summation`.
+
+    EN 16931-ID: BT-6
+    """
+    currency_code: str = field(metadata={"tag": "InvoiceCurrencyCode"})
+    """Invoice currency code.
+
+    The currency in which all Invoice amounts are given, except for
+    the invoice VAT total in VAT accounting currency.
+
+    The Invoice shall be issued in a single currency, with the
+    exception, under Article 230 of Council Directive 2006/112/EC on
+    VAT, of the invoice VAT total in VAT accounting currency
+    (BT-111). The lists of valid currencies are maintained by the ISO
+    4217 Maintenance Agency "Codes for the representation of
+    currencies and funds".
+
+    EN 16931-ID: BT-5
+    """
     payee: PayeeTradeParty | None = None
     payment_means: list[PaymentMeans] | None = None
     trade_taxes: list[ApplicableTradeTax] | None = None
@@ -390,6 +400,7 @@ class TradeSettlement(Element):
     """Header invoicing period (BG-14)."""
     allowance_charge: list[TradeAllowanceCharge] | None = None
     terms: PaymentTerms | None = None
+    monetary_summation: MonetarySummation
     invoice_referenced_document: list[InvoiceReferencedDocument] | None = None
     """Preceding invoice references (BG-3); zero or more."""
     accounting_account: list[ReceivableAccountingAccount] | None = None
@@ -507,19 +518,20 @@ class TradeSettlement(Element):
 
         # BR-CO-16: BT-115 (DuePayableAmount) = BT-112 - BT-113
         # (TotalPrepaidAmount) + BT-114 (RoundingAmount). BT-114 is
-        # not yet modelled in carthorse — treat it as 0 (it's optional
-        # in EN 16931 anyway).
+        # optional and only available from COMFORT onwards — treat as
+        # 0 when absent.
         prepaid = self.monetary_summation.prepaid_total or Decimal("0")
-        expected_due = self.monetary_summation.grand_total - prepaid
+        rounding = self.monetary_summation.rounding_amount or Decimal("0")
+        expected_due = self.monetary_summation.grand_total - prepaid + rounding
         if self.monetary_summation.due_amount != expected_due:
             errors.append(
                 ValidationError(
                     "BR-CO-16",
                     "Amount due for payment (BT-115) "
                     f"= {self.monetary_summation.due_amount} differs from "
-                    f"BT-112 - BT-113 = "
+                    f"BT-112 - BT-113 + BT-114 = "
                     f"{self.monetary_summation.grand_total} - {prepaid} "
-                    f"= {expected_due}.",
+                    f"+ {rounding} = {expected_due}.",
                 )
             )
 

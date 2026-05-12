@@ -228,8 +228,6 @@ class TradeProduct(Element):
     tag: ClassVar[str] = "SpecifiedTradeProduct"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    name: str = field(metadata={"tag": "Name"})
-    """Item name (BT-153)."""
     global_id: GlobalID | None = None
     """Item standard identifier with required schemeID (BT-157, BR-64)."""
     seller_assigned_id: str | None = field(
@@ -240,6 +238,8 @@ class TradeProduct(Element):
         default=None, metadata={"tag": "BuyerAssignedID", "profile": Profile.COMFORT}
     )
     """Item Buyer's identifier (BT-156); EN 16931+."""
+    name: str = field(metadata={"tag": "Name"})
+    """Item name (BT-153)."""
     description: str | None = field(
         default=None, metadata={"tag": "Description", "profile": Profile.COMFORT}
     )
