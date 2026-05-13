@@ -1,40 +1,54 @@
 """Header trade settlement (BG-19) — currency, payment, totals.
 
-``ApplicableHeaderTradeSettlement`` (BG-19) is the third sibling of
-the ``SupplyChainTradeTransaction``. It carries:
+``ApplicableHeaderTradeSettlement`` is the third sibling of the
+``SupplyChainTradeTransaction``. It carries:
 
-* the invoice currency (BT-5) and — at BASIC_WL+ — the optional VAT
-  accounting currency (BT-6);
-* SEPA-specific creditor reference and remittance information;
+* the invoice currency (BT-5) and the optional VAT accounting
+  currency (BT-6, BASIC_WL+);
+* SEPA-specific creditor reference (BT-90) and remittance
+  information (BT-83);
 * payee details if different from seller (BG-10);
-* zero-or-more payment means (BG-16) with associated debtor/creditor
-  financial accounts (BG-17);
-* one or more VAT breakdowns (BG-23) once at BASIC_WL+;
-* optional invoicing period (BG-14);
-* zero-or-more allowance (BG-20) and charge (BG-21) groups;
-* optional payment terms (BT-20-00); EXTENDED upgrades this to a list;
-* the monetary summation (BG-22);
-* zero-or-more preceding-invoice references (BG-3);
+* zero-or-more payment means (BG-16) with the associated debited
+  account (BT-91-00) and creditor account (BG-17);
+* one or more VAT breakdowns (BG-23) at BASIC_WL+;
+* optional invoicing period (BG-14, also reused at line level as
+  BG-26);
+* zero-or-more allowance (BG-20) and charge (BG-21) groups —
+  defined in :mod:`accounting`;
+* optional payment terms (BT-20-00); EXTENDED upgrades this to a
+  list of payment-term blocks;
+* the monetary summation (BG-22) — defined in :mod:`accounting`;
+* zero-or-more preceding-invoice references (BG-3) — defined in
+  :mod:`references`;
 * zero-or-more accounting references (BT-19-00).
 
-Validation rules covered (or missing) in this module:
+Validation rules enforced here:
 
-* ✓ ``BR-CO-18`` (at least one ``trade_taxes`` row at BASIC_WL+) — see
-  :meth:`TradeSettlement.validate_internal`.
-* ✓ ``BR-29`` (BG-14 start ≤ end) and ``BR-CO-19`` (BG-14 start or end
-  required if used) — :class:`BillingSpecifiedPeriod`.
-* ✓ ``BR-50`` (account info requires IBAN or proprietary id) — see
-  :meth:`PayeePartyCreditorFinancialAccount.validate_internal`.
-* ✓ ``BR-53`` (BT-6 set ⇒ a ``TaxTotal`` row with ``currency_id == BT-6``).
-* △ ``BR-5`` — currency code shape only.
-* △ ``BR-49`` — ``PaymentMeans.type_code`` shape; not the BG-16
-  presence rule.
-* ✓ ``BR-CO-25`` (positive ``DuePayableAmount`` ⇒ BT-9 or BT-20
-  present) — :meth:`TradeSettlement.validate_internal`.
-* — ``BR-61`` (SEPA / local / non-SEPA credit transfer requires BT-84):
-  not enforced.
+* △ ``BR-5`` — :meth:`TradeSettlement.validate_internal` checks the
+  alpha-3 uppercase shape of ``currency_code`` (BT-5); the ISO 4217
+  registry is not consulted.
+* ✓ ``BR-50`` — :meth:`PayeePartyCreditorFinancialAccount.validate_internal`
+  requires IBAN-ID or proprietary id.
+* ✓ ``BR-53`` — BT-6 set ⇒ a ``TaxTotal`` row with ``currency_id ==
+  BT-6`` must be present.
+* △ ``BR-49`` — :meth:`PaymentMeans.validate_internal` checks
+  the UNTDID 4461 code shape of ``type_code``; the BG-16 presence
+  rule itself is not enforced.
+* ✓ ``BR-CO-18`` — at least one ``trade_taxes`` row at BASIC_WL+.
+* ✓ ``BR-CO-19`` / ``BR-29`` —
+  :meth:`BillingSpecifiedPeriod.validate_internal`: BG-14 needs at
+  least one endpoint, and ``end >= start`` when both are present.
+  The same validator runs on BG-26 (line invoicing period).
+* ✓ ``BR-CO-14`` — ``BT-110 = sum(BT-117)`` across BG-23 rows.
+* ✓ ``BR-CO-15`` — ``BT-112 = BT-109 + BT-110``.
+* ✓ ``BR-CO-16`` — ``BT-115 = BT-112 - BT-113 + BT-114``.
+* ✓ ``BR-CO-25`` — positive ``DuePayableAmount`` (BT-115) requires
+  BT-9 or BT-20 (gated on BASIC_WL+ since BT-9 / BT-20 live in
+  ``SpecifiedTradePaymentTerms`` which MINIMUM omits).
 
-For the full BR-* catalogue see ``docs/VALIDATION.md``.
+Validation rules not yet enforced (see ``docs/VALIDATION.md``):
+
+* ``BR-61`` — SEPA / local / non-SEPA credit transfer needs BT-84.
 """
 
 from dataclasses import dataclass, field
@@ -55,26 +69,32 @@ from carthorse.schema.types import Profile
 
 @dataclass(kw_only=True, slots=True)
 class PayerPartyDebtorFinancialAccount(Element):
-    """Buyer's bank account (debited account)."""
+    """Debited account (BT-91-00).
+
+    Buyer's bank account for direct-debit payments. Provided when
+    the payment means is a direct debit.
+    """
 
     tag: ClassVar[str] = "PayerPartyDebtorFinancialAccount"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     iban_id: str = field(metadata={"tag": "IBANID"})
-    """Direct debit: debited account identifier (BT-91).
+    """Debited account identifier (BT-91).
 
-    The account to be debited by the direct debit. To be provided in
-    case of direct debit payment.
+    The account to be debited by the direct debit.
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class PayeePartyCreditorFinancialAccount(Element):
-    """Credit transfer / Seller bank account details (BG-17).
+    """Credit transfer / Seller bank account (BG-17).
 
-    If several bank accounts are to be specified for credit transfer,
-    the SpecifiedTradeSettlementPaymentMeans element must be repeated
-    accordingly.
+    A group of business terms specifying credit-transfer payment
+    details.
+
+    Note: if several bank accounts are to be transmitted, the
+    enclosing :class:`PaymentMeans` (BG-16) must be repeated — one
+    entry per account.
     """
 
     tag: ClassVar[str] = "PayeePartyCreditorFinancialAccount"
@@ -84,17 +104,18 @@ class PayeePartyCreditorFinancialAccount(Element):
     """Payment account identifier (BT-84).
 
     A unique identifier of the financial account held at a payment
-    service provider to which the payment should be made, such as an
-    IBAN (in case of a SEPA payment). For a national account number,
-    use ProprietaryID.
+    service provider to which the payment should be made — IBAN in
+    the SEPA case, a national account number otherwise.
 
-    With respect to BR-50 and BR-61, either an IBAN-ID or a
-    ProprietaryID must be provided.
+    Note: per ``BR-50`` either ``iban_id`` or ``proprietary_id``
+    must be present; ``BR-61`` further requires an IBAN for SEPA /
+    local / non-SEPA credit transfers (not yet enforced).
     """
     proprietary_id: str | None = field(default=None, metadata={"tag": "ProprietaryID"})
-    """National account number (not for SEPA) (BT-84-0).
+    """National (non-SEPA) account number (BT-84-0).
 
-    For SEPA payments use IBANID.
+    Note: prefer ``iban_id`` when appropriate; ``proprietary_id`` is
+    reserved for the non-SEPA case.
     """
 
     @override
@@ -119,13 +140,14 @@ class PayeePartyCreditorFinancialAccount(Element):
 class PaymentMeans(Element):
     """Payment instructions (BG-16).
 
-    Only when several bank accounts are to be transmitted for credit
-    transfers may the SpecifiedTradeSettlementPaymentMeans element be
-    repeated for each bank account. The payment means type code in the
-    TypeCode element (BT-81) must consequently not differ between the
-    repetitions. The ApplicableTradeSettlementFinancialCard and
-    PayerPartyDebtorFinancialAccount elements shall not be given for
-    credit transfers.
+    A group of business terms providing information about the
+    payment. Repeated 0..* on :class:`TradeSettlement`.
+
+    Note: only repeat when several bank accounts are to be
+    transmitted for credit transfers — the payment means
+    ``type_code`` (BT-81) must not differ between repetitions. The
+    debtor financial account (BT-91-00) and the payment card group
+    (BG-18) must NOT be given for credit transfers.
     """
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementPaymentMeans"
@@ -135,29 +157,28 @@ class PaymentMeans(Element):
     """Payment means type code (BT-81).
 
     The expected or used means of payment, expressed as a code.
+    Distinguishes SEPA from non-SEPA payments and between credit
+    transfers, direct debits, card payments and other means.
 
-    Entries from the UNTDID 4461 code list must be used. A
-    distinction should be made between SEPA and non-SEPA payments and
-    between credit transfers, direct debits, card payments and other
-    payment means.
+    Code list: UNTDID 4461. Frequently-used codes:
 
-    Code list: UNTDID 4461:
-        https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred4461.htm
+    * ``10`` — cash
+    * ``20`` — cheque
+    * ``30`` — credit transfer
+    * ``42`` — payment to bank account
+    * ``48`` — bank card
+    * ``49`` — direct debit
+    * ``57`` — standing order
+    * ``58`` — SEPA credit transfer
+    * ``59`` — SEPA direct debit
+    * ``97`` — report
 
-    In particular, the following codes may be used:
-        10 : In cash
-        20 : Cheque
-        30 : Credit transfer
-        42 : Payment to bank account
-        48 : Bank card
-        49 : Direct debit
-        57 : Standing order
-        58 : SEPA Credit Transfer
-        59 : SEPA Direct Debit
-        97 : Report
+    https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred4461.htm
     """
     payer: PayerPartyDebtorFinancialAccount | None = None
+    """Debited account (BT-91-00) — direct-debit payments only."""
     payee: PayeePartyCreditorFinancialAccount | None = None
+    """Credit-transfer account (BG-17) — credit-transfer payments only."""
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
@@ -179,37 +200,60 @@ class PaymentMeans(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PaymentTerms(Element):
-    """Payment terms details (BT-20-00).
+    """Payment terms (BT-20-00).
 
-    XSD field order is ``Description`` (BT-20), ``DueDateDateTime``
-    (BT-9), ``DirectDebitMandateID`` (BT-89).
+    A group of business terms providing the textual description of
+    the payment terms, the payment due date and (for SEPA direct
+    debits) the mandate reference.
+
+    Note: XSD field order is ``Description`` (BT-20),
+    ``DueDateDateTime`` (BT-9), ``DirectDebitMandateID`` (BT-89).
+    EXTENDED upgrades the parent settlement to a *list* of
+    ``SpecifiedTradePaymentTerms`` — carthorse models the single
+    case only.
     """
 
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     description: str | None = field(default=None, metadata={"tag": "Description"})
-    """Free-text payment terms (BT-20)."""
+    """Payment terms, free text (BT-20).
+
+    A textual description of the payment terms that apply to the
+    amount due for payment — including the description of possible
+    penalties. May contain multiple lines and multiple terms.
+    """
     due: date | None = field(default=None, metadata={"tag": "DueDateDateTime"})
-    """Payment due date (BT-9)."""
+    """Payment due date (BT-9).
+
+    The date when the payment is due — the due date of the net
+    payment. For partial payments this is the first net due date;
+    the description of more complex schedules belongs in
+    :attr:`description` (BT-20).
+    """
     debit_mandate_id: str | None = field(
         default=None, metadata={"tag": "DirectDebitMandateID"}
     )
-    """Mandate reference identifier / SEPA mandate reference (BT-89).
+    """SEPA mandate reference (BT-89).
 
-    Used to inform the Buyer in advance of a SEPA direct debit.
+    Unique identifier assigned by the Payee for referencing the
+    direct-debit mandate. Used to pre-notify the Buyer of a SEPA
+    direct debit.
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class BillingSpecifiedPeriod(Element):
-    """Invoicing period (BG-14 / BG-26) — start and/or end dates.
+    """Invoicing period (BG-14 at header / BG-26 at line).
 
-    The element name is ``BillingSpecifiedPeriod`` at both header
-    (BG-14) and line (BG-26) level. The XSD allows either or both
-    endpoints; ``BR-CO-19`` requires at least one of them when the
-    group is used, and ``BR-29`` requires ``end >= start`` if both
-    are given.
+    A group of business terms providing information on the period
+    the invoice covers — also called the delivery period.
+
+    Note: the element name ``BillingSpecifiedPeriod`` is shared
+    between header (BG-14) and line (BG-26) level — the BT IDs on
+    the endpoints differ (BT-73/BT-74 vs BT-134/BT-135).
+    ``BR-CO-19`` requires at least one endpoint when the group is
+    used, and ``BR-29`` requires ``end >= start`` if both are given.
     """
 
     tag: ClassVar[str] = "BillingSpecifiedPeriod"
@@ -218,11 +262,18 @@ class BillingSpecifiedPeriod(Element):
     start: date | None = field(
         default=None, metadata={"tag": "StartDateTime", "profile": Profile.BASIC_WL}
     )
-    """Start of the invoicing period (BT-73 (header), BT-134 (line))."""
+    """Invoicing period start date (BT-73 header / BT-134 line).
+
+    The initial date of delivery of goods or services.
+    """
     end: date | None = field(
         default=None, metadata={"tag": "EndDateTime", "profile": Profile.BASIC_WL}
     )
-    """End of the invoicing period (BT-74 (header), BT-135 (line))."""
+    """Invoicing period end date (BT-74 header / BT-135 line).
+
+    The date on which the delivery of goods or services was
+    completed.
+    """
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
@@ -252,7 +303,11 @@ class BillingSpecifiedPeriod(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ReceivableAccountingAccount(Element):
-    """Buyer accounting reference details."""
+    """Buyer accounting reference (BT-19-00).
+
+    Wrapper around BT-19 — the textual value specifying where the
+    relevant data is to be posted in the Buyer's financial accounts.
+    """
 
     tag: ClassVar[str] = "ReceivableSpecifiedTradeAccountingAccount"
     profile: ClassVar[Profile] = Profile.BASIC_WL
@@ -260,14 +315,20 @@ class ReceivableAccountingAccount(Element):
     id: str = field(metadata={"tag": "ID"})
     """Buyer accounting reference (BT-19).
 
-    A textual value that specifies where the relevant data is to be
-    posted in the Buyer's financial accounts.
+    A textual value that specifies where to book the relevant data
+    in the Buyer's financial accounts.
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
-    """Header trade settlement group (payment and settlement details)."""
+    """Header trade settlement (BG-19).
+
+    Container for currency, payee, payment means, VAT breakdown,
+    invoicing period, header allowances/charges, payment terms, the
+    monetary summation, preceding-invoice references, and accounting
+    references.
+    """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
@@ -275,92 +336,76 @@ class TradeSettlement(Element):
         default=None,
         metadata={"tag": "CreditorReferenceID", "profile": Profile.BASIC_WL},
     )
-    """Bank assigned creditor identifier / SEPA creditor identifier (BT-90).
+    """Bank-assigned creditor identifier (BT-90).
 
     A unique banking reference identifier of the Payee or Seller
-    assigned by the Payee's or Seller's bank.
-
-    Used to inform the Buyer in advance of a SEPA direct debit.
+    assigned by the Payee's or Seller's bank — typically the SEPA
+    creditor identifier. Used to pre-notify the Buyer of a SEPA
+    direct debit.
     """
     payment_reference: str | None = field(
         default=None, metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL}
     )
-    """Remittance information / payment reference (BT-83).
+    """Remittance information (BT-83).
 
-    A textual value used to link the payment to the Invoice issued by
-    the Seller.
+    A textual value used to link the payment to the invoice — most
+    commonly the invoice number. In a payment transaction this
+    reference is returned to the Seller as remittance information.
 
-    This reference helps the Seller to assign an incoming payment to
-    the relevant payment process. When stating the textual value —
-    usually the Invoice number of the Invoice to be paid, but it may
-    also be another Seller reference — the Buyer should include this
-    reference in the payment order or when making the payment. In a
-    payment transaction this reference is returned to the Seller as
-    remittance information.
-
-    To enable automatic processing of cross-border SEPA payments, only
-    Latin characters and a maximum of 140 characters should be used in
-    this field. See section 1.4 of the SEPA Credit Transfer and SEPA
-    Direct Debit Scheme Implementation Guides for further details on
-    the permissible characters. Different rules may apply for SEPA
-    payments within national borders.
-
-    If the remittance information is structured according to ISO
-    11649:2009 via the Payee structured reference, it shall be mapped
-    in SEPA payment messages to the Structured Remittance Information
-    Creditor Reference field.
-
-    If the remittance information is structured according to the EACT
-    standard for automatic account reconciliation, it shall be mapped
-    in SEPA payment messages to the Unstructured Remittance
-    Information field.
-
-    If the remittance information is mapped in SEPA payment messages
-    to the End To End Identification field or to the Structured
-    Remittance Information Creditor Reference field, the content —
-    aside from the restriction to Latin characters — must not start or
-    end with a "/" and must not contain "//".
-
-    In the simplest case this could, for example, be identical to the
-    Invoice number. Note: If the payment reference is to be stated in
-    SEPA credit transfers or direct debits, only the character set
-    permitted for SEPA may be used.
+    Note: for cross-border SEPA payments only Latin characters and
+    at most 140 characters should be used; the value must not start
+    or end with ``/`` and must not contain ``//``. Structured
+    references following ISO 11649:2009 map to the SEPA Structured
+    Remittance Information / Creditor Reference field; EACT
+    structured references map to the Unstructured Remittance
+    Information field. National-border SEPA payments may relax
+    these rules.
     """
     tax_currency_code: str | None = field(
         default=None, metadata={"tag": "TaxCurrencyCode", "profile": Profile.BASIC_WL}
     )
-    """VAT accounting currency code (BT-6).
+    """VAT accounting currency code (BT-6); BASIC_WL+.
 
-    Optional from BASIC_WL onwards. When present, the seller's local
-    currency for VAT accounting (which differs from the invoice
-    currency BT-5). Triggers ``BR-53``: a ``TaxTotal`` entry with
-    ``currency_id == tax_currency_code`` (BT-111) must also be
-    provided in :attr:`monetary_summation`.
+    The currency used for VAT accounting and reporting purposes as
+    accepted or required in the Seller's country.
+
+    Note: required only when it differs from the invoice currency
+    (BT-5). When set, ``BR-53`` requires a second ``TaxTotal`` row
+    in :attr:`monetary_summation` carrying BT-111 with
+    ``currency_id == tax_currency_code``.
+
+    Code list: ISO 4217.
     """
     currency_code: str = field(metadata={"tag": "InvoiceCurrencyCode"})
     """Invoice currency code (BT-5).
 
-    The currency in which all Invoice amounts are given, except for
-    the invoice VAT total in VAT accounting currency.
+    The currency in which all invoice amounts are given, except for
+    the invoice VAT total in VAT accounting currency (BT-111). Only
+    one currency may be used in the invoice, except for that BT-111
+    exception per Article 230 of Council Directive 2006/112/EC.
 
-    The Invoice shall be issued in a single currency, with the
-    exception, under Article 230 of Council Directive 2006/112/EC on
-    VAT, of the invoice VAT total in VAT accounting currency
-    (BT-111). The lists of valid currencies are maintained by the ISO
-    4217 Maintenance Agency "Codes for the representation of
-    currencies and funds".
+    Code list: ISO 4217.
     """
     payee: PayeeTradeParty | None = None
+    """Payee (BG-10); BASIC_WL+ — provided when different from the
+    Seller."""
     payment_means: list[PaymentMeans] | None = None
+    """Payment means (BG-16, 0..*); BASIC_WL+."""
     trade_taxes: list[ApplicableTradeTax] | None = None
+    """VAT breakdown rows (BG-23, 1..*); required from BASIC_WL+
+    (``BR-CO-18``)."""
     billing_period: BillingSpecifiedPeriod | None = None
-    """Header invoicing period (BG-14)."""
+    """Header invoicing period (BG-14); BASIC_WL+."""
     allowance_charge: list[TradeAllowanceCharge] | None = None
+    """Header allowances (BG-20) and charges (BG-21), 0..*."""
     terms: PaymentTerms | None = None
+    """Payment terms (BT-20-00); BASIC_WL+."""
     monetary_summation: MonetarySummation
+    """Document totals (BG-22); required at every profile."""
     invoice_referenced_document: list[InvoiceReferencedDocument] | None = None
-    """Preceding invoice references (BG-3); zero or more."""
+    """Preceding-invoice references (BG-3, 0..*); BASIC_WL+."""
     accounting_account: list[ReceivableAccountingAccount] | None = None
+    """Buyer accounting references (BT-19-00, 0..*); BASIC_WL+."""
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
