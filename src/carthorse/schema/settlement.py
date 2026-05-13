@@ -117,7 +117,9 @@ class PayeePartyCreditorFinancialAccount(Element):
                     "the Invoice.",
                 )
             )
-        errors.extend(super(PayeePartyCreditorFinancialAccount, self).validate_internal(profile))
+        errors.extend(
+            super(PayeePartyCreditorFinancialAccount, self).validate_internal(profile)
+        )
         return errors
 
 
@@ -425,8 +427,7 @@ class TradeSettlement(Element):
             errors.append(
                 ValidationError(
                     "BR-CO-18",
-                    "An Invoice shall at least have one VAT breakdown "
-                    "group (BG-23).",
+                    "An Invoice shall at least have one VAT breakdown group (BG-23).",
                 )
             )
 

@@ -108,7 +108,8 @@ class TestMinimumRechnung:
         assert s.currency_code == "EUR"  # BT-5
         m = s.monetary_summation
         assert m.tax_basis_total == Decimal("198.00")  # BT-109
-        assert m.tax_total is not None and len(m.tax_total) == 1
+        assert m.tax_total is not None
+        assert len(m.tax_total) == 1
         assert m.tax_total[0].amount == Decimal("37.62")  # BT-110
         assert m.tax_total[0].currency_id == "EUR"
         assert m.grand_total == Decimal("235.62")  # BT-112
@@ -159,7 +160,8 @@ class TestMinimumBuchungshilfe:
 
     def test_seller_dual_tax_ids(self, minimum_buchungshilfe: Document) -> None:
         registrations = minimum_buchungshilfe.trade.agreement.seller.tax_registrations
-        assert registrations is not None and len(registrations) == 2
+        assert registrations is not None
+        assert len(registrations) == 2
 
     def test_validate_clean(self, minimum_buchungshilfe: Document) -> None:
         minimum_buchungshilfe.validate()
@@ -181,7 +183,7 @@ def basicwl_einfach() -> Document:
 class TestBasicWlEinfach:
     """ZF24 BASIC_WL example for a simple invoice (taxi fare).
 
-    Highlights: BG-1 IncludedNote × 3 (free-text), BT-72 actual delivery
+    Highlights: BG-1 IncludedNote x 3 (free-text), BT-72 actual delivery
     date, BG-23 ApplicableTradeTax (S, 7%), BG-22 with BT-106 LineTotal
     populated, payment terms with BT-9 due date."""
 
@@ -191,12 +193,11 @@ class TestBasicWlEinfach:
     def test_three_included_notes(self, basicwl_einfach: Document) -> None:
         # BG-1 IncludedNote repeats — 3 entries in this example.
         notes = basicwl_einfach.header.notes
-        assert notes is not None and len(notes) == 3
+        assert notes is not None
+        assert len(notes) == 3
         assert "Taxifahrt" in (notes[0].content or "")
 
-    def test_buyer_address_present_at_basic_wl(
-        self, basicwl_einfach: Document
-    ) -> None:
+    def test_buyer_address_present_at_basic_wl(self, basicwl_einfach: Document) -> None:
         # BR-10 enforced from BASIC_WL up — BG-8 must be present.
         buyer = basicwl_einfach.trade.agreement.buyer
         assert buyer.address is not None
@@ -211,7 +212,8 @@ class TestBasicWlEinfach:
     def test_bg23_vat_breakdown(self, basicwl_einfach: Document) -> None:
         # BG-23 (ApplicableTradeTax) — one row, category S, rate 7%.
         taxes = basicwl_einfach.trade.settlement.trade_taxes
-        assert taxes is not None and len(taxes) == 1
+        assert taxes is not None
+        assert len(taxes) == 1
         t = taxes[0]
         assert t.type_code == "VAT"  # BT-118-0
         assert t.category_code == "S"  # BT-118
@@ -265,13 +267,13 @@ class TestBasicWlBuchungshilfe:
     def test_type_code_is_751(self, basicwl_buchungshilfe: Document) -> None:
         assert basicwl_buchungshilfe.header.type_code == TypeCode.T_751
 
-    def test_notes_and_delivery_present(
-        self, basicwl_buchungshilfe: Document
-    ) -> None:
+    def test_notes_and_delivery_present(self, basicwl_buchungshilfe: Document) -> None:
         notes = basicwl_buchungshilfe.header.notes
-        assert notes is not None and len(notes) == 3
+        assert notes is not None
+        assert len(notes) == 3
         event = basicwl_buchungshilfe.trade.delivery.event
-        assert event is not None and event.occurrence == date(2019, 10, 29)
+        assert event is not None
+        assert event.occurrence == date(2019, 10, 29)
 
     def test_validate_clean(self, basicwl_buchungshilfe: Document) -> None:
         basicwl_buchungshilfe.validate()
@@ -306,9 +308,7 @@ class TestBasicEinfach:
         # one BG-25 line item. The Einfach example carries exactly one.
         assert len(basic_einfach.trade.items) == 1
 
-    def test_line_carries_global_id_with_scheme(
-        self, basic_einfach: Document
-    ) -> None:
+    def test_line_carries_global_id_with_scheme(self, basic_einfach: Document) -> None:
         item = basic_einfach.trade.items[0]
         assert item.associated_document.line_id == "1"  # BT-126
         # BT-157 / BT-157-1: item global identifier with schemeID. The
@@ -333,7 +333,7 @@ class TestBasicEinfach:
         assert tax.rate_applicable_percent == Decimal("19")
 
     def test_line_total(self, basic_einfach: Document) -> None:
-        # BT-131: line net amount = 20 × 9.90 = 198.00.
+        # BT-131: line net amount = 20 x 9.90 = 198.00.
         item = basic_einfach.trade.items[0]
         assert item.agreement.net_price.charge_amount == Decimal("9.90")  # BT-146
         assert item.settlement.monetary_summation.line_total == Decimal("198.00")
@@ -392,7 +392,7 @@ class TestBasicTaxifahrt:
         assert item.delivery.billed_quantity.unit_code == "KMT"
         assert item.delivery.billed_quantity.value == Decimal("6.50")
         assert item.agreement.net_price.charge_amount == Decimal("2.00")
-        # 6.50 km × 2.00 EUR/km = 13.00, but the example renders as "13".
+        # 6.50 km x 2.00 EUR/km = 13.00, but the example renders as "13".
         assert item.settlement.monetary_summation.line_total == Decimal("13")
 
     def test_both_lines_share_reduced_rate(self, basic_taxifahrt: Document) -> None:
@@ -428,18 +428,16 @@ class TestBasicRechnungskorrektur:
     def test_profile_is_basic(self, basic_rechnungskorrektur: Document) -> None:
         assert basic_rechnungskorrektur.context.guideline.id == Profile.BASIC
 
-    def test_type_code_is_correction(
-        self, basic_rechnungskorrektur: Document
-    ) -> None:
+    def test_type_code_is_correction(self, basic_rechnungskorrektur: Document) -> None:
         # UNTDID 1001 code 384 = "Corrected invoice"; matches our enum.
         assert (
-            basic_rechnungskorrektur.header.type_code
-            == TypeCode.T_Rechnungskorrektur
+            basic_rechnungskorrektur.header.type_code == TypeCode.T_Rechnungskorrektur
         )
 
     def test_six_included_notes(self, basic_rechnungskorrektur: Document) -> None:
         notes = basic_rechnungskorrektur.header.notes
-        assert notes is not None and len(notes) == 6
+        assert notes is not None
+        assert len(notes) == 6
 
     def test_two_line_items(self, basic_rechnungskorrektur: Document) -> None:
         assert len(basic_rechnungskorrektur.trade.items) == 2
@@ -498,7 +496,7 @@ class TestEN16931Rabatte:
 
     def test_multi_rate_breakdown(self, en16931_rabatte: Document) -> None:
         taxes = en16931_rabatte.trade.settlement.trade_taxes or []
-        # BG-23 × 2: standard rate at 7% and 19% on the same invoice.
+        # BG-23 x 2: standard rate at 7% and 19% on the same invoice.
         rates = {t.rate_applicable_percent: t.basis_amount for t in taxes}
         assert rates == {
             Decimal("7.00"): Decimal("129.37"),
@@ -545,12 +543,8 @@ class TestEN16931Innergemeinschaftliche:
     example carries Seller VAT in GB (Brexit-aware) and Buyer VAT in
     DE; rate is 0% with an exemption reason."""
 
-    def test_profile_is_comfort(
-        self, en16931_innergemeinschaftliche: Document
-    ) -> None:
-        assert (
-            en16931_innergemeinschaftliche.context.guideline.id == Profile.COMFORT
-        )
+    def test_profile_is_comfort(self, en16931_innergemeinschaftliche: Document) -> None:
+        assert en16931_innergemeinschaftliche.context.guideline.id == Profile.COMFORT
 
     def test_seller_and_buyer_vat_ids(
         self, en16931_innergemeinschaftliche: Document
@@ -639,7 +633,8 @@ class TestEN16931Auslandslieferung:
         assert t.category_code == "E"
         assert t.rate_applicable_percent == Decimal("0.00")
         # BR-E-10: exemption reason required.
-        assert t.exemption_reason and "Ausfuhrlieferung" in t.exemption_reason
+        assert t.exemption_reason
+        assert "Ausfuhrlieferung" in t.exemption_reason
 
     def test_validate_clean(self, en16931_auslandslieferung: Document) -> None:
         en16931_auslandslieferung.validate()
@@ -689,7 +684,8 @@ class TestEN16931Kleinunternehmer:
         assert t.category_code == "E"
         assert t.rate_applicable_percent == Decimal("0.00")
         # §19 UStG exemption-reason text mentions "Kleinunternehmer".
-        assert t.exemption_reason and "Kleinu" in t.exemption_reason
+        assert t.exemption_reason
+        assert "Kleinu" in t.exemption_reason
 
     def test_validate_clean(self, en16931_kleinunternehmer: Document) -> None:
         # BR-CO-26 satisfied because BT-32 is present even though BT-31
@@ -717,12 +713,8 @@ class TestEN16931ElektronischeAdresse:
     Highlights: Seller carries electronic address ``1234567890128``
     with ``schemeID="0088"`` (GS1 GLN) — covers BR-62 narrative."""
 
-    def test_profile_is_comfort(
-        self, en16931_elektronische_adresse: Document
-    ) -> None:
-        assert (
-            en16931_elektronische_adresse.context.guideline.id == Profile.COMFORT
-        )
+    def test_profile_is_comfort(self, en16931_elektronische_adresse: Document) -> None:
+        assert en16931_elektronische_adresse.context.guideline.id == Profile.COMFORT
 
     def test_seller_has_gln_electronic_address(
         self, en16931_elektronische_adresse: Document

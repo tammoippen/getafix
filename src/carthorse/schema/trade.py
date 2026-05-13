@@ -115,8 +115,7 @@ class Trade(Element):
         if Profile.BASIC_WL < profile and len(self.items) == 0:
             errors.append(
                 ValidationError(
-                    "BR-16",
-                    "An Invoice shall have at least one Invoice line (BG-25).",
+                    "BR-16", "An Invoice shall have at least one Invoice line (BG-25)."
                 )
             )
 
@@ -128,9 +127,7 @@ class Trade(Element):
         self._validate_document_arithmetic(errors)
         return errors
 
-    def _validate_document_arithmetic(
-        self, errors: list[ValidationError]
-    ) -> None:
+    def _validate_document_arithmetic(self, errors: list[ValidationError]) -> None:
         """BR-CO-10..13 and BR-CO-21..24 — sums and reason coupling
         across line items, header allowances/charges, and the header
         monetary summation. Appends to ``errors`` in document order."""

@@ -41,7 +41,9 @@ _PROFILE_TO_XSD: dict[Profile, Path] = {
     Profile.BASIC_WL: SCHEMAS_DIR / "1_Factur-X_1.08_BASICWL" / "FACTUR-X_BASIC-WL.xsd",
     Profile.BASIC: SCHEMAS_DIR / "2_Factur-X_1.08_BASIC" / "FACTUR-X_BASIC.xsd",
     Profile.COMFORT: SCHEMAS_DIR / "3_Factur-X_1.08_EN16931" / "FACTUR-X_EN16931.xsd",
-    Profile.EXTENDED: SCHEMAS_DIR / "4_Factur-X_1.08_EXTENDED" / "FACTUR-X_EXTENDED.xsd",
+    Profile.EXTENDED: SCHEMAS_DIR
+    / "4_Factur-X_1.08_EXTENDED"
+    / "FACTUR-X_EXTENDED.xsd",
 }
 
 

@@ -587,13 +587,10 @@ class BuyerTradeParty(Element):
         if profile > Profile.MINIMUM and self.address is None:
             errors.append(
                 ValidationError(
-                    "BR-10",
-                    "An Invoice shall contain the Buyer postal address (BG-8).",
+                    "BR-10", "An Invoice shall contain the Buyer postal address (BG-8)."
                 )
             )
-        errors.extend(
-            super(BuyerTradeParty, self).validate_internal(profile)
-        )
+        errors.extend(super(BuyerTradeParty, self).validate_internal(profile))
         return errors
 
 
