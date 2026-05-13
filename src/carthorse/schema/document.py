@@ -17,7 +17,7 @@ class BusinessDocument(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: str | None = field(default=None, metadata={"tag": "ID"})
-    """Business process type.
+    """Business process type (BT-23).
 
     Identifies the business process context in which the transaction
     appears, to enable the Buyer to process the Invoice in an
@@ -28,8 +28,6 @@ class BusinessDocument(Element):
     document for a construction contract, etc.) to be defined.
 
     Examples: production material, other material, freight invoice
-
-    EN 16931-ID: BT-23
     """
 
 
@@ -40,7 +38,7 @@ class GuidelineDocument(Element):
     tag: ClassVar[str] = "GuidelineSpecifiedDocumentContextParameter"
 
     id: Profile = field(metadata={"tag": "ID"})
-    """Specification identifier.
+    """Specification identifier (BT-24).
 
     An identification of the specification containing the total set of
     rules regarding semantic content, cardinalities and business rules
@@ -51,19 +49,15 @@ class GuidelineDocument(Element):
     urn:cen.eu:en16931:2017. Invoices that comply with a user
     specification may state that user specification here. No
     identification scheme is to be used.
-
-    EN 16931-ID: BT-24
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class Context(Element):
-    """Process control.
+    """Process control (BG-2).
 
     A group of business terms providing information on the business
     process and rules applicable to the Invoice document.
-
-    EN 16931-ID: BG-2
     """
 
     namespace: ClassVar[Namespace] = Namespace.rsm
@@ -84,13 +78,11 @@ class Context(Element):
 
 @dataclass(kw_only=True, slots=True)
 class IncludedNote(Element):
-    """Invoice note (free text).
+    """Invoice note (free text) (BG-1).
 
     A group of business terms providing textual notes that are
     relevant for the Invoice, together with an indication of the
     subject of the note.
-
-    EN 16931-ID: BG-1
     """
 
     tag: ClassVar[str] = "IncludedNote"
@@ -131,7 +123,7 @@ class Header(Element):
     tag: ClassVar[str] = "ExchangedDocument"
 
     id: str = field(metadata={"tag": "ID"})
-    """Invoice number.
+    """Invoice number (BT-1).
 
     A unique identification of the Invoice.
 
@@ -141,8 +133,6 @@ class Header(Element):
     Seller. It may be based on one or more series of numbers which may
     include alphanumeric characters. No identification scheme is to be
     used.
-
-    EN 16931-ID: BT-1
     """
 
     name: str | None = field(
@@ -160,7 +150,7 @@ class Header(Element):
     """
 
     type_code: TypeCode = field(metadata={"tag": "TypeCode"})
-    """Invoice type code / document type code.
+    """Invoice type code / document type code (BT-3).
 
     Commercial Invoices and credit notes are defined according to the
     entries in UNTDID 1001. Other entries from UNTDID 1001 with
@@ -169,16 +159,12 @@ class Header(Element):
     For the BASIC WL and MINIMUM profiles only the following code may
     be used:
     751 : Invoice information for accounting purposes — NOT an Invoice
-
-    EN 16931-ID: BT-3
     """
 
     issue_date: date = field(metadata={"tag": "IssueDateTime"})
-    """Invoice issue date.
+    """Invoice issue date (BT-2).
 
     The date on which the Invoice was issued.
-
-    EN 16931-ID: BT-2
     """
 
     copyright_indicator: bool | None = field(

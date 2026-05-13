@@ -1,3 +1,4 @@
+.DS_Store
 .ruff_cache/
 
 # Byte-compiled / optimized / DLL files
@@ -18,3 +19,8 @@ coverage.xml
 # Vendored Factur-X 1.08 / ZUGFeRD 2.4 documentation kit (large; XSDs we
 # need are extracted into tests/schemas/).
 ZF24_EN/
+ZF24_EN.zip
+
+# Derived from ZF24_EN xlsx — regenerate with
+# `uv run python tools/ingest_en16931_terms.py`
+tools/en16931_terms.json

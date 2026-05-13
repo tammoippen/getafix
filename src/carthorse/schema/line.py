@@ -63,8 +63,6 @@ class LineIncludedNote(Element):
     Distinct from :class:`carthorse.schema.document.IncludedNote`
     (header-level BG-1) because at BASIC the line note carries only
     ``Content``; ``SubjectCode`` is reserved for header notes.
-
-    EN 16931-ID: BT-127
     """
 
     tag: ClassVar[str] = "IncludedNote"
@@ -75,15 +73,13 @@ class LineIncludedNote(Element):
 
 @dataclass(kw_only=True, slots=True)
 class Quantity(Element):
-    """``udt:QuantityType`` — decimal value plus mandatory ``unitCode``.
+    """``udt:QuantityType`` — decimal value plus mandatory ``unitCode`` (BT-129 (BilledQuantity), BT-149 (BasisQuantity)).
 
     ``unitCode`` follows UN/CEFACT Recommendation 20 / 21 (e.g. ``C62``
     for "one", ``H87`` for "piece", ``KGM`` for kilogram). The element
     name is set by the *enclosing field* (``BilledQuantity`` for
     BT-129, ``BasisQuantity`` for BT-149) — assigned via the
     ``tag`` ClassVar on subclasses or by re-tagging when nested.
-
-    EN 16931-ID: BT-129 (BilledQuantity), BT-149 (BasisQuantity)
     """
 
     tag: ClassVar[str] = "BilledQuantity"
@@ -127,8 +123,6 @@ class AppliedTradeAllowanceCharge(Element):
     ``ActualAmount`` (no reason / category / VAT code). EN 16931
     widens it with calculation percent and basis amount; carthorse
     keeps both optional so the same class works at both profiles.
-
-    EN 16931-ID: BT-147 (Price allowance amount)
     """
 
     tag: ClassVar[str] = "AppliedTradeAllowanceCharge"
@@ -138,10 +132,7 @@ class AppliedTradeAllowanceCharge(Element):
     """``false`` for an allowance (the spec only allows allowance at
     price level)."""
     actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
-    """The price-level allowance amount.
-
-    EN 16931-ID: BT-147
-    """
+    """The price-level allowance amount (BT-147)."""
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
     )
@@ -217,8 +208,6 @@ class NetTradePrice(Element):
 @dataclass(kw_only=True, slots=True)
 class TradeProduct(Element):
     """Item information (BG-31).
-
-    EN 16931-ID: BG-31
     """
 
     tag: ClassVar[str] = "SpecifiedTradeProduct"
@@ -296,10 +285,7 @@ class LineMonetarySummation(Element):
     profile: ClassVar[Profile] = Profile.BASIC
 
     line_total: Decimal = field(metadata={"tag": "LineTotalAmount", "amount": True})
-    """Sum of (net price * quantity +/- line allowances/charges).
-
-    EN 16931-ID: BT-131
-    """
+    """Sum of (net price * quantity +/- line allowances/charges) (BT-131)."""
     currency: str | None = None
     """Document currency (BT-5) echoed on the line total.
     Populated on parse; set explicitly when building programmatically."""

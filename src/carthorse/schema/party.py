@@ -103,10 +103,9 @@ class ISO6523SchemeId(SchemeID):
 
 @dataclass(kw_only=True, slots=True)
 class GlobalID(ISO6523SchemeId):
-    """GlobalID
+    """GlobalID (BT-29-1 (Seller), BT-46-1 (Buyer)).
 
     SchemeID:
-    EN 16931-ID: BT-29-1 (Seller), BT-46-1 (Buyer)
     """
 
     tag: ClassVar[str] = "GlobalID"
@@ -115,10 +114,9 @@ class GlobalID(ISO6523SchemeId):
 
 @dataclass(kw_only=True, slots=True)
 class URIID(SchemeID):
-    """GlobalID
+    """GlobalID (BT-34 (Seller), BT-49 (Buyer)).
 
     SchemeID:
-    EN 16931-ID: BT-34 (Seller), BT-49 (Buyer)
     """
 
     tag: ClassVar[str] = "URIID"
@@ -127,16 +125,7 @@ class URIID(SchemeID):
 
 @dataclass(kw_only=True, slots=True)
 class PostalTradeAddress(Element):
-    """``ram:TradeAddressType`` — postal address group (BG-5 / BG-8 / …).
-
-    Field order follows the Factur-X XSD ``<xs:sequence>``:
-    ``PostcodeCode``, ``LineOne``, ``LineTwo``, ``LineThree``,
-    ``CityName``, ``CountryID``, [``CountrySubDivisionName``]. The
-    XSD makes every line element ``minOccurs="0"`` and ``CountryID``
-    required; carthorse therefore keeps ``country_id`` required while
-    every other field is optional. :class:`PostalTradeAddressExtended`
-    appends ``country_subdivision`` (the final field in the sequence).
-    """
+    """``ram:TradeAddressType`` — postal address group (BG-5 / BG-8 / …)."""
 
     tag: ClassVar[str] = "PostalTradeAddress"
 
@@ -189,11 +178,9 @@ class PostalTradeAddressExtended(PostalTradeAddress):
         default=None,
         metadata={"tag": "CountrySubDivisionName", "profile": Profile.BASIC_WL},
     )
-    """Country subdivision (state / region).
+    """Country subdivision (state / region) (BT-68 (SellerTaxRepresentativeTradeParty)).
 
     Example: NRW
-
-    EN 16931-ID: BT-68 (SellerTaxRepresentativeTradeParty)
     """
 
 
@@ -203,11 +190,9 @@ class PhoneNumber(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.COMFORT})
-    """Telephone number of the contact.
+    """Telephone number of the contact (BT-42 (Seller), BT-57 (Buyer)).
 
     Example: +49 (123) 56789-0
-
-    EN 16931-ID: BT-42 (Seller), BT-57 (Buyer)
     """
 
 
@@ -231,11 +216,9 @@ class EmailURI(Element):
     address: str | None = field(
         default=None, metadata={"tag": "URIID", "profile": Profile.COMFORT}
     )
-    """Email address of the contact.
+    """Email address of the contact (BT-43 (Seller), BT-58 (Buyer)).
 
     Example: karin.mustermann@seller.tld
-
-    EN 16931-ID: BT-43 (Seller), BT-58 (Buyer)
     """
 
 
@@ -247,22 +230,18 @@ class TradeContact(Element):
     person_name: str | None = field(
         default=None, metadata={"tag": "PersonName", "profile": Profile.COMFORT}
     )
-    """Seller / Buyer contact point name.
+    """Seller / Buyer contact point name (BT-41 (Seller), BT-56 (Buyer)).
 
     A contact point for a legal entity or person, e.g. the name of the
     contact person.
-
-    EN 16931-ID: BT-41 (Seller), BT-56 (Buyer)
     """
     department_name: str | None = field(
         default=None, metadata={"tag": "DepartmentName", "profile": Profile.COMFORT}
     )
-    """Seller / Buyer contact department name.
+    """Seller / Buyer contact department name (BT-41-0 (Seller), BT-56-0 (Buyer)).
 
     A contact point for a legal entity or person, e.g. the name of the
     department or office.
-
-    EN 16931-ID: BT-41-0 (Seller), BT-56-0 (Buyer)
     """
     telephone: PhoneNumber | None = None
     """Seller / Buyer telephone number."""
@@ -279,23 +258,19 @@ class LegalOrganization(Element):
     tag: ClassVar[str] = "SpecifiedLegalOrganization"
 
     id: ISO6523SchemeId | None = None
-    """Seller / Buyer legal registration identifier.
+    """Seller / Buyer legal registration identifier (BT-30 (Seller), BT-47 (Buyer)).
 
     An identifier issued by an official registrar that identifies the
     Seller / Buyer as a legal entity or person.
-
-    EN 16931-ID: BT-30 (Seller), BT-47 (Buyer)
     """
     trade_name: str | None = field(
         default=None,
         metadata={"tag": "TradingBusinessName", "profile": Profile.BASIC_WL},
     )
-    """Seller / Buyer trading name.
+    """Seller / Buyer trading name (BT-28 (Seller), BT-45 (Buyer)).
 
     A name by which the Seller / Buyer is known, if different from the
     Seller's / Buyer's name (also known as Business name).
-
-    EN 16931-ID: BT-28 (Seller), BT-45 (Buyer)
     """
     trade_address: PostalTradeAddress | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
@@ -311,15 +286,13 @@ class URIUniversalCommunication(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     uri_id: URIID
-    """Seller / Buyer electronic address.
+    """Seller / Buyer electronic address (BT-34 (Seller), BT-49 (Buyer)).
 
     Seller: identifies the electronic address of the Seller to which
     the application level response to the Invoice may be sent.
 
     Buyer: identifies the electronic address of the Buyer to which the
     Invoice is sent.
-
-    EN 16931-ID: BT-34 (Seller), BT-49 (Buyer)
     """
 
 
@@ -336,8 +309,6 @@ class TaxSchemeId(ISO6523SchemeId):
     :class:`SpecifiedTaxRegistration`. The element name is plain ``ID``
     (inherited from :class:`SchemeID`); earlier versions of this module
     incorrectly emitted ``<ram:GlobalID>``.
-
-    EN 16931-ID: BT-31-0 / BT-32-0 (Seller); BT-48-0 (Buyer).
     """
 
     @override
@@ -385,16 +356,9 @@ class SpecifiedTaxRegistration(Element):
 
 @dataclass(kw_only=True, slots=True)
 class SellerTradeParty(Element):
-    """Seller — details about the Seller (supplier of goods or services).
+    """Seller — details about the Seller (supplier of goods or services) (BG-4).
 
     A group of business terms providing information about the Seller.
-
-    Field order follows the ``ram:TradePartyType`` XSD ``<xs:sequence>``:
-    ID, GlobalID, Name, Description, SpecifiedLegalOrganization,
-    DefinedTradeContact, PostalTradeAddress, URIUniversalCommunication,
-    SpecifiedTaxRegistration.
-
-    EN 16931-ID: BG-4
     """
 
     tag: ClassVar[str] = "SellerTradeParty"
@@ -402,7 +366,7 @@ class SellerTradeParty(Element):
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
     )
-    """Seller identifier / supplier number assigned by the customer.
+    """Seller identifier / supplier number assigned by the customer (BT-29).
 
     Note: In many systems the Seller identifier is key information.
     Several Seller identifiers may be assigned or specified. They may
@@ -412,66 +376,52 @@ class SellerTradeParty(Element):
 
     Application: If the Seller has a Global ID it should be used.
     Otherwise the ID field is used.
-
-    EN 16931-ID: BT-29
     """
     global_ids: list[GlobalID] | None = None
-    """Seller global identifier: GLN, DUNS, BIC, ODETTE, …
+    """Seller global identifier: GLN, DUNS, BIC, ODETTE, … (BT-29-0).
 
     Note: The identification scheme of the Seller identifier is an
     identifier uniquely assigned to a Seller by a global registration
     organisation.
-
-    EN 16931-ID: BT-29-0
     """
     name: str = field(metadata={"tag": "Name"})
-    """Seller name.
+    """Seller name (BT-27).
 
     The full formal name by which the Seller is registered in the
     national registry of legal entities or as a taxable person, or
     otherwise trades as a person or persons.
-
-    EN 16931-ID: BT-27
     """
     description: str | None = field(
         default=None, metadata={"tag": "Description", "profile": Profile.COMFORT}
     )
-    """Seller additional legal information.
+    """Seller additional legal information (BT-33).
 
     Additional legal information relevant for the Seller, such as
     share capital.
-
-    EN 16931-ID: BT-33
     """
     legal_organization: LegalOrganization | None = None
     """Legal organization details."""
     contact: TradeContact | None = None
-    """Seller contact details.
+    """Seller contact details (BG-6).
 
     A group of business terms providing contact information relevant
     for the Seller.
-
-    EN 16931-ID: BG-6
     """
     address: PostalTradeAddressExtended
-    """Seller postal address.
+    """Seller postal address (BG-5).
 
     A group of business terms providing information about the Seller's
     address. Sufficient components of the address are to be filled in
     in order to comply with legal requirements.
-
-    EN 16931-ID: BG-5
     """
     electronic_address: URIUniversalCommunication | None = None
     """Electronic address details."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Seller tax registration / VAT identifier.
+    """Seller tax registration / VAT identifier (BT-31, BT-32).
 
     The local identification (defined by the Seller's address) of the
     Seller for tax purposes, or a reference that enables the Seller to
     state his registered tax status. The Seller VAT identifier.
-
-    EN 16931-ID: BT-31, BT-32
     """
 
     @override
@@ -504,11 +454,9 @@ class SellerTradeParty(Element):
 
 @dataclass(kw_only=True, slots=True)
 class BuyerTradeParty(Element):
-    """Buyer — details about the Buyer (recipient of goods or services).
+    """Buyer — details about the Buyer (recipient of goods or services) (BG-7).
 
     A group of business terms providing information about the Buyer.
-
-    EN 16931-ID: BG-7
     """
 
     tag: ClassVar[str] = "BuyerTradeParty"
@@ -516,34 +464,28 @@ class BuyerTradeParty(Element):
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
     )
-    """Buyer identifier / customer number.
+    """Buyer identifier / customer number (BT-46).
 
     Note: If no scheme is given, it should be known to Buyer and
     Seller, e.g. a previously exchanged Buyer identifier assigned by
     the Seller.
-
-    EN 16931-ID: BT-46
     """
     global_ids: list[GlobalID] | None = None
-    """Buyer global identifier: GLN, DUNS, BIC, ODETTE, …
+    """Buyer global identifier: GLN, DUNS, BIC, ODETTE, … (BT-46-0).
 
     Note: The identification scheme of the Buyer identifier is an
     identifier uniquely assigned to a Buyer by a global registration
     organisation.
-
-    EN 16931-ID: BT-46-0
     """
     name: str = field(metadata={"tag": "Name"})
-    """Buyer name.
+    """Buyer name (BT-44).
 
     The full name of the Buyer.
-
-    EN 16931-ID: BT-44
     """
     legal_organization: LegalOrganization | None = None
     """Legal organization details."""
     contact: TradeContact | None = None
-    """Buyer contact details.
+    """Buyer contact details (BG-9).
 
     A group of business terms providing contact information relevant
     for the Buyer. Contact information may be given by the Buyer when
@@ -551,31 +493,25 @@ class BuyerTradeParty(Element):
     information should not be used for internal routing of received
     Invoices by the recipient; for this the Buyer reference should be
     used.
-
-    EN 16931-ID: BG-9
     """
     address: PostalTradeAddressExtended | None = None
-    """Buyer postal address.
+    """Buyer postal address (BG-8).
 
     Optional at MINIMUM (the Factur-X 1.08 MINIMUM XSD makes the whole
     ``PostalTradeAddress`` element ``minOccurs="0"`` on ``TradePartyType``,
     and the MINIMUM appendix narrative does NOT list BG-8 as required).
     BR-10 enforces presence from BASIC_WL onwards in
     :meth:`BuyerTradeParty.validate_internal`.
-
-    EN 16931-ID: BG-8
     """
     electronic_address: URIUniversalCommunication | None = None
     """Electronic address details."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Buyer tax registration / VAT identifier.
+    """Buyer tax registration / VAT identifier (BT-48 (VA), BT-48-0 (FC)).
 
     The XSD permits up to two ``SpecifiedTaxRegistration`` siblings on
     ``ram:TradePartyType`` — one VAT identifier (``schemeID="VA"``,
     BT-48) and one local tax identifier (``schemeID="FC"``).
     Bilingual buyers therefore need a list, not a single value.
-
-    EN 16931-ID: BT-48 (VA), BT-48-0 (FC)
     """
 
     @override
@@ -596,10 +532,7 @@ class BuyerTradeParty(Element):
 
 @dataclass(kw_only=True, slots=True)
 class SellerTaxRepresentativeTradeParty(Element):
-    """Seller tax representative party.
-
-    EN 16931-ID: BG-11
-    """
+    """Seller tax representative party (BG-11)."""
 
     tag: ClassVar[str] = "SellerTaxRepresentativeTradeParty"
     profile: ClassVar[Profile] = Profile.BASIC_WL
@@ -613,10 +546,7 @@ class SellerTaxRepresentativeTradeParty(Element):
     )
     """Tax representative global identifier."""
     name: str = field(metadata={"tag": "Name"})
-    """Seller tax representative name.
-
-    EN 16931-ID: BT-62
-    """
+    """Seller tax representative name (BT-62)."""
     legal_organization: LegalOrganization | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
@@ -626,7 +556,7 @@ class SellerTaxRepresentativeTradeParty(Element):
     )
     """Contact details."""
     address: PostalTradeAddressExtended
-    """Seller tax representative postal address.
+    """Seller tax representative postal address (BG-12).
 
     A group of business terms providing information about the postal
     address of the Seller's tax representative. If the Seller is
@@ -635,21 +565,17 @@ class SellerTaxRepresentativeTradeParty(Element):
     representative must be stated on the Invoice. Sufficient
     components of the address are to be filled in in order to comply
     with legal requirements.
-
-    EN 16931-ID: BG-12
     """
     electronic_address: URIUniversalCommunication | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Electronic address details."""
     tax_registrations: SpecifiedTaxRegistration
-    """Seller tax representative VAT identifier details.
+    """Seller tax representative VAT identifier details (BT-63).
 
     VAT identifier with country code prefix according to EN ISO 3166-1
     alpha-2 "Codes for the representation of names of countries and
     their subdivisions".
-
-    EN 16931-ID: BT-63
     """
 
 
@@ -685,12 +611,10 @@ class ProductEndUserTradeParty(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ShipToTradeParty(Element):
-    """Deliver to party / ship-to details.
+    """Deliver to party / ship-to details (BG-13).
 
     A group of business terms providing information about where and
     when the goods and services invoiced are delivered.
-
-    EN 16931-ID: BG-13
     """
 
     tag: ClassVar[str] = "ShipToTradeParty"
@@ -698,7 +622,7 @@ class ShipToTradeParty(Element):
 
     # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Deliver to location identifier / ship-to party identifier.
+    """Deliver to location identifier / ship-to party identifier (BT-71).
 
     An identifier of the location to which the goods are delivered or
     where the services are provided.
@@ -706,22 +630,15 @@ class ShipToTradeParty(Element):
     If no scheme is given, it should be known to Buyer and Seller,
     e.g. a previously exchanged identifier assigned by the Buyer or
     Seller.
-
-    EN 16931-ID: BT-71
     """
     global_id: GlobalID | None = None
-    """Global identifier of the deliver-to location.
-
-    EN 16931-ID: BT-71-0
-    """
+    """Global identifier of the deliver-to location (BT-71-0)."""
     name: str | None = field(default=None, metadata={"tag": "Name"})
-    """Deliver to party name / business name.
+    """Deliver to party name / business name (BT-70).
 
     The name of the party to which the goods are delivered or for
     which the services are provided. Must be used if the deliver-to
     party is not identical to the Buyer.
-
-    EN 16931-ID: BT-70
     """
     legal_organization: LegalOrganization | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
@@ -732,7 +649,7 @@ class ShipToTradeParty(Element):
     )
     """Deliver to party contact details."""
     address: PostalTradeAddressExtended | None = None
-    """Deliver to address.
+    """Deliver to address (BG-15).
 
     A group of business terms providing information about the address
     to which goods invoiced are delivered or at which services
@@ -741,8 +658,6 @@ class ShipToTradeParty(Element):
     In the case of pickup, the deliver-to address is the pickup
     address. Sufficient components of the address are to be filled in
     in order to comply with legal requirements.
-
-    EN 16931-ID: BG-15
     """
     electronic_address: URIUniversalCommunication | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
@@ -825,40 +740,34 @@ class UltimateShipToTradeParty(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PayeeTradeParty(Element):
-    """Payee — party that receives the payment.
+    """Payee — party that receives the payment (BG-10).
 
     A group of business terms providing information about the Payee,
     i.e. the party that receives the payment.
 
     The role of Payee may also be filled by a party other than the
     Seller, e.g. a factoring service.
-
-    EN 16931-ID: BG-10
     """
 
     tag: ClassVar[str] = "PayeeTradeParty"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Payee identifier.
+    """Payee identifier (BT-60).
 
     An identifier for the Payee.
 
     If no scheme is given, it should be known to Buyer and Seller,
     e.g. a previously exchanged identifier assigned by the Buyer or
     Seller.
-
-    EN 16931-ID: BT-60
     """
     global_id: GlobalID | None = None
     """Global identifier of the Payee."""
     name: str = field(metadata={"tag": "Name"})
-    """Payee name / business name.
+    """Payee name / business name (BT-59).
 
     Must be used if the Payee is not identical to the Seller. The
     Payee name may however be the same as the Seller name.
-
-    EN 16931-ID: BT-59
     """
     legal_organization: LegalOrganization | None = None
     """Legal organization details."""

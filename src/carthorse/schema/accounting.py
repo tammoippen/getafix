@@ -52,7 +52,7 @@ from carthorse.schema.types import CategoryCode, Profile
 
 @dataclass(kw_only=True, slots=True)
 class TaxTotal(Element):
-    """Invoice total VAT amount / Invoice total VAT amount in accounting currency.
+    """Invoice total VAT amount / Invoice total VAT amount in accounting currency (BT-110, BT-111).
 
     The total VAT amount for the Invoice.
 
@@ -66,8 +66,6 @@ class TaxTotal(Element):
     invoice currency code (BT-5).
     The VAT total amount in the VAT accounting currency is not taken into
     account when calculating the Invoice totals.
-
-    EN 16931-ID: BT-110, BT-111
     """
 
     tag: ClassVar[str] = "TaxTotalAmount"
@@ -77,15 +75,13 @@ class TaxTotal(Element):
     amounts.
     """
     currency_id: str
-    """VAT currency.
+    """VAT currency (BT-110-0, BT-111-0).
 
     ``currencyID`` is required to distinguish between the tax amount in
     invoice currency and the tax amount in VAT accounting currency.
 
     Code list: ISO 4217 — only the alphabetic representation may be used.
     Example: EUR, USD
-
-    EN 16931-ID: BT-110-0, BT-111-0
     """
 
     @override
@@ -128,18 +124,9 @@ class TaxTotal(Element):
 
 @dataclass(kw_only=True, slots=True)
 class MonetarySummation(Element):
-    """Document totals / Document level totals.
+    """Document totals / Document level totals (BG-22).
 
     A group of business terms providing the monetary totals for the Invoice.
-
-    Field order follows the
-    ``TradeSettlementHeaderMonetarySummationType`` XSD ``<xs:sequence>``:
-    ``LineTotalAmount``, ``ChargeTotalAmount``, ``AllowanceTotalAmount``,
-    ``TaxBasisTotalAmount``, ``TaxTotalAmount``, ``RoundingAmount``
-    (COMFORT+), ``GrandTotalAmount``, ``TotalPrepaidAmount``,
-    ``DuePayableAmount``.
-
-    EN 16931-ID: BG-22
     """
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementHeaderMonetarySummation"
@@ -152,13 +139,11 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
-    """Sum of Invoice line net amounts.
+    """Sum of Invoice line net amounts (BT-106).
 
     Optional in carthorse: the MINIMUM profile XSD does not include
     ``LineTotalAmount`` at all. From BASIC_WL onwards the field is
     expected per ``BR-12``; that rule isn't yet enforced here.
-
-    EN 16931-ID: BT-106
     """
     charge_total: Decimal | None = field(
         default=None,
@@ -168,14 +153,12 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
-    """Sum of charges on document level.
+    """Sum of charges on document level (BT-108).
 
     Sum of all charges on document level in the Invoice.
 
     Charges on line level are included in the Invoice line net amounts
     which are summed up into the Sum of Invoice line net amounts.
-
-    EN 16931-ID: BT-108
     """
     allowance_total: Decimal | None = field(
         default=None,
@@ -185,28 +168,24 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
-    """Sum of allowances on document level.
+    """Sum of allowances on document level (BT-107).
 
     Sum of all allowances on document level in the Invoice.
 
     Allowances on line level are included in the Invoice line net amounts
     which are summed up into the Sum of Invoice line net amounts.
-
-    EN 16931-ID: BT-107
     """
     tax_basis_total: Decimal = field(
         metadata={"tag": "TaxBasisTotalAmount", "amount": True}
     )
-    """Invoice total amount without VAT.
+    """Invoice total amount without VAT (BT-109).
 
     The total amount of the Invoice without VAT. The Invoice total amount
     without VAT is the sum of Invoice line net amounts minus the sum of
     document level allowances plus the sum of document level charges.
-
-    EN 16931-ID: BT-109
     """
     tax_total: list[TaxTotal] | None = None
-    """``ram:TaxTotalAmount`` — the row of currency-tagged VAT totals.
+    """``ram:TaxTotalAmount`` — the row of currency-tagged VAT totals (BT-110, BT-111).
 
     Up to two entries per the XSD: BT-110 carries the VAT total in
     invoice currency (``currencyID == BT-5``), BT-111 carries the same
@@ -214,8 +193,6 @@ class MonetarySummation(Element):
     (``currencyID == BT-6``) and is required when ``BT-6`` is set
     (``BR-53``). MINIMUM permits at most one entry; from BASIC_WL
     onwards both may appear in that order.
-
-    EN 16931-ID: BT-110, BT-111
     """
     rounding_amount: Decimal | None = field(
         default=None,
@@ -229,16 +206,12 @@ class MonetarySummation(Element):
     ``GrandTotalAmount``).
 
     Enters the ``BR-CO-16`` identity: ``BT-115 = BT-112 - BT-113 + BT-114``.
-
-    EN 16931-ID: BT-114
     """
     grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount", "amount": True})
-    """Invoice total amount with VAT / Grand total amount.
+    """Invoice total amount with VAT / Grand total amount (BT-112).
 
     The Invoice total amount with VAT is the Invoice total amount without
     VAT plus the Invoice total VAT amount.
-
-    EN 16931-ID: BT-112
     """
     prepaid_total: Decimal | None = field(
         default=None,
@@ -249,7 +222,7 @@ class MonetarySummation(Element):
         },
     )
     due_amount: Decimal = field(metadata={"tag": "DuePayableAmount", "amount": True})
-    """Amount due for payment.
+    """Amount due for payment (BT-115).
 
     The outstanding amount that is requested to be paid.
 
@@ -260,8 +233,6 @@ class MonetarySummation(Element):
 
     When prepayments have been made, this amount may differ from the
     Invoice grand total.
-
-    EN 16931-ID: BT-115
     """
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on every amount
@@ -291,12 +262,10 @@ class MonetarySummation(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ApplicableTradeTax(Element):
-    """VAT breakdown / VAT details.
+    """VAT breakdown / VAT details (BG-23).
 
     A group of business terms providing information about VAT breakdown
     into different categories, rates and exemption reasons.
-
-    EN 16931-ID: BG-23
     """
 
     tag: ClassVar[str] = "ApplicableTradeTax"
@@ -305,17 +274,15 @@ class ApplicableTradeTax(Element):
     calculated_amount: Decimal | None = field(
         default=None, metadata={"tag": "CalculatedAmount", "amount": True}
     )
-    """VAT category tax amount.
+    """VAT category tax amount (BT-117).
 
     The total VAT amount for a given VAT category.
 
     Calculated by multiplying the VAT category taxable amount with the
     VAT category rate of the relevant VAT category.
-
-    EN 16931-ID: BT-117
     """
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """VAT category type code.
+    """VAT category type code (BT-118-0).
 
     EN 16931 only supports the tax type "VAT" with the code "VAT".
 
@@ -324,25 +291,17 @@ class ApplicableTradeTax(Element):
     code must then be taken from code list UNTDID 5153.
 
     Code list: UNTDID 5153
-
-    EN 16931-ID: BT-118-0
     """
     exemption_reason: str | None = field(
         default=None, metadata={"tag": "ExemptionReason"}
     )
-    """VAT exemption reason text (free text).
-
-    EN 16931-ID: BT-120
-    """
+    """VAT exemption reason text (free text) (BT-120)."""
     basis_amount: Decimal | None = field(
         default=None, metadata={"tag": "BasisAmount", "amount": True}
     )
-    """VAT category taxable amount.
-
-    EN 16931-ID: BT-116
-    """
+    """VAT category taxable amount (BT-116)."""
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
-    """Coded identification of a VAT category.
+    """Coded identification of a VAT category (BT-118).
 
     The following entries from UNTDID 5305 are used (with notes in
     parentheses):
@@ -360,20 +319,16 @@ class ApplicableTradeTax(Element):
       Melilla (IPSI applies).
 
     Code list: UNTDID 5305
-
-    EN 16931-ID: BT-118
     """
     exemption_reason_code: str | None = field(
         default=None, metadata={"tag": "ExemptionReasonCode"}
     )
-    """VAT exemption reason code.
+    """VAT exemption reason code (BT-121).
 
     A coded statement of the reason for why the amount is exempted from
     VAT.
 
     Code list: VATEX
-
-    EN 16931-ID: BT-121
     """
     tax_point_date: date | None = field(
         default=None, metadata={"tag": "TaxPointDate", "profile": Profile.COMFORT}
@@ -385,11 +340,9 @@ class ApplicableTradeTax(Element):
     exclusive with :attr:`due_date_code` (BT-8) per ``BR-CO-3``.
 
     First permitted from EN 16931 / COMFORT onwards.
-
-    EN 16931-ID: BT-7
     """
     due_date_code: str | None = field(default=None, metadata={"tag": "DueDateTypeCode"})
-    """Value added tax point date code.
+    """Value added tax point date code (BT-8).
 
     The code for the date on which VAT becomes accountable for the
     Seller and for the Buyer.
@@ -419,13 +372,11 @@ class ApplicableTradeTax(Element):
     Code list: UNTDID 2475 (subset)
 
         https://service.unece.org/trade/untdid/d96a/uncl/uncl2475.htm
-
-    EN 16931-ID: BT-8
     """
     rate_applicable_percent: Decimal | None = field(
         default=None, metadata={"tag": "RateApplicablePercent"}
     )
-    """VAT category rate.
+    """VAT category rate (BT-119).
 
     The VAT rate, represented as a percentage that applies to the
     relevant VAT category. The VAT category code and the VAT category
@@ -433,8 +384,6 @@ class ApplicableTradeTax(Element):
 
     The value to be provided is the percentage. For example, for 20%
     the value 20 is given (not 0.2).
-
-    EN 16931-ID: BT-119
     """
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on
@@ -514,7 +463,7 @@ class CategoryTradeTax(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Document level allowance/charge VAT category type code.
+    """Document level allowance/charge VAT category type code (BT-95-0 (Allowance), BT-102-0 (Charge)).
 
     EN 16931 only supports the tax type "VAT" with the code "VAT".
 
@@ -523,11 +472,9 @@ class CategoryTradeTax(Element):
     code must then be taken from code list UNTDID 5153.
 
     Code list: UNTDID 5153
-
-    EN 16931-ID: BT-95-0 (Allowance), BT-102-0 (Charge)
     """
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
-    """Document level allowance/charge VAT category code.
+    """Document level allowance/charge VAT category code (BT-95 (Allowance), BT-102 (Charge)).
 
     The following entries from UNTDID 5305 are used (with notes in
     parentheses):
@@ -546,21 +493,17 @@ class CategoryTradeTax(Element):
       Melilla (IPSI applies).
 
     Code list: UNTDID 5305
-
-    EN 16931-ID: BT-95 (Allowance), BT-102 (Charge)
     """
     rate_applicable_percent: Decimal | None = field(
         default=None, metadata={"tag": "RateApplicablePercent"}
     )
-    """Document level allowance/charge VAT rate.
+    """Document level allowance/charge VAT rate (BT-96 (Allowance), BT-103 (Charge)).
 
     The VAT rate, expressed as a percentage, that applies to the
     document level allowance or charge.
 
     The value to be provided is the percentage. For example, for 20%
     the value 20 is given (not 0.2).
-
-    EN 16931-ID: BT-96 (Allowance), BT-103 (Charge)
     """
 
     @override
@@ -580,34 +523,30 @@ class CategoryTradeTax(Element):
 
 @dataclass(kw_only=True, slots=True)
 class TradeAllowanceCharge(Element):
-    """Document level allowances and charges.
+    """Document level allowances and charges (BG-20 (Allowance), BG-21 (Charge)).
 
     A group of business terms providing information about allowances
     and charges that apply to the Invoice as a whole. Deductions, such
     as for withheld taxes, may also be given in this group.
-
-    EN 16931-ID: BG-20 (Allowance), BG-21 (Charge)
     """
 
     tag: ClassVar[str] = "SpecifiedTradeAllowanceCharge"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
-    """Allowance/Charge indicator.
+    """Allowance/Charge indicator (BG-20-0, BG-21-0, BG-20-00, BG-21-00).
 
     A flag indicating whether the data that follows refers to an
     allowance or a charge.
 
     - For an allowance (BG-20) the ChargeIndicator value is "false".
     - For a charge (BG-21) the ChargeIndicator value is "true".
-
-    EN 16931-ID: BG-20-0, BG-21-0, BG-20-00, BG-21-00
     """
     calculation_percent: Decimal | None = field(
         default=None,
         metadata={"tag": "CalculationPercent", "profile": Profile.BASIC_WL},
     )
-    """Document level allowance/charge percentage.
+    """Document level allowance/charge percentage (BT-94 (Allowance), BT-101 (Charge)).
 
     The percentage that, in combination with the document level
     allowance/charge base amount, may be used to calculate the
@@ -615,30 +554,24 @@ class TradeAllowanceCharge(Element):
 
     Up to COMFORT only the final result of the discounting
     (ActualAmount) is transmitted.
-
-    EN 16931-ID: BT-94 (Allowance), BT-101 (Charge)
     """
     basis_amount: Decimal | None = field(
         default=None,
         metadata={"tag": "BasisAmount", "profile": Profile.BASIC_WL, "amount": True},
     )
-    """Document level allowance/charge base amount.
+    """Document level allowance/charge base amount (BT-93 (Allowance), BT-100 (Charge)).
 
     The base amount that, in combination with the document level
     allowance/charge percentage, may be used to calculate the
     document level allowance/charge amount.
-
-    EN 16931-ID: BT-93 (Allowance), BT-100 (Charge)
     """
     actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
-    """Document level allowance/charge amount.
+    """Document level allowance/charge amount (BT-92 (Allowance), BT-99 (Charge)).
 
     The amount of an allowance or charge, without VAT.
-
-    EN 16931-ID: BT-92 (Allowance), BT-99 (Charge)
      """
     reason_code: str | None = field(default=None, metadata={"tag": "ReasonCode"})
-    """Document level allowance/charge reason code.
+    """Document level allowance/charge reason code (BT-98 (Allowance), BT-105 (Charge)).
 
     Use entries from the UNTDID 5189 code list. The reason code and
     the reason text for the document level allowance or charge shall
@@ -647,16 +580,12 @@ class TradeAllowanceCharge(Element):
     Code list: UNTDID 5189
 
         https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5189.htm
-
-    EN 16931-ID: BT-98 (Allowance), BT-105 (Charge)
     """
     reason: str | None = field(default=None, metadata={"tag": "Reason"})
-    """Document level allowance/charge reason.
+    """Document level allowance/charge reason (BT-97 (Allowance), BT-104 (Charge)).
 
     The reason for the document level allowance or charge, expressed
     as text.
-
-    EN 16931-ID: BT-97 (Allowance), BT-104 (Charge)
     """
     category_trade_tax: CategoryTradeTax | None = None
     """VAT category for the allowance / charge (BT-95-00 / BT-102-00).

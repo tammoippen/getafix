@@ -61,31 +61,27 @@ class PayerPartyDebtorFinancialAccount(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     iban_id: str = field(metadata={"tag": "IBANID"})
-    """Direct debit: debited account identifier.
+    """Direct debit: debited account identifier (BT-91).
 
     The account to be debited by the direct debit. To be provided in
     case of direct debit payment.
-
-    EN 16931-ID: BT-91
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class PayeePartyCreditorFinancialAccount(Element):
-    """Credit transfer / Seller bank account details.
+    """Credit transfer / Seller bank account details (BG-17).
 
     If several bank accounts are to be specified for credit transfer,
     the SpecifiedTradeSettlementPaymentMeans element must be repeated
     accordingly.
-
-    EN 16931-ID: BG-17
     """
 
     tag: ClassVar[str] = "PayeePartyCreditorFinancialAccount"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     iban_id: str | None = field(default=None, metadata={"tag": "IBANID"})
-    """Payment account identifier.
+    """Payment account identifier (BT-84).
 
     A unique identifier of the financial account held at a payment
     service provider to which the payment should be made, such as an
@@ -94,15 +90,11 @@ class PayeePartyCreditorFinancialAccount(Element):
 
     With respect to BR-50 and BR-61, either an IBAN-ID or a
     ProprietaryID must be provided.
-
-    EN 16931-ID: BT-84
     """
     proprietary_id: str | None = field(default=None, metadata={"tag": "ProprietaryID"})
-    """National account number (not for SEPA).
+    """National account number (not for SEPA) (BT-84-0).
 
     For SEPA payments use IBANID.
-
-    EN 16931-ID: BT-84-0
     """
 
     @override
@@ -125,7 +117,7 @@ class PayeePartyCreditorFinancialAccount(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PaymentMeans(Element):
-    """Payment instructions.
+    """Payment instructions (BG-16).
 
     Only when several bank accounts are to be transmitted for credit
     transfers may the SpecifiedTradeSettlementPaymentMeans element be
@@ -134,15 +126,13 @@ class PaymentMeans(Element):
     repetitions. The ApplicableTradeSettlementFinancialCard and
     PayerPartyDebtorFinancialAccount elements shall not be given for
     credit transfers.
-
-    EN 16931-ID: BG-16
     """
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementPaymentMeans"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     type_code: str = field(metadata={"tag": "TypeCode"})
-    """Payment means type code.
+    """Payment means type code (BT-81).
 
     The expected or used means of payment, expressed as a code.
 
@@ -165,8 +155,6 @@ class PaymentMeans(Element):
         58 : SEPA Credit Transfer
         59 : SEPA Direct Debit
         97 : Report
-
-    EN 16931-ID: BT-81
     """
     payer: PayerPartyDebtorFinancialAccount | None = None
     payee: PayeePartyCreditorFinancialAccount | None = None
@@ -191,12 +179,10 @@ class PaymentMeans(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PaymentTerms(Element):
-    """Payment terms details.
+    """Payment terms details (BT-20-00).
 
     XSD field order is ``Description`` (BT-20), ``DueDateDateTime``
     (BT-9), ``DirectDebitMandateID`` (BT-89).
-
-    EN 16931-ID: BT-20-00
     """
 
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
@@ -209,11 +195,9 @@ class PaymentTerms(Element):
     debit_mandate_id: str | None = field(
         default=None, metadata={"tag": "DirectDebitMandateID"}
     )
-    """Mandate reference identifier / SEPA mandate reference.
+    """Mandate reference identifier / SEPA mandate reference (BT-89).
 
     Used to inform the Buyer in advance of a SEPA direct debit.
-
-    EN 16931-ID: BT-89
     """
 
 
@@ -226,8 +210,6 @@ class BillingSpecifiedPeriod(Element):
     endpoints; ``BR-CO-19`` requires at least one of them when the
     group is used, and ``BR-29`` requires ``end >= start`` if both
     are given.
-
-    EN 16931-ID: BG-14 (header), BG-26 (line)
     """
 
     tag: ClassVar[str] = "BillingSpecifiedPeriod"
@@ -236,17 +218,11 @@ class BillingSpecifiedPeriod(Element):
     start: date | None = field(
         default=None, metadata={"tag": "StartDateTime", "profile": Profile.BASIC_WL}
     )
-    """Start of the invoicing period.
-
-    EN 16931-ID: BT-73 (header), BT-134 (line)
-    """
+    """Start of the invoicing period (BT-73 (header), BT-134 (line))."""
     end: date | None = field(
         default=None, metadata={"tag": "EndDateTime", "profile": Profile.BASIC_WL}
     )
-    """End of the invoicing period.
-
-    EN 16931-ID: BT-74 (header), BT-135 (line)
-    """
+    """End of the invoicing period (BT-74 (header), BT-135 (line))."""
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
@@ -282,29 +258,16 @@ class ReceivableAccountingAccount(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     id: str = field(metadata={"tag": "ID"})
-    """Buyer accounting reference.
+    """Buyer accounting reference (BT-19).
 
     A textual value that specifies where the relevant data is to be
     posted in the Buyer's financial accounts.
-
-    EN 16931-ID: BT-19
     """
 
 
 @dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
-    """Header trade settlement group (payment and settlement details).
-
-    Field order follows the ``HeaderTradeSettlementType`` XSD
-    ``<xs:sequence>``: ``CreditorReferenceID``, ``PaymentReference``,
-    ``TaxCurrencyCode``, ``InvoiceCurrencyCode``, ``PayeeTradeParty``,
-    ``SpecifiedTradeSettlementPaymentMeans``*, ``ApplicableTradeTax``+,
-    ``BillingSpecifiedPeriod``, ``SpecifiedTradeAllowanceCharge``*,
-    ``SpecifiedTradePaymentTerms``,
-    ``SpecifiedTradeSettlementHeaderMonetarySummation``,
-    ``InvoiceReferencedDocument``*,
-    ``ReceivableSpecifiedTradeAccountingAccount``.
-    """
+    """Header trade settlement group (payment and settlement details)."""
 
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
@@ -312,19 +275,17 @@ class TradeSettlement(Element):
         default=None,
         metadata={"tag": "CreditorReferenceID", "profile": Profile.BASIC_WL},
     )
-    """Bank assigned creditor identifier / SEPA creditor identifier.
+    """Bank assigned creditor identifier / SEPA creditor identifier (BT-90).
 
     A unique banking reference identifier of the Payee or Seller
     assigned by the Payee's or Seller's bank.
 
     Used to inform the Buyer in advance of a SEPA direct debit.
-
-    EN 16931-ID: BT-90
     """
     payment_reference: str | None = field(
         default=None, metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL}
     )
-    """Remittance information / payment reference.
+    """Remittance information / payment reference (BT-83).
 
     A textual value used to link the payment to the Invoice issued by
     the Seller.
@@ -364,24 +325,20 @@ class TradeSettlement(Element):
     Invoice number. Note: If the payment reference is to be stated in
     SEPA credit transfers or direct debits, only the character set
     permitted for SEPA may be used.
-
-    EN 16931-ID: BT-83
     """
     tax_currency_code: str | None = field(
         default=None, metadata={"tag": "TaxCurrencyCode", "profile": Profile.BASIC_WL}
     )
-    """VAT accounting currency code.
+    """VAT accounting currency code (BT-6).
 
     Optional from BASIC_WL onwards. When present, the seller's local
     currency for VAT accounting (which differs from the invoice
     currency BT-5). Triggers ``BR-53``: a ``TaxTotal`` entry with
     ``currency_id == tax_currency_code`` (BT-111) must also be
     provided in :attr:`monetary_summation`.
-
-    EN 16931-ID: BT-6
     """
     currency_code: str = field(metadata={"tag": "InvoiceCurrencyCode"})
-    """Invoice currency code.
+    """Invoice currency code (BT-5).
 
     The currency in which all Invoice amounts are given, except for
     the invoice VAT total in VAT accounting currency.
@@ -392,8 +349,6 @@ class TradeSettlement(Element):
     (BT-111). The lists of valid currencies are maintained by the ISO
     4217 Maintenance Agency "Codes for the representation of
     currencies and funds".
-
-    EN 16931-ID: BT-5
     """
     payee: PayeeTradeParty | None = None
     payment_means: list[PaymentMeans] | None = None

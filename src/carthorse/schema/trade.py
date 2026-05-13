@@ -83,8 +83,6 @@ class TradeLineItem(Element):
     ``SpecifiedLineTradeSettlement`` (BG-30-00).
 
     Required from the BASIC profile onwards.
-
-    EN 16931-ID: BG-25
     """
 
     tag: ClassVar[str] = "IncludedSupplyChainTradeLineItem"

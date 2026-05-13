@@ -15,11 +15,9 @@ class BuyerOrderReferencedDocument(Element):
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Purchase order reference / purchase order number.
+    """Purchase order reference / purchase order number (BT-13).
 
     An identifier of a referenced purchase order, issued by the Buyer.
-
-    EN 16931-ID: BT-13
     """
 
 
@@ -33,11 +31,9 @@ class SellerOrderReferencedDocument(Element):
     issuer_assigned_id: str = field(
         metadata={"tag": "IssuerAssignedID", "profile": Profile.COMFORT}
     )
-    """Sales order reference / sales order confirmation number.
+    """Sales order reference / sales order confirmation number (BT-14).
 
     An identifier of a referenced sales order, issued by the Seller.
-
-    EN 16931-ID: BT-14
     """
 
 
@@ -51,13 +47,11 @@ class ContractReferencedDocument(Element):
     issuer_assigned_id: str = field(
         metadata={"tag": "IssuerAssignedID", "profile": Profile.BASIC_WL}
     )
-    """Contract reference / contract number.
+    """Contract reference / contract number (BT-12).
 
     The identifier of a contract. The contract reference should be
     unique in the context of the specific trading relationship and for
     a defined period.
-
-    EN 16931-ID: BT-12
     """
 
 
@@ -72,29 +66,21 @@ class UltimateCustomerOrderReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class AttachmentBinaryObject(Element):
-    """Attached document / binary data of the supporting document.
+    """Attached document / binary data of the supporting document (BT-125).
 
     A supporting document attached as a binary object or sent along
     with the Invoice. A supporting document is used when documentation
     needs to be kept together with the Invoice for future reference or
     audit purposes.
-
-    EN 16931-ID: BT-125
     """
 
     tag: ClassVar[str] = "AttachmentBinaryObject"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     mime_code: MIME
-    """MIME code of the attached document.
-
-    EN 16931-ID: BT-125-1
-    """
+    """MIME code of the attached document (BT-125-1)."""
     filename: str
-    """File name of the attached document.
-
-    EN 16931-ID: BT-125-2
-    """
+    """File name of the attached document (BT-125-2)."""
     object: str
     """Encoded attached document."""
 
@@ -128,7 +114,7 @@ class AttachmentBinaryObject(Element):
 
 @dataclass(kw_only=True, slots=True)
 class AdditionalReferencedDocument(Element):
-    """Additional supporting documents.
+    """Additional supporting documents (BG-24).
 
     A group of business terms providing information about additional
     supporting documents substantiating the claims made in the
@@ -140,8 +126,6 @@ class AdditionalReferencedDocument(Element):
     needed for very large attachments and/or sensitive information,
     e.g. for personal services, that has to be separated from the
     Invoice.
-
-    EN 16931-ID: BG-24
     """
 
     tag: ClassVar[str] = "AdditionalReferencedDocument"
@@ -150,7 +134,7 @@ class AdditionalReferencedDocument(Element):
     issuer_assigned_id: str = field(
         metadata={"tag": "IssuerAssignedID", "profile": Profile.COMFORT}
     )
-    """Supporting document identifier / document number.
+    """Supporting document identifier / document number (BT-17, BT-18, BT-122).
 
     The identifier of the tender or lot the Invoice relates to, or an
     identifier specified by the Seller for an object on which the
@@ -160,13 +144,11 @@ class AdditionalReferencedDocument(Element):
     contract must be given. Depending on the use case, this can be a
     subscription number, a telephone number, a meter reading, a
     vehicle, a person, etc.
-
-    EN 16931-ID: BT-17, BT-18, BT-122
     """
     uriid: str | None = field(
         default=None, metadata={"tag": "URIID", "profile": Profile.COMFORT}
     )
-    """Location of the supporting document.
+    """Location of the supporting document (BT-124).
 
     The URL (Uniform Resource Locator) under which the external
     document is available.
@@ -177,13 +159,11 @@ class AdditionalReferencedDocument(Element):
     as evidence of the amounts invoiced. External documents are not
     part of the Invoice. Access to external documents may bear certain
     risks.
-
-    EN 16931-ID: BT-124
     """
     type_code: UNTDID1001TypeCode | None = field(
         default=None, metadata={"tag": "TypeCode", "profile": Profile.COMFORT}
     )
-    """Type of the referenced document.
+    """Type of the referenced document (BT-17-0, BT-18-0, BT-122-0).
 
     * Code 916 "Reference paper" is used to reference the identifier
       of the supporting document. (BT-122)
@@ -191,18 +171,14 @@ class AdditionalReferencedDocument(Element):
       the tender or lot. (BT-17)
     * Code 130 "Invoicing data sheet" is used to reference an
       identifier specified by the Seller for an object. (BT-18)
-
-    EN 16931-ID: BT-17-0, BT-18-0, BT-122-0
     """
     name: str | None = field(
         default=None, metadata={"tag": "Name", "profile": Profile.COMFORT}
     )
-    """Description of the supporting document.
+    """Description of the supporting document (BT-123).
 
     A description of the document, such as a time sheet, usage or
     consumption report, etc.
-
-    EN 16931-ID: BT-123
     """
     attached_object: AttachmentBinaryObject | None = None
 
@@ -215,18 +191,14 @@ class ProcuringProject(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     id: str = field(metadata={"tag": "ID", "profile": Profile.COMFORT})
-    """Project reference.
+    """Project reference (BT-11).
 
     The identifier of the project the Invoice refers to.
-
-    EN 16931-ID: BT-11
     """
     name: str = field(metadata={"tag": "Name", "profile": Profile.COMFORT})
-    """Project name.
+    """Project name (BT-11-0).
 
     The name of the project the Invoice refers to.
-
-    EN 16931-ID: BT-11-0
     """
 
 
@@ -238,11 +210,9 @@ class DespatchAdviceReferencedDocument(Element):
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Despatch advice reference.
+    """Despatch advice reference (BT-16).
 
     An identifier of a referenced despatch advice.
-
-    EN 16931-ID: BT-16
     """
     issue_date_time: date | None = field(
         default=None,
@@ -259,11 +229,9 @@ class ReceivingAdviceReferencedDocument(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Receiving advice reference / receiving advice number.
+    """Receiving advice reference / receiving advice number (BT-15).
 
     An identifier of a referenced receiving advice.
-
-    EN 16931-ID: BT-15
     """
     issue_date_time: date | None = field(
         default=None,
@@ -289,7 +257,7 @@ class DeliveryNoteReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class InvoiceReferencedDocument(Element):
-    """Reference to preceding Invoice(s).
+    """Reference to preceding Invoice(s) (BG-3).
 
     A group of business terms providing information about one or more
     preceding Invoices.
@@ -298,20 +266,16 @@ class InvoiceReferencedDocument(Element):
     — a preceding Invoice is being corrected;
     — a final Invoice refers to preceding partial Invoices;
     — a final Invoice refers to preceding Invoices for prepayments.
-
-    EN 16931-ID: BG-3
     """
 
     tag: ClassVar[str] = "InvoiceReferencedDocument"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Preceding Invoice number.
+    """Preceding Invoice number (BT-25).
 
     The identification of an Invoice that was previously sent by the
     Seller.
-
-    EN 16931-ID: BT-25
     """
     issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}

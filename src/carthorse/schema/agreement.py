@@ -20,25 +20,14 @@ from carthorse.schema.references import (
 
 @dataclass(kw_only=True, slots=True)
 class TradeAgreement(Element):
-    """Header trade agreement (process and contract details).
-
-    Field order follows the Factur-X ``HeaderTradeAgreementType`` XSD
-    ``<xs:sequence>``: ``BuyerReference``, ``SellerTradeParty``,
-    ``BuyerTradeParty``, ``SellerTaxRepresentativeTradeParty``,
-    ``ProductEndUserTradeParty`` (EXTENDED),
-    ``SellerOrderReferencedDocument``,
-    ``BuyerOrderReferencedDocument``,
-    ``ContractReferencedDocument``,
-    ``AdditionalReferencedDocument``, ``SpecifiedProcuringProject``,
-    ``UltimateCustomerOrderReferencedDocument``.
-    """
+    """Header trade agreement (process and contract details). (BT-10-00)"""
 
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"
 
     buyer_reference: str | None = field(
         default=None, metadata={"tag": "BuyerReference"}
     )
-    """Buyer reference.
+    """Buyer reference (BT-10).
 
     An identifier assigned by the Buyer and used for internal routing
     purposes.
@@ -46,24 +35,13 @@ class TradeAgreement(Element):
     Note: The reference is set by the Buyer (e.g. contact data,
     department, office identifier, project code) but is stated in the
     Invoice by the Seller.
-
-    EN 16931-ID: BT-10
     """
     seller: SellerTradeParty
-    """Seller details (supplier of the goods or services).
-
-    EN 16931-ID: BG-4
-    """
+    """Seller details (supplier of the goods or services) (BG-4)."""
     buyer: BuyerTradeParty
-    """Buyer details (recipient of the goods or services).
-
-    EN 16931-ID: BG-7
-    """
+    """Buyer details (recipient of the goods or services) (BG-7)."""
     seller_tax_representative_party: SellerTaxRepresentativeTradeParty | None = None
-    """Seller tax representative party.
-
-    EN 16931-ID: BG-11
-    """
+    """Seller tax representative party (BG-11)."""
     end_user: ProductEndUserTradeParty | None = None
     seller_order: SellerOrderReferencedDocument | None = None
     buyer_order: BuyerOrderReferencedDocument | None = None
