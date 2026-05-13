@@ -306,7 +306,7 @@ validators it cares about by name from the matching rule submodule.
   the matching `schema.<topic>` module when their validators
   arrive. No validators moved yet; tests still green at
   `281 passed`.
-* [ ] **Step 2 — `rules/accounting.py`**: extract validators from
+* [x] **Step 2 — `rules/accounting.py`**: extract validators from
   `accounting.py`:
   * `br_5_currency_shape` (TaxTotal)
   * `br_12` (MonetarySummation, BT-106 required at BASIC_WL+)
@@ -314,10 +314,17 @@ validators it cares about by name from the matching rule submodule.
   * `br_co_17` (ApplicableTradeTax, BT-117 rounding identity)
   * `bt_8_code_shape` (UNTDID 2475 code shape on BT-8)
   * `bt_118_0_vat_only` (TypeCode != VAT outside EXTENDED)
-  * `bt_95_0_vat_only` / `bt_102_0_vat_only` (CategoryTradeTax — note
-    today's single check raises a combined `"BT-95-0/BT-102-0"`
-    code; keep it as one validator with the combined code unless we
-    decide to split. Decision: keep combined.)
+  * `bt_95_0_102_0_vat_only` (CategoryTradeTax, combined error code
+    `"BT-95-0/BT-102-0"` for back-compat with existing tests)
+  * **Pyright cycle gotcha**: pyright's `reportImportCycles` flags
+    the architectural cycle (`schema/accounting.py` runtime-imports
+    rule functions; `rules/accounting.py` TYPE_CHECKING-imports
+    schema types). Tried `from schema.accounting import …`, `from
+    schema import accounting as _acc`, runtime import without
+    TYPE_CHECKING — all forms hit at least one cycle. Settled on
+    file-level `# pyright: reportImportCycles=false` + the `_acc`
+    qualifier form for readability. Apply the same pattern in
+    every subsequent rules submodule.
 * [ ] **Step 3 — `rules/settlement.py`**: extract validators from
   `settlement.py`:
   * `br_50` (PayeePartyCreditorFinancialAccount, IBAN or proprietary

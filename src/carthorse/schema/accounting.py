@@ -59,7 +59,16 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from carthorse.schema._numeric import round_half_away_from_zero
+from carthorse.rules import Validator
+from carthorse.rules.accounting import (
+    br_5_currency_shape,
+    br_12,
+    br_co_3,
+    br_co_17,
+    bt_8_code_shape,
+    bt_95_0_102_0_vat_only,
+    bt_118_0_vat_only,
+)
 from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.types import CategoryCode, Profile
 
@@ -82,6 +91,8 @@ class TaxTotal(Element):
 
     tag: ClassVar[str] = "TaxTotalAmount"
 
+    _validators: ClassVar[tuple[Validator["TaxTotal"], ...]] = (br_5_currency_shape,)
+
     amount: Decimal
     """Invoice total VAT amount (BT-110 / BT-111).
 
@@ -100,19 +111,7 @@ class TaxTotal(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if (
-            len(self.currency_id) != 3
-            or not self.currency_id.isalpha()
-            or self.currency_id.upper() != self.currency_id
-        ):
-            errors.append(
-                ValidationError(
-                    "BR-5",
-                    "Invoice currency code (BT-5) must be an ISO 4217 "
-                    f"alpha-3 uppercase code; got {self.currency_id!r}.",
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(TaxTotal, self).validate_internal(profile))
         return errors
 
@@ -147,6 +146,8 @@ class MonetarySummation(Element):
     """
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementHeaderMonetarySummation"
+
+    _validators: ClassVar[tuple[Validator["MonetarySummation"], ...]] = (br_12,)
 
     line_total: Decimal | None = field(
         default=None,
@@ -264,18 +265,7 @@ class MonetarySummation(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        # BR-12: An Invoice shall have the Sum of Invoice line net amount
-        # (BT-106). The MINIMUM profile drops BT-106 from the XSD, so the
-        # rule is checkable only from BASIC_WL up.
-        if profile >= Profile.BASIC_WL and self.line_total is None:
-            errors.append(
-                ValidationError(
-                    "BR-12",
-                    "An Invoice shall have the Sum of Invoice line net "
-                    "amount (BT-106).",
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(MonetarySummation, self).validate_internal(profile))
         return errors
 
@@ -292,6 +282,13 @@ class ApplicableTradeTax(Element):
 
     tag: ClassVar[str] = "ApplicableTradeTax"
     profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    _validators: ClassVar[tuple[Validator["ApplicableTradeTax"], ...]] = (
+        bt_118_0_vat_only,
+        br_co_3,
+        bt_8_code_shape,
+        br_co_17,
+    )
 
     calculated_amount: Decimal | None = field(
         default=None, metadata={"tag": "CalculatedAmount", "amount": True}
@@ -416,65 +413,7 @@ class ApplicableTradeTax(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if self.type_code != "VAT" and self.profile != Profile.EXTENDED:
-            errors.append(
-                ValidationError(
-                    "BT-118-0",
-                    "Tax type codes other than 'VAT' on BT-118-0 are only "
-                    "allowed in the EXTENDED profile.",
-                )
-            )
-        # BR-CO-3: BT-7 (TaxPointDate) and BT-8 (DueDateTypeCode) are
-        # mutually exclusive on a single ApplicableTradeTax.
-        if self.tax_point_date is not None and self.due_date_code is not None:
-            errors.append(
-                ValidationError(
-                    "BR-CO-3",
-                    "Value added tax point date (BT-7) and Value added "
-                    "tax point date code (BT-8) are mutually exclusive.",
-                )
-            )
-        # If BT-8 is supplied, it must follow UNTDID 2475 (digits or ZZZ,
-        # max 3 chars). When absent — BR-CO-3 leaves the slot to BT-7,
-        # or both may be omitted entirely.
-        if self.due_date_code is not None and not (
-            len(self.due_date_code) <= 3
-            and (self.due_date_code.isdigit() or self.due_date_code == "ZZZ")
-        ):
-            errors.append(
-                ValidationError(
-                    "BT-8",
-                    "Value added tax point date code (BT-8) must be a "
-                    f"UNTDID 2475 code (digits or 'ZZZ'); got {self.due_date_code!r}.",
-                )
-            )
-
-        # BR-CO-17: BT-117 = round(BT-116 * BT-119 / 100, 2). Dropped at
-        # EXTENDED (the per-VAT-category BR-FXEXT-*-09 family supersedes
-        # it). Skip when the rate is absent (e.g. category 'O').
-        if (
-            profile < Profile.EXTENDED
-            and self.rate_applicable_percent is not None
-            and self.basis_amount is not None
-            and self.calculated_amount is not None
-        ):
-            # Factur-X §7.1.8 rounding: half away from zero.
-            expected = round_half_away_from_zero(
-                self.basis_amount * self.rate_applicable_percent / Decimal("100")
-            )
-            if round_half_away_from_zero(self.calculated_amount) != expected:
-                errors.append(
-                    ValidationError(
-                        "BR-CO-17",
-                        "VAT category tax amount (BT-117) = "
-                        f"{self.calculated_amount} differs from "
-                        "round(BT-116 * BT-119 / 100, 2) = "
-                        f"round({self.basis_amount} * "
-                        f"{self.rate_applicable_percent} / 100, 2) = "
-                        f"{expected}.",
-                    )
-                )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(ApplicableTradeTax, self).validate_internal(profile))
         return errors
 
@@ -490,6 +429,10 @@ class CategoryTradeTax(Element):
 
     tag: ClassVar[str] = "CategoryTradeTax"
     profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    _validators: ClassVar[tuple[Validator["CategoryTradeTax"], ...]] = (
+        bt_95_0_102_0_vat_only,
+    )
 
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
     """VAT type code (BT-95-0 allowance / BT-102-0 charge).
@@ -523,15 +466,7 @@ class CategoryTradeTax(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if self.type_code != "VAT" and self.profile != Profile.EXTENDED:
-            errors.append(
-                ValidationError(
-                    "BT-95-0/BT-102-0",
-                    "Tax type codes other than 'VAT' on BT-95-0 / BT-102-0 "
-                    "are only allowed in the EXTENDED profile.",
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(CategoryTradeTax, self).validate_internal(profile))
         return errors
 
