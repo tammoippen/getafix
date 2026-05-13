@@ -362,6 +362,22 @@ validators it cares about by name from the matching rule submodule.
     `br_o_{2,3,4}`
   * `br_ic_11`, `br_ic_12` (intra-community delivery date / country)
   * `br_o_11`, `br_o_12`, `br_o_13`, `br_o_14` (O single-rate)
+* [ ] **Step 7 — collapse the override**: once every Element
+  subclass that validates anything has migrated to the uniform
+  three-line ``validate_internal`` body, hoist that body to
+  :class:`~carthorse.schema.element.Element` itself. Each
+  subclass then only declares::
+
+      _validators: ClassVar[tuple[Validator[<Self>], ...]] = (...)
+
+  no ``validate_internal`` override at all. The base class default
+  ``_validators = ()`` makes element types without rules work
+  out-of-the-box. Save the ``super(<Cls>, self).validate_internal(profile)``
+  call inside the base method (it already recurses into child
+  elements). Sanity-check that the recursion through nested
+  elements (which today happens in
+  :meth:`Element.validate_internal`) still kicks in after the
+  collapse.
 
 After each step: `make tests` should report `281 passed`. Tests
 themselves don't change.
