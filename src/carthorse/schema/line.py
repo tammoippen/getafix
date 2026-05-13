@@ -53,6 +53,8 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
+from carthorse.rules import Validator
+from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, TradeAllowanceCharge
 from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.party import GlobalID
@@ -194,6 +196,8 @@ class GrossTradePrice(Element):
     tag: ClassVar[str] = "GrossPriceProductTradePrice"
     profile: ClassVar[Profile] = Profile.BASIC
 
+    _validators: ClassVar[tuple[Validator["GrossTradePrice"], ...]] = (br_28,)
+
     charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
     """Item gross price (BT-148).
 
@@ -215,14 +219,7 @@ class GrossTradePrice(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        # BR-28: The Item gross price (BT-148) shall NOT be negative.
-        if self.charge_amount < 0:
-            errors.append(
-                ValidationError(
-                    "BR-28", "The Item gross price (BT-148) shall NOT be negative."
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(GrossTradePrice, self).validate_internal(profile))
         return errors
 
@@ -237,6 +234,8 @@ class NetTradePrice(Element):
 
     tag: ClassVar[str] = "NetPriceProductTradePrice"
     profile: ClassVar[Profile] = Profile.BASIC
+
+    _validators: ClassVar[tuple[Validator["NetTradePrice"], ...]] = (br_27,)
 
     charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
     """Item net price (BT-146).
@@ -259,14 +258,7 @@ class NetTradePrice(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        # BR-27: The Item net price (BT-146) shall NOT be negative.
-        if self.charge_amount < 0:
-            errors.append(
-                ValidationError(
-                    "BR-27", "The Item net price (BT-146) shall NOT be negative."
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(NetTradePrice, self).validate_internal(profile))
         return errors
 
