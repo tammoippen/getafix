@@ -37,7 +37,7 @@ See ``docs/VALIDATION.md`` for the full BR-* catalogue.
 """
 
 from dataclasses import dataclass, field
-from typing import ClassVar, override
+from typing import ClassVar
 
 from carthorse.rules import Validator
 from carthorse.rules.trade import (
@@ -86,7 +86,7 @@ from carthorse.rules.trade import (
 )
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
-from carthorse.schema.element import Element, ValidationError
+from carthorse.schema.element import Element
 from carthorse.schema.line import (
     DocumentLineDocument,
     LineTradeAgreement,
@@ -193,9 +193,3 @@ class Trade(Element):
     """Header trade delivery (BG-13-00) — ship-to and dispatch."""
     settlement: TradeSettlement
     """Header trade settlement (BG-19) — currency, payment, totals."""
-
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(Trade, self).validate_internal(profile))
-        return errors

@@ -53,7 +53,7 @@ Validation rules not yet enforced (see ``docs/VALIDATION.md``):
 
 from dataclasses import dataclass, field
 from datetime import date
-from typing import ClassVar, override
+from typing import ClassVar
 
 from carthorse.rules import Validator
 from carthorse.rules.settlement import (
@@ -74,7 +74,7 @@ from carthorse.schema.accounting import (
     MonetarySummation,
     TradeAllowanceCharge,
 )
-from carthorse.schema.element import Element, ValidationError
+from carthorse.schema.element import Element
 from carthorse.schema.party import PayeeTradeParty
 from carthorse.schema.references import InvoiceReferencedDocument
 from carthorse.schema.types import Profile
@@ -135,14 +135,6 @@ class PayeePartyCreditorFinancialAccount(Element):
     reserved for the non-SEPA case.
     """
 
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(
-            super(PayeePartyCreditorFinancialAccount, self).validate_internal(profile)
-        )
-        return errors
-
 
 @dataclass(kw_only=True, slots=True)
 class PaymentMeans(Element):
@@ -189,12 +181,6 @@ class PaymentMeans(Element):
     """Debited account (BT-91-00) — direct-debit payments only."""
     payee: PayeePartyCreditorFinancialAccount | None = None
     """Credit-transfer account (BG-17) — credit-transfer payments only."""
-
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(PaymentMeans, self).validate_internal(profile))
-        return errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -278,12 +264,6 @@ class BillingSpecifiedPeriod(Element):
     The date on which the delivery of goods or services was
     completed.
     """
-
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(BillingSpecifiedPeriod, self).validate_internal(profile))
-        return errors
 
 
 @dataclass(kw_only=True, slots=True)
@@ -401,9 +381,3 @@ class TradeSettlement(Element):
     """Preceding-invoice references (BG-3, 0..*); BASIC_WL+."""
     accounting_account: list[ReceivableAccountingAccount] | None = None
     """Buyer accounting references (BT-19-00, 0..*); BASIC_WL+."""
-
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(TradeSettlement, self).validate_internal(profile))
-        return errors

@@ -2,7 +2,7 @@ import datetime
 import json
 import types
 from abc import ABC
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import Field, dataclass, fields
 from decimal import Decimal
 from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
@@ -65,15 +65,29 @@ class Element(ABC):
     namespace: ClassVar[Namespace] = Namespace.ram
     profile: ClassVar[Profile] = Profile.MINIMUM
 
+    _validators: ClassVar[
+        tuple[Callable[[Any, Profile], list["ValidationError"]], ...]
+    ] = ()
+    """Business-rule validators that apply to *this* element.
+
+    Subclasses override this with a tuple of free-standing functions
+    from :mod:`carthorse.rules` (one per ``BR-*`` rule). Each function
+    is invoked with ``(self, profile)`` and returns a
+    ``list[ValidationError]`` (empty on success). See
+    ``docs/VALIDATOR_REFACTOR.md`` for the architecture.
+    """
+
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
         """Collect every business-rule violation under this Element.
 
-        Subclasses override this to append their own local rules to the
-        returned list and then call ``super().validate_internal(profile)``
-        to fold in the children's errors. The Document root raises
+        First runs ``self._validators`` against this element, then
+        recurses into every child :class:`Element` reachable through
+        dataclass fields. The Document root raises
         :class:`ValidationErrors` if the final list is non-empty.
         """
-        errors: list[ValidationError] = []
+        errors: list[ValidationError] = [
+            e for v in self._validators for e in v(self, profile)
+        ]
         for f in fields(self):
             if f.name == "currency":
                 continue
