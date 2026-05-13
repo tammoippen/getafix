@@ -53,9 +53,22 @@ Validation rules not yet enforced (see ``docs/VALIDATION.md``):
 
 from dataclasses import dataclass, field
 from datetime import date
-from decimal import Decimal
 from typing import ClassVar, override
 
+from carthorse.rules import Validator
+from carthorse.rules.settlement import (
+    br_5_currency_shape,
+    br_29,
+    br_50,
+    br_53,
+    br_co_14,
+    br_co_15,
+    br_co_16,
+    br_co_18,
+    br_co_19,
+    br_co_25,
+    bt_81_code_shape,
+)
 from carthorse.schema.accounting import (
     ApplicableTradeTax,
     MonetarySummation,
@@ -100,6 +113,10 @@ class PayeePartyCreditorFinancialAccount(Element):
     tag: ClassVar[str] = "PayeePartyCreditorFinancialAccount"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
+    _validators: ClassVar[tuple[Validator["PayeePartyCreditorFinancialAccount"], ...]] = (
+        br_50,
+    )
+
     iban_id: str | None = field(default=None, metadata={"tag": "IBANID"})
     """Payment account identifier (BT-84).
 
@@ -120,16 +137,7 @@ class PayeePartyCreditorFinancialAccount(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if self.iban_id is None and self.proprietary_id is None:
-            errors.append(
-                ValidationError(
-                    "BR-50",
-                    "A Payment account identifier (BT-84) shall be present "
-                    "if Credit transfer (BG-16) information is provided in "
-                    "the Invoice.",
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(
             super(PayeePartyCreditorFinancialAccount, self).validate_internal(profile)
         )
@@ -152,6 +160,8 @@ class PaymentMeans(Element):
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementPaymentMeans"
     profile: ClassVar[Profile] = Profile.BASIC_WL
+
+    _validators: ClassVar[tuple[Validator["PaymentMeans"], ...]] = (bt_81_code_shape,)
 
     type_code: str = field(metadata={"tag": "TypeCode"})
     """Payment means type code (BT-81).
@@ -182,18 +192,7 @@ class PaymentMeans(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if not (
-            len(self.type_code) <= 3
-            and (self.type_code.isdigit() or self.type_code == "ZZZ")
-        ):
-            errors.append(
-                ValidationError(
-                    "BT-81",
-                    f"Payment means type code (BT-81) {self.type_code!r} "
-                    "is not a UNTDID 4461 code (digits up to 3 chars, or 'ZZZ').",
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(PaymentMeans, self).validate_internal(profile))
         return errors
 
@@ -259,6 +258,11 @@ class BillingSpecifiedPeriod(Element):
     tag: ClassVar[str] = "BillingSpecifiedPeriod"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
+    _validators: ClassVar[tuple[Validator["BillingSpecifiedPeriod"], ...]] = (
+        br_co_19,
+        br_29,
+    )
+
     start: date | None = field(
         default=None, metadata={"tag": "StartDateTime", "profile": Profile.BASIC_WL}
     )
@@ -277,26 +281,7 @@ class BillingSpecifiedPeriod(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if self.start is None and self.end is None:
-            errors.append(
-                ValidationError(
-                    "BR-CO-19",
-                    "If Invoicing period (BG-14) is used, the Invoicing "
-                    "period start date (BT-73) or the Invoicing period end "
-                    "date (BT-74) shall be filled, or both.",
-                )
-            )
-        if self.start is not None and self.end is not None and self.end < self.start:
-            errors.append(
-                ValidationError(
-                    "BR-29",
-                    "If both Invoicing period start date (BT-73) and "
-                    "Invoicing period end date (BT-74) are given then the "
-                    "Invoicing period end date (BT-74) shall be later or "
-                    "equal to the Invoicing period start date (BT-73).",
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(BillingSpecifiedPeriod, self).validate_internal(profile))
         return errors
 
@@ -331,6 +316,16 @@ class TradeSettlement(Element):
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
+
+    _validators: ClassVar[tuple[Validator["TradeSettlement"], ...]] = (
+        br_5_currency_shape,
+        br_co_18,
+        br_53,
+        br_co_25,
+        br_co_14,
+        br_co_15,
+        br_co_16,
+    )
 
     creditor_reference: str | None = field(
         default=None,
@@ -409,132 +404,6 @@ class TradeSettlement(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if (
-            len(self.currency_code) != 3
-            or not self.currency_code.isalpha()
-            or self.currency_code.upper() != self.currency_code
-        ):
-            errors.append(
-                ValidationError(
-                    "BR-5",
-                    "Invoice currency code (BT-5) must be an ISO 4217 "
-                    f"alpha-3 uppercase code; got {self.currency_code!r}.",
-                )
-            )
-
-        if Profile.BASIC_WL <= profile and not self.trade_taxes:
-            errors.append(
-                ValidationError(
-                    "BR-CO-18",
-                    "An Invoice shall at least have one VAT breakdown group (BG-23).",
-                )
-            )
-
-        if self.tax_currency_code is not None:
-            tax_totals = self.monetary_summation.tax_total or []
-            if not any(t.currency_id == self.tax_currency_code for t in tax_totals):
-                errors.append(
-                    ValidationError(
-                        "BR-53",
-                        "If the VAT accounting currency code (BT-6) is "
-                        "present, then the Invoice total VAT amount in "
-                        "accounting currency (BT-111) shall be provided.",
-                    )
-                )
-
-        # BR-CO-25: positive DuePayableAmount (BT-115) requires either a
-        # payment due date (BT-9) or payment terms description (BT-20).
-        # Both source fields live inside ``SpecifiedTradePaymentTerms``
-        # which the MINIMUM XSD does not include — the rule is therefore
-        # unenforceable at MINIMUM and only kicks in from BASIC_WL up.
-        if (
-            profile >= Profile.BASIC_WL
-            and self.monetary_summation.due_amount > 0
-            and (
-                self.terms is None
-                or (self.terms.due is None and self.terms.description is None)
-            )
-        ):
-            errors.append(
-                ValidationError(
-                    "BR-CO-25",
-                    "In case the Amount due for payment (BT-115) is "
-                    "positive, either the Payment due date (BT-9) or the "
-                    "Payment terms (BT-20) shall be present.",
-                )
-            )
-
-        # BR-CO-14: BT-110 (TaxTotalAmount in invoice currency) = sum of
-        # BT-117 (CalculatedAmount on each BG-23 row). Computed only
-        # when both pieces are populated.
-        if self.monetary_summation.tax_total is not None and self.trade_taxes:
-            bt_110_in_invoice = next(
-                (
-                    t.amount
-                    for t in self.monetary_summation.tax_total
-                    if t.currency_id == self.currency_code
-                ),
-                None,
-            )
-            if bt_110_in_invoice is not None:
-                bt_117_sum = sum(
-                    (tt.calculated_amount or Decimal("0") for tt in self.trade_taxes),
-                    Decimal("0"),
-                )
-                if bt_110_in_invoice != bt_117_sum:
-                    errors.append(
-                        ValidationError(
-                            "BR-CO-14",
-                            "Invoice total VAT amount (BT-110) "
-                            f"= {bt_110_in_invoice} differs from "
-                            f"sum(BT-117) = {bt_117_sum}.",
-                        )
-                    )
-
-        # BR-CO-15: BT-112 (GrandTotalAmount) = BT-109 (TaxBasisTotalAmount)
-        # + BT-110 (the TaxTotalAmount in invoice currency). BT-111
-        # (TaxTotalAmount in VAT accounting currency) does NOT enter
-        # this identity.
-        bt_110 = next(
-            (
-                t.amount
-                for t in (self.monetary_summation.tax_total or [])
-                if t.currency_id == self.currency_code
-            ),
-            Decimal("0"),
-        )
-        expected_grand = self.monetary_summation.tax_basis_total + bt_110
-        if self.monetary_summation.grand_total != expected_grand:
-            errors.append(
-                ValidationError(
-                    "BR-CO-15",
-                    "Invoice total amount with VAT (BT-112) "
-                    f"= {self.monetary_summation.grand_total} differs from "
-                    f"BT-109 + BT-110 = "
-                    f"{self.monetary_summation.tax_basis_total} + {bt_110} "
-                    f"= {expected_grand}.",
-                )
-            )
-
-        # BR-CO-16: BT-115 (DuePayableAmount) = BT-112 - BT-113
-        # (TotalPrepaidAmount) + BT-114 (RoundingAmount). BT-114 is
-        # optional and only available from COMFORT onwards — treat as
-        # 0 when absent.
-        prepaid = self.monetary_summation.prepaid_total or Decimal("0")
-        rounding = self.monetary_summation.rounding_amount or Decimal("0")
-        expected_due = self.monetary_summation.grand_total - prepaid + rounding
-        if self.monetary_summation.due_amount != expected_due:
-            errors.append(
-                ValidationError(
-                    "BR-CO-16",
-                    "Amount due for payment (BT-115) "
-                    f"= {self.monetary_summation.due_amount} differs from "
-                    f"BT-112 - BT-113 + BT-114 = "
-                    f"{self.monetary_summation.grand_total} - {prepaid} "
-                    f"+ {rounding} = {expected_due}.",
-                )
-            )
-
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(TradeSettlement, self).validate_internal(profile))
         return errors
