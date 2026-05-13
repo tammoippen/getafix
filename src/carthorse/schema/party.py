@@ -74,6 +74,8 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
+from carthorse.rules import Validator
+from carthorse.rules.party import br_10, br_co_9, br_co_26, bt_31_0_scheme_id
 from carthorse.schema.element import Element, ETElement, ValidationError
 from carthorse.schema.types import Profile
 
@@ -422,36 +424,14 @@ class TaxSchemeId(ISO6523SchemeId):
       use ``EL``. Local tax identifiers are exempt.
     """
 
+    _validators: ClassVar[tuple[Validator["TaxSchemeId"], ...]] = (
+        bt_31_0_scheme_id,
+        br_co_9,
+    )
+
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        if self.scheme_id not in ("VA", "FC"):
-            errors.append(
-                ValidationError(
-                    "BT-31-0/BT-32-0",
-                    "schemeID on a SpecifiedTaxRegistration must be 'VA' "
-                    f"(VAT identifier) or 'FC' (local tax id); got "
-                    f"{self.scheme_id!r}.",
-                )
-            )
-        # BR-CO-9: VAT identifiers must carry an ISO 3166-1 alpha-2
-        # country prefix (Greece may use 'EL'). Local tax identifiers
-        # (FC, BT-32) are exempt — they're national codes without the
-        # country prefix convention.
-        if self.scheme_id == "VA":
-            prefix = self.id[:2]
-            if len(self.id) < 3 or not prefix.isalpha() or prefix != prefix.upper():
-                errors.append(
-                    ValidationError(
-                        "BR-CO-9",
-                        "The Seller VAT identifier (BT-31), the Seller tax "
-                        "representative VAT identifier (BT-63) and the Buyer "
-                        "VAT identifier (BT-48) must each carry a prefix "
-                        "according to ISO 3166-1 alpha-2 by which the "
-                        "country of issue may be identified. Greece may use "
-                        "the prefix 'EL'.",
-                    )
-                )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(TaxSchemeId, self).validate_internal(profile))
         return errors
 
@@ -481,6 +461,8 @@ class SellerTradeParty(Element):
     """
 
     tag: ClassVar[str] = "SellerTradeParty"
+
+    _validators: ClassVar[tuple[Validator["SellerTradeParty"], ...]] = (br_co_26,)
 
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
@@ -537,28 +519,7 @@ class SellerTradeParty(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        # BR-CO-26: Seller automatic identification — at least one of
-        # BT-29 (Seller identifier), BT-30 (Seller legal registration
-        # identifier) or BT-31 (Seller VAT identifier) must be present.
-        has_id = self.id is not None
-        has_legal = (
-            self.legal_organization is not None
-            and self.legal_organization.id is not None
-        )
-        has_vat = bool(self.tax_registrations) and any(
-            tr.id.scheme_id == "VA" for tr in self.tax_registrations
-        )
-        if not (has_id or has_legal or has_vat):
-            errors.append(
-                ValidationError(
-                    "BR-CO-26",
-                    "In order for the buyer to automatically identify a "
-                    "supplier, the Seller identifier (BT-29), the Seller "
-                    "legal registration identifier (BT-30) and/or the "
-                    "Seller VAT identifier (BT-31) shall be present.",
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(SellerTradeParty, self).validate_internal(profile))
         return errors
 
@@ -572,6 +533,8 @@ class BuyerTradeParty(Element):
     """
 
     tag: ClassVar[str] = "BuyerTradeParty"
+
+    _validators: ClassVar[tuple[Validator["BuyerTradeParty"], ...]] = (br_10,)
 
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
@@ -621,16 +584,7 @@ class BuyerTradeParty(Element):
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors: list[ValidationError] = []
-        # BR-10: An Invoice shall contain the Buyer postal address (BG-8).
-        # The MINIMUM XSD lets the element be omitted; EN 16931 / BASIC_WL
-        # and above require it.
-        if profile > Profile.MINIMUM and self.address is None:
-            errors.append(
-                ValidationError(
-                    "BR-10", "An Invoice shall contain the Buyer postal address (BG-8)."
-                )
-            )
+        errors = [e for v in self._validators for e in v(self, profile)]
         errors.extend(super(BuyerTradeParty, self).validate_internal(profile))
         return errors
 
