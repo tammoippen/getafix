@@ -67,7 +67,7 @@ class TestMinimumRechnung:
     def test_header(self, minimum_rechnung: Document) -> None:
         h = minimum_rechnung.header
         assert h.id == "471102"  # BT-1
-        assert h.type_code == TypeCode.T_Handelsrechnung  # BT-3 = 380
+        assert h.type_code == TypeCode.T_CommercialInvoice  # BT-3 = 380
         assert h.issue_date == date(2020, 3, 5)  # BT-2
 
     def test_seller_minimal_address_country_only(
@@ -151,7 +151,7 @@ class TestMinimumBuchungshilfe:
         # UNTDID 1001 code 751 = "Invoice information for accounting
         # purposes" — explicitly NOT an Invoice. Permitted at MINIMUM
         # and BASIC_WL per the appendix narrative.
-        assert minimum_buchungshilfe.header.type_code == TypeCode.T_751
+        assert minimum_buchungshilfe.header.type_code == TypeCode.T_AccountingNote
 
     def test_buyer_has_name_only(self, minimum_buchungshilfe: Document) -> None:
         buyer = minimum_buchungshilfe.trade.agreement.buyer
@@ -265,7 +265,7 @@ class TestBasicWlBuchungshilfe:
         assert basicwl_buchungshilfe.context.guideline.id == Profile.BASIC_WL
 
     def test_type_code_is_751(self, basicwl_buchungshilfe: Document) -> None:
-        assert basicwl_buchungshilfe.header.type_code == TypeCode.T_751
+        assert basicwl_buchungshilfe.header.type_code == TypeCode.T_AccountingNote
 
     def test_notes_and_delivery_present(self, basicwl_buchungshilfe: Document) -> None:
         notes = basicwl_buchungshilfe.header.notes
@@ -431,7 +431,7 @@ class TestBasicRechnungskorrektur:
     def test_type_code_is_correction(self, basic_rechnungskorrektur: Document) -> None:
         # UNTDID 1001 code 384 = "Corrected invoice"; matches our enum.
         assert (
-            basic_rechnungskorrektur.header.type_code == TypeCode.T_Rechnungskorrektur
+            basic_rechnungskorrektur.header.type_code == TypeCode.T_CorrectedInvoice
         )
 
     def test_six_included_notes(self, basic_rechnungskorrektur: Document) -> None:

@@ -157,7 +157,7 @@ def make_vat_doc(
     return Document(
         context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
         header=Header(
-            id="1", type_code=TypeCode.T_Handelsrechnung, issue_date=date(2025, 1, 1)
+            id="1", type_code=TypeCode.T_CommercialInvoice, issue_date=date(2025, 1, 1)
         ),
         trade=Trade(
             agreement=TradeAgreement(seller=seller, buyer=buyer),

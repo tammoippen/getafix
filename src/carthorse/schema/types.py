@@ -63,55 +63,91 @@ class Namespace(enum.StrEnum):
 
 @enum.unique
 class TypeCode(enum.StrEnum):
-    T_80 = "80"
-    T_81 = "81"
-    T_82 = "82"
-    T_83 = "83"
-    T_84 = "84"
-    T_Rechnungsdatenblatt = "130"
-    T_Verkuerzte_Baurechnung = "202"
-    T_Vorlaeufige_Baurechnung = "203"
-    T_Baurechnung = "204"
-    T_Zwischen_abschlags_rechnung = "211"
-    T_261 = "261"
-    T_262 = "262"
-    T_295 = "295"
-    T_296 = "296"
-    T_308 = "308"
-    T_Proformarechnung = "325"
-    T_Teilrechnung = "326"
-    T_Handelsrechnung = "380"
-    T_Gutschriftanzeige = "381"
-    T_Belastungsanzeige_383 = "383"
-    T_Rechnungskorrektur = "384"
-    T_Konsolidierte_Rechnung = "385"
-    T_Vorauszahlungsrechnung = "386"
-    T_Mietrechnung = "387"
-    T_Steuerrechnung = "388"
-    T_Gutschrift_Selbst_ausgestellte_Rechnung = "389"
-    T_Delkredere_Rechnung = "390"
-    T_Inkasso_Rechnung = "393"
-    T_Leasing_Rechnung = "394"
-    T_Konsignationsrechnung = "395"
-    T_Inkasso_Gutschrift = "396"
-    T_420 = "420"
-    T_Belastungsanzeige_456 = "456"
-    T_Storno_einer_Belastung = "457"
-    T_Storno_einer_Gutschrift = "458"
-    T_527 = "527"
-    T_Rechnung_des_Versicherers = "575"
-    T_Speditionsrechnung = "623"
-    T_Hafenkostenrechnung = "633"
-    T_751 = "751"
-    T_Frachtrechnung = "780"
-    T_Zollrechnung = "935"
+    """UNTDID 1001 invoice document type code (BT-3).
+
+    Names follow the official EN 16931 / Factur-X 1.08 code list
+    (``ZF24_EN/Documentation/2_EN16931 code lists values v16 ….xlsx``
+    sheet ``1001``). Each member's EN16931 interpretation column —
+    ``Invoice`` or ``Credit Note`` — determines which document role
+    the code plays.
+
+    At BASIC_WL and MINIMUM only :attr:`T_AccountingNote` (``751``)
+    may be used — that profile carries only the accounting summary
+    rather than an invoice proper.
+    """
+
+    T_RequestForPayment = "71"
+    T_DebitNoteGoods = "80"
+    T_CreditNoteGoods = "81"
+    T_MeteredServicesInvoice = "82"
+    T_CreditNoteFinancialAdjustment = "83"
+    T_DebitNoteFinancialAdjustment = "84"
+    T_TaxNotification = "102"
+    T_InvoicingDataSheet = "130"
+    T_DirectPaymentValuation = "202"
+    T_ProvisionalPaymentValuation = "203"
+    T_PaymentValuation = "204"
+    T_InterimPaymentApplication = "211"
+    T_FinalPaymentRequest = "218"
+    T_PaymentRequestCompletedUnits = "219"
+    T_SelfBilledCreditNote = "261"
+    T_ConsolidatedCreditNote = "262"
+    T_PriceVariationInvoice = "295"
+    T_PriceVariationCreditNote = "296"
+    T_DelcredereCreditNote = "308"
+    T_ProformaInvoice = "325"
+    T_PartialInvoice = "326"
+    T_CommercialInvoiceWithPackingList = "331"
+    T_CommercialInvoice = "380"
+    T_CreditNote = "381"
+    T_CommissionNote = "382"
+    T_DebitNote = "383"
+    T_CorrectedInvoice = "384"
+    T_ConsolidatedInvoice = "385"
+    T_PrepaymentInvoice = "386"
+    T_HireInvoice = "387"
+    T_TaxInvoice = "388"
+    T_SelfBilledInvoice = "389"
+    T_DelcredereInvoice = "390"
+    T_FactoredInvoice = "393"
+    T_LeaseInvoice = "394"
+    T_ConsignmentInvoice = "395"
+    T_FactoredCreditNote = "396"
+    T_OCRPaymentCreditNote = "420"
+    T_DebitAdvice = "456"
+    T_ReversalOfDebit = "457"
+    T_ReversalOfCredit = "458"
+    T_SelfBilledDebitNote = "527"
+    T_InsurersInvoice = "575"
+    T_ForwardersInvoice = "623"
+    T_PortChargesDocument = "633"
+    T_AccountingNote = "751"
+    T_FreightInvoice = "780"
+    T_ConsularInvoice = "870"
+    T_PartialConstructionInvoice = "875"
+    T_PartialFinalConstructionInvoice = "876"
+    T_FinalConstructionInvoice = "877"
+    T_CustomsInvoice = "935"
 
 
 @enum.unique
 class UNTDID1001TypeCode(enum.StrEnum):
-    T_50 = "50"
-    Rechnungsdatenblatt = "130"
-    Referenzpapier = "916"
+    """``TypeCode`` discriminator on :class:`AdditionalReferencedDocument`.
+
+    Selects which EN 16931 business term the supporting-document
+    reference carries:
+
+    * ``50`` "Price/sales catalogue response" → tender or lot
+      reference (BT-17).
+    * ``130`` "Invoicing data sheet" → invoiced-object identifier
+      (BT-18).
+    * ``916`` "Reference paper" → supporting-document reference
+      (BT-122).
+    """
+
+    T_PriceCatalogueResponse = "50"
+    T_InvoicingDataSheet = "130"
+    T_ReferencePaper = "916"
 
 
 @enum.unique
