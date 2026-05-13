@@ -56,7 +56,7 @@ from tagic.xml import XML
 from carthorse.rules import Validator
 from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, TradeAllowanceCharge
-from carthorse.schema.element import Element, ETElement, ValidationError
+from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import GlobalID
 from carthorse.schema.settlement import BillingSpecifiedPeriod
 from carthorse.schema.types import Profile
@@ -217,12 +217,6 @@ class GrossTradePrice(Element):
     explicitly when building programmatically.
     """
 
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(GrossTradePrice, self).validate_internal(profile))
-        return errors
-
 
 @dataclass(kw_only=True, slots=True)
 class NetTradePrice(Element):
@@ -255,12 +249,6 @@ class NetTradePrice(Element):
     Populated on parse from the ``currencyID`` attribute; set
     explicitly when building programmatically.
     """
-
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(NetTradePrice, self).validate_internal(profile))
-        return errors
 
 
 @dataclass(kw_only=True, slots=True)

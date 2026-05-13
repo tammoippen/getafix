@@ -76,7 +76,7 @@ from tagic.xml import XML
 
 from carthorse.rules import Validator
 from carthorse.rules.party import br_10, br_co_9, br_co_26, bt_31_0_scheme_id
-from carthorse.schema.element import Element, ETElement, ValidationError
+from carthorse.schema.element import Element, ETElement
 from carthorse.schema.types import Profile
 
 
@@ -429,12 +429,6 @@ class TaxSchemeId(ISO6523SchemeId):
         br_co_9,
     )
 
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(TaxSchemeId, self).validate_internal(profile))
-        return errors
-
 
 @dataclass(kw_only=True, slots=True)
 class SpecifiedTaxRegistration(Element):
@@ -517,12 +511,6 @@ class SellerTradeParty(Element):
     identifier (``schemeID="FC"``, BT-32).
     """
 
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(SellerTradeParty, self).validate_internal(profile))
-        return errors
-
 
 @dataclass(kw_only=True, slots=True)
 class BuyerTradeParty(Element):
@@ -581,12 +569,6 @@ class BuyerTradeParty(Element):
     VAT identifier (``schemeID="VA"``, BT-48) and optionally a local
     tax identifier (``schemeID="FC"``).
     """
-
-    @override
-    def validate_internal(self, profile: Profile) -> list[ValidationError]:
-        errors = [e for v in self._validators for e in v(self, profile)]
-        errors.extend(super(BuyerTradeParty, self).validate_internal(profile))
-        return errors
 
 
 @dataclass(kw_only=True, slots=True)

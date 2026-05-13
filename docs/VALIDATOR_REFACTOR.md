@@ -325,7 +325,7 @@ validators it cares about by name from the matching rule submodule.
     file-level `# pyright: reportImportCycles=false` + the `_acc`
     qualifier form for readability. Apply the same pattern in
     every subsequent rules submodule.
-* [ ] **Step 3 — `rules/settlement.py`**: extract validators from
+* [x] **Step 3 — `rules/settlement.py`**: extract validators from
   `settlement.py`:
   * `br_50` (PayeePartyCreditorFinancialAccount, IBAN or proprietary
     id required)
@@ -342,17 +342,17 @@ validators it cares about by name from the matching rule submodule.
   * `br_co_14` (BT-110 = sum(BT-117) across BG-23 rows)
   * `br_co_15` (BT-112 = BT-109 + BT-110)
   * `br_co_16` (BT-115 = BT-112 - BT-113 + BT-114)
-* [ ] **Step 4 — `rules/party.py`**: extract validators from
+* [x] **Step 4 — `rules/party.py`**: extract validators from
   `party.py`:
   * `bt_31_0_scheme_id` (TaxSchemeId schemeID ∈ {VA, FC})
   * `br_co_9` (TaxSchemeId, ISO 3166-1 alpha-2 prefix on VAT ids)
   * `br_co_26` (SellerTradeParty, BT-29 OR BT-30 OR BT-31)
   * `br_10` (BuyerTradeParty, address required from BASIC_WL+)
-* [ ] **Step 5 — `rules/line.py`**: extract validators from
+* [x] **Step 5 — `rules/line.py`**: extract validators from
   `line.py`:
   * `br_27` (NetTradePrice, BT-146 >= 0)
   * `br_28` (GrossTradePrice, BT-148 >= 0)
-* [ ] **Step 6 — `rules/trade.py`**: the big one. Move every
+* [x] **Step 6 — `rules/trade.py`**: the big one. Move every
   cross-sibling rule and expand the per-VAT-category families:
   * `br_16` (BASIC+ requires ≥ 1 line item)
   * `br_co_10`, `br_co_11`, `br_co_12`, `br_co_13` (sum identities)
@@ -362,7 +362,7 @@ validators it cares about by name from the matching rule submodule.
     `br_o_{2,3,4}`
   * `br_ic_11`, `br_ic_12` (intra-community delivery date / country)
   * `br_o_11`, `br_o_12`, `br_o_13`, `br_o_14` (O single-rate)
-* [ ] **Step 7 — collapse the override**: once every Element
+* [x] **Step 7 — collapse the override**: once every Element
   subclass that validates anything has migrated to the uniform
   three-line ``validate_internal`` body, hoist that body to
   :class:`~carthorse.schema.element.Element` itself. Each
