@@ -73,8 +73,7 @@ def br_12(m: _acc.MonetarySummation, profile: Profile) -> list[ValidationError]:
     return [
         ValidationError(
             "BR-12",
-            "An Invoice shall have the Sum of Invoice line net "
-            "amount (BT-106).",
+            "An Invoice shall have the Sum of Invoice line net amount (BT-106).",
         )
     ]
 
