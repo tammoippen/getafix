@@ -9,14 +9,9 @@ Two checks per profile:
 1. ``test_generated_xml_is_xsd_valid`` — sanity for the strategy itself
    (decoupled from carthorse). If this regresses we have a strategy bug, not
    a parser bug.
-2. ``test_parse_and_regenerate`` — feed the bytes into
-   ``Document.from_xml`` and then ``Document.to_xml`` again. Currently
-   ``xfail(strict=False)`` because real-world / structurally-correct XML
-   exercises parser/serialiser bugs we are working through (see
-   ``docs/IMPLEMENTATION_PLAN.md``: MINIMUM without ``LineTotalAmount``,
-   ``currencyID`` lost on round-trip, BG-25 line items not modelled,
-   …). As those gaps close individual examples stop xfailing — Hypothesis
-   surfaces the next blocker for free.
+2. ``test_parse_and_regenerate`` — feed the bytes into ``Document.from_xml``
+   and then ``Document.to_xml`` again. Locked in as a strict pass: a new
+   Hypothesis-generated regression must fix the parser, not relax the test.
 """
 
 from __future__ import annotations
@@ -25,7 +20,7 @@ from pathlib import Path
 
 import lxml.etree as etree
 import pytest as pt
-from hypothesis import HealthCheck, Phase, given, settings
+from hypothesis import HealthCheck, given, settings
 
 from carthorse.schema import Document
 from carthorse.schema.types import Profile
@@ -79,29 +74,14 @@ def test_generated_xml_is_xsd_valid(
 
 
 @pt.mark.parametrize("profile", _PROFILES, ids=_PROFILE_IDS)
-@pt.mark.xfail(
-    strict=False,
-    reason=(
-        "Parser/serialiser is WIP. The strategies emit XSD-valid XML, but "
-        "real schema constructs trip up carthorse: schemeID attribute, MINIMUM "
-        "MonetarySummation without LineTotalAmount, multiple <ram:ID> on a "
-        "TradeParty, currencyID not preserved on amounts, line items beyond "
-        "the carthorse stub, etc. As gaps close, individual examples stop "
-        "xfailing automatically."
-    ),
-)
 def test_parse_and_regenerate(profile: Profile) -> None:
     """Feed XSD-valid generated XML through ``from_xml`` then ``to_xml``."""
 
     @given(blob=invoices_for(profile))
     @settings(
-        max_examples=10,
+        max_examples=50,
         deadline=None,
         suppress_health_check=[HealthCheck.too_slow],
-        # Skip shrinking — we know we're hitting parser bugs on the first
-        # example; shrinking adds ~10s per profile with no useful payoff
-        # while everything is xfailed.
-        phases=[Phase.generate],
     )
     def _check(blob: bytes) -> None:
         root = etree.fromstring(blob)

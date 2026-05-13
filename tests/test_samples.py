@@ -3,13 +3,11 @@
 The XML files in ``tests/samples/`` are valid CII documents pulled from
 upstream projects (see ``tests/samples/SOURCES.md``). They serve two purposes:
 
-1.  *Sanity*: verify the bundled samples remain well-formed XML in the
-    expected ``CrossIndustryInvoice`` namespace and declare a profile we
-    recognise. These checks must always pass.
-2.  *Progress radar*: try to feed each one through ``Document.from_xml`` and
-    report which still fails. Marked ``xfail(strict=False)`` so as parser
-    coverage grows, samples flip to XPASS without breaking CI — at which point
-    delete the xfail and lock the sample in as a real round-trip test.
+1.  *Sanity*: each sample remains well-formed XML in the expected
+    ``CrossIndustryInvoice`` namespace and declares a profile we recognise.
+2.  *Round-trip*: each sample feeds through ``Document.from_xml`` without
+    raising. Locked in as a strict pass — adding a new sample that breaks
+    the parser must fix the parser, not relax the test.
 """
 
 from __future__ import annotations
@@ -90,18 +88,7 @@ def test_sample_declares_known_profile(sample: Path):
 
 
 @pt.mark.parametrize("sample", SAMPLES, ids=[s.name for s in SAMPLES])
-@pt.mark.xfail(
-    strict=False,
-    reason=(
-        "Parser is WIP. Known gaps surfaced by these samples include: "
-        "(a) MonetarySummation.line_total is required but the MINIMUM profile "
-        "omits LineTotalAmount (bug sweep #2); "
-        "(b) currencyID attribute on monetary amounts (TaxBasisTotalAmount, "
-        "GrandTotalAmount, ...) is not yet preserved on parse (bug sweep #7); "
-        "(c) BG-25 line items not modelled."
-    ),
-)
 def test_sample_roundtrips_through_document(sample: Path):
-    """Full parser round-trip. xfail today; flip to strict pass as gaps close."""
+    """Full parser round-trip."""
     tree = etree.parse(str(sample))
     Document.from_xml(tree.getroot())
