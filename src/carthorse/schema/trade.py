@@ -1,16 +1,38 @@
-"""Top-level ``SupplyChainTradeTransaction`` (BG-25-00) and BG-25 line items.
+"""Supply chain trade transaction (BG-25-00) and BG-25 line items.
 
-This module stitches together the three sibling header groups
-(``agreement``, ``delivery``, ``settlement``) and a list of line items
-(``items``). The line item content lives in
-:mod:`carthorse.schema.line`.
+:class:`Trade` is the second sibling of :class:`Document` and
+stitches together the three header groups
+(:class:`~carthorse.schema.agreement.TradeAgreement` (BT-10-00),
+:class:`~carthorse.schema.delivery.TradeDelivery` (BG-13-00),
+:class:`~carthorse.schema.settlement.TradeSettlement` (BG-19)) with a
+list of :class:`TradeLineItem` (BG-25, BASIC+). The line sub-tree
+content lives in :mod:`carthorse.schema.line`.
 
-Validation rules covered here:
+This module is also where every *cross-sibling* validator lives —
+rules that need to read across line items, header allowances/charges
+and the monetary summation in one pass.
 
-* ✓ ``BR-16`` — at BASIC and above an invoice must contain at least
-  one line item. Raised by :meth:`Trade.validate_internal`.
-* ✓ Per-VAT-category required-party rules (BR-AE/E/G/IC/IG/IP/S/Z
-  ``-2/-3/-4``) — see ``docs/VALIDATION.md §3.2``.
+Validation rules enforced here:
+
+* ✓ ``BR-16`` — at BASIC+ an invoice must contain at least one line
+  item.
+* ✓ ``BR-CO-10`` — ``BT-106 = sum(BT-131)`` across line totals.
+* ✓ ``BR-CO-11`` — ``BT-107 = sum(BT-92)`` across header allowances.
+* ✓ ``BR-CO-12`` — ``BT-108 = sum(BT-99)`` across header charges.
+* ✓ ``BR-CO-13`` — ``BT-109 = sum(BT-131) - sum(BT-92) + sum(BT-99)``.
+* ✓ ``BR-CO-21`` / ``BR-CO-22`` — header allowance / charge needs
+  reason text or reason code.
+* ✓ ``BR-CO-23`` / ``BR-CO-24`` — same coupling at line level.
+* ✓ ``BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4}`` — per-VAT-category
+  required-party matrix (see ``docs/VALIDATION.md §3.2``).
+* ✓ ``BR-O-2 / BR-O-3 / BR-O-4`` — "Not subject to VAT" forbidden-id
+  matrix (inverted predicate of the above).
+* ✓ ``BR-IC-11`` / ``BR-IC-12`` — intra-community supply needs
+  delivery date or period (BT-72 / BG-14) and a deliver-to country
+  code (BT-80).
+* ✓ ``BR-O-11..14`` — "Not subject to VAT" is single-rate.
+
+See ``docs/VALIDATION.md`` for the full BR-* catalogue.
 """
 
 from collections.abc import Iterator
@@ -73,39 +95,49 @@ def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
 
 @dataclass(kw_only=True, slots=True)
 class TradeLineItem(Element):
-    """Invoice line item (BG-25).
+    """Invoice line (BG-25).
 
-    Carries the four required line-level groups in XSD order:
-    ``AssociatedDocumentLineDocument`` (BT-126-00),
-    ``SpecifiedTradeProduct`` (BG-31),
-    ``SpecifiedLineTradeAgreement`` (BG-29),
-    ``SpecifiedLineTradeDelivery`` (BT-129-00) and
-    ``SpecifiedLineTradeSettlement`` (BG-30-00).
-
-    Required from the BASIC profile onwards.
+    A group of business terms providing information on an individual
+    invoice line. Required from BASIC upwards.
     """
 
     tag: ClassVar[str] = "IncludedSupplyChainTradeLineItem"
     profile: ClassVar[Profile] = Profile.BASIC
 
     associated_document: DocumentLineDocument
+    """Associated line document (BT-126-00) — line id and optional note."""
     product: TradeProduct
+    """Item information (BG-31) — what is being invoiced."""
     agreement: LineTradeAgreement
+    """Line trade agreement (BG-29) — gross and net price."""
     delivery: LineTradeDelivery
+    """Line trade delivery (BT-129-00) — invoiced quantity."""
     settlement: LineTradeSettlement
+    """Line trade settlement (BG-30-00) — line VAT, period,
+    allowances/charges, line total."""
 
 
 @dataclass(kw_only=True, slots=True)
 class Trade(Element):
-    """Supply chain trade transaction (header business transaction group)."""
+    """Supply chain trade transaction (BG-25-00).
+
+    The header business-transaction wrapper. Holds the three sibling
+    header groups (agreement, delivery, settlement) plus the list of
+    line items, and is where every cross-sibling validator runs (see
+    module docstring for the BR-* catalogue).
+    """
 
     tag: ClassVar[str] = "SupplyChainTradeTransaction"
     namespace: ClassVar[Namespace] = Namespace.rsm
 
     items: list[TradeLineItem] = field(default_factory=list)
+    """Invoice lines (BG-25, 0..*); required at BASIC+ (``BR-16``)."""
     agreement: TradeAgreement
+    """Header trade agreement (BT-10-00) — parties and references."""
     delivery: TradeDelivery
+    """Header trade delivery (BG-13-00) — ship-to and dispatch."""
     settlement: TradeSettlement
+    """Header trade settlement (BG-19) — currency, payment, totals."""
 
     @override
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
