@@ -219,11 +219,7 @@ class MonetarySummation(Element):
     """
     rounding_amount: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "RoundingAmount",
-            "profile": Profile.COMFORT,
-            "amount": True,
-        },
+        metadata={"tag": "RoundingAmount", "profile": Profile.COMFORT, "amount": True},
     )
     """Rounding amount (BT-114).
 
@@ -236,9 +232,7 @@ class MonetarySummation(Element):
 
     EN 16931-ID: BT-114
     """
-    grand_total: Decimal = field(
-        metadata={"tag": "GrandTotalAmount", "amount": True}
-    )
+    grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount", "amount": True})
     """Invoice total amount with VAT / Grand total amount.
 
     The Invoice total amount with VAT is the Invoice total amount without
@@ -254,9 +248,7 @@ class MonetarySummation(Element):
             "amount": True,
         },
     )
-    due_amount: Decimal = field(
-        metadata={"tag": "DuePayableAmount", "amount": True}
-    )
+    due_amount: Decimal = field(metadata={"tag": "DuePayableAmount", "amount": True})
     """Amount due for payment.
 
     The outstanding amount that is requested to be paid.
@@ -293,9 +285,7 @@ class MonetarySummation(Element):
                     "amount (BT-106).",
                 )
             )
-        errors.extend(
-            super(MonetarySummation, self).validate_internal(profile)
-        )
+        errors.extend(super(MonetarySummation, self).validate_internal(profile))
         return errors
 
 

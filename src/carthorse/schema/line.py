@@ -178,13 +178,10 @@ class GrossTradePrice(Element):
         if self.charge_amount < 0:
             errors.append(
                 ValidationError(
-                    "BR-28",
-                    "The Item gross price (BT-148) shall NOT be negative.",
+                    "BR-28", "The Item gross price (BT-148) shall NOT be negative."
                 )
             )
-        errors.extend(
-            super(GrossTradePrice, self).validate_internal(profile)
-        )
+        errors.extend(super(GrossTradePrice, self).validate_internal(profile))
         return errors
 
 
@@ -210,8 +207,7 @@ class NetTradePrice(Element):
         if self.charge_amount < 0:
             errors.append(
                 ValidationError(
-                    "BR-27",
-                    "The Item net price (BT-146) shall NOT be negative.",
+                    "BR-27", "The Item net price (BT-146) shall NOT be negative."
                 )
             )
         errors.extend(super(NetTradePrice, self).validate_internal(profile))
