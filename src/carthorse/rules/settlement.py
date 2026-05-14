@@ -69,6 +69,33 @@ def br_51(m: _set.FinancialCard, profile: Profile) -> list[ValidationError]:
     ]
 
 
+_CREDIT_TRANSFER_CODES = {"30", "42", "58"}
+
+
+def br_61(m: _set.PaymentMeans, profile: Profile) -> list[ValidationError]:
+    """BR-61: If the Payment means type code (BT-81) means SEPA credit
+    transfer, Local credit transfer or Non-SEPA international credit
+    transfer, the Payment account identifier (BT-84) shall be present.
+
+    Applies: BASIC_WL+ (BG-16 / BT-81 first appear there). The
+    credit-transfer family covers UNTDID 4461 codes ``30`` (Credit
+    transfer), ``42`` (Payment to bank account) and ``58`` (SEPA
+    credit transfer).
+    """
+    if m.type_code not in _CREDIT_TRANSFER_CODES:
+        return []
+    if m.payee is not None and m.payee.iban_id is not None:
+        return []
+    return [
+        ValidationError(
+            "BR-61",
+            "Payment means type code "
+            f"{m.type_code!r} indicates a credit transfer; "
+            "the Payment account identifier (BT-84, IBAN) shall be present.",
+        )
+    ]
+
+
 def bt_81_code_shape(m: _set.PaymentMeans, profile: Profile) -> list[ValidationError]:
     """BT-81 (Payment means type code) must be a UNTDID 4461 code
     (digits up to 3 chars, or ``ZZZ``).

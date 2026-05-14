@@ -63,6 +63,7 @@ from carthorse.rules import Validator
 from carthorse.rules.accounting import (
     br_5_currency_shape,
     br_12,
+    br_48,
     br_co_3,
     br_co_17,
     bt_8_code_shape,
@@ -276,6 +277,7 @@ class ApplicableTradeTax(Element):
         br_co_3,
         bt_8_code_shape,
         br_co_17,
+        br_48,
     )
 
     calculated_amount: Decimal | None = field(

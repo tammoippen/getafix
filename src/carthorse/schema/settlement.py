@@ -64,6 +64,7 @@ from carthorse.rules.settlement import (
     br_50,
     br_51,
     br_53,
+    br_61,
     br_co_14,
     br_co_15,
     br_co_16,
@@ -226,7 +227,10 @@ class PaymentMeans(Element):
     tag: ClassVar[str] = "SpecifiedTradeSettlementPaymentMeans"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    _validators: ClassVar[tuple[Validator["PaymentMeans"], ...]] = (bt_81_code_shape,)
+    _validators: ClassVar[tuple[Validator["PaymentMeans"], ...]] = (
+        bt_81_code_shape,
+        br_61,
+    )
 
     type_code: str = field(metadata={"tag": "TypeCode"})
     """Payment means type code (BT-81).

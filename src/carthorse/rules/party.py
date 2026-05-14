@@ -118,3 +118,41 @@ def br_10(m: _party.BuyerTradeParty, profile: Profile) -> list[ValidationError]:
             "BR-10", "An Invoice shall contain the Buyer postal address (BG-8)."
         )
     ]
+
+
+def br_62(m: _party.SellerTradeParty, profile: Profile) -> list[ValidationError]:
+    """BR-62: The Seller electronic address (BT-34) shall have a Scheme
+    identifier.
+
+    Applies: BASIC_WL+ (BG-X-34-00 first appears there).
+    """
+    addr = m.electronic_address
+    if addr is None:
+        return []
+    if addr.uri_id.scheme_id is not None:
+        return []
+    return [
+        ValidationError(
+            "BR-62",
+            "The Seller electronic address (BT-34) shall have a Scheme identifier.",
+        )
+    ]
+
+
+def br_63(m: _party.BuyerTradeParty, profile: Profile) -> list[ValidationError]:
+    """BR-63: The Buyer electronic address (BT-49) shall have a Scheme
+    identifier.
+
+    Applies: BASIC_WL+ (BG-X-49-00 first appears there).
+    """
+    addr = m.electronic_address
+    if addr is None:
+        return []
+    if addr.uri_id.scheme_id is not None:
+        return []
+    return [
+        ValidationError(
+            "BR-63",
+            "The Buyer electronic address (BT-49) shall have a Scheme identifier.",
+        )
+    ]

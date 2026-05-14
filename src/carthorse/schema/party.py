@@ -58,12 +58,9 @@ Validation rules enforced here:
 * ◯ ``BR-18`` / ``BR-19`` / ``BR-20`` / ``BR-56`` (tax representative
   needs name / address / country / VAT id) — implicit through
   required fields on :class:`SellerTaxRepresentativeTradeParty`.
-
-Validation rules not yet enforced (see ``docs/VALIDATION.md``):
-
-* ``BR-62`` / ``BR-63`` — Seller / Buyer electronic address require a
-  ``schemeID`` attribute. The :class:`URIID` element accepts an
-  optional ``scheme_id`` today; the presence rule is not checked.
+* ✓ ``BR-62`` / ``BR-63`` — :meth:`SellerTradeParty.validate_internal`
+  and :meth:`BuyerTradeParty.validate_internal` require a
+  ``schemeID`` on the electronic-address ``URIID`` when present.
 
 All ``SchemeID`` / ``SchemeId`` / ``scheme_id`` names follow the XSD
 ``schemeID`` attribute spelling (no ``a`` after ``schem``).
@@ -75,7 +72,14 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from carthorse.rules import Validator
-from carthorse.rules.party import br_10, br_co_9, br_co_26, bt_31_0_scheme_id
+from carthorse.rules.party import (
+    br_10,
+    br_62,
+    br_63,
+    br_co_9,
+    br_co_26,
+    bt_31_0_scheme_id,
+)
 from carthorse.schema.element import Element, ETElement
 from carthorse.schema.types import Profile
 
@@ -154,7 +158,8 @@ class URIID(SchemeID):
 
     Wraps the URI-based electronic address (e.g. an email or a PEPPOL
     participant id). The ``scheme_id`` attribute names the address
-    scheme — required per ``BR-62`` / ``BR-63`` (not yet enforced).
+    scheme — required per ``BR-62`` (Seller) and ``BR-63`` (Buyer),
+    enforced in :mod:`carthorse.rules.party`.
     """
 
     tag: ClassVar[str] = "URIID"
@@ -456,7 +461,7 @@ class SellerTradeParty(Element):
 
     tag: ClassVar[str] = "SellerTradeParty"
 
-    _validators: ClassVar[tuple[Validator["SellerTradeParty"], ...]] = (br_co_26,)
+    _validators: ClassVar[tuple[Validator["SellerTradeParty"], ...]] = (br_co_26, br_62)
 
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}
@@ -522,7 +527,7 @@ class BuyerTradeParty(Element):
 
     tag: ClassVar[str] = "BuyerTradeParty"
 
-    _validators: ClassVar[tuple[Validator["BuyerTradeParty"], ...]] = (br_10,)
+    _validators: ClassVar[tuple[Validator["BuyerTradeParty"], ...]] = (br_10, br_63)
 
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.BASIC_WL}

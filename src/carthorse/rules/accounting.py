@@ -158,6 +158,27 @@ def bt_8_code_shape(
     ]
 
 
+def br_48(m: _acc.ApplicableTradeTax, profile: Profile) -> list[ValidationError]:
+    """BR-48: Each VAT breakdown (BG-23) shall have a VAT category rate
+    (BT-119), except if the Invoice is not subject to VAT.
+
+    Applies: BASIC_WL+ (BG-23 first appears there). Category ``O``
+    (Services outside scope of tax) is exempt because the rate is
+    forbidden for that category per ``BR-O-5``.
+    """
+    if m.rate_applicable_percent is not None:
+        return []
+    if m.category_code == "O":
+        return []
+    return [
+        ValidationError(
+            "BR-48",
+            "Each VAT breakdown (BG-23) shall have a VAT category rate "
+            "(BT-119), except if the Invoice is not subject to VAT.",
+        )
+    ]
+
+
 def bt_118_0_vat_only(
     m: _acc.ApplicableTradeTax, profile: Profile
 ) -> list[ValidationError]:
