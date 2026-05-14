@@ -45,6 +45,9 @@ cli = [
 lxml = [
     { name = "lxml" },
 ]
+pdf = [
+    { name = "pypdf" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -53,6 +56,7 @@ dev = [
     { name = "lxml" },
     { name = "lxml-stubs" },
     { name = "openpyxl" },
+    { name = "pypdf" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-randomly" },
@@ -65,10 +69,11 @@ requires-dist = [
     { name = "beartype", specifier = ">=0.22.5" },
     { name = "lxml", marker = "extra == 'cli'", specifier = ">=6.0.2" },
     { name = "lxml", marker = "extra == 'lxml'", specifier = ">=6.0.2" },
+    { name = "pypdf", marker = "extra == 'pdf'", specifier = ">=6.11.0" },
     { name = "rich", marker = "extra == 'cli'", specifier = ">=13.0" },
     { name = "tagic", specifier = ">=1.4.0" },
 ]
-provides-extras = ["lxml", "cli"]
+provides-extras = ["lxml", "cli", "pdf"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -77,6 +82,7 @@ dev = [
     { name = "lxml", specifier = ">=6.0.2" },
     { name = "lxml-stubs", specifier = ">=0.5.1" },
     { name = "openpyxl", specifier = ">=3.1.5" },
+    { name = "pypdf", specifier = ">=6.11.0" },
     { name = "pytest", specifier = ">=9.0.1" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-randomly", specifier = ">=4.0.1" },
@@ -360,6 +366,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b0/77/a5b8c569bf593b0140bde72ea885a803b82086995367bf2037de0159d924/pygments-2.19.2.tar.gz", hash = "sha256:636cb2477cec7f8952536970bc533bc43743542f70392ae026374600add5b887", size = 4968631, upload-time = "2025-06-21T13:39:12.283Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl", hash = "sha256:86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b", size = 1225217, upload-time = "2025-06-21T13:39:07.939Z" },
+]
+
+[[package]]
+name = "pypdf"
+version = "6.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/58/6dd97d78a4b17a7a6b9d1c6ad23895abc41f0fdc49c553cc05bdfdcc36d0/pypdf-6.11.0.tar.gz", hash = "sha256:062b51c81b0910e6d2755e99e1c5547a0a23b7d0a32322af66240d8edcfabe87", size = 6453975, upload-time = "2026-05-09T13:26:48.955Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/b1/68feb7eb3b99f0c020b414234825f4a5d70e0126c18d933770e8c93a35fc/pypdf-6.11.0-py3-none-any.whl", hash = "sha256:769394d5756d5b304c9b6bef88b54b1816b328e7e6fc9254e625529a15ed4ab8", size = 338819, upload-time = "2026-05-09T13:26:46.904Z" },
 ]
 
 [[package]]

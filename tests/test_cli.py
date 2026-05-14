@@ -1,8 +1,9 @@
 """Tests for :mod:`carthorse.cli` — the ``carthorse`` console script.
 
 Exercises every exit-code branch by driving :func:`carthorse.cli.main`
-with samples shipped under ``tests/samples`` plus two synthesised
-inputs (malformed XML, non-CII XML).
+with samples shipped under ``tests/samples`` plus a few synthesised
+inputs (malformed XML, non-CII XML, PDFs with and without embedded
+factur-x.xml).
 """
 
 from __future__ import annotations
@@ -10,12 +11,22 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest as pt
+from pypdf import PdfWriter
 
 from carthorse.cli import main
+from carthorse.pdf import attach_xml
 
 SAMPLES = Path(__file__).parent / "samples"
 CLEAN_SAMPLE = SAMPLES / "EN16931_Einfach.cii.xml"
 INVALID_SAMPLE = SAMPLES / "MINIMUM_facturFrMinimum.xml"  # trips BR-CO-16
+
+
+def _blank_pdf(path: Path) -> Path:
+    writer = PdfWriter()
+    _ = writer.add_blank_page(width=200, height=200)
+    with path.open("wb") as fp:
+        writer.write(fp)
+    return path
 
 
 def test_cli_clean_sample_exits_zero(capsys: pt.CaptureFixture[str]):
@@ -61,6 +72,34 @@ def test_cli_non_cii_xml_exits_one(tmp_path: Path, capsys: pt.CaptureFixture[str
     assert main([str(not_cii)]) == 1
     captured = capsys.readouterr()
     assert "Could not parse" in captured.err
+
+
+def test_cli_pdf_input_renders_embedded_xml(
+    tmp_path: Path, capsys: pt.CaptureFixture[str]
+):
+    pdf = _blank_pdf(tmp_path / "invoice.pdf")
+    attach_xml(pdf, CLEAN_SAMPLE)
+    assert main([str(pdf)]) == 0
+    captured = capsys.readouterr()
+    assert "471102" in captured.out
+    assert "No validation errors" in captured.out
+
+
+def test_cli_pdf_without_xml_exits_one(tmp_path: Path, capsys: pt.CaptureFixture[str]):
+    pdf = _blank_pdf(tmp_path / "empty.pdf")
+    assert main([str(pdf)]) == 1
+    captured = capsys.readouterr()
+    assert "No Factur-X" in captured.err
+
+
+def test_cli_pdf_with_malformed_embedded_xml_exits_one(
+    tmp_path: Path, capsys: pt.CaptureFixture[str]
+):
+    pdf = _blank_pdf(tmp_path / "bad-xml.pdf")
+    attach_xml(pdf, b"this is not xml")
+    assert main([str(pdf)]) == 1
+    captured = capsys.readouterr()
+    assert "Embedded XML" in captured.err
 
 
 def test_cli_no_args_prints_usage(capsys: pt.CaptureFixture[str]):
