@@ -168,8 +168,14 @@ class Element(ABC):
             p = self._field_profile(f.name)
             if p is None:
                 p = f.metadata.get("profile")
-            if p is None and isinstance(value, Element):
-                p = value.__class__.profile
+            if p is None:
+                # For list-of-Element fields, the framework consults the
+                # item's class profile so a 0..* group declared at e.g.
+                # COMFORT is gated like a single 0..1 Element field would
+                # be. Empty lists fall through to MINIMUM.
+                sample = value[0] if isinstance(value, list) and value else value
+                if isinstance(sample, Element):
+                    p = sample.__class__.profile
             if p is None:
                 p = Profile.MINIMUM
 
