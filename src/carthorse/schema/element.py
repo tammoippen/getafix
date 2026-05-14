@@ -88,8 +88,11 @@ class Element(ABC):
         for f in fields(self):
             value = getattr(self, f.name)
             expected = _get_non_none_type(f.type)
-            if isinstance(expected, str):
-                continue
+            assert not isinstance(expected, str), (
+                f"{type(self).__name__}.{f.name}: annotation {f.type!r} is a "
+                "string-form forward reference; resolve via get_type_hints "
+                "or drop the future-annotations import on the module."
+            )
             if value is None:
                 if _allows_none(f.type):
                     continue
@@ -270,8 +273,11 @@ def _check_field(cls_name: str, name: str, value: Any, expected: Any) -> None:
                 f"{cls_name}.{name}: expected list, got {type(value).__name__}."
             )
         (item_t,) = get_args(expected)
-        if isinstance(item_t, str):
-            return
+        assert not isinstance(item_t, str), (
+            f"{cls_name}.{name}: list item annotation {item_t!r} is a "
+            "string-form forward reference; resolve via get_type_hints "
+            "or drop the future-annotations import on the module."
+        )
         for i, item in enumerate(value):
             _check_scalar(cls_name, f"{name}[{i}]", item, item_t)
         return
