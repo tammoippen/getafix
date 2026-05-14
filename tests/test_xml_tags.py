@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import lxml.etree as etree
-
 from carthorse.schema import Profile
 from carthorse.schema.accounting import (
     ApplicableTradeTax,
@@ -17,9 +15,10 @@ from carthorse.schema.accounting import (
 )
 from carthorse.schema.types import CategoryCode
 from tests._fixtures import wrap_subtree
+from tests._parsers import ParseFromBytes
 
 
-def test_exemption_reason_code_uses_distinct_tag():
+def test_exemption_reason_code_uses_distinct_tag(parser: ParseFromBytes):
     """BT-121 (ExemptionReasonCode) must round-trip independently of BT-120
     (ExemptionReason). Bug sweep #3."""
     tax = ApplicableTradeTax(
@@ -33,13 +32,13 @@ def test_exemption_reason_code_uses_distinct_tag():
     xml = tax.to_xml_internal(Profile.BASIC_WL).render(indent=True)
     assert "<ram:ExemptionReason>" in xml
     assert "<ram:ExemptionReasonCode>" in xml
-    parsed = ApplicableTradeTax.from_xml(  # pyright: ignore[reportArgumentType]
-        etree.fromstring(wrap_subtree(xml, "ApplicableTradeTax"))
+    parsed = ApplicableTradeTax.from_xml(
+        parser(wrap_subtree(xml, "ApplicableTradeTax"))
     )
     assert parsed == tax
 
 
-def test_trade_allowance_charge_basis_amount_uses_correct_tag():
+def test_trade_allowance_charge_basis_amount_uses_correct_tag(parser: ParseFromBytes):
     """BT-93 (BasisAmount) must render under <ram:BasisAmount>, not
     <ram:CalculationPercent>. Bug sweep #4."""
     ac = TradeAllowanceCharge(
@@ -55,7 +54,7 @@ def test_trade_allowance_charge_basis_amount_uses_correct_tag():
     xml = ac.to_xml_internal(Profile.COMFORT).render(indent=True)
     assert "<ram:BasisAmount>" in xml
     assert "<ram:CalculationPercent>" in xml
-    parsed = TradeAllowanceCharge.from_xml(  # pyright: ignore[reportArgumentType]
-        etree.fromstring(wrap_subtree(xml, "SpecifiedTradeAllowanceCharge"))
+    parsed = TradeAllowanceCharge.from_xml(
+        parser(wrap_subtree(xml, "SpecifiedTradeAllowanceCharge"))
     )
     assert parsed == ac

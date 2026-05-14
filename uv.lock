@@ -34,14 +34,19 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "beartype" },
-    { name = "lxml" },
     { name = "tagic" },
+]
+
+[package.optional-dependencies]
+lxml = [
+    { name = "lxml" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "basedpyright" },
     { name = "hypothesis" },
+    { name = "lxml" },
     { name = "lxml-stubs" },
     { name = "openpyxl" },
     { name = "pytest" },
@@ -53,14 +58,16 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beartype", specifier = ">=0.22.5" },
-    { name = "lxml", specifier = ">=6.0.2" },
+    { name = "lxml", marker = "extra == 'lxml'", specifier = ">=6.0.2" },
     { name = "tagic", specifier = ">=1.4.0" },
 ]
+provides-extras = ["lxml"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "basedpyright", specifier = ">=1.33.0" },
     { name = "hypothesis", specifier = ">=6.152.4" },
+    { name = "lxml", specifier = ">=6.0.2" },
     { name = "lxml-stubs", specifier = ">=0.5.1" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pytest", specifier = ">=9.0.1" },

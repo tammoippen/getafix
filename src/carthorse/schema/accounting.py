@@ -120,11 +120,11 @@ class TaxTotal(Element):
     def from_xml(cls, elem: ETElement) -> Self:
         if elem.tag != cls.get_qualified_tag():
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
-        if "currencyID" not in elem.attrib:
+        currency_id = elem.attrib.get("currencyID")
+        if currency_id is None:
             raise ValueError
         if elem.text is None:
             raise ValueError
-        currency_id = elem.attrib["currencyID"]
         value = elem.text.strip()
         return cls(amount=Decimal(value), currency_id=currency_id)
 

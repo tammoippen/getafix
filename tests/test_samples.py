@@ -14,11 +14,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import lxml.etree as etree
 import pytest as pt
 
 from carthorse.schema import Document
 from carthorse.schema.types import Namespace, Profile
+from tests._parsers import ParseFromFile
 
 SAMPLES_DIR = Path(__file__).parent / "samples"
 
@@ -60,10 +60,9 @@ def test_samples_directory_is_populated():
 
 
 @pt.mark.parametrize("sample", SAMPLES, ids=[s.name for s in SAMPLES])
-def test_sample_is_well_formed_cii(sample: Path):
+def test_sample_is_well_formed_cii(sample: Path, parse_file: ParseFromFile):
     """Each sample parses as XML and is a CrossIndustryInvoice document."""
-    tree = etree.parse(str(sample))
-    root = tree.getroot()
+    root = parse_file(sample)
     assert root.tag == f"{{{CII_NAMESPACE}}}CrossIndustryInvoice", (
         f"{sample.name} is not a CII document (root={root.tag})"
     )
@@ -72,6 +71,8 @@ def test_sample_is_well_formed_cii(sample: Path):
 @pt.mark.parametrize("sample", SAMPLES, ids=[s.name for s in SAMPLES])
 def test_sample_declares_known_profile(sample: Path):
     """The declared guideline URN matches the file-name prefix and a known Profile."""
+    import xml.etree.ElementTree as etree
+
     tree = etree.parse(str(sample))
     id_elem = tree.find(GUIDELINE_TAG)
     assert id_elem is not None, (
@@ -88,7 +89,6 @@ def test_sample_declares_known_profile(sample: Path):
 
 
 @pt.mark.parametrize("sample", SAMPLES, ids=[s.name for s in SAMPLES])
-def test_sample_roundtrips_through_document(sample: Path):
+def test_sample_roundtrips_through_document(sample: Path, parse_file: ParseFromFile):
     """Full parser round-trip."""
-    tree = etree.parse(str(sample))
-    Document.from_xml(tree.getroot())
+    Document.from_xml(parse_file(sample))

@@ -4,22 +4,21 @@ from __future__ import annotations
 
 from datetime import date
 
-import lxml.etree as etree
-
 from carthorse.schema import Profile
 from carthorse.schema.settlement import BillingSpecifiedPeriod
 from tests._fixtures import wrap_subtree
+from tests._parsers import ParseFromBytes
 
 
-def test_billing_specified_period_round_trips():
+def test_billing_specified_period_round_trips(parser: ParseFromBytes):
     """BG-14 BillingSpecifiedPeriod with start + end round-trips."""
     period = BillingSpecifiedPeriod(start=date(2025, 1, 1), end=date(2025, 1, 31))
     xml = period.to_xml_internal(Profile.BASIC_WL).render(indent=True)
     assert "<ram:BillingSpecifiedPeriod>" in xml
     assert "<ram:StartDateTime>" in xml
     assert "<ram:EndDateTime>" in xml
-    parsed = BillingSpecifiedPeriod.from_xml(  # pyright: ignore[reportArgumentType]
-        etree.fromstring(wrap_subtree(xml, "BillingSpecifiedPeriod"))
+    parsed = BillingSpecifiedPeriod.from_xml(
+        parser(wrap_subtree(xml, "BillingSpecifiedPeriod"))
     )
     assert parsed == period
 

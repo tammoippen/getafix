@@ -26,11 +26,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import lxml.etree as etree
 import pytest as pt
 
 from carthorse.schema import Document
 from carthorse.schema.types import Profile
+
+# XSD validation has no stdlib analogue — gate the whole module on lxml.
+pt.importorskip("lxml", reason="XSD validation requires lxml")
+
+import lxml.etree as etree
 
 SAMPLES_DIR = Path(__file__).parent / "samples"
 SCHEMAS_DIR = Path(__file__).parent / "schemas"
