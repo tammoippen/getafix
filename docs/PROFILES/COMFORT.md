@@ -4,6 +4,51 @@ Tracking surface for the remaining work to bring `carthorse` to full
 COMFORT (= EN 16931 = URN ``urn:cen.eu:en16931:2017``) conformance —
 structures *and* business rules.
 
+## Implementation status
+
+All ten work items in this checklist landed on branch
+``claude/comfort-profile-plan-QvJ2t`` as ten focused commits:
+
+| § | Work | Status |
+|---|---|---|
+| 3.4 | Context-aware ``TradeAllowanceCharge`` gating + ``HeaderTradeAllowanceCharge`` / ``LineTradeAllowanceCharge`` sentinel subclasses | ✓ |
+| framework | ``Element._field_profile`` hook + list-of-Element profile gate widening | ✓ |
+| 3.1 | BG-32 / BG-33 / BG-34 product groups on ``TradeProduct`` | ✓ |
+| 3.2 | Line-level references — BT-132 / BT-128 / BT-133 | ✓ |
+| 3.3 | Header payment-means detail — BT-82 / BG-18 / BT-85 / BT-86 | ✓ |
+| 4.1 | ``BR-51`` PAN regex on ``FinancialCard`` | ✓ |
+| 4.3 | ``BR-48`` / ``BR-61`` / ``BR-62`` / ``BR-63`` | ✓ |
+| 4.4 (5/6/7) | Per-VAT-category rate constraints — 27 codes wired via one dispatcher | ✓ |
+| 4.4 (10) | Per-VAT-category exemption-reason — 9 codes wired via one dispatcher | ✓ |
+| 4.5 | ``BR-DEC-*`` decimal-precision family — 21 wirings + ``max_decimals`` factory | ✓ |
+| 4.6 | ``StrEnum`` vendoring for 7 of the 16 BR-CL-* code lists + ``tools/extract_codelists.py`` | ✓ (partial — see notes) |
+
+Open follow-ups (out of scope for this branch):
+
+* §4.4 (-8): per-VAT-category basis sum identity — cross-cutting walk
+  not yet implemented. ``BR-CO-13`` already enforces the overall
+  identity; the per-category sub-rules are redundant in most cases
+  and require a per-category sum walker on ``Trade``.
+* §4.6: nine remaining BR-CL-* lists are unvendored
+  (``UNTDID1153ReferenceCode`` 818, ``UNTDID4451SubjectCode`` 402,
+  ``UNTDID7161ChargeReasonCode`` 178, ``UNTDID7143ItemClassSchemeID``
+  185, ``ICDSchemeID`` 239, ``MIME`` already exists with 6 members
+  but not yet enforced via field re-typing, ``UnitCode`` 2162,
+  ``UNTDID1001TypeCode`` 62, ``CategoryCode`` already exists). Field
+  re-typing on existing schema fields is the bigger lift — left to
+  follow-ups so the round-trip test suite stays green throughout.
+* §4.2: the appendix has BR-CO-21..24 (already ✓ as the "at least
+  one of reason / reason code" rule) and BR-CO-5..8 as the "same
+  type when both present" semantic rule (not enforced because
+  reliable enforcement requires a UNTDID 5189/7161 code → label
+  mapping table, which is brittle and language-dependent). The
+  initial plan body inverted these two rule families — keep the
+  appendix wording authoritative.
+
+After all ten commits the test suite is at **483 passing** with 0
+errors and 0 lint warnings beyond the pre-existing ``reportAny`` /
+``reportExplicitAny`` cluster.
+
 This file is the operational complement to:
 
 * ``docs/STRUCTURES.md`` — field narrative and per-profile field
