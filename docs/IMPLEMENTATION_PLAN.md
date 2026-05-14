@@ -125,6 +125,10 @@ implementation needs:
 
 ### EN 16931 / COMFORT (75-page appendix, 152 ram elements)
 
+> See ``docs/PROFILES/COMFORT.md`` for the executable parity checklist
+> — every BT/BG and BR-* gap with file path, target dataclass and a
+> verification recipe.
+
 EN 16931 enriches what's already modelled rather than adding many new
 top-level structures. Notable additions:
 
