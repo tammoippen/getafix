@@ -6,17 +6,16 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-import lxml.etree as etree
-
 from carthorse.schema import Profile
 from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from carthorse.schema.party import TaxSchemeId
 from carthorse.schema.settlement import PaymentTerms, TradeSettlement
 from carthorse.schema.types import CategoryCode
 from tests._fixtures import wrap_subtree
+from tests._parsers import ParseFromBytes
 
 
-def test_monetary_summation_two_tax_totals():
+def test_monetary_summation_two_tax_totals(parser: ParseFromBytes):
     """BG-22 may carry both BT-110 (invoice currency) and BT-111 (VAT
     accounting currency) as ``TaxTotalAmount`` siblings. Bug sweep #6."""
     summation = MonetarySummation(
@@ -34,15 +33,13 @@ def test_monetary_summation_two_tax_totals():
     assert xml.count("<ram:TaxTotalAmount") == 2
     assert 'currencyID="EUR"' in xml
     assert 'currencyID="USD"' in xml
-    parsed = MonetarySummation.from_xml(  # pyright: ignore[reportArgumentType]
-        etree.fromstring(
-            wrap_subtree(xml, "SpecifiedTradeSettlementHeaderMonetarySummation")
-        )
+    parsed = MonetarySummation.from_xml(
+        parser(wrap_subtree(xml, "SpecifiedTradeSettlementHeaderMonetarySummation"))
     )
     assert parsed == summation
 
 
-def test_amount_currency_id_round_trips():
+def test_amount_currency_id_round_trips(parser: ParseFromBytes):
     """``currencyID`` attributes on udt:AmountType elements survive a
     parse → render round-trip even though carthorse does not expose
     them as dataclass fields. Bug sweep #7."""
@@ -59,7 +56,7 @@ def test_amount_currency_id_round_trips():
         '  <ram:DuePayableAmount currencyID="EUR">119.00</ram:DuePayableAmount>\n'
         "</ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
     )
-    parsed = MonetarySummation.from_xml(etree.fromstring(src.encode()))  # pyright: ignore[reportArgumentType]
+    parsed = MonetarySummation.from_xml(parser(src.encode()))
     out = parsed.to_xml_internal(Profile.BASIC_WL).render(indent=True)
     # Every amount element keeps its currencyID="EUR" attribute.
     assert out.count('currencyID="EUR"') == 5

@@ -18,12 +18,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import lxml.etree as etree
 import pytest as pt
 from hypothesis import HealthCheck, given, settings
 
 from carthorse.schema import Document
 from carthorse.schema.types import Profile
+
+# Strategy + XSD validation both require lxml — gate the whole module.
+pt.importorskip("lxml", reason="hypothesis strategies and XSD validation require lxml")
+
+import lxml.etree as etree
+
 from tests.strategies import invoices_for
 
 _SCHEMA_ROOT = Path(__file__).resolve().parent / "schemas"

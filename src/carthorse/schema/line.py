@@ -118,11 +118,12 @@ class Quantity(Element):
     def from_xml(cls, elem: ETElement) -> Self:
         if elem.tag != cls.get_qualified_tag():
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
-        if "unitCode" not in elem.attrib:
+        unit_code = elem.attrib.get("unitCode")
+        if unit_code is None:
             raise ValueError("Quantity element missing required unitCode")
         if elem.text is None:
             raise ValueError
-        return cls(value=Decimal(elem.text.strip()), unit_code=elem.attrib["unitCode"])
+        return cls(value=Decimal(elem.text.strip()), unit_code=unit_code)
 
 
 @dataclass(kw_only=True, slots=True)

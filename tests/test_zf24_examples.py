@@ -16,11 +16,11 @@ a field or mis-gates a profile will break here loudly.
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as etree
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-import lxml.etree as etree
 import pytest as pt
 
 from carthorse.schema import Document, Profile
@@ -37,7 +37,7 @@ def _load(name: str) -> Document:
 def _roundtrip(doc: Document) -> Document:
     """Render to XML and parse back — equality must hold."""
     rendered = doc.to_xml().render(indent=True)
-    reparsed = Document.from_xml(etree.fromstring(rendered.encode()))
+    reparsed = Document.from_xml(etree.fromstring(rendered))
     assert reparsed == doc, "round-trip produced a different Document"
     return reparsed
 

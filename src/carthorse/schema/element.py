@@ -1,26 +1,30 @@
 import datetime
 import json
 import types
+import xml.etree.ElementTree as _stdlib_etree
 from abc import ABC
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from dataclasses import Field, dataclass, fields
 from decimal import Decimal
-from typing import Any, ClassVar, Protocol, Self, get_args, get_origin
+from typing import TYPE_CHECKING, Any, ClassVar, Self, get_args, get_origin
 
 from tagic.xml import XML
 
 from carthorse.schema.types import Namespace, Profile
 
+if TYPE_CHECKING:
+    # lxml is an optional runtime dependency; the ``ETElement`` alias unions
+    # the stdlib ``Element`` with lxml's ``_Element`` so :meth:`Element.from_xml`
+    # accepts either parser's output. The TYPE_CHECKING guard keeps lxml off
+    # the import path at runtime — pyright still sees the lxml branch.
+    from lxml.etree import _Element as _LxmlElement
 
-class ETElement(Protocol):
-    # works with lxml and xml
-    tag: str
-    text: str | None
-    attrib: dict[str, str]
-
-    def __iter__(self) -> "Iterator[ETElement]": ...
-    def __len__(self) -> int: ...
-    def __getitem__(self, item: int) -> "ETElement": ...
+    type ETElement = _stdlib_etree.Element | _LxmlElement
+else:
+    # Runtime alias — both parsers expose the same duck-typed shape
+    # (tag/text/attrib/__iter__/__len__/__getitem__), so the runtime form
+    # carries only the always-importable stdlib type.
+    type ETElement = _stdlib_etree.Element
 
 
 class ProfileMismatch(ValueError): ...
@@ -224,12 +228,10 @@ class Element(ABC):
                     if res is None:
                         continue
                     params[f.name] = Decimal(res)
-                    if (
-                        has_currency_field
-                        and f.metadata.get("amount")
-                        and "currencyID" in el.attrib
-                    ):
-                        captured_currency = el.attrib["currencyID"]
+                    if has_currency_field and f.metadata.get("amount"):
+                        currency_attr = el.attrib.get("currencyID")
+                        if currency_attr is not None:
+                            captured_currency = currency_attr
                 elif issubclass(curr_type, bool):
                     assert not is_list
                     params.update(_parse_bool(el, f))
