@@ -53,7 +53,9 @@ Validation rules not yet enforced (see ``docs/VALIDATION.md``):
 
 from dataclasses import dataclass, field
 from datetime import date
-from typing import ClassVar
+from typing import ClassVar, Self, override
+
+from tagic.xml import XML
 
 from carthorse.rules import Validator
 from carthorse.rules.settlement import (
@@ -74,10 +76,10 @@ from carthorse.schema.accounting import (
     HeaderTradeAllowanceCharge,
     MonetarySummation,
 )
-from carthorse.schema.element import Element
+from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import PayeeTradeParty
 from carthorse.schema.references import InvoiceReferencedDocument
-from carthorse.schema.types import Profile
+from carthorse.schema.types import Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -128,12 +130,80 @@ class PayeePartyCreditorFinancialAccount(Element):
     must be present; ``BR-61`` further requires an IBAN for SEPA /
     local / non-SEPA credit transfers (not yet enforced).
     """
+    account_name: str | None = field(
+        default=None, metadata={"tag": "AccountName", "profile": Profile.COMFORT}
+    )
+    """Payment account name (BT-85); COMFORT+.
+
+    The name of the payment account, used to identify the account
+    when the account holder is different from the Payee.
+    """
     proprietary_id: str | None = field(default=None, metadata={"tag": "ProprietaryID"})
     """National (non-SEPA) account number (BT-84-0).
 
     Note: prefer ``iban_id`` when appropriate; ``proprietary_id`` is
     reserved for the non-SEPA case.
     """
+
+
+@dataclass(kw_only=True, slots=True)
+class FinancialCard(Element):
+    """Payment card (BG-18); COMFORT+.
+
+    Carries the last 4..6 digits of the Payment card primary account
+    number (BT-87) and an optional cardholder name (BT-88). ``BR-51``
+    constrains BT-87 to 4..6 numeric digits (not yet enforced).
+    """
+
+    tag: ClassVar[str] = "ApplicableTradeSettlementFinancialCard"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    id: str = field(metadata={"tag": "ID"})
+    """Payment card primary account number, last 4..6 digits (BT-87)."""
+    cardholder_name: str | None = field(
+        default=None, metadata={"tag": "CardholderName"}
+    )
+    """Payment card holder name (BT-88)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class CreditorFinancialInstitution(Element):
+    """Creditor's bank (BG-17 cont., BT-86); COMFORT+.
+
+    A single ``BICID`` identifying the receiving bank for credit
+    transfers. The XSD requires the ``BICID`` child element to be
+    present (``minOccurs=1``) but real-world ZUGFeRD samples ship it
+    self-closing when the BIC is unknown. The dataclass therefore
+    treats the value as optional and the renderer always emits the
+    wrapper element (empty when ``bic_id is None``) to keep
+    re-rendered XML XSD-valid.
+    """
+
+    tag: ClassVar[str] = "PayeeSpecifiedCreditorFinancialInstitution"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    bic_id: str | None = None
+    """Payment service provider identifier (BT-86)."""
+
+    @override
+    def to_xml_internal(self, profile: Profile) -> XML:
+        inner = XML(f"{Namespace.ram.name}:BICID")
+        if self.bic_id is not None:
+            inner = inner[self.bic_id]
+        return XML(self.get_tag())[inner]
+
+    @override
+    @classmethod
+    def from_xml(cls, elem: ETElement) -> Self:
+        if elem.tag != cls.get_qualified_tag():
+            raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
+        bic_qtag = Namespace.ram.get_qualified_tag("BICID")
+        for child in elem:
+            if child.tag == bic_qtag:
+                if child.text is None:
+                    return cls(bic_id=None)
+                return cls(bic_id=child.text.strip())
+        return cls(bic_id=None)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -177,10 +247,18 @@ class PaymentMeans(Element):
 
     https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred4461.htm
     """
+    information: str | None = field(
+        default=None, metadata={"tag": "Information", "profile": Profile.COMFORT}
+    )
+    """Free-text payment-means description (BT-82); COMFORT+."""
+    financial_card: FinancialCard | None = None
+    """Payment card (BG-18); COMFORT+."""
     payer: PayerPartyDebtorFinancialAccount | None = None
     """Debited account (BT-91-00) — direct-debit payments only."""
     payee: PayeePartyCreditorFinancialAccount | None = None
     """Credit-transfer account (BG-17) — credit-transfer payments only."""
+    creditor_institution: CreditorFinancialInstitution | None = None
+    """Creditor's bank (BG-17 cont. / BT-86); COMFORT+."""
 
 
 @dataclass(kw_only=True, slots=True)
