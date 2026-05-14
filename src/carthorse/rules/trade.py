@@ -1041,6 +1041,58 @@ def _check_rate(category: CategoryCode, rate: Decimal | None) -> str | None:
     return description
 
 
+_VAT_EXEMPTION_REQUIRES: frozenset[CategoryCode] = frozenset(
+    {
+        CategoryCode.T_E,
+        CategoryCode.T_AE,
+        CategoryCode.T_G,
+        CategoryCode.T_K,
+        CategoryCode.T_O,
+    }
+)
+
+_VAT_EXEMPTION_FORBIDS: frozenset[CategoryCode] = frozenset(
+    {CategoryCode.T_S, CategoryCode.T_Z, CategoryCode.T_L, CategoryCode.T_M}
+)
+
+
+def vat_category_exemption_reason(
+    m: _trade.Trade, profile: Profile
+) -> list[ValidationError]:
+    """BR-X-10 — per-VAT-category exemption-reason constraint on
+    every header VAT breakdown row (BG-23).
+
+    Categories that levy VAT (S, Z, IG, IP) must NOT carry an
+    exemption reason text (BT-120) or code (BT-121). Categories that
+    do not levy VAT (E, AE, G, IC, O) MUST carry at least one of
+    them — both text and code are also acceptable.
+    """
+    errors: list[ValidationError] = []
+    for tt in m.settlement.trade_taxes or []:
+        cat = tt.category_code
+        has_text = tt.exemption_reason is not None
+        has_code = tt.exemption_reason_code is not None
+        if cat in _VAT_EXEMPTION_FORBIDS and (has_text or has_code):
+            errors.append(
+                _err(
+                    _vat_rate_violation_code(cat, "10"),
+                    f"VAT breakdown with category {cat.value!r} shall "
+                    "not carry a VAT exemption reason text (BT-120) "
+                    "or code (BT-121).",
+                )
+            )
+        if cat in _VAT_EXEMPTION_REQUIRES and not (has_text or has_code):
+            errors.append(
+                _err(
+                    _vat_rate_violation_code(cat, "10"),
+                    f"VAT breakdown with category {cat.value!r} shall "
+                    "carry a VAT exemption reason text (BT-120) or "
+                    "code (BT-121).",
+                )
+            )
+    return errors
+
+
 def vat_category_rates(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-X-5 / BR-X-6 / BR-X-7 — per-VAT-category rate constraints.
 

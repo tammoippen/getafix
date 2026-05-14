@@ -190,6 +190,24 @@ def make_vat_doc(
         per_cat_rate[allowance_category] = allowance_rate
     if charge_category is not None and charge_category not in per_cat_rate:
         per_cat_rate[charge_category] = charge_rate
+    # Categories that require an exemption reason per BR-{cat}-10 —
+    # default reason text so the fixture is spec-valid out of the box.
+    _REQUIRES_EXEMPTION: frozenset[CategoryCode] = frozenset(
+        {
+            CategoryCode.T_E,
+            CategoryCode.T_AE,
+            CategoryCode.T_G,
+            CategoryCode.T_K,
+            CategoryCode.T_O,
+        }
+    )
+    _EXEMPTION_TEXT: dict[CategoryCode, str] = {
+        CategoryCode.T_E: "Exempt from VAT",
+        CategoryCode.T_AE: "Reverse charge",
+        CategoryCode.T_G: "Export outside the EU",
+        CategoryCode.T_K: "Intra-community supply",
+        CategoryCode.T_O: "Not subject to VAT",
+    }
     trade_taxes: list[ApplicableTradeTax] = []
     total_vat = Decimal("0")
     for cat, basis in per_cat_basis.items():
@@ -200,6 +218,9 @@ def make_vat_doc(
             else Decimal("0")
         )
         total_vat += calculated
+        exemption_text = (
+            _EXEMPTION_TEXT.get(cat) if cat in _REQUIRES_EXEMPTION else None
+        )
         trade_taxes.append(
             ApplicableTradeTax(
                 calculated_amount=calculated,
@@ -207,6 +228,7 @@ def make_vat_doc(
                 category_code=cat,
                 due_date_code="5",
                 rate_applicable_percent=rate,
+                exemption_reason=exemption_text,
             )
         )
     grand_total = tax_basis + total_vat
