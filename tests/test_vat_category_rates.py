@@ -10,7 +10,7 @@ For every VAT category code ``X``:
   ``CategoryTradeTax`` at charge level.
 
 Rate predicates per category, drawn from the EN 16931 Technical
-Appendix (Profile EN16931, pp. 62–74):
+Appendix (Profile EN16931, pp. 62..74):
 
 * ``S`` — rate > 0.
 * ``Z`` / ``E`` / ``AE`` / ``G`` / ``K`` (IC) — rate == 0.
@@ -27,12 +27,6 @@ import pytest as pt
 from carthorse.schema import Document
 from carthorse.schema.accounting import CategoryTradeTax, HeaderTradeAllowanceCharge
 from carthorse.schema.element import ValidationErrors
-from carthorse.schema.party import (
-    PostalTradeAddressExtended,
-    SellerTradeParty,
-    SpecifiedTaxRegistration,
-    TaxSchemeId,
-)
 from carthorse.schema.types import CategoryCode
 from tests._fixtures import make_vat_doc
 
@@ -45,9 +39,9 @@ def _set_line_rate(doc: Document, rate: Decimal | None) -> None:
 def _add_doc_allowance(
     doc: Document, *, category: CategoryCode, rate: Decimal | None
 ) -> None:
-    doc.trade.settlement.allowance_charge = list(
-        doc.trade.settlement.allowance_charge or []
-    ) + [
+    existing = doc.trade.settlement.allowance_charge or []
+    doc.trade.settlement.allowance_charge = [
+        *existing,
         HeaderTradeAllowanceCharge(
             indicator=False,
             actual_amount=Decimal("0"),
@@ -55,16 +49,16 @@ def _add_doc_allowance(
                 category_code=category, rate_applicable_percent=rate
             ),
             reason="x",
-        )
+        ),
     ]
 
 
 def _add_doc_charge(
     doc: Document, *, category: CategoryCode, rate: Decimal | None
 ) -> None:
-    doc.trade.settlement.allowance_charge = list(
-        doc.trade.settlement.allowance_charge or []
-    ) + [
+    existing = doc.trade.settlement.allowance_charge or []
+    doc.trade.settlement.allowance_charge = [
+        *existing,
         HeaderTradeAllowanceCharge(
             indicator=True,
             actual_amount=Decimal("0"),
@@ -72,7 +66,7 @@ def _add_doc_charge(
                 category_code=category, rate_applicable_percent=rate
             ),
             reason="x",
-        )
+        ),
     ]
 
 
@@ -109,21 +103,13 @@ class TestZeroRated:
 
     def test_br_z_5_passes_at_zero(self) -> None:
         doc = make_vat_doc(line_category=CategoryCode.T_Z)
-        _set_line_rate(doc, Decimal("0"))
-        # category Z requires seller VAT or local tax — make_vat_doc default
-        # uses Standard rated; flip the BG-23 row's rate to keep the math
-        # consistent and emit BR-Z-3 if VAT is missing.
-        doc.trade.settlement.trade_taxes[0].category_code = CategoryCode.T_Z
-        doc.trade.settlement.trade_taxes[0].rate_applicable_percent = Decimal("0")
-        # BR-Z-3/4 still fire elsewhere if seller VAT registration drops;
-        # this test only asserts BR-Z-5 does NOT fire when rate==0.
-        errors = []
+        # make_vat_doc already defaults Z to rate=0; this round-trip
+        # asserts BR-Z-5 does NOT fire under the spec-correct combo.
         try:
             doc.validate()
+            errors: list = []
         except ValidationErrors as e:
-            errors = e.value.errors if hasattr(e, "value") else e.errors
-        except Exception:
-            pass
+            errors = list(e.errors)
         assert not any(v.code == "BR-Z-5" for v in errors), errors
 
 
@@ -154,45 +140,29 @@ class TestNotSubjectToVat:
 class TestIgicCanary:
     def test_br_ig_5_passes_at_zero(self) -> None:
         doc = make_vat_doc(line_category=CategoryCode.T_L)
-        _set_line_rate(doc, Decimal("0"))
-        # IG category drops Seller VAT requirement; supply a local FC tax id.
-        seller_with_fc = SellerTradeParty(
-            name="Seller",
-            address=PostalTradeAddressExtended(country_id="ES"),
-            tax_registrations=[
-                SpecifiedTaxRegistration(
-                    id=TaxSchemeId(id="ES1234567Z", scheme_id="VA")
-                )
-            ],
-        )
-        doc.trade.agreement.seller = seller_with_fc
-        doc.trade.settlement.trade_taxes[0].category_code = CategoryCode.T_L
-        doc.trade.settlement.trade_taxes[0].rate_applicable_percent = Decimal("0")
-        errors = []
         try:
             doc.validate()
+            errors: list = []
         except ValidationErrors as e:
-            errors = e.errors
+            errors = list(e.errors)
         assert not any(v.code == "BR-IG-5" for v in errors), errors
 
     def test_br_ig_5_passes_at_positive_rate(self) -> None:
         doc = make_vat_doc(line_category=CategoryCode.T_L)
         _set_line_rate(doc, Decimal("7"))
-        seller_with_va = SellerTradeParty(
-            name="Seller",
-            address=PostalTradeAddressExtended(country_id="ES"),
-            tax_registrations=[
-                SpecifiedTaxRegistration(
-                    id=TaxSchemeId(id="ES1234567Z", scheme_id="VA")
-                )
-            ],
-        )
-        doc.trade.agreement.seller = seller_with_va
-        doc.trade.settlement.trade_taxes[0].category_code = CategoryCode.T_L
         doc.trade.settlement.trade_taxes[0].rate_applicable_percent = Decimal("7")
-        errors = []
+        # Recompute totals — BG-23 basis 100, rate 7% → calculated 7.00.
+        doc.trade.settlement.trade_taxes[0].calculated_amount = Decimal("7.00")
+        doc.trade.settlement.monetary_summation.tax_total = [
+            type(doc.trade.settlement.monetary_summation.tax_total[0])(
+                amount=Decimal("7.00"), currency_id="EUR"
+            )
+        ]
+        doc.trade.settlement.monetary_summation.grand_total = Decimal("107.00")
+        doc.trade.settlement.monetary_summation.due_amount = Decimal("107.00")
         try:
             doc.validate()
+            errors: list = []
         except ValidationErrors as e:
-            errors = e.errors
+            errors = list(e.errors)
         assert not any(v.code == "BR-IG-5" for v in errors), errors

@@ -993,7 +993,7 @@ def br_co_24(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
 # (c) every document-level charge (BT-103) — BR-X-7.
 #
 # Predicates per category, lifted from the EN16931 Technical Appendix
-# pp. 62–74:
+# pp. 62-74:
 
 _RatePredicate = Callable[[Decimal | None], bool]
 
