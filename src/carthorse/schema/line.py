@@ -20,13 +20,14 @@ line-scoped element / BT IDs:
 
 This module covers the BASIC profile shape plus the COMFORT
 product enrichments :class:`ProductCharacteristic` (BG-32),
-:class:`ProductClassification` (BG-33) and :class:`OriginCountry`
-(BG-34). Remaining EN 16931 enrichments (line-level
-``BuyerOrderReferencedDocument``, ``AdditionalReferencedDocument``,
-``ReceivableSpecifiedTradeAccountingAccount``) and the EXTENDED
-sub-line / ``IncludedReferencedProduct`` / per-line deviating-party
-groups are tracked in ``docs/PROFILES/COMFORT.md`` and
-``docs/IMPLEMENTATION_PLAN.md``.
+:class:`ProductClassification` (BG-33), :class:`OriginCountry`
+(BG-34) and the line-level reference fields
+:class:`LineBuyerOrderReferencedDocument` (BT-132),
+:class:`LineAdditionalReferencedDocument` (BT-128) and the line
+reuse of :class:`~carthorse.schema.settlement.ReceivableAccountingAccount`
+(BT-133). The EXTENDED sub-line / ``IncludedReferencedProduct`` /
+per-line deviating-party groups are tracked in
+``docs/PROFILES/COMFORT.md`` and ``docs/IMPLEMENTATION_PLAN.md``.
 
 Validation rules covered:
 
@@ -59,7 +60,10 @@ from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import GlobalID
-from carthorse.schema.settlement import BillingSpecifiedPeriod
+from carthorse.schema.settlement import (
+    BillingSpecifiedPeriod,
+    ReceivableAccountingAccount,
+)
 from carthorse.schema.types import Namespace, Profile
 
 
@@ -410,6 +414,49 @@ class DocumentLineDocument(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class LineBuyerOrderReferencedDocument(Element):
+    """Line-level purchase-order line reference (BT-132-00); COMFORT+.
+
+    Distinct from the header :class:`~carthorse.schema.references.BuyerOrderReferencedDocument`:
+    the line variant carries only ``LineID`` (BT-132 — referenced
+    purchase-order line position) and never ``IssuerAssignedID``.
+    """
+
+    tag: ClassVar[str] = "BuyerOrderReferencedDocument"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    line_id: str = field(metadata={"tag": "LineID"})
+    """Referenced purchase-order line position (BT-132)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class LineAdditionalReferencedDocument(Element):
+    """Line-level invoice-line object identifier (BT-128-00); COMFORT+.
+
+    Distinct from the header :class:`~carthorse.schema.references.AdditionalReferencedDocument`:
+    the line variant only carries ``IssuerAssignedID`` (BT-128), a
+    fixed ``TypeCode`` of ``"130"`` (Invoicing data sheet, BT-128-0)
+    and an optional ``ReferenceTypeCode`` (BT-128-1, UNTDID 1153
+    scheme id). It never carries BT-122 supporting-document fields.
+    """
+
+    tag: ClassVar[str] = "AdditionalReferencedDocument"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
+    """Invoice line object identifier (BT-128)."""
+    type_code: str = field(default="130", metadata={"tag": "TypeCode"})
+    """Document type code (BT-128-0); fixed to ``"130"``."""
+    reference_type_code: str | None = field(
+        default=None, metadata={"tag": "ReferenceTypeCode"}
+    )
+    """Scheme identifier (BT-128-1).
+
+    Code list: UNTDID 1153 (reference qualifier).
+    """
+
+
+@dataclass(kw_only=True, slots=True)
 class LineTradeAgreement(Element):
     """Line trade agreement / price details (BG-29).
 
@@ -417,13 +464,16 @@ class LineTradeAgreement(Element):
     applied for the goods and services invoiced on the invoice line.
 
     Note: element order in the rendered XML follows the XSD sequence
-    — ``GrossPriceProductTradePrice`` (optional) precedes
+    — ``BuyerOrderReferencedDocument`` (BT-132-00; COMFORT+) precedes
+    ``GrossPriceProductTradePrice`` (optional) which precedes
     ``NetPriceProductTradePrice`` (required).
     """
 
     tag: ClassVar[str] = "SpecifiedLineTradeAgreement"
     profile: ClassVar[Profile] = Profile.BASIC
 
+    buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
+    """Referenced purchase-order line (BT-132-00); COMFORT+."""
     gross_price: GrossTradePrice | None = None
     """Item gross price (BT-148-00)."""
     net_price: NetTradePrice
@@ -504,3 +554,14 @@ class LineTradeSettlement(Element):
     """
     monetary_summation: LineMonetarySummation
     """Invoice line totals (BT-131-00); required."""
+    additional_references: list[LineAdditionalReferencedDocument] | None = None
+    """Invoice line object identifier(s) (BT-128-00, 0..*); COMFORT+."""
+    accounting_account: ReceivableAccountingAccount | None = field(
+        default=None, metadata={"profile": Profile.COMFORT}
+    )
+    """Line-level Buyer accounting reference (BT-133-00); COMFORT+.
+
+    Reuses the header :class:`~carthorse.schema.settlement.ReceivableAccountingAccount`
+    class; the field-level profile override pins line-level rendering
+    to COMFORT (BT-133) instead of the class's native BASIC_WL (BT-19).
+    """
