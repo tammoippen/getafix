@@ -15,6 +15,7 @@ dependencies = [
 [project.optional-dependencies]
 lxml = ["lxml>=6.0.2"]
 cli = ["lxml>=6.0.2", "rich>=13.0"]
+pdf = ["pypdf>=6.11.0"]
 
 [project.scripts]
 carthorse = "carthorse.cli:main"
@@ -30,6 +31,7 @@ dev = [
     "lxml>=6.0.2",
     "lxml-stubs>=0.5.1",
     "openpyxl>=3.1.5",
+    "pypdf>=6.11.0",
     "pytest>=9.0.1",
     "pytest-cov>=7.0.0",
     "pytest-randomly>=4.0.1",
