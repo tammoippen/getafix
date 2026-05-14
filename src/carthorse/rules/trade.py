@@ -23,7 +23,7 @@ See ``docs/VALIDATOR_REFACTOR.md`` for the rework plan.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -980,4 +980,109 @@ def br_co_24(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
                         "reason code (BT-145), or both.",
                     )
                 )
+    return errors
+
+
+# ---------------------------------------------------------------------------
+# Per-VAT-category rate constraints — BR-X-5 / BR-X-6 / BR-X-7
+# ---------------------------------------------------------------------------
+#
+# Each VAT category code constrains the VAT rate carried on
+# (a) every invoice line (BT-152) — BR-X-5,
+# (b) every document-level allowance (BT-96) — BR-X-6, and
+# (c) every document-level charge (BT-103) — BR-X-7.
+#
+# Predicates per category, lifted from the EN16931 Technical Appendix
+# pp. 62–74:
+
+_RatePredicate = Callable[[Decimal | None], bool]
+
+_VAT_RATE_PREDICATES: dict[CategoryCode, tuple[_RatePredicate, str]] = {
+    CategoryCode.T_S: (lambda r: r is not None and r > 0, "shall be greater than zero"),
+    CategoryCode.T_Z: (lambda r: r == 0, "shall be 0 (zero)"),
+    CategoryCode.T_E: (lambda r: r == 0, "shall be 0 (zero)"),
+    CategoryCode.T_AE: (lambda r: r == 0, "shall be 0 (zero)"),
+    CategoryCode.T_G: (lambda r: r == 0, "shall be 0 (zero)"),
+    CategoryCode.T_K: (lambda r: r == 0, "shall be 0 (zero)"),
+    CategoryCode.T_L: (
+        lambda r: r is not None and r >= 0,
+        "shall be 0 (zero) or greater than zero",
+    ),
+    CategoryCode.T_M: (
+        lambda r: r is not None and r >= 0,
+        "shall be 0 (zero) or greater than zero",
+    ),
+    CategoryCode.T_O: (lambda r: r is None, "shall not be present"),
+}
+
+_VAT_RULE_PREFIX: dict[CategoryCode, str] = {
+    CategoryCode.T_S: "S",
+    CategoryCode.T_Z: "Z",
+    CategoryCode.T_E: "E",
+    CategoryCode.T_AE: "AE",
+    CategoryCode.T_G: "G",
+    CategoryCode.T_K: "IC",
+    CategoryCode.T_L: "IG",
+    CategoryCode.T_M: "IP",
+    CategoryCode.T_O: "O",
+}
+
+
+def _vat_rate_violation_code(category: CategoryCode, suffix: str) -> str:
+    return f"BR-{_VAT_RULE_PREFIX[category]}-{suffix}"
+
+
+def _check_rate(category: CategoryCode, rate: Decimal | None) -> str | None:
+    """Return the failure description if ``rate`` violates the category's
+    predicate; otherwise ``None``."""
+    predicate, description = _VAT_RATE_PREDICATES[category]
+    if predicate(rate):
+        return None
+    return description
+
+
+def vat_category_rates(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-X-5 / BR-X-6 / BR-X-7 — per-VAT-category rate constraints.
+
+    One dispatch covers all nine categories (S, Z, E, AE, G, IC, IG, IP,
+    O) at three placements (line / doc allowance / doc charge). Emits
+    distinct error codes per (category, placement).
+    """
+    errors: list[ValidationError] = []
+
+    # BR-X-5 — line-level (BT-151 / BT-152).
+    for idx, item in enumerate(m.items):
+        cat = item.settlement.applicable_trade_tax.category_code
+        rate = item.settlement.applicable_trade_tax.rate_applicable_percent
+        description = _check_rate(cat, rate)
+        if description is not None:
+            errors.append(
+                _err(
+                    _vat_rate_violation_code(cat, "5"),
+                    f"line {idx + 1}: VAT category {cat.value!r} "
+                    f"rate (BT-152) {description}.",
+                )
+            )
+
+    # BR-X-6 / BR-X-7 — document-level allowance (BT-95 / BT-96) and
+    # charge (BT-102 / BT-103).
+    for ac in m.settlement.allowance_charge or []:
+        ctt = ac.category_trade_tax
+        if ctt is None:
+            continue
+        cat = ctt.category_code
+        description = _check_rate(cat, ctt.rate_applicable_percent)
+        if description is None:
+            continue
+        suffix = "7" if ac.indicator else "6"
+        level = "charge" if ac.indicator else "allowance"
+        bt = "BT-103" if ac.indicator else "BT-96"
+        errors.append(
+            _err(
+                _vat_rate_violation_code(cat, suffix),
+                f"document-level {level}: VAT category "
+                f"{cat.value!r} rate ({bt}) {description}.",
+            )
+        )
+
     return errors

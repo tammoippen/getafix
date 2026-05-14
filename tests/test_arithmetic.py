@@ -244,7 +244,12 @@ class TestBrCoArithmetic:
 
     def test_br_co_11_allowance_total_matches_sum(self) -> None:
         """BT-107 = sum of document-level allowance BT-92."""
-        doc = make_vat_doc(allowance_category=CategoryCode.T_S)
+        # Use zero-rated categories so the VAT math collapses to zero
+        # and ``tax_basis_total == grand_total``; this test only
+        # exercises the allowance-sum identity.
+        doc = make_vat_doc(
+            line_category=CategoryCode.T_Z, allowance_category=CategoryCode.T_Z
+        )
         summation = doc.trade.settlement.monetary_summation
         # One allowance of 5.00 in the helper; declare BT-107 wrongly.
         summation.allowance_total = Decimal("99")
@@ -261,7 +266,10 @@ class TestBrCoArithmetic:
 
     def test_br_co_12_charge_total_matches_sum(self) -> None:
         """BT-108 = sum of document-level charge BT-99."""
-        doc = make_vat_doc(charge_category=CategoryCode.T_S)
+        # Use zero-rated categories so the VAT math collapses to zero.
+        doc = make_vat_doc(
+            line_category=CategoryCode.T_Z, charge_category=CategoryCode.T_Z
+        )
         summation = doc.trade.settlement.monetary_summation
         # One charge of 3.00 in the helper; declare BT-108 wrongly.
         summation.charge_total = Decimal("99")
@@ -360,7 +368,9 @@ class TestBrCoArithmetic:
     def test_br_co_13_tax_basis_identity(self) -> None:
         """BT-109 = ΣBT-131 - BT-107 + BT-108."""
         doc = make_vat_doc(
-            allowance_category=CategoryCode.T_S, charge_category=CategoryCode.T_S
+            line_category=CategoryCode.T_Z,
+            allowance_category=CategoryCode.T_Z,
+            charge_category=CategoryCode.T_Z,
         )
         summation = doc.trade.settlement.monetary_summation
         # Keep tax_basis_total / grand_total / due_amount in sync so
