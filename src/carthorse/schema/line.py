@@ -18,14 +18,15 @@ line-scoped element / BT IDs:
   optional invoicing period (BG-26), optional allowances (BG-27) and
   charges (BG-28), and the line total (BT-131-00).
 
-This module covers the BASIC profile shape. EN 16931 enrichments
-(``ApplicableProductCharacteristic`` BG-32, ``DesignatedProductClassification``
-BG-33, ``OriginTradeCountry`` BG-34, line-level
+This module covers the BASIC profile shape plus the COMFORT
+product enrichments :class:`ProductCharacteristic` (BG-32),
+:class:`ProductClassification` (BG-33) and :class:`OriginCountry`
+(BG-34). Remaining EN 16931 enrichments (line-level
 ``BuyerOrderReferencedDocument``, ``AdditionalReferencedDocument``,
 ``ReceivableSpecifiedTradeAccountingAccount``) and the EXTENDED
 sub-line / ``IncludedReferencedProduct`` / per-line deviating-party
-groups are tracked in ``docs/IMPLEMENTATION_PLAN.md`` and not yet
-modelled.
+groups are tracked in ``docs/PROFILES/COMFORT.md`` and
+``docs/IMPLEMENTATION_PLAN.md``.
 
 Validation rules covered:
 
@@ -59,7 +60,7 @@ from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCh
 from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import GlobalID
 from carthorse.schema.settlement import BillingSpecifiedPeriod
-from carthorse.schema.types import Profile
+from carthorse.schema.types import Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -253,11 +254,103 @@ class NetTradePrice(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class ProductCharacteristic(Element):
+    """Item attribute (BG-32); COMFORT+.
+
+    A name/value pair describing a feature of the item — its colour,
+    weight, dimensions, voltage, etc. ``BR-54`` requires both
+    ``Description`` (BT-160) and ``Value`` (BT-161) when the group is
+    present; the dataclass enforces this by declaring both as
+    non-Optional.
+    """
+
+    tag: ClassVar[str] = "ApplicableProductCharacteristic"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    description: str = field(metadata={"tag": "Description"})
+    """Item attribute name (BT-160)."""
+    value: str = field(metadata={"tag": "Value"})
+    """Item attribute value (BT-161)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class ProductClassification(Element):
+    """Item classification (BG-33); COMFORT+.
+
+    A coded classification of the item according to a registered
+    scheme. ``list_id`` (BT-158-1) names the scheme — required when
+    ``class_code`` (BT-158) is set per ``BR-65``. Optional
+    ``list_version_id`` (BT-158-2) versions the scheme.
+
+    Code list for ``list_id``: UNTDID 7143 (extended Code List).
+    """
+
+    tag: ClassVar[str] = "DesignatedProductClassification"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    class_code: str
+    """Item classification identifier (BT-158)."""
+    list_id: str
+    """Scheme identifier (BT-158-1); required per ``BR-65``."""
+    list_version_id: str | None = None
+    """Scheme version identifier (BT-158-2)."""
+
+    @override
+    def to_xml_internal(self, profile: Profile) -> XML:
+        attrs: dict[str, str | bool] = {"listID": self.list_id}
+        if self.list_version_id is not None:
+            attrs["listVersionID"] = self.list_version_id
+        return XML(self.get_tag())[
+            XML(f"{Namespace.ram.name}:ClassCode", attrs=attrs)[self.class_code]
+        ]
+
+    @override
+    @classmethod
+    def from_xml(cls, elem: ETElement) -> Self:
+        if elem.tag != cls.get_qualified_tag():
+            raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
+        code_qtag = Namespace.ram.get_qualified_tag("ClassCode")
+        for child in elem:
+            if child.tag == code_qtag:
+                if child.text is None:
+                    raise ValueError(f"{cls.__name__}: ClassCode element has no text")
+                list_id = child.attrib.get("listID")
+                if list_id is None:
+                    raise ValueError(
+                        f"{cls.__name__}: ClassCode missing required listID"
+                    )
+                return cls(
+                    class_code=child.text.strip(),
+                    list_id=list_id,
+                    list_version_id=child.attrib.get("listVersionID"),
+                )
+        raise ValueError(f"{cls.__name__}: no ClassCode child element")
+
+
+@dataclass(kw_only=True, slots=True)
+class OriginCountry(Element):
+    """Item country of origin (BG-34); COMFORT+.
+
+    The country from which the item originates, as an ISO 3166-1
+    alpha-2 code on the single inner ``<ram:ID>`` element (BT-159).
+    """
+
+    tag: ClassVar[str] = "OriginTradeCountry"
+    profile: ClassVar[Profile] = Profile.COMFORT
+
+    id: str = field(metadata={"tag": "ID"})
+    """Country code (BT-159), ISO 3166-1 alpha-2."""
+
+
+@dataclass(kw_only=True, slots=True)
 class TradeProduct(Element):
     """Item information (BG-31).
 
     A group of business terms providing information about the goods
-    and services invoiced.
+    and services invoiced. EN 16931 enriches the BASIC shape with the
+    three product groups :class:`ProductCharacteristic` (BG-32),
+    :class:`ProductClassification` (BG-33) and :class:`OriginCountry`
+    (BG-34).
     """
 
     tag: ClassVar[str] = "SpecifiedTradeProduct"
@@ -288,6 +381,12 @@ class TradeProduct(Element):
     Allows describing the item and its features in more detail than
     the item name.
     """
+    characteristics: list[ProductCharacteristic] | None = None
+    """Item attributes (BG-32, 0..*); COMFORT+."""
+    classifications: list[ProductClassification] | None = None
+    """Item classifications (BG-33, 0..*); COMFORT+."""
+    origin_country: OriginCountry | None = None
+    """Item country of origin (BG-34, 0..1); COMFORT+."""
 
 
 @dataclass(kw_only=True, slots=True)
