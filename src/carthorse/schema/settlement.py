@@ -62,6 +62,7 @@ from carthorse.rules.settlement import (
     br_5_currency_shape,
     br_29,
     br_50,
+    br_51,
     br_53,
     br_co_14,
     br_co_15,
@@ -152,11 +153,13 @@ class FinancialCard(Element):
 
     Carries the last 4..6 digits of the Payment card primary account
     number (BT-87) and an optional cardholder name (BT-88). ``BR-51``
-    constrains BT-87 to 4..6 numeric digits (not yet enforced).
+    constrains BT-87 to exactly 4..6 numeric digits.
     """
 
     tag: ClassVar[str] = "ApplicableTradeSettlementFinancialCard"
     profile: ClassVar[Profile] = Profile.COMFORT
+
+    _validators: ClassVar[tuple[Validator["FinancialCard"], ...]] = (br_51,)
 
     id: str = field(metadata={"tag": "ID"})
     """Payment card primary account number, last 4..6 digits (BT-87)."""
