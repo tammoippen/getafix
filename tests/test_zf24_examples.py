@@ -430,9 +430,7 @@ class TestBasicRechnungskorrektur:
 
     def test_type_code_is_correction(self, basic_rechnungskorrektur: Document) -> None:
         # UNTDID 1001 code 384 = "Corrected invoice"; matches our enum.
-        assert (
-            basic_rechnungskorrektur.header.type_code == TypeCode.T_CorrectedInvoice
-        )
+        assert basic_rechnungskorrektur.header.type_code == TypeCode.T_CorrectedInvoice
 
     def test_six_included_notes(self, basic_rechnungskorrektur: Document) -> None:
         notes = basic_rechnungskorrektur.header.notes

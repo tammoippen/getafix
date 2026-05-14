@@ -85,9 +85,7 @@ def br_co_26(m: _party.SellerTradeParty, profile: Profile) -> list[ValidationErr
     Applies: MINIMUM+ (Seller is required at every profile).
     """
     has_id = m.id is not None
-    has_legal = (
-        m.legal_organization is not None and m.legal_organization.id is not None
-    )
+    has_legal = m.legal_organization is not None and m.legal_organization.id is not None
     has_vat = bool(m.tax_registrations) and any(
         tr.id.scheme_id == "VA" for tr in m.tax_registrations
     )
@@ -117,7 +115,6 @@ def br_10(m: _party.BuyerTradeParty, profile: Profile) -> list[ValidationError]:
         return []
     return [
         ValidationError(
-            "BR-10",
-            "An Invoice shall contain the Buyer postal address (BG-8).",
+            "BR-10", "An Invoice shall contain the Buyer postal address (BG-8)."
         )
     ]

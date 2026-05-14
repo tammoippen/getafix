@@ -34,10 +34,7 @@ def br_27(m: _line.NetTradePrice, profile: Profile) -> list[ValidationError]:
     if m.charge_amount >= 0:
         return []
     return [
-        ValidationError(
-            "BR-27",
-            "The Item net price (BT-146) shall NOT be negative.",
-        )
+        ValidationError("BR-27", "The Item net price (BT-146) shall NOT be negative.")
     ]
 
 
@@ -49,8 +46,5 @@ def br_28(m: _line.GrossTradePrice, profile: Profile) -> list[ValidationError]:
     if m.charge_amount >= 0:
         return []
     return [
-        ValidationError(
-            "BR-28",
-            "The Item gross price (BT-148) shall NOT be negative.",
-        )
+        ValidationError("BR-28", "The Item gross price (BT-148) shall NOT be negative.")
     ]

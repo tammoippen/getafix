@@ -79,9 +79,7 @@ def test_parse_and_regenerate(profile: Profile) -> None:
 
     @given(blob=invoices_for(profile))
     @settings(
-        max_examples=50,
-        deadline=None,
-        suppress_health_check=[HealthCheck.too_slow],
+        max_examples=50, deadline=None, suppress_health_check=[HealthCheck.too_slow]
     )
     def _check(blob: bytes) -> None:
         root = etree.fromstring(blob)

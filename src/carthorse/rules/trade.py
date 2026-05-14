@@ -494,9 +494,11 @@ def br_o_2(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     identifier (BT-63) or the Buyer identifier (BT-46)."""
     if not _line_has_category(m, CategoryCode.T_O):
         return []
-    forbidden = _has_vat_id(m.agreement.seller) or _has_vat_id(
-        m.agreement.seller_tax_representative_party
-    ) or m.agreement.buyer.id is not None
+    forbidden = (
+        _has_vat_id(m.agreement.seller)
+        or _has_vat_id(m.agreement.seller_tax_representative_party)
+        or m.agreement.buyer.id is not None
+    )
     if not forbidden:
         return []
     return [
@@ -517,9 +519,11 @@ def br_o_3(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     identifier (BT-63) or the Buyer VAT identifier (BT-48)."""
     if not _alw_has_category(m, CategoryCode.T_O):
         return []
-    forbidden = _has_vat_id(m.agreement.seller) or _has_vat_id(
-        m.agreement.seller_tax_representative_party
-    ) or _has_vat_id(m.agreement.buyer)
+    forbidden = (
+        _has_vat_id(m.agreement.seller)
+        or _has_vat_id(m.agreement.seller_tax_representative_party)
+        or _has_vat_id(m.agreement.buyer)
+    )
     if not forbidden:
         return []
     return [
@@ -540,9 +544,11 @@ def br_o_4(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     identifier (BT-63) or the Buyer VAT identifier (BT-48)."""
     if not _chg_has_category(m, CategoryCode.T_O):
         return []
-    forbidden = _has_vat_id(m.agreement.seller) or _has_vat_id(
-        m.agreement.seller_tax_representative_party
-    ) or _has_vat_id(m.agreement.buyer)
+    forbidden = (
+        _has_vat_id(m.agreement.seller)
+        or _has_vat_id(m.agreement.seller_tax_representative_party)
+        or _has_vat_id(m.agreement.buyer)
+    )
     if not forbidden:
         return []
     return [
@@ -605,7 +611,9 @@ def br_ic_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
         return []
     ship_to = m.delivery.ship_to
     has_ship_to_country = (
-        ship_to is not None and ship_to.address is not None and bool(ship_to.address.country_id)
+        ship_to is not None
+        and ship_to.address is not None
+        and bool(ship_to.address.country_id)
     )
     if has_ship_to_country:
         return []
@@ -625,7 +633,9 @@ def br_ic_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
 
 
 def _has_o_breakdown_row(m: _trade.Trade) -> bool:
-    return any(t.category_code == CategoryCode.T_O for t in m.settlement.trade_taxes or [])
+    return any(
+        t.category_code == CategoryCode.T_O for t in m.settlement.trade_taxes or []
+    )
 
 
 def br_o_11(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
