@@ -68,9 +68,7 @@ def bt_81_code_shape(m: _set.PaymentMeans, profile: Profile) -> list[ValidationE
     ]
 
 
-def br_co_19(
-    m: _set.BillingSpecifiedPeriod, profile: Profile
-) -> list[ValidationError]:
+def br_co_19(m: _set.BillingSpecifiedPeriod, profile: Profile) -> list[ValidationError]:
     """BR-CO-19: If Invoicing period (BG-14) is used, the Invoicing period
     start date (BT-73) or the Invoicing period end date (BT-74) shall be
     filled, or both.
@@ -214,14 +212,17 @@ def br_co_14(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     if m.monetary_summation.tax_total is None or not m.trade_taxes:
         return []
     bt_110_in_invoice = next(
-        (t.amount for t in m.monetary_summation.tax_total if t.currency_id == m.currency_code),
+        (
+            t.amount
+            for t in m.monetary_summation.tax_total
+            if t.currency_id == m.currency_code
+        ),
         None,
     )
     if bt_110_in_invoice is None:
         return []
     bt_117_sum = sum(
-        (tt.calculated_amount or Decimal("0") for tt in m.trade_taxes),
-        Decimal("0"),
+        (tt.calculated_amount or Decimal("0") for tt in m.trade_taxes), Decimal("0")
     )
     if bt_110_in_invoice == bt_117_sum:
         return []

@@ -143,7 +143,7 @@ def extract() -> dict[str, dict[str, Any]]:
 def main() -> None:
     terms = extract()
     OUT.write_text(json.dumps(terms, indent=2, sort_keys=True) + "\n")
-    print(f"wrote {len(terms)} terms to {OUT.relative_to(ROOT)}")
+    print(f"wrote {len(terms)} terms to {OUT.relative_to(ROOT)}")  # noqa: T201
 
 
 if __name__ == "__main__":

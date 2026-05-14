@@ -2,8 +2,7 @@
 
 Each rule submodule defines free-standing functions of the shape::
 
-    def br_co_25(m: TradeSettlement, profile: Profile) -> list[ValidationError]:
-        ...
+    def br_co_25(m: TradeSettlement, profile: Profile) -> list[ValidationError]: ...
 
 The corresponding :mod:`carthorse.schema.<topic>` module imports the
 functions it needs and exposes them via a

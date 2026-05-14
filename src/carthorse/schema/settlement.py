@@ -113,9 +113,9 @@ class PayeePartyCreditorFinancialAccount(Element):
     tag: ClassVar[str] = "PayeePartyCreditorFinancialAccount"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    _validators: ClassVar[tuple[Validator["PayeePartyCreditorFinancialAccount"], ...]] = (
-        br_50,
-    )
+    _validators: ClassVar[
+        tuple[Validator["PayeePartyCreditorFinancialAccount"], ...]
+    ] = (br_50,)
 
     iban_id: str | None = field(default=None, metadata={"tag": "IBANID"})
     """Payment account identifier (BT-84).
