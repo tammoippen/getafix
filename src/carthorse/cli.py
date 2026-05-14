@@ -64,19 +64,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
-    missing: list[str] = []
-    try:
-        from rich.console import Console
-    except ImportError:
-        missing.append("rich")
     try:
         import lxml.etree as etree
-    except ImportError:
-        missing.append("lxml")
-    if missing:
+        from rich.console import Console
+    except ImportError as exc:
         sys.stderr.write(
-            f"carthorse CLI needs the optional dependencies: {', '.join(missing)}.\n"
-            "Install with: pip install 'carthorse[cli]'\n"
+            f"carthorse CLI needs the optional 'cli' extra ({exc.name}): "
+            f"{exc.msg}.\nInstall with: pip install 'carthorse[cli]'\n"
         )
         return 2
 
