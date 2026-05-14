@@ -27,9 +27,9 @@ from carthorse.schema import (
 from carthorse.schema.accounting import (
     ApplicableTradeTax,
     CategoryTradeTax,
+    HeaderTradeAllowanceCharge,
     MonetarySummation,
     TaxTotal,
-    TradeAllowanceCharge,
 )
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
@@ -119,13 +119,13 @@ def make_vat_doc(
             else None
         ),
     )
-    allowance_charges: list[TradeAllowanceCharge] = []
+    allowance_charges: list[HeaderTradeAllowanceCharge] = []
     allowance_amount = Decimal("0")
     charge_amount = Decimal("0")
     if allowance_category is not None:
         allowance_amount = Decimal("5.00")
         allowance_charges.append(
-            TradeAllowanceCharge(
+            HeaderTradeAllowanceCharge(
                 indicator=False,
                 actual_amount=allowance_amount,
                 category_trade_tax=CategoryTradeTax(
@@ -138,7 +138,7 @@ def make_vat_doc(
     if charge_category is not None:
         charge_amount = Decimal("3.00")
         allowance_charges.append(
-            TradeAllowanceCharge(
+            HeaderTradeAllowanceCharge(
                 indicator=True,
                 actual_amount=charge_amount,
                 category_trade_tax=CategoryTradeTax(

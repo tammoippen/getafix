@@ -12,7 +12,7 @@ from decimal import Decimal
 import pytest as pt
 
 from carthorse.schema import Document
-from carthorse.schema.accounting import TradeAllowanceCharge
+from carthorse.schema.accounting import LineTradeAllowanceCharge
 from carthorse.schema.element import ValidationErrors
 from tests._fixtures import make_vat_doc
 
@@ -32,7 +32,7 @@ class TestBrCoLineCoupling:
     ) -> None:
         line = doc.trade.items[0]
         line.settlement.allowance_charge = [
-            TradeAllowanceCharge(
+            LineTradeAllowanceCharge(
                 indicator=indicator,
                 actual_amount=Decimal("1.00"),
                 reason=reason,

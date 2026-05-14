@@ -135,6 +135,20 @@ class Element(ABC):
     def get_qualified_tag(cls) -> str:
         return cls.namespace.get_qualified_tag(cls.tag)
 
+    def _field_profile(self, name: str) -> Profile | None:
+        """Hook for context-dependent per-field profile gates.
+
+        Returns ``None`` by default so the per-field ``metadata['profile']``
+        is consulted unchanged. Override on subclasses that need the
+        gate to depend on instance state — see
+        :class:`~carthorse.schema.accounting.TradeAllowanceCharge`,
+        whose ``calculation_percent`` (BT-94 / BT-101 / BT-138 / BT-142)
+        and ``basis_amount`` (BT-93 / BT-100 / BT-137 / BT-141) ship at
+        BASIC_WL when the allowance/charge is on the document header
+        and at COMFORT when it is on an invoice line.
+        """
+        return None
+
     def _children_xml(self, profile: Profile) -> list[XML]:
         children: list[XML] = []
         # Per-Element "currency" field provides the ``currencyID``
@@ -151,7 +165,9 @@ class Element(ABC):
                 # not required
                 continue
 
-            p = f.metadata.get("profile")
+            p = self._field_profile(f.name)
+            if p is None:
+                p = f.metadata.get("profile")
             if p is None and isinstance(value, Element):
                 p = value.__class__.profile
             if p is None:
