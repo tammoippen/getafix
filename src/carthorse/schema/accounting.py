@@ -60,12 +60,14 @@ from typing import ClassVar, Literal, Self, override
 from tagic.xml import XML
 
 from carthorse.rules import Validator
+from carthorse.rules._types import max_decimals
 from carthorse.rules.accounting import (
     br_5_currency_shape,
     br_12,
     br_48,
     br_co_3,
     br_co_17,
+    br_dec_tac_amounts,
     bt_8_code_shape,
     bt_95_0_102_0_vat_only,
     bt_118_0_vat_only,
@@ -92,7 +94,15 @@ class TaxTotal(Element):
 
     tag: ClassVar[str] = "TaxTotalAmount"
 
-    _validators: ClassVar[tuple[Validator["TaxTotal"], ...]] = (br_5_currency_shape,)
+    _validators: ClassVar[tuple[Validator["TaxTotal"], ...]] = (
+        br_5_currency_shape,
+        # BR-DEC-13 (BT-110 invoice-currency tax total) and BR-DEC-15
+        # (BT-111 accounting-currency tax total) cap `amount` at 2dp.
+        # We can't easily discriminate the two BT IDs at validation
+        # time so emit BR-DEC-13 for either — both names refer to the
+        # same XSD ``amount`` field.
+        max_decimals("BR-DEC-13", field_name="amount"),
+    )
 
     amount: Decimal
     """Invoice total VAT amount (BT-110 / BT-111).
@@ -142,7 +152,17 @@ class MonetarySummation(Element):
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementHeaderMonetarySummation"
 
-    _validators: ClassVar[tuple[Validator["MonetarySummation"], ...]] = (br_12,)
+    _validators: ClassVar[tuple[Validator["MonetarySummation"], ...]] = (
+        br_12,
+        max_decimals("BR-DEC-09", field_name="line_total"),
+        max_decimals("BR-DEC-10", field_name="allowance_total"),
+        max_decimals("BR-DEC-11", field_name="charge_total"),
+        max_decimals("BR-DEC-12", field_name="tax_basis_total"),
+        max_decimals("BR-DEC-14", field_name="grand_total"),
+        max_decimals("BR-DEC-16", field_name="prepaid_total"),
+        max_decimals("BR-DEC-17", field_name="rounding_amount"),
+        max_decimals("BR-DEC-18", field_name="due_amount"),
+    )
 
     line_total: Decimal | None = field(
         default=None,
@@ -278,6 +298,8 @@ class ApplicableTradeTax(Element):
         bt_8_code_shape,
         br_co_17,
         br_48,
+        max_decimals("BR-DEC-19", field_name="basis_amount"),
+        max_decimals("BR-DEC-20", field_name="calculated_amount"),
     )
 
     calculated_amount: Decimal | None = field(
@@ -481,6 +503,10 @@ class TradeAllowanceCharge(Element):
     tag: ClassVar[str] = "SpecifiedTradeAllowanceCharge"
     profile: ClassVar[Profile] = Profile.BASIC_WL
     context: ClassVar[Literal["header", "line"]] = "header"
+
+    _validators: ClassVar[tuple[Validator["TradeAllowanceCharge"], ...]] = (
+        br_dec_tac_amounts,
+    )
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
     """Charge indicator (BG-20-0 / BG-21-0).

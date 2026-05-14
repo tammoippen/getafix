@@ -56,6 +56,7 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from carthorse.rules import Validator
+from carthorse.rules._types import max_decimals
 from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from carthorse.schema.element import Element, ETElement
@@ -506,6 +507,10 @@ class LineMonetarySummation(Element):
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementLineMonetarySummation"
     profile: ClassVar[Profile] = Profile.BASIC
+
+    _validators: ClassVar[tuple[Validator["LineMonetarySummation"], ...]] = (
+        max_decimals("BR-DEC-23", field_name="line_total"),
+    )
 
     line_total: Decimal = field(metadata={"tag": "LineTotalAmount", "amount": True})
     """Invoice line net amount (BT-131).

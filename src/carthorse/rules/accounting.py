@@ -204,6 +204,59 @@ def bt_118_0_vat_only(
     ]
 
 
+_TAC_AMOUNT_CODE: dict[tuple[str, bool], str] = {
+    ("header", False): "BR-DEC-01",
+    ("header", True): "BR-DEC-05",
+    ("line", False): "BR-DEC-24",
+    ("line", True): "BR-DEC-27",
+}
+_TAC_BASIS_CODE: dict[tuple[str, bool], str] = {
+    ("header", False): "BR-DEC-02",
+    ("header", True): "BR-DEC-06",
+    ("line", False): "BR-DEC-25",
+    ("line", True): "BR-DEC-28",
+}
+
+
+def _too_many_decimals(value: Decimal | None, max_places: int = 2) -> bool:
+    if value is None:
+        return False
+    exp = value.as_tuple().exponent
+    return isinstance(exp, int) and -exp > max_places
+
+
+def br_dec_tac_amounts(
+    m: _acc.TradeAllowanceCharge, profile: Profile
+) -> list[ValidationError]:
+    """``BR-DEC-{01,02,05,06,24,25,27,28}`` on TradeAllowanceCharge.
+
+    One Decimal-precision check per (context, indicator) combination
+    for both ``actual_amount`` (BT-92/99/136/141) and ``basis_amount``
+    (BT-93/100/137/142). The correct BR-DEC-* code is looked up from
+    the ``context`` ClassVar (header / line) and the ``indicator``
+    field (False=allowance / True=charge).
+    """
+    errors: list[ValidationError] = []
+    key = (m.context, m.indicator)
+    if _too_many_decimals(m.actual_amount):
+        errors.append(
+            ValidationError(
+                _TAC_AMOUNT_CODE[key],
+                f"TradeAllowanceCharge actual_amount {m.actual_amount} "
+                "carries more than 2 decimal places.",
+            )
+        )
+    if _too_many_decimals(m.basis_amount):
+        errors.append(
+            ValidationError(
+                _TAC_BASIS_CODE[key],
+                f"TradeAllowanceCharge basis_amount {m.basis_amount} "
+                "carries more than 2 decimal places.",
+            )
+        )
+    return errors
+
+
 def bt_95_0_102_0_vat_only(
     m: _acc.CategoryTradeTax, profile: Profile
 ) -> list[ValidationError]:
