@@ -119,6 +119,25 @@ def make_vat_doc(
             else None
         ),
     )
+    # Pick a category-appropriate rate per BR-{cat}-5/-6/-7. Callers
+    # can still override per-instance after construction if the test
+    # exercises rate-violation paths.
+    _DEFAULT_RATE: dict[CategoryCode, Decimal | None] = {
+        CategoryCode.T_S: Decimal("19"),
+        CategoryCode.T_O: None,
+    }
+    line_rate = _DEFAULT_RATE.get(line_category, Decimal("0"))
+    allowance_rate = (
+        _DEFAULT_RATE.get(allowance_category, Decimal("0"))
+        if allowance_category is not None
+        else Decimal("0")
+    )
+    charge_rate = (
+        _DEFAULT_RATE.get(charge_category, Decimal("0"))
+        if charge_category is not None
+        else Decimal("0")
+    )
+
     allowance_charges: list[HeaderTradeAllowanceCharge] = []
     allowance_amount = Decimal("0")
     charge_amount = Decimal("0")
@@ -130,7 +149,7 @@ def make_vat_doc(
                 actual_amount=allowance_amount,
                 category_trade_tax=CategoryTradeTax(
                     category_code=allowance_category,
-                    rate_applicable_percent=Decimal("0"),
+                    rate_applicable_percent=allowance_rate,
                 ),
                 reason="discount",
             )
@@ -142,18 +161,55 @@ def make_vat_doc(
                 indicator=True,
                 actual_amount=charge_amount,
                 category_trade_tax=CategoryTradeTax(
-                    category_code=charge_category, rate_applicable_percent=Decimal("0")
+                    category_code=charge_category, rate_applicable_percent=charge_rate
                 ),
                 reason="surcharge",
             )
         )
 
-    # Keep the header totals self-consistent under BR-CO-10..16:
-    # tax_basis_total = lines - allowances + charges, grand_total +
-    # due_amount track tax_basis_total since the helper's lines /
-    # allowances / charges carry rate 0%.
+    # Keep the header totals self-consistent under BR-CO-10..16. For
+    # categories other than ``S`` the rate is zero, so the VAT total
+    # stays at zero. ``S`` (rate 19%) and any allowance/charge whose
+    # category differs from the line's go through a small VAT walk to
+    # produce the correct BG-23 row(s) and the matching ``TaxTotal``.
     line_total = Decimal("100")
     tax_basis = line_total - allowance_amount + charge_amount
+    # Per-category basis: lines minus allowances plus charges for the
+    # same category.
+    per_cat_basis: dict[CategoryCode, Decimal] = {line_category: line_total}
+    if allowance_category is not None:
+        per_cat_basis[allowance_category] = (
+            per_cat_basis.get(allowance_category, Decimal("0")) - allowance_amount
+        )
+    if charge_category is not None:
+        per_cat_basis[charge_category] = (
+            per_cat_basis.get(charge_category, Decimal("0")) + charge_amount
+        )
+    per_cat_rate: dict[CategoryCode, Decimal | None] = {line_category: line_rate}
+    if allowance_category is not None and allowance_category not in per_cat_rate:
+        per_cat_rate[allowance_category] = allowance_rate
+    if charge_category is not None and charge_category not in per_cat_rate:
+        per_cat_rate[charge_category] = charge_rate
+    trade_taxes: list[ApplicableTradeTax] = []
+    total_vat = Decimal("0")
+    for cat, basis in per_cat_basis.items():
+        rate = per_cat_rate.get(cat)
+        calculated = (
+            (basis * rate / Decimal("100")).quantize(Decimal("0.01"))
+            if rate is not None
+            else Decimal("0")
+        )
+        total_vat += calculated
+        trade_taxes.append(
+            ApplicableTradeTax(
+                calculated_amount=calculated,
+                basis_amount=basis,
+                category_code=cat,
+                due_date_code="5",
+                rate_applicable_percent=rate,
+            )
+        )
+    grand_total = tax_basis + total_vat
     return Document(
         context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
         header=Header(
@@ -169,19 +225,11 @@ def make_vat_doc(
                     allowance_total=allowance_amount or None,
                     charge_total=charge_amount or None,
                     tax_basis_total=tax_basis,
-                    tax_total=[TaxTotal(amount=Decimal("0"), currency_id="EUR")],
-                    grand_total=tax_basis,
-                    due_amount=tax_basis,
+                    tax_total=[TaxTotal(amount=total_vat, currency_id="EUR")],
+                    grand_total=grand_total,
+                    due_amount=grand_total,
                 ),
-                trade_taxes=[
-                    ApplicableTradeTax(
-                        calculated_amount=Decimal("0"),
-                        basis_amount=Decimal("100"),
-                        category_code=line_category,
-                        due_date_code="5",
-                        rate_applicable_percent=Decimal("0"),
-                    )
-                ],
+                trade_taxes=trade_taxes,
                 allowance_charge=allowance_charges or None,
                 terms=PaymentTerms(due=date(2025, 2, 1)),
             ),
@@ -199,7 +247,7 @@ def make_vat_doc(
                         applicable_trade_tax=ApplicableTradeTax(
                             category_code=line_category,
                             due_date_code="5",
-                            rate_applicable_percent=Decimal("0"),
+                            rate_applicable_percent=line_rate,
                         ),
                         monetary_summation=LineMonetarySummation(
                             line_total=Decimal("100")

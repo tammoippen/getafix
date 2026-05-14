@@ -83,6 +83,7 @@ from carthorse.rules.trade import (
     br_z_2,
     br_z_3,
     br_z_4,
+    vat_category_rates,
 )
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
@@ -183,6 +184,8 @@ class Trade(Element):
         br_co_11,
         br_co_12,
         br_co_13,
+        # Per-VAT-category rate constraints (BR-{cat}-5/6/7).
+        vat_category_rates,
     )
 
     items: list[TradeLineItem] = field(default_factory=list)
