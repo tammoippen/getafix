@@ -55,7 +55,7 @@ and the EXTENDED ``BR-FXEXT-*`` rounding-tolerance variants, see
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import ClassVar, Self, override
+from typing import ClassVar, Literal, Self, override
 
 from tagic.xml import XML
 
@@ -452,7 +452,7 @@ class TradeAllowanceCharge(Element):
     """Allowances and charges (BG-20 / BG-21 at header, BG-27 / BG-28 at line).
 
     A group of business terms providing information about allowances
-    and charges. The same dataclass models all four contexts:
+    and charges. The same XSD element backs four BG groups:
 
     * ``ChargeIndicator = false`` ⇒ allowance (BG-20 header / BG-27
       line).
@@ -464,10 +464,21 @@ class TradeAllowanceCharge(Element):
     header vs line. The header form may also represent deductions
     such as withheld taxes; the line form (BG-28) covers charges and
     taxes other than VAT applicable to the individual invoice line.
+
+    Two thin sentinel subclasses :class:`HeaderTradeAllowanceCharge`
+    and :class:`LineTradeAllowanceCharge` override the class-level
+    ``context`` flag so :meth:`_field_profile` can pick the right
+    BT-id when gating ``calculation_percent`` and ``basis_amount`` —
+    those fields ship at BASIC_WL (BT-93 / BT-94 / BT-100 / BT-101)
+    when on the document header but only at COMFORT (BT-137 / BT-138
+    / BT-141 / BT-142) on an invoice line. The bare
+    ``TradeAllowanceCharge`` keeps ``context = "header"`` for
+    backwards compatibility.
     """
 
     tag: ClassVar[str] = "SpecifiedTradeAllowanceCharge"
     profile: ClassVar[Profile] = Profile.BASIC_WL
+    context: ClassVar[Literal["header", "line"]] = "header"
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
     """Charge indicator (BG-20-0 / BG-21-0).
@@ -475,25 +486,27 @@ class TradeAllowanceCharge(Element):
     Discriminates allowance (``false``) from charge (``true``).
     """
     calculation_percent: Decimal | None = field(
-        default=None,
-        metadata={"tag": "CalculationPercent", "profile": Profile.BASIC_WL},
+        default=None, metadata={"tag": "CalculationPercent"}
     )
-    """Allowance / charge percentage (BT-94 allowance / BT-101 charge).
+    """Allowance / charge percentage (BT-94 allowance / BT-101 charge
+    at header; BT-138 / BT-142 at line).
 
     The percentage that, in combination with the base amount, may be
-    used to calculate the allowance or charge amount.
+    used to calculate the allowance or charge amount. Gated BASIC_WL
+    at header, COMFORT at line — see :meth:`_field_profile`.
 
     Note: up to COMFORT only the final result (``actual_amount``)
     is transmitted; the base amount and percentage are informational.
     """
     basis_amount: Decimal | None = field(
-        default=None,
-        metadata={"tag": "BasisAmount", "profile": Profile.BASIC_WL, "amount": True},
+        default=None, metadata={"tag": "BasisAmount", "amount": True}
     )
-    """Allowance / charge base amount (BT-93 allowance / BT-100 charge).
+    """Allowance / charge base amount (BT-93 allowance / BT-100 charge
+    at header; BT-137 / BT-141 at line).
 
     The base amount that, in combination with the percentage, may be
-    used to calculate the allowance or charge amount.
+    used to calculate the allowance or charge amount. Gated BASIC_WL
+    at header, COMFORT at line — see :meth:`_field_profile`.
     """
     actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
     """Allowance / charge amount (BT-92 allowance / BT-99 charge).
@@ -537,3 +550,31 @@ class TradeAllowanceCharge(Element):
     # know whether this allowance/charge is at header or line level.
     # Keeping the check there means the same ``TradeAllowanceCharge``
     # dataclass works in both contexts.
+
+    @override
+    def _field_profile(self, name: str) -> Profile | None:
+        if name in ("calculation_percent", "basis_amount"):
+            return Profile.COMFORT if self.context == "line" else Profile.BASIC_WL
+        return None
+
+
+@dataclass(kw_only=True, slots=True)
+class HeaderTradeAllowanceCharge(TradeAllowanceCharge):
+    """Document-level allowance / charge (BG-20 / BG-21).
+
+    ``calculation_percent`` and ``basis_amount`` ship at BASIC_WL+
+    (BT-93 / BT-94 / BT-100 / BT-101).
+    """
+
+    context: ClassVar[Literal["header", "line"]] = "header"
+
+
+@dataclass(kw_only=True, slots=True)
+class LineTradeAllowanceCharge(TradeAllowanceCharge):
+    """Line-level allowance / charge (BG-27 / BG-28).
+
+    ``calculation_percent`` and ``basis_amount`` ship at COMFORT+
+    (BT-137 / BT-138 / BT-141 / BT-142).
+    """
+
+    context: ClassVar[Literal["header", "line"]] = "line"

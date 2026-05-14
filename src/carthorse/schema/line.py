@@ -55,7 +55,7 @@ from tagic.xml import XML
 
 from carthorse.rules import Validator
 from carthorse.rules.line import br_27, br_28
-from carthorse.schema.accounting import ApplicableTradeTax, TradeAllowanceCharge
+from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import GlobalID
 from carthorse.schema.settlement import BillingSpecifiedPeriod
@@ -396,7 +396,7 @@ class LineTradeSettlement(Element):
     billing_period: BillingSpecifiedPeriod | None = None
     """Invoice line period (BG-26) — also known as the line delivery
     period."""
-    allowance_charge: list[TradeAllowanceCharge] | None = None
+    allowance_charge: list[LineTradeAllowanceCharge] | None = None
     """Invoice line allowances (BG-27) and charges (BG-28).
 
     Note: same dataclass for both, distinguished by ``ChargeIndicator``.

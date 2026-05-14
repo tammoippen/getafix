@@ -71,8 +71,8 @@ from carthorse.rules.settlement import (
 )
 from carthorse.schema.accounting import (
     ApplicableTradeTax,
+    HeaderTradeAllowanceCharge,
     MonetarySummation,
-    TradeAllowanceCharge,
 )
 from carthorse.schema.element import Element
 from carthorse.schema.party import PayeeTradeParty
@@ -371,7 +371,7 @@ class TradeSettlement(Element):
     (``BR-CO-18``)."""
     billing_period: BillingSpecifiedPeriod | None = None
     """Header invoicing period (BG-14); BASIC_WL+."""
-    allowance_charge: list[TradeAllowanceCharge] | None = None
+    allowance_charge: list[HeaderTradeAllowanceCharge] | None = None
     """Header allowances (BG-20) and charges (BG-21), 0..*."""
     terms: PaymentTerms | None = None
     """Payment terms (BT-20-00); BASIC_WL+."""
