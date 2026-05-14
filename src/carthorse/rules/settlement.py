@@ -18,11 +18,14 @@ See ``docs/VALIDATOR_REFACTOR.md`` for the rework plan.
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from carthorse.schema.element import ValidationError
 from carthorse.schema.types import Profile
+
+_PAN_RE = re.compile(r"^\d{4,6}$")
 
 if TYPE_CHECKING:
     from carthorse.schema import settlement as _set
@@ -44,6 +47,24 @@ def br_50(
             "A Payment account identifier (BT-84) shall be present "
             "if Credit transfer (BG-16) information is provided in "
             "the Invoice.",
+        )
+    ]
+
+
+def br_51(m: _set.FinancialCard, profile: Profile) -> list[ValidationError]:
+    """BR-51: The last 4 to 6 digits of the Payment card primary account
+    number (BT-87) shall be present if Payment card information (BG-18)
+    is provided in the Invoice.
+
+    Applies: COMFORT+ (BG-18 first appears at COMFORT). Format guard —
+    the field's presence is enforced by the dataclass declaring it
+    required.
+    """
+    if _PAN_RE.fullmatch(m.id):
+        return []
+    return [
+        ValidationError(
+            "BR-51", f"Payment card PAN (BT-87) {m.id!r} must be 4..6 digits."
         )
     ]
 
