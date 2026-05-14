@@ -77,6 +77,25 @@ class Element(ABC):
     ``docs/VALIDATOR_REFACTOR.md`` for the architecture.
     """
 
+    def __post_init__(self) -> None:
+        # Type-shape check at construction time: every dataclass-declared
+        # field must hold a value compatible with its annotation before
+        # any ``BR-*`` validator or XML renderer touches the data. Catches
+        # parser bugs (``from_xml`` builds an ``Any``-typed dict and splats
+        # it into ``cls(**params)``) and hand-built fixtures that drift
+        # from the model. Business rules — which presuppose the shape is
+        # correct — stay in ``validate_internal``.
+        for f in fields(self):
+            value = getattr(self, f.name)
+            expected = _get_non_none_type(f.type)
+            if isinstance(expected, str):
+                continue
+            if value is None:
+                if _allows_none(f.type):
+                    continue
+                raise TypeError(f"{type(self).__name__}.{f.name}: required, got None.")
+            _check_field(type(self).__name__, f.name, value, expected)
+
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
         """Collect every business-rule violation under this Element.
 
@@ -235,6 +254,46 @@ def _get_non_none_type(field_type: Any) -> Any:
         assert len(ts) == 1, ts
         return ts[0]
     return field_type
+
+
+def _allows_none(field_type: Any) -> bool:
+    return get_origin(field_type) is types.UnionType and type(None) in get_args(
+        field_type
+    )
+
+
+def _check_field(cls_name: str, name: str, value: Any, expected: Any) -> None:
+    origin = get_origin(expected)
+    if origin is list:
+        if not isinstance(value, list):
+            raise TypeError(
+                f"{cls_name}.{name}: expected list, got {type(value).__name__}."
+            )
+        (item_t,) = get_args(expected)
+        if isinstance(item_t, str):
+            return
+        for i, item in enumerate(value):
+            _check_scalar(cls_name, f"{name}[{i}]", item, item_t)
+        return
+    _check_scalar(cls_name, name, value, expected)
+
+
+def _check_scalar(cls_name: str, name: str, value: Any, expected: Any) -> None:
+    if not isinstance(expected, type):
+        return
+    # ``bool`` is a subclass of ``int`` — be strict so a stray ``0``/``1``
+    # doesn't sneak into an indicator field.
+    if expected is bool:
+        if type(value) is not bool:
+            raise TypeError(
+                f"{cls_name}.{name}: expected bool, got {type(value).__name__}."
+            )
+        return
+    if not isinstance(value, expected):
+        raise TypeError(
+            f"{cls_name}.{name}: expected {expected.__name__}, "
+            f"got {type(value).__name__}."
+        )
 
 
 def _render_bool(value: bool, field: Field[bool]) -> XML:
