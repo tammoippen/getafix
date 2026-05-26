@@ -300,15 +300,30 @@ class ProductClassification(Element):
     """Scheme identifier (BT-158-1); required per ``BR-65``."""
     list_version_id: str | None = None
     """Scheme version identifier (BT-158-2)."""
+    class_name: str | None = None
+    """Optional human-readable label for the classification scheme
+    (BT-X-22 ``ClassName``); EXTENDED only.
+
+    Real-world samples emit it next to the ``ClassCode`` listID to
+    spell out the scheme verbatim — ``"Zolltarifnummer"`` for HS,
+    ``"UNSPSC"``, ``"eCl@ss"``, ``"STQ"``, etc. — even though the
+    listID attribute already encodes the same information. Echo it
+    back on round-trip rather than dropping it.
+    """
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
         attrs: dict[str, str | bool] = {"listID": self.list_id}
         if self.list_version_id is not None:
             attrs["listVersionID"] = self.list_version_id
-        return XML(self.get_tag())[
+        children: list[XML] = [
             XML(f"{Namespace.ram.name}:ClassCode", attrs=attrs)[self.class_code]
         ]
+        if self.class_name is not None:
+            children.append(
+                XML(f"{Namespace.ram.name}:ClassName")[self.class_name]
+            )
+        return XML(self.get_tag())[*children]
 
     @override
     @classmethod
@@ -316,23 +331,30 @@ class ProductClassification(Element):
         if elem.tag != cls.get_qualified_tag():
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
         code_qtag = Namespace.ram.get_qualified_tag("ClassCode")
+        name_qtag = Namespace.ram.get_qualified_tag("ClassName")
+        class_code: str | None = None
+        list_id: str | None = None
+        list_version_id: str | None = None
+        class_name: str | None = None
         for child in elem:
             if child.tag == code_qtag:
                 if child.text is None:
                     raise ValueError(f"{cls.__name__}: ClassCode element has no text")
+                class_code = child.text.strip()
                 list_id = child.attrib.get("listID")
-                if list_id is None:
-                    raise ValueError(
-                        f"{cls.__name__}: ClassCode missing required listID"
-                    )
-                return cls(
-                    class_code=child.text.strip(),
-                    list_id=coerce_enum(list_id, cls, "list_id"),
-                    list_version_id=coerce_enum(
-                        child.attrib.get("listVersionID"), cls, "list_version_id"
-                    ),
-                )
-        raise ValueError(f"{cls.__name__}: no ClassCode child element")
+                list_version_id = child.attrib.get("listVersionID")
+            elif child.tag == name_qtag:
+                class_name = child.text.strip() if child.text else None
+        if class_code is None or list_id is None:
+            raise ValueError(
+                f"{cls.__name__}: ClassCode + listID are required"
+            )
+        return cls(
+            class_code=class_code,
+            list_id=coerce_enum(list_id, cls, "list_id"),
+            list_version_id=coerce_enum(list_version_id, cls, "list_version_id"),
+            class_name=class_name,
+        )
 
 
 @dataclass(kw_only=True, slots=True)
@@ -351,14 +373,94 @@ class OriginCountry(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class UnitQuantity(Quantity):
+    """Sub-product quantity within a bundle (``UnitQuantity`` tag).
+
+    Same numeric+unitCode shape as :class:`Quantity` /
+    :class:`BasisQuantity` — only the XML element name differs.
+    Used by :class:`IncludedReferencedProduct`.
+    """
+
+    tag: ClassVar[str] = "UnitQuantity"
+
+
+@dataclass(kw_only=True, slots=True)
+class IndividualTradeProductInstance(Element):
+    """Per-instance product details (BG-X-84, 0..*); EXTENDED only.
+
+    Carries a per-unit batch lot ID (BT-X-?) and / or
+    supplier-assigned serial number (BT-X-307). Exercised by the
+    Maschinen_Serial sample.
+    """
+
+    tag: ClassVar[str] = "IndividualTradeProductInstance"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    batch_id: str | None = field(default=None, metadata={"tag": "BatchID"})
+    """Batch / lot identifier."""
+    supplier_assigned_serial_id: str | None = field(
+        default=None, metadata={"tag": "SupplierAssignedSerialID"}
+    )
+    """Serial number assigned by the Supplier (BT-X-307)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class IncludedReferencedProduct(Element):
+    """Sub-product reference within a bundled item (BG-X-1, 0..*); EXTENDED only.
+
+    Used when a single line item ships as a composite (bundle, set,
+    case-pack) and the invoice needs to enumerate the constituents
+    — e.g. a "Joghurt-Variety-12er" line with three sub-products
+    Erdbeer / Banane / Schoko. Exercised by the Warenrechnung
+    sample.
+
+    Field order matches the XSD ``ReferencedProductType``: ``ID`` →
+    ``GlobalID`` → ``SellerAssignedID`` → ``BuyerAssignedID`` →
+    ``IndustryAssignedID`` → ``Name`` → ``Description`` →
+    ``UnitQuantity``.
+    """
+
+    tag: ClassVar[str] = "IncludedReferencedProduct"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Local sub-product identifier."""
+    global_id: GlobalID | None = None
+    """Sub-product standard identifier (GS1 / EAN / GTIN, etc.)."""
+    seller_assigned_id: str | None = field(
+        default=None, metadata={"tag": "SellerAssignedID"}
+    )
+    """Seller's sub-product identifier."""
+    buyer_assigned_id: str | None = field(
+        default=None, metadata={"tag": "BuyerAssignedID"}
+    )
+    """Buyer's sub-product identifier."""
+    industry_assigned_id: str | None = field(
+        default=None, metadata={"tag": "IndustryAssignedID"}
+    )
+    """Industry sub-product identifier."""
+    name: str = field(metadata={"tag": "Name"})
+    """Sub-product name (required)."""
+    description: str | None = field(default=None, metadata={"tag": "Description"})
+    """Sub-product description."""
+    unit_quantity: UnitQuantity | None = None
+    """Sub-product quantity per bundle (Quantity-shaped, tagged ``UnitQuantity``)."""
+
+
+@dataclass(kw_only=True, slots=True)
 class TradeProduct(Element):
     """Item information (BG-31).
 
     A group of business terms providing information about the goods
-    and services invoiced. EN 16931 enriches the BASIC shape with the
-    three product groups :class:`ProductCharacteristic` (BG-32),
-    :class:`ProductClassification` (BG-33) and :class:`OriginCountry`
-    (BG-34).
+    and services invoiced. EN 16931 enriches the BASIC shape with
+    the three product groups :class:`ProductCharacteristic` (BG-32),
+    :class:`ProductClassification` (BG-33), and :class:`OriginCountry`
+    (BG-34). EXTENDED layers on six per-item identifier / naming
+    fields (``IndustryAssignedID`` / ``ModelID`` / ``BatchID`` /
+    ``BrandName`` / ``ModelName``), plus the
+    :class:`IndividualTradeProductInstance` (BG-X-84) and
+    :class:`IncludedReferencedProduct` (BG-X-1) groups for per-unit
+    serial / batch and for bundle / set composition.
     """
 
     tag: ClassVar[str] = "SpecifiedTradeProduct"
@@ -379,22 +481,89 @@ class TradeProduct(Element):
         default=None, metadata={"tag": "BuyerAssignedID", "profile": Profile.COMFORT}
     )
     """Item Buyer's identifier (BT-156); COMFORT+."""
+    industry_assigned_id: str | None = field(
+        default=None,
+        metadata={"tag": "IndustryAssignedID", "profile": Profile.EXTENDED},
+    )
+    """Industry-assigned item identifier (BT-X-?); EXTENDED only.
+
+    No current sample populates this — add coverage if a future
+    fixture exercises a recognised industry catalogue ID.
+    """
+    model_id: str | None = field(
+        default=None,
+        metadata={"tag": "ModelID", "profile": Profile.EXTENDED},
+    )
+    """Model / variant identifier (BT-X-21); EXTENDED only.
+
+    No current sample populates this — XSD slot reserved.
+    """
     name: str = field(metadata={"tag": "Name"})
     """Item name (BT-153)."""
     description: str | None = field(
         default=None, metadata={"tag": "Description", "profile": Profile.COMFORT}
     )
-    """Item description (BT-154); COMFORT+.
+    """Item description (BT-154); COMFORT+."""
+    batch_id: list[str] | None = field(
+        default=None,
+        metadata={"tag": "BatchID", "profile": Profile.EXTENDED},
+    )
+    """Batch / lot identifiers (0..*); EXTENDED only.
 
-    Allows describing the item and its features in more detail than
-    the item name.
+    Per-batch traceability codes attached at the parent item level.
+    For per-instance serial / batch carry the value on
+    :attr:`individual_product_instances` instead — that's the
+    pattern exercised by ``EXTENDED_zf24_Maschinen_Serial.xml``.
+    No current sample uses this list directly.
+    """
+    brand_name: str | None = field(
+        default=None,
+        metadata={"tag": "BrandName", "profile": Profile.EXTENDED},
+    )
+    """Brand name (BT-X-23); EXTENDED only.
+
+    No current sample populates this — XSD slot reserved.
+    """
+    model_name: str | None = field(
+        default=None,
+        metadata={"tag": "ModelName", "profile": Profile.EXTENDED},
+    )
+    """Model name (BT-X-?); EXTENDED only.
+
+    No current sample populates this — XSD slot reserved.
     """
     characteristics: list[ProductCharacteristic] | None = None
     """Item attributes (BG-32, 0..*); COMFORT+."""
     classifications: list[ProductClassification] | None = None
     """Item classifications (BG-33, 0..*); COMFORT+."""
+    individual_product_instances: list[IndividualTradeProductInstance] | None = field(
+        default=None,
+        metadata={
+            "tag": "IndividualTradeProductInstance",
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Per-instance batch / serial details (BG-X-84, 0..*); EXTENDED only.
+
+    Each entry carries a ``BatchID`` and / or
+    ``SupplierAssignedSerialID`` (BT-X-307). The Maschinen sample
+    exercises the single-serial case.
+    """
     origin_country: OriginCountry | None = None
     """Item country of origin (BG-34, 0..1); COMFORT+."""
+    included_referenced_products: list[IncludedReferencedProduct] | None = field(
+        default=None,
+        metadata={
+            "tag": "IncludedReferencedProduct",
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Sub-products bundled into this line item (BG-X-1, 0..*); EXTENDED only.
+
+    Used for variety packs, case-packs, and bundles. Each entry
+    carries its own GlobalID / Name / UnitQuantity. The
+    Warenrechnung sample exercises the typical case.
+    """
 
 
 @dataclass(kw_only=True, slots=True)

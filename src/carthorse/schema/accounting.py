@@ -348,6 +348,38 @@ class ApplicableTradeTax(Element):
     rate — i.e. invoice line net amount minus allowances plus charges
     on document level filtered to this category.
     """
+    line_total_basis_amount: Decimal | None = field(
+        default=None,
+        metadata={
+            "tag": "LineTotalBasisAmount",
+            "amount": True,
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Sum of line net amounts at this category and rate (BT-X-262); EXTENDED only.
+
+    Informational breakdown showing how much of BT-116 came from
+    line items (BT-131 lines filtered to this category / rate)
+    before document-level allowances and charges are netted in.
+    Six of the current EXTENDED samples populate this — none of
+    the EN16931 / lower-profile XSDs accept it, so the field gates
+    at EXTENDED.
+    """
+    allowance_charge_basis_amount: Decimal | None = field(
+        default=None,
+        metadata={
+            "tag": "AllowanceChargeBasisAmount",
+            "amount": True,
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Net of document-level charges minus allowances at this
+    category and rate (BT-X-263); EXTENDED only.
+
+    Companion to :attr:`line_total_basis_amount` — the rest of the
+    derivation that gets added to it to land at :attr:`basis_amount`
+    (BT-116). Same EXTENDED gating.
+    """
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
     """VAT category code (BT-118).
 
