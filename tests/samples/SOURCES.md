@@ -28,6 +28,20 @@ compatible with redistribution as long as attribution is preserved (this file).
 | `EN16931_zf24_Kleinunternehmer.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Kleinunternehmer_ohne_USt_ID` (§19 UStG small business, BT-32 only; FeRD specification) |
 | `EN16931_zf24_ElektronischeAdresse.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_ElektronischeAdresse` (BT-34 with GS1 GLN schemeID; FeRD specification) |
 | `EN16931_zf24_OEPNV.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_OEPNV` (public transport; exercises empty self-closing elements; FeRD specification) |
+| `EN16931_zf24_Teilrechnung1.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_1_Teilrechnung` (1st partial invoice in a sequence; FeRD specification) |
+| `EN16931_zf24_Teilrechnung2.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_2_Teilrechnung` (2nd partial invoice referencing the first; FeRD specification) |
+| `EN16931_zf24_Betriebskosten.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Betriebskostenabrechnung` (operating-cost settlement; FeRD specification) |
+| `EN16931_zf24_Einfach_DueDate.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Einfach_DueDate` (BT-9 payment due date with default-due-date discount terms; FeRD specification) |
+| `EN16931_zf24_Einfach_NegativeDue.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Einfach_negativePaymentDue` (negative BT-115 — buyer credit balance; FeRD specification) |
+| `EN16931_zf24_Elektron.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Elektron` (file `EN16931_Elektron_Anlage_XML.xml`, electronic-component invoice; FeRD specification) |
+| `EN16931_zf24_Haftpflicht.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Haftpflichtversicherung_Versicherungssteuer` (liability insurance with insurance tax / non-VAT TypeCode; FeRD specification) |
+| `EN16931_zf24_Kraftfahr.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Kraftfahrversicherung_Bruttopreise` (motor insurance with gross-price line items; FeRD specification) |
+| `EN16931_zf24_Miete.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Miete` (rent invoice with billing period BG-14; FeRD specification) |
+| `EN16931_zf24_Photovoltaik.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Photovoltaik` (PV plant invoice with §13b reverse-charge AE; FeRD specification) |
+| `EN16931_zf24_Physiotherapeut.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Physiotherapeut` (physiotherapist services, tax-exempt under §4 Nr. 14 UStG; FeRD specification) |
+| `EN16931_zf24_RechnungsUebertragung.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_RechnungsUebertragung` (invoice transmission scenario; FeRD specification) |
+| `EN16931_zf24_Reisekosten.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Reisekostenabrechnung` (travel-expense reimbursement with multiple cost lines; FeRD specification) |
+| `EN16931_zf24_Sachversicherung.xml` | COMFORT (EN 16931) | ZF24 distribution `Examples/3. EN16931/EN16931_Sachversicherung_berechneter_Steuersatz` (property insurance with computed tax rate; FeRD specification) |
 | `EN16931_factur-x.xml` | COMFORT (EN 16931) | [ZUGFeRD/mustangproject `factur-x.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/factur-x.xml) |
 | `EN16931_Einfach.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_Einfach.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_Einfach.cii.xml) |
 | `EN16931_Gutschrift.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_Gutschrift.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_Gutschrift.cii.xml) |
