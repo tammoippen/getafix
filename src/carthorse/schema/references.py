@@ -37,7 +37,7 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from carthorse.schema.element import Element, ETElement
+from carthorse.schema.element import Element, ETElement, coerce_enum
 from carthorse.schema.types import MIME, Profile, UNTDID1001TypeCode
 
 
@@ -168,7 +168,9 @@ class AttachmentBinaryObject(Element):
         assert isinstance(filename, str)
         object = elem.text.strip()
         return cls(
-            mime_code=MIME(mime_code.strip()), filename=filename.strip(), object=object
+            mime_code=coerce_enum(mime_code.strip(), cls, "mime_code"),
+            filename=coerce_enum(filename.strip(), cls, "filename"),
+            object=object,
         )
 
 

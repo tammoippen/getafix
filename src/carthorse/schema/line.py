@@ -59,7 +59,7 @@ from carthorse.rules import Validator
 from carthorse.rules._types import max_decimals
 from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
-from carthorse.schema.element import Element, ETElement
+from carthorse.schema.element import Element, ETElement, coerce_enum
 from carthorse.schema.party import GlobalID
 from carthorse.schema.settlement import (
     BillingSpecifiedPeriod,
@@ -326,8 +326,10 @@ class ProductClassification(Element):
                     )
                 return cls(
                     class_code=child.text.strip(),
-                    list_id=list_id,
-                    list_version_id=child.attrib.get("listVersionID"),
+                    list_id=coerce_enum(list_id, cls, "list_id"),
+                    list_version_id=coerce_enum(
+                        child.attrib.get("listVersionID"), cls, "list_version_id"
+                    ),
                 )
         raise ValueError(f"{cls.__name__}: no ClassCode child element")
 
