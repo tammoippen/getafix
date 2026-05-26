@@ -193,9 +193,9 @@ note* (``INFORMATION``), and lets lines reference a parent.
 
 | BT-X / BG-X | Name | Target | Card. | Notes |
 |---|---|---|---|---|
-| BT-X-7 | ``LineStatusCode`` on ``DocumentLineDocument`` | new field ``DocumentLineDocument.status_code: LineStatusCode \| None`` | 0..1 | UNTDID-derived ``StrEnum`` (``DETAIL``/``GROUP``/``INFORMATION``). |
-| BT-X-8 | ``LineStatusReasonCode`` | new field ``DocumentLineDocument.status_reason_code: LineStatusReasonCode \| None`` | 0..1 | Same enum (subtype). Drives **every** ``BR-FXEXT-2x`` and ``BR-FXEXT-CO-04`` qualification. |
-| BT-X-304 | ``ParentLineID`` | new field ``DocumentLineDocument.parent_line_id: str \| None`` | 0..1 | References another line's ``LineID`` (BT-126). |
+| BT-X-7 ✓ | ``LineStatusCode`` on ``DocumentLineDocument`` | ``DocumentLineDocument.status_code: str \| None`` | 0..1 | The XSD type is ``qdt:LineStatusCodeType`` = UNTDID 1229 "action request" (``ADD`` / ``DELETE`` / ``CHANGE`` / ``NO_ACTION`` / …) — distinct from BT-X-8's DETAIL/GROUP/INFORMATION subtype. Plain ``str`` field for now; tighten to a ``LineStatusCode`` ``StrEnum`` when §5.6 codelist work lands. |
+| BT-X-8 ✓ | ``LineStatusReasonCode`` | ``DocumentLineDocument.status_reason_code: LineStatusReasonCode \| None`` (hard-coded 3-member ``StrEnum`` in ``schema/types.py``) | 0..1 | Subtype discriminator (DETAIL / GROUP / INFORMATION). The per-category sum rules (§5.3) and the line-level qualifications (§5.4) consult it to skip GROUP subtotal headers and INFORMATION lines. Wired into ``rules/extended.py::_is_detail_line``. |
+| BT-X-304 ✓ | ``ParentLineID`` | ``DocumentLineDocument.parent_line_id: str \| None`` | 0..1 | References another line's ``LineID`` (BT-126). Resolved by the cross-line walker for ``BR-FXEXT-06`` (subtype required on parent) and ``BR-FXEXT-11`` (every reference exists). |
 | — | ``SequenceNumeric`` | new field on ``TradeLineItem`` | 0..1 | Display ordering hint. |
 | BG-X-1 | ``IncludedReferencedProduct`` | recursive ``IncludedReferencedProduct`` on ``TradeProduct`` | 0..* | Sub-products inside a bundle. |
 | BG-X-84 | ``IndividualTradeProductInstance`` | new ``IndividualTradeProductInstance`` with ``BatchID`` (BT-X-310) + ``SupplierAssignedSerialID`` (BT-X-311) | 0..* | Per-unit serial / batch tracking. |

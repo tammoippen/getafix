@@ -36,6 +36,7 @@ compatible with redistribution as long as attribution is preserved (this file).
 | `EN16931_SEPA_Prenotification.cii.xml` | COMFORT (EN 16931) | [ZUGFeRD/corpus `XML-Rechnung/CII/EN16931_SEPA_Prenotification.cii.xml`](https://github.com/ZUGFeRD/corpus/blob/master/XML-Rechnung/CII/EN16931_SEPA_Prenotification.cii.xml) |
 | `EXTENDED_factur-x-extended.xml` | EXTENDED | [ZUGFeRD/mustangproject `factur-x-extended.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/factur-x-extended.xml) |
 | `EXTENDED_fremdwaehrung.xml` | EXTENDED | [ZUGFeRD/mustangproject `Extended_fremdwaehrung.xml`](https://github.com/ZUGFeRD/mustangproject/blob/master/library/src/test/resources/Extended_fremdwaehrung.xml) |
+| `EXTENDED_zf24_SubInvoiceLines_Hardware.xml` | EXTENDED | ZF24 distribution `Examples/4. EXTENDED/SubInvoiceLines Hardware Bsp 2` (two GROUP lines each with two DETAIL children — exercises BT-X-7/-8/-304 sub-invoice-line semantics + the cross-line walker in §5.1 / §5.4; FeRD specification) |
 
 ## Updating
 

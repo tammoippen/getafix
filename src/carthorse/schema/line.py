@@ -65,7 +65,7 @@ from carthorse.schema.settlement import (
     BillingSpecifiedPeriod,
     ReceivableAccountingAccount,
 )
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import LineStatusReasonCode, Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -400,8 +400,9 @@ class TradeProduct(Element):
 class DocumentLineDocument(Element):
     """Associated line document (BT-126-00).
 
-    Per-line wrapper carrying the line identifier and an optional
-    free-text note.
+    Per-line wrapper carrying the line identifier, optional EXTENDED
+    sub-invoice-line bookkeeping (parent link, status, subtype),
+    and an optional free-text note.
     """
 
     tag: ClassVar[str] = "AssociatedDocumentLineDocument"
@@ -411,6 +412,44 @@ class DocumentLineDocument(Element):
     """Invoice line identifier (BT-126).
 
     A unique identifier for the individual line within the invoice.
+    """
+    parent_line_id: str | None = field(
+        default=None,
+        metadata={"tag": "ParentLineID", "profile": Profile.EXTENDED},
+    )
+    """Identifier of parent line (BT-X-304); EXTENDED only.
+
+    References another line's ``line_id`` (BT-126). Used to build
+    a hierarchical sub-invoice-line tree where ``GROUP`` subtotal
+    lines sit above their constituent ``DETAIL`` children. The
+    cross-line walker (``rules/extended.py``) checks every
+    ``parent_line_id`` resolves to an existing ``line_id``
+    (``BR-FXEXT-11``) and that the parent's ``status_reason_code``
+    is set (``BR-FXEXT-06``).
+    """
+    status_code: str | None = field(
+        default=None,
+        metadata={"tag": "LineStatusCode", "profile": Profile.EXTENDED},
+    )
+    """Line status code (BT-X-7); EXTENDED only.
+
+    Per the XSD this is ``qdt:LineStatusCodeType`` (UNTDID 1229,
+    "action request" — ADD / DELETE / CHANGE / NO_ACTION / …).
+    Modelled as a plain ``str`` for now since carthorse doesn't
+    yet ship the UNTDID 1229 subset codelist; tighten to a
+    ``StrEnum`` when §5.6's codelist work lands.
+    """
+    status_reason_code: LineStatusReasonCode | None = field(
+        default=None,
+        metadata={"tag": "LineStatusReasonCode", "profile": Profile.EXTENDED},
+    )
+    """Subtype of invoice line item (BT-X-8); EXTENDED only.
+
+    Discriminator that the per-category sum rules (``BR-FXEXT-{cat}-08``
+    in §5.3) and the line-level qualifications (``BR-FXEXT-22..27``
+    in §5.4) consult to skip ``GROUP`` subtotal headers and
+    ``INFORMATION`` lines. When omitted, the line behaves like
+    ``DETAIL``.
     """
     note: LineIncludedNote | None = None
     """Optional free-text line note (BT-127-00)."""
