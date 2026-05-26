@@ -6,7 +6,7 @@ from abc import ABC
 from collections.abc import Callable
 from dataclasses import Field, dataclass, fields
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, ClassVar, Self, get_args, get_origin
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, get_args, get_origin
 
 from tagic.xml import XML
 
@@ -236,6 +236,11 @@ class Element(ABC):
                 if origin is list:
                     is_list = True
                     curr_type = get_args(curr_type)[0]
+                # ``Literal[...]`` is not a class — dispatch on the type of
+                # its first literal value. ``__post_init__`` then enforces
+                # membership.
+                if get_origin(curr_type) is Literal:
+                    curr_type = type(get_args(curr_type)[0])
 
                 if issubclass(curr_type, str):
                     res = _parse_str(el, f, curr_type)
@@ -309,6 +314,17 @@ def _check_field(cls_name: str, name: str, value: Any, expected: Any) -> None:
 
 
 def _check_scalar(cls_name: str, name: str, value: Any, expected: Any) -> None:
+    # ``Literal[...]`` — value must be one of the declared literals. The
+    # underlying runtime type is also checked so e.g. ``Literal["130"]``
+    # still rejects an int.
+    if get_origin(expected) is Literal:
+        allowed = get_args(expected)
+        if value not in allowed:
+            quoted = ", ".join(repr(a) for a in allowed)
+            raise TypeError(
+                f"{cls_name}.{name}: expected one of {{{quoted}}}, got {value!r}."
+            )
+        return
     if not isinstance(expected, type):
         return
     # ``bool`` is a subclass of ``int`` — be strict so a stray ``0``/``1``

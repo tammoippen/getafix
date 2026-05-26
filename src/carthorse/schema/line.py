@@ -51,7 +51,7 @@ Validation rules not yet enforced (see ``docs/VALIDATION.md``):
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import ClassVar, Self, override
+from typing import ClassVar, Literal, Self, override
 
 from tagic.xml import XML
 
@@ -446,7 +446,7 @@ class LineAdditionalReferencedDocument(Element):
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Invoice line object identifier (BT-128)."""
-    type_code: str = field(default="130", metadata={"tag": "TypeCode"})
+    type_code: Literal["130"] = field(default="130", metadata={"tag": "TypeCode"})
     """Document type code (BT-128-0); fixed to ``"130"``."""
     reference_type_code: str | None = field(
         default=None, metadata={"tag": "ReferenceTypeCode"}

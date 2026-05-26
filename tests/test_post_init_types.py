@@ -88,6 +88,31 @@ class TestBoolStrictness:
         HeaderTradeAllowanceCharge(indicator=False, actual_amount=Decimal("5.00"))
 
 
+class TestLiteralFields:
+    """``Literal[...]`` annotations must reject any non-member value
+    at construction time — BT-128-0 is fixed to ``"130"``."""
+
+    def test_literal_field_accepts_declared_value(self) -> None:
+        from carthorse.schema.line import LineAdditionalReferencedDocument
+
+        LineAdditionalReferencedDocument(issuer_assigned_id="X-1", type_code="130")
+
+    def test_literal_field_uses_default(self) -> None:
+        from carthorse.schema.line import LineAdditionalReferencedDocument
+
+        ref = LineAdditionalReferencedDocument(issuer_assigned_id="X-1")
+        assert ref.type_code == "130"
+
+    def test_literal_field_rejects_other_value(self) -> None:
+        from carthorse.schema.line import LineAdditionalReferencedDocument
+
+        with pt.raises(TypeError, match=r"type_code: expected one of \{'130'\}"):
+            LineAdditionalReferencedDocument(
+                issuer_assigned_id="X-1",
+                type_code="916",  # type: ignore[arg-type]
+            )
+
+
 class TestListFields:
     def test_list_field_rejects_scalar(self) -> None:
         with pt.raises(TypeError, match=r"Header\.notes: expected list"):
