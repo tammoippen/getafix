@@ -63,6 +63,12 @@ _EXPECTED_SCHEMATRON_ONLY: dict[str, frozenset[str]] = {
     # rewrite the test expression's variable binding before evaling).
     "EXTENDED_factur-x-extended.xml": frozenset({"BR-FXEXT-CO-15"}),
     "EXTENDED_fremdwaehrung.xml": frozenset({"BR-FXEXT-CO-15"}),
+    # BR-FXEXT-11 — parent-line ID resolution; pending §5.1 cross-line
+    # walker (next sub-task). BR-FXEXT-CO-15 is the same elementpath
+    # false-positive as above.
+    "EXTENDED_zf24_SubInvoiceLines_Hardware.xml": frozenset(
+        {"BR-FXEXT-11", "BR-FXEXT-CO-15"}
+    ),
 }
 
 

@@ -34,10 +34,22 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from carthorse.schema.element import ValidationError
-from carthorse.schema.types import CategoryCode, Profile
+from carthorse.schema.types import CategoryCode, LineStatusReasonCode, Profile
 
 if TYPE_CHECKING:
     from carthorse.schema import trade as _trade
+
+
+def _is_detail_line(item: object) -> bool:
+    """``True`` if the line participates in monetary accumulators.
+
+    Per the EXTENDED schematron, ``Σ BT-131`` and ``#BT-131`` are
+    restricted to lines whose ``BT-X-8`` (``LineStatusReasonCode``)
+    is ``DETAIL`` or absent — ``GROUP`` subtotal headers and
+    ``INFORMATION`` lines are skipped.
+    """
+    code = item.associated_document.status_reason_code  # type: ignore[attr-defined]
+    return code is None or code == LineStatusReasonCode.DETAIL
 
 
 _TOLERANCE = Decimal("0.01")
@@ -61,13 +73,17 @@ def _within(diff: Decimal, n: int) -> bool:
 
 
 def _line_amounts(m: "_trade.Trade") -> list[Decimal]:
-    """``Σ BT-131`` across all line items.
+    """``Σ BT-131`` across detail-or-unset line items.
 
-    The schematron text excludes lines whose ``BT-X-8`` is
-    ``GROUP`` / ``INFORMATION``; BT-X-8 isn't modelled yet (§4.5),
-    so every line counts at present.
+    ``GROUP`` subtotal headers and ``INFORMATION`` lines are
+    excluded per the EXTENDED schematron filter
+    ``[not(LineStatusReasonCode) or LineStatusReasonCode='DETAIL']``.
     """
-    return [item.settlement.monetary_summation.line_total for item in m.items]
+    return [
+        item.settlement.monetary_summation.line_total
+        for item in m.items
+        if _is_detail_line(item)
+    ]
 
 
 def _allowance_amounts(m: "_trade.Trade") -> list[Decimal]:
@@ -333,7 +349,8 @@ def br_fxext_vat_category_sums(
             line_amts = [
                 item.settlement.monetary_summation.line_total
                 for item in m.items
-                if item.settlement.applicable_trade_tax.category_code == cat
+                if _is_detail_line(item)
+                and item.settlement.applicable_trade_tax.category_code == cat
                 and item.settlement.applicable_trade_tax.rate_applicable_percent
                 == rate
             ]

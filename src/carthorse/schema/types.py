@@ -1037,3 +1037,25 @@ class VATEXCode(enum.StrEnum):
 
 
 # AUTOGEN END VATEXCode
+
+
+class LineStatusReasonCode(enum.StrEnum):
+    """Subtype of invoice line item (BT-X-8); EXTENDED only.
+
+    Discriminates ordinary "detail" lines (the normal case — full
+    quantity / unit / amount / VAT requirements apply) from
+    ``GROUP`` lines (subtotal headers carrying ``BT-131`` equal to
+    the recursive sum of their child lines' net amounts) and
+    ``INFORMATION`` lines (free-text only, no monetary contribution
+    to the invoice totals).
+
+    Carthorse hard-codes the three spec values rather than pulling
+    from the broader UNTDID 1229 codelist — this is the closed set
+    the EXTENDED CIUS recognises and the only one the per-category
+    sum rules (§5.3 of EXTENDED.md) and the BR-FXEXT-2x line-level
+    qualifications (§5.4) ever inspect.
+    """
+
+    DETAIL = "DETAIL"
+    GROUP = "GROUP"
+    INFORMATION = "INFORMATION"
