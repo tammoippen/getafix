@@ -22,12 +22,28 @@ from decimal import Decimal
 import pytest as pt
 
 from carthorse.schema import Profile
+from carthorse.schema.accounting import ApplicableTradeTax
 from carthorse.schema.element import ValidationErrors
+from carthorse.schema.line import (
+    DocumentLineDocument,
+    LineMonetarySummation,
+    LineTradeAgreement,
+    LineTradeDelivery,
+    LineTradeSettlement,
+    NetTradePrice,
+    Quantity,
+    TradeProduct,
+)
 from carthorse.schema.settlement import (
     AppliedTradeTax,
     LogisticsServiceCharge,
 )
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.trade import TradeLineItem
+from carthorse.schema.types import (
+    CategoryCode,
+    LineStatusReasonCode,
+    UNTDID2475TaxPointDateCode,
+)
 from tests._fixtures import make_vat_doc
 
 
@@ -213,3 +229,161 @@ class TestFXExtPerCategorySums:
         with pt.raises(ValidationErrors) as e:
             doc.validate()
         assert "BR-FXEXT-S-09" in _codes(e.value)
+
+
+def _add_line(
+    doc,
+    *,
+    line_id: str,
+    line_total: Decimal,
+    parent_line_id: str | None = None,
+    status_reason_code: LineStatusReasonCode | None = None,
+) -> None:
+    """Append a minimal additional invoice line; used to build
+    sub-invoice-line scenarios on top of ``make_vat_doc()``."""
+    doc.trade.items.append(
+        TradeLineItem(
+            associated_document=DocumentLineDocument(
+                line_id=line_id,
+                parent_line_id=parent_line_id,
+                status_reason_code=status_reason_code,
+            ),
+            product=TradeProduct(name=f"Item {line_id}"),
+            agreement=LineTradeAgreement(
+                net_price=NetTradePrice(charge_amount=line_total)
+            ),
+            delivery=LineTradeDelivery(
+                billed_quantity=Quantity(value=Decimal("1"), unit_code="C62")
+            ),
+            settlement=LineTradeSettlement(
+                applicable_trade_tax=ApplicableTradeTax(
+                    category_code=CategoryCode.T_S,
+                    due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
+                    rate_applicable_percent=Decimal("19"),
+                ),
+                monetary_summation=LineMonetarySummation(line_total=line_total),
+            ),
+        )
+    )
+
+
+class TestFXExtSubInvoiceLineWalker:
+    """§5.1 — cross-line walker enforcing the sub-invoice-line tree
+    constraints (BR-FXEXT-06, -08, -11)."""
+
+    def test_br_fxext_06_fires_when_subtype_missing_on_parent(self) -> None:
+        doc = _ext(make_vat_doc())
+        # The default line has line_id="1"; mark it as a parent by
+        # adding a child whose ParentLineID points to it, but do not
+        # set status_reason_code on the parent.
+        _add_line(
+            doc,
+            line_id="1a",
+            line_total=Decimal("100"),
+            parent_line_id="1",
+            status_reason_code=LineStatusReasonCode.DETAIL,
+        )
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-06" in _codes(e.value)
+
+    def test_br_fxext_06_fires_when_subtype_missing_on_child(self) -> None:
+        doc = _ext(make_vat_doc())
+        # First mark the default line as GROUP so it can be a parent.
+        doc.trade.items[0].associated_document.status_reason_code = (
+            LineStatusReasonCode.GROUP
+        )
+        # Add a child without status_reason_code — should fire.
+        _add_line(
+            doc,
+            line_id="1a",
+            line_total=Decimal("100"),
+            parent_line_id="1",
+        )
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-06" in _codes(e.value)
+
+    def test_br_fxext_11_fires_on_orphan_parent_ref(self) -> None:
+        doc = _ext(make_vat_doc())
+        _add_line(
+            doc,
+            line_id="2",
+            line_total=Decimal("100"),
+            parent_line_id="does-not-exist",
+            status_reason_code=LineStatusReasonCode.DETAIL,
+        )
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-11" in _codes(e.value)
+
+    def test_br_fxext_08_fires_on_group_sum_mismatch(self) -> None:
+        # Build: GROUP "G" with line_total=10 but child totals = 100.
+        doc = _ext(make_vat_doc())
+        # Make the default line the GROUP, override its line_total.
+        ad0 = doc.trade.items[0].associated_document
+        ad0.line_id = "G"
+        ad0.status_reason_code = LineStatusReasonCode.GROUP
+        doc.trade.items[0].settlement.monetary_summation.line_total = Decimal("10")
+        _add_line(
+            doc,
+            line_id="G1",
+            line_total=Decimal("100"),
+            parent_line_id="G",
+            status_reason_code=LineStatusReasonCode.DETAIL,
+        )
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-08" in _codes(e.value)
+
+    def test_br_fxext_08_excludes_information_children_from_sum(self) -> None:
+        # GROUP "G" with line_total=100; one DETAIL child of 100 plus
+        # one INFORMATION child of 99 (should NOT count).
+        doc = _ext(make_vat_doc())
+        ad0 = doc.trade.items[0].associated_document
+        ad0.line_id = "G"
+        ad0.status_reason_code = LineStatusReasonCode.GROUP
+        doc.trade.items[0].settlement.monetary_summation.line_total = Decimal("100")
+        _add_line(
+            doc,
+            line_id="G1",
+            line_total=Decimal("100"),
+            parent_line_id="G",
+            status_reason_code=LineStatusReasonCode.DETAIL,
+        )
+        _add_line(
+            doc,
+            line_id="G2",
+            line_total=Decimal("99"),
+            parent_line_id="G",
+            status_reason_code=LineStatusReasonCode.INFORMATION,
+        )
+        # If INFORMATION was counted, sum would be 199 ≠ 100 and CO-08
+        # would fire. Validate: BR-FXEXT-08 must not appear.
+        # (Other rules may fire because the doc is intentionally
+        # malformed elsewhere — we only assert BR-FXEXT-08 is silent.)
+        try:
+            doc.validate()
+            codes: set[str] = set()
+        except ValidationErrors as e:
+            codes = _codes(e.value)
+        assert "BR-FXEXT-08" not in codes
+
+
+class TestFXExtSubInvoiceLineSampleClean:
+    """The ZF24 SubInvoiceLines Hardware sample (2 GROUP + 4 DETAIL)
+    should validate cleanly — exercises the walker on a real
+    well-formed sub-invoice-line tree."""
+
+    def test_hardware_sample_passes_full_validation(self) -> None:
+        from pathlib import Path
+
+        from lxml import etree
+
+        from carthorse.schema import Document
+
+        xml = Path("tests/samples/EXTENDED_zf24_SubInvoiceLines_Hardware.xml").read_bytes()
+        doc = Document.from_xml(etree.fromstring(xml))
+        # No errors — every parent ref resolves, GROUP totals match
+        # children, subtypes are set everywhere they need to be.
+        doc.validate()

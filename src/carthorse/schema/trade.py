@@ -87,6 +87,9 @@ from carthorse.rules.trade import (
     vat_category_rates,
 )
 from carthorse.rules.extended import (
+    br_fxext_06,
+    br_fxext_08,
+    br_fxext_11,
     br_fxext_co_04,
     br_fxext_co_10,
     br_fxext_co_11,
@@ -210,6 +213,12 @@ class Trade(Element):
         br_fxext_co_13,
         br_fxext_co_15,
         br_fxext_vat_category_sums,
+        # EXTENDED CIUS — sub-invoice-line cross-line walker
+        # (§5.1 of EXTENDED.md). BR-FXEXT-12 is implicitly enforced
+        # by LineMonetarySummation.line_total being non-optional.
+        br_fxext_06,
+        br_fxext_08,
+        br_fxext_11,
     )
 
     items: list[TradeLineItem] = field(default_factory=list)

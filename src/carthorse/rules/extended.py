@@ -112,6 +112,109 @@ def _logistics_amounts(m: "_trade.Trade") -> list[Decimal]:
     ]
 
 
+# ---- §5.1 cross-line walker for sub-invoice-line semantics -----------------
+
+
+def br_fxext_06(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-06: BT-X-8 (``LineStatusReasonCode``) required when a
+    line participates in the sub-invoice-line tree — either by
+    carrying a ``ParentLineID`` (BT-X-304) or by being referenced
+    as one.
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    referenced_parents = {
+        item.associated_document.parent_line_id
+        for item in m.items
+        if item.associated_document.parent_line_id is not None
+    }
+    errors: list[ValidationError] = []
+    for item in m.items:
+        ad = item.associated_document
+        is_child = ad.parent_line_id is not None
+        is_parent = ad.line_id in referenced_parents
+        if (is_child or is_parent) and ad.status_reason_code is None:
+            errors.append(
+                _err(
+                    "BR-FXEXT-06",
+                    f"line {ad.line_id!r}: subtype of invoice item "
+                    f"(BT-X-8 LineStatusReasonCode) shall be set when "
+                    f"the line is part of a sub-invoice-line tree "
+                    f"(has ParentLineID or is referenced as parent).",
+                )
+            )
+    return errors
+
+
+def br_fxext_08(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-08: if a ``GROUP`` line has BT-131, that BT-131
+    equals the sum of its immediate children's BT-131 — excluding
+    ``INFORMATION`` children. ``DETAIL`` and nested ``GROUP``
+    children contribute.
+
+    Note: BR-FXEXT-12 (XLSX-only — "if a GROUP has BT-131, every
+    nested GROUP child must too") is implicitly satisfied because
+    ``LineMonetarySummation.line_total`` is non-optional on the
+    dataclass; no separate ``_err`` emit needed.
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    children_by_parent: dict[str, list[object]] = {}
+    for item in m.items:
+        pid = item.associated_document.parent_line_id
+        if pid is not None:
+            children_by_parent.setdefault(pid, []).append(item)
+
+    errors: list[ValidationError] = []
+    for item in m.items:
+        ad = item.associated_document
+        if ad.status_reason_code != LineStatusReasonCode.GROUP:
+            continue
+        own_total = item.settlement.monetary_summation.line_total  # type: ignore[attr-defined]
+        children = children_by_parent.get(ad.line_id, [])
+        child_sum = sum(
+            (
+                c.settlement.monetary_summation.line_total  # type: ignore[attr-defined]
+                for c in children
+                if c.associated_document.status_reason_code  # type: ignore[attr-defined]
+                != LineStatusReasonCode.INFORMATION
+            ),
+            Decimal("0"),
+        )
+        if own_total != child_sum:
+            errors.append(
+                _err(
+                    "BR-FXEXT-08",
+                    f"GROUP line {ad.line_id!r}: BT-131 = {own_total} "
+                    f"differs from Σ children BT-131 = {child_sum} "
+                    f"(INFORMATION children excluded).",
+                )
+            )
+    return errors
+
+
+def br_fxext_11(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-11: every ``ParentLineID`` (BT-X-304) resolves to an
+    existing line's ``LineID`` (BT-126).
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    line_ids = {item.associated_document.line_id for item in m.items}
+    errors: list[ValidationError] = []
+    for item in m.items:
+        ad = item.associated_document
+        pid = ad.parent_line_id
+        if pid is not None and pid not in line_ids:
+            errors.append(
+                _err(
+                    "BR-FXEXT-11",
+                    f"line {ad.line_id!r}: ParentLineID {pid!r} does "
+                    f"not reference any existing line in this invoice.",
+                )
+            )
+    return errors
+
+
 # ---- §5.2 BR-FXEXT-CO-* (tolerance variants) -------------------------------
 
 

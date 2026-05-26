@@ -63,9 +63,14 @@ _EXPECTED_SCHEMATRON_ONLY: dict[str, frozenset[str]] = {
     # rewrite the test expression's variable binding before evaling).
     "EXTENDED_factur-x-extended.xml": frozenset({"BR-FXEXT-CO-15"}),
     "EXTENDED_fremdwaehrung.xml": frozenset({"BR-FXEXT-CO-15"}),
-    # BR-FXEXT-11 — parent-line ID resolution; pending §5.1 cross-line
-    # walker (next sub-task). BR-FXEXT-CO-15 is the same elementpath
-    # false-positive as above.
+    # BR-FXEXT-11 is also an elementpath false positive on this sample:
+    # the .sch test is `some $p in //LineID satisfies normalize-space($p)
+    # = normalize-space(this/ParentLineID)`. Saxon implicit-string-casts
+    # $p (a node) for normalize-space(); elementpath doesn't, so the
+    # `some ... satisfies` returns false. All four ParentLineID values
+    # in this sample do resolve to existing LineIDs — verified manually
+    # and by carthorse's br_fxext_11. BR-FXEXT-CO-15 is the same kind
+    # of false positive as on the other EXTENDED samples.
     "EXTENDED_zf24_SubInvoiceLines_Hardware.xml": frozenset(
         {"BR-FXEXT-11", "BR-FXEXT-CO-15"}
     ),
