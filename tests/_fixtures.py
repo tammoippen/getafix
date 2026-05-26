@@ -7,7 +7,7 @@ Two things live here:
   standalone. Used by the XML-tag and round-trip regression tests.
 * :func:`make_vat_doc` — build a single-line BASIC invoice with knobs
   for every party identifier / VAT-category combination the BR-AE /
-  BR-E / BR-IC / BR-O / BR-S / BR-Z / BR-IG / BR-IP rules care about.
+  BR-E / BR-IC / BR-O / BR-S / BR-Z / BR-AF / BR-AG rules care about.
   Used by the per-category VAT tests.
 """
 

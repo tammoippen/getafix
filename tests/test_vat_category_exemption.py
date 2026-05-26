@@ -3,7 +3,7 @@
 For every VAT category X, the corresponding BG-23 row either requires
 or forbids the VAT exemption reason (BT-120 text and/or BT-121 code):
 
-* **Forbids** (rate > 0 or VAT applies): S, Z, IG (L), IP (M).
+* **Forbids** (rate > 0 or VAT applies): S, Z, AF/IGIC (L), AG/IPSI (M).
 * **Requires** (rate = 0 / not subject): E, AE, G, IC (K), O.
 """
 
@@ -29,8 +29,8 @@ class TestForbidsExemption:
         [
             (CategoryCode.T_S, "S"),
             (CategoryCode.T_Z, "Z"),
-            (CategoryCode.T_L, "IG"),
-            (CategoryCode.T_M, "IP"),
+            (CategoryCode.T_L, "AF"),
+            (CategoryCode.T_M, "AG"),
         ],
     )
     def test_exemption_text_forbidden(
@@ -47,8 +47,8 @@ class TestForbidsExemption:
         [
             (CategoryCode.T_S, "S"),
             (CategoryCode.T_Z, "Z"),
-            (CategoryCode.T_L, "IG"),
-            (CategoryCode.T_M, "IP"),
+            (CategoryCode.T_L, "AF"),
+            (CategoryCode.T_M, "AG"),
         ],
     )
     def test_exemption_code_forbidden(

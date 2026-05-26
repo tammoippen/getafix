@@ -176,13 +176,13 @@ _IC_MSG = (
     "representative VAT identifier (BT-63), and the Buyer VAT "
     "identifier (BT-48)."
 )
-_IG_MSG = (
+_AF_MSG = (
     "VAT category 'IGIC' (L, Canary Islands) requires the "
     "Seller VAT identifier (BT-31), the Seller tax registration "
     "identifier (BT-32) and/or the Seller tax representative "
     "VAT identifier (BT-63)."
 )
-_IP_MSG = (
+_AG_MSG = (
     "VAT category 'IPSI' (M, Ceuta/Melilla) requires the "
     "Seller VAT identifier (BT-31), the Seller tax registration "
     "identifier (BT-32) and/or the Seller tax representative "
@@ -344,11 +344,11 @@ def br_ic_4(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     return [_err("BR-IC-4", _IC_MSG)]
 
 
-# --- IG -- IGIC (category code L, Canary Islands) ---------------------------
+# --- AF -- IGIC (category code L, Canary Islands) ---------------------------
 
 
-def br_ig_2(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-IG-2: An Invoice that contains an Invoice line where the VAT
+def br_af_2(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-AF-2: An Invoice that contains an Invoice line where the VAT
     category code is 'IGIC' (L) shall contain the Seller VAT Identifier
     (BT-31), the Seller tax registration identifier (BT-32) and/or the
     Seller tax representative VAT identifier (BT-63)."""
@@ -356,34 +356,34 @@ def br_ig_2(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
         return []
     if not _line_has_category(m, CategoryCode.T_L):
         return []
-    return [_err("BR-IG-2", _IG_MSG)]
+    return [_err("BR-AF-2", _AF_MSG)]
 
 
-def br_ig_3(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-IG-3: same identifier requirement as BR-IG-2 at the document-level
+def br_af_3(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-AF-3: same identifier requirement as BR-AF-2 at the document-level
     allowance (BG-20) slot."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _alw_has_category(m, CategoryCode.T_L):
         return []
-    return [_err("BR-IG-3", _IG_MSG)]
+    return [_err("BR-AF-3", _AF_MSG)]
 
 
-def br_ig_4(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-IG-4: same identifier requirement as BR-IG-2 at the document-level
+def br_af_4(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-AF-4: same identifier requirement as BR-AF-2 at the document-level
     charge (BG-21) slot."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _chg_has_category(m, CategoryCode.T_L):
         return []
-    return [_err("BR-IG-4", _IG_MSG)]
+    return [_err("BR-AF-4", _AF_MSG)]
 
 
-# --- IP -- IPSI (category code M, Ceuta/Melilla) ----------------------------
+# --- AG -- IPSI (category code M, Ceuta/Melilla) ----------------------------
 
 
-def br_ip_2(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-IP-2: An Invoice that contains an Invoice line where the VAT
+def br_ag_2(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-AG-2: An Invoice that contains an Invoice line where the VAT
     category code is 'IPSI' (M) shall contain the Seller VAT Identifier
     (BT-31), the Seller tax registration identifier (BT-32) and/or the
     Seller tax representative VAT identifier (BT-63)."""
@@ -391,27 +391,27 @@ def br_ip_2(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
         return []
     if not _line_has_category(m, CategoryCode.T_M):
         return []
-    return [_err("BR-IP-2", _IP_MSG)]
+    return [_err("BR-AG-2", _AG_MSG)]
 
 
-def br_ip_3(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-IP-3: same identifier requirement as BR-IP-2 at the document-level
+def br_ag_3(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-AG-3: same identifier requirement as BR-AG-2 at the document-level
     allowance (BG-20) slot."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _alw_has_category(m, CategoryCode.T_M):
         return []
-    return [_err("BR-IP-3", _IP_MSG)]
+    return [_err("BR-AG-3", _AG_MSG)]
 
 
-def br_ip_4(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-IP-4: same identifier requirement as BR-IP-2 at the document-level
+def br_ag_4(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-AG-4: same identifier requirement as BR-AG-2 at the document-level
     charge (BG-21) slot."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _chg_has_category(m, CategoryCode.T_M):
         return []
-    return [_err("BR-IP-4", _IP_MSG)]
+    return [_err("BR-AG-4", _AG_MSG)]
 
 
 # --- S -- Standard rated ----------------------------------------------------
@@ -1022,8 +1022,8 @@ _VAT_RULE_PREFIX: dict[CategoryCode, str] = {
     CategoryCode.T_AE: "AE",
     CategoryCode.T_G: "G",
     CategoryCode.T_K: "IC",
-    CategoryCode.T_L: "IG",
-    CategoryCode.T_M: "IP",
+    CategoryCode.T_L: "AF",
+    CategoryCode.T_M: "AG",
     CategoryCode.T_O: "O",
 }
 

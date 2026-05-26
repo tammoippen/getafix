@@ -2,7 +2,7 @@
 
 Each VAT category code constrains which Seller / Buyer identifiers must
 be present on the invoice — this file owns the BR-AE / BR-E / BR-IC /
-BR-S / BR-Z / BR-IG / BR-IP -2/-3/-4 families (line / allowance /
+BR-S / BR-Z / BR-AF / BR-AG -2/-3/-4 families (line / allowance /
 charge variants). BR-O (the inverted "not subject to VAT" predicate)
 lives in :mod:`tests.test_vat_not_subject`; the BR-IC delivery rules
 live in :mod:`tests.test_vat_intra_community`.
@@ -196,7 +196,7 @@ class TestBrIc:
 
 
 class TestBrSellerVatLocalTaxRep:
-    """BR-S, BR-Z, BR-IG, BR-IP — all four families share one
+    """BR-S, BR-Z, BR-AF, BR-AG — all four families share one
     predicate: Seller has VAT, BT-32, *or* tax-rep VAT."""
 
     @pt.mark.parametrize(
@@ -204,8 +204,8 @@ class TestBrSellerVatLocalTaxRep:
         [
             (CategoryCode.T_S, "BR-S-2"),
             (CategoryCode.T_Z, "BR-Z-2"),
-            (CategoryCode.T_L, "BR-IG-2"),
-            (CategoryCode.T_M, "BR-IP-2"),
+            (CategoryCode.T_L, "BR-AF-2"),
+            (CategoryCode.T_M, "BR-AG-2"),
         ],
     )
     def test_line_requires_seller_tax_id(
@@ -227,8 +227,8 @@ class TestBrSellerVatLocalTaxRep:
         [
             (CategoryCode.T_S, "BR-S-3"),
             (CategoryCode.T_Z, "BR-Z-3"),
-            (CategoryCode.T_L, "BR-IG-3"),
-            (CategoryCode.T_M, "BR-IP-3"),
+            (CategoryCode.T_L, "BR-AF-3"),
+            (CategoryCode.T_M, "BR-AG-3"),
         ],
     )
     def test_doc_level_allowance_requires_seller_tax_id(
@@ -252,8 +252,8 @@ class TestBrSellerVatLocalTaxRep:
         [
             (CategoryCode.T_S, "BR-S-4"),
             (CategoryCode.T_Z, "BR-Z-4"),
-            (CategoryCode.T_L, "BR-IG-4"),
-            (CategoryCode.T_M, "BR-IP-4"),
+            (CategoryCode.T_L, "BR-AF-4"),
+            (CategoryCode.T_M, "BR-AG-4"),
         ],
     )
     def test_doc_level_charge_requires_seller_tax_id(
