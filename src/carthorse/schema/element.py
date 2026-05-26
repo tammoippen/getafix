@@ -1,4 +1,5 @@
 import datetime
+import enum
 import json
 import types
 import xml.etree.ElementTree as _stdlib_etree
@@ -6,7 +7,16 @@ from abc import ABC
 from collections.abc import Callable
 from dataclasses import Field, dataclass, fields
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Literal,
+    Self,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from tagic.xml import XML
 
@@ -286,6 +296,31 @@ def _get_non_none_type(field_type: Any) -> Any:
         assert len(ts) == 1, ts
         return ts[0]
     return field_type
+
+
+def coerce_enum(value: str | None, owner_cls: type, field_name: str) -> Any:
+    """Coerce an XML attribute value into the annotated type of
+    ``owner_cls.<field_name>``.
+
+    ``_parse_str`` (used for element-text fields) already calls
+    ``curr_type(el.text.strip())`` at line 401, so any element-text
+    field annotated as a ``StrEnum`` subclass auto-coerces. This
+    helper is the companion for *attribute* reads in custom
+    ``from_xml`` overrides (``TaxTotal``, ``AttachmentBinaryObject``,
+    ``ProductClassification``, ``SchemeID``, …) that pull code values
+    from an XML attribute instead of element text.
+
+    Returns ``None`` when ``value`` is ``None`` (attribute absent),
+    ``target(value)`` when the field's non-Optional type is a
+    ``StrEnum`` subclass, and ``value`` unchanged otherwise.
+    """
+    if value is None:
+        return None
+    hints = get_type_hints(owner_cls)
+    target = _get_non_none_type(hints.get(field_name, str))
+    if isinstance(target, type) and issubclass(target, enum.StrEnum):
+        return target(value)
+    return value
 
 
 def _allows_none(field_type: Any) -> bool:
