@@ -53,6 +53,7 @@ Validation rules not yet enforced (see ``docs/VALIDATION.md``):
 
 from dataclasses import dataclass, field
 from datetime import date
+from decimal import Decimal
 from typing import ClassVar, Self, override
 
 from tagic.xml import XML
@@ -82,6 +83,7 @@ from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import PayeeTradeParty
 from carthorse.schema.references import InvoiceReferencedDocument
 from carthorse.schema.types import (
+    CategoryCode,
     Currency,
     Namespace,
     Profile,
@@ -376,13 +378,70 @@ class ReceivableAccountingAccount(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class AppliedTradeTax(Element):
+    """Logistics-service-charge VAT category (BT-X-273 / BT-X-274); EXTENDED only.
+
+    Nested 1..* on :class:`LogisticsServiceCharge` (BG-X-42). The XSD
+    type is the full ``ram:TradeTaxType`` (same shape as
+    :class:`ApplicableTradeTax`), but per the EXTENDED technical
+    appendix only the three coded fields are typically populated —
+    the calculated and basis amounts live on the header BG-23 rows
+    once the charge feeds the per-category sum.
+    """
+
+    tag: ClassVar[str] = "AppliedTradeTax"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
+    """Tax type code (BT-X-273-0). ``"VAT"`` at EN16931; UNTDID 5153
+    at EXTENDED for non-VAT tax types (insurance tax, mineral oil
+    tax, …)."""
+    category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
+    """VAT category code (BT-X-273)."""
+    rate_applicable_percent: Decimal | None = field(
+        default=None, metadata={"tag": "RateApplicablePercent"}
+    )
+    """VAT rate (BT-X-274). Optional like on BG-23 — omitted on
+    rate-less categories (``O``, ``AE``, ``K``)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class LogisticsServiceCharge(Element):
+    """Logistics service charge (BG-X-42); EXTENDED only.
+
+    A charge applied to the invoice for logistics services (freight,
+    handling, insurance, …). Its ``applied_amount`` (BT-X-272) sums
+    into BT-108 alongside BG-21 document-level charges per
+    ``BR-FXEXT-CO-12``, and into the per-category VAT breakdown via
+    ``BR-FXEXT-{cat}-08``.
+
+    Field order matches the XSD ``LogisticsServiceChargeType``
+    ``<xs:sequence>``: ``Description`` → ``AppliedAmount`` →
+    ``AppliedTradeTax``.
+    """
+
+    tag: ClassVar[str] = "SpecifiedLogisticsServiceCharge"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    description: str = field(metadata={"tag": "Description"})
+    """Logistics service charge description (BT-X-271)."""
+    applied_amount: Decimal = field(metadata={"tag": "AppliedAmount", "amount": True})
+    """Logistics service charge amount (BT-X-272)."""
+    applied_trade_tax: list[AppliedTradeTax] = field(
+        metadata={"tag": "AppliedTradeTax"}
+    )
+    """Per-category VAT applied to the charge (1..* per XSD)."""
+    currency: str | None = None
+
+
+@dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
     """Header trade settlement (BG-19).
 
     Container for currency, payee, payment means, VAT breakdown,
-    invoicing period, header allowances/charges, payment terms, the
-    monetary summation, preceding-invoice references, and accounting
-    references.
+    invoicing period, header allowances/charges, logistics service
+    charges (EXTENDED), payment terms, the monetary summation,
+    preceding-invoice references, and accounting references.
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
@@ -463,6 +522,21 @@ class TradeSettlement(Element):
     """Header invoicing period (BG-14); BASIC_WL+."""
     allowance_charge: list[HeaderTradeAllowanceCharge] | None = None
     """Header allowances (BG-20) and charges (BG-21), 0..*."""
+    logistics_service_charges: list[LogisticsServiceCharge] | None = field(
+        default=None,
+        metadata={
+            "tag": "SpecifiedLogisticsServiceCharge",
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Logistics service charges (BG-X-42, 0..*); EXTENDED only.
+
+    XSD position: between :attr:`allowance_charge`
+    (``SpecifiedTradeAllowanceCharge``) and :attr:`terms`
+    (``SpecifiedTradePaymentTerms``). Each entry sums into BT-108 via
+    ``BR-FXEXT-CO-12`` and into its declared VAT category's BG-23 row
+    via ``BR-FXEXT-{cat}-08``.
+    """
     terms: PaymentTerms | None = None
     """Payment terms (BT-20-00); BASIC_WL+."""
     monetary_summation: MonetarySummation
