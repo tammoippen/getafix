@@ -674,6 +674,37 @@ class LineBuyerOrderReferencedDocument(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class LineQuotationReferencedDocument(Element):
+    """Line-level quotation reference (BT-X-?); EXTENDED only.
+
+    Per-line pointer to a previously issued quotation that this
+    invoice line corresponds to. Same ``ReferencedDocumentType``
+    XSD shape as :class:`LineBuyerOrderReferencedDocument` — carries
+    ``IssuerAssignedID`` (the quotation document identifier),
+    ``LineID`` (the quotation's line position), and an optional
+    ``FormattedIssueDateTime`` for the quotation's issue date.
+
+    Exercised by ``EXTENDED_zf24_Steuerfreie_IG.xml`` (every line
+    references the upstream offer ``ANG987654`` at the matching
+    position).
+    """
+
+    tag: ClassVar[str] = "QuotationReferencedDocument"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    issuer_assigned_id: str | None = field(
+        default=None, metadata={"tag": "IssuerAssignedID"}
+    )
+    """Quotation document identifier."""
+    line_id: str | None = field(default=None, metadata={"tag": "LineID"})
+    """Quotation line position."""
+    formatted_issue_date_time: date | None = field(
+        default=None, metadata={"tag": "FormattedIssueDateTime"}
+    )
+    """Quotation issue date."""
+
+
+@dataclass(kw_only=True, slots=True)
 class LineAdditionalReferencedDocument(Element):
     """Line-level invoice-line object identifier (BT-128-00); COMFORT+.
 
@@ -709,8 +740,23 @@ class LineTradeAgreement(Element):
 
     Note: element order in the rendered XML follows the XSD sequence
     — ``BuyerOrderReferencedDocument`` (BT-132-00; COMFORT+) precedes
+    ``QuotationReferencedDocument`` (EXTENDED) precedes
     ``GrossPriceProductTradePrice`` (optional) which precedes
     ``NetPriceProductTradePrice`` (required).
+
+    EXTENDED gaps (no current sample exercises these; XSD slots
+    reserved for when a fixture lands):
+
+    * ``ApplicableTradeDeliveryTerms`` — line-level Incoterms.
+    * ``SellerOrderReferencedDocument`` — per-line seller's order
+      reference (counterpart to ``buyer_order_ref``).
+    * ``ContractReferencedDocument`` — per-line contract reference.
+    * ``AdditionalReferencedDocument`` (0..*) — extra per-line
+      document refs (catalogue numbers, regulatory citations).
+    * ``ItemSellerTradeParty`` (BG-X-90) — distinct seller for the
+      line item (drop-shipper / marketplace seller-of-record).
+    * ``UltimateCustomerOrderReferencedDocument`` (0..*) — per-line
+      ultimate-customer order ref.
     """
 
     tag: ClassVar[str] = "SpecifiedLineTradeAgreement"
@@ -718,6 +764,20 @@ class LineTradeAgreement(Element):
 
     buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
     """Referenced purchase-order line (BT-132-00); COMFORT+."""
+    quotation_ref: LineQuotationReferencedDocument | None = field(
+        default=None,
+        metadata={
+            "tag": "QuotationReferencedDocument",
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Referenced quotation line (BT-X-?, 0..1); EXTENDED only.
+
+    XSD position: after ``buyer_order_ref``
+    (``BuyerOrderReferencedDocument``), before the price blocks.
+    Exercised by the Steuerfreie_IG sample where each invoice line
+    points back to a quotation line position.
+    """
     gross_price: GrossTradePrice | None = None
     """Item gross price (BT-148-00)."""
     net_price: NetTradePrice
