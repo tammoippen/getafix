@@ -176,7 +176,7 @@ Remaining work is cardinality / metadata:
 | BG-X-44 | ``ApplicableTradePaymentDiscountTerms`` | new ``PaymentDiscountTerms`` with the same shape but ``ActualDiscountAmount`` | 0..1 | Nested on ``PaymentTerms``. |
 | BG-X-45 / BG-X-46 | ``SpecifiedAdvancePayment`` + nested ``IncludedTradeTax`` | new ``AdvancePayment`` with ``PaidAmount``, ``FormattedReceivedDateTime``, list of ``IncludedTradeTax`` (``TypeCode``, ``CategoryCode``, ``RateApplicablePercent``, ``CalculatedAmount``) | 0..* | XSD position: after ``SpecifiedTradeSettlementHeaderMonetarySummation``. |
 | — | ``SpecifiedTradePaymentTerms`` cardinality | widen ``TradeSettlement.terms`` from ``PaymentTerms \| None`` to ``list[PaymentTerms] \| None`` at EXTENDED; add optional per-term ``PayeeTradeParty`` and ``PartialPaymentAmount`` | 0..* | The list widening is the breaking part — handle via context-aware ``_field_profile`` like ``TradeAllowanceCharge``. |
-| BT-X-273 | ``MonetarySummation.TotalAllowanceChargeAmount`` | new field ``MonetarySummation.total_allowance_charge_amount: Decimal \| None`` | 0..1 | XSD position: after ``TaxTotal``, before ``RoundingAmount``. |
+| BT-X-273 | ``LineMonetarySummation.TotalAllowanceChargeAmount`` | new field ``LineMonetarySummation.total_allowance_charge_amount: Decimal \| None`` | 0..1 | **Correction**: the original plan placed this on the header ``MonetarySummation``, but the EXTENDED XSD only adds ``TotalAllowanceChargeAmount`` to ``TradeSettlementLineMonetarySummationType`` (line-level). The header summation gains no new fields at EXTENDED. None of the current samples populate the line-level extensions — defer until a sample exercises it. |
 
 ### 4.4 ``ApplicableTradeTax`` extensions (header VAT breakdown)
 
