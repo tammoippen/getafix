@@ -755,11 +755,15 @@ def br_co_10(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-CO-10: Sum of Invoice line net amount (BT-106) = sum of all
     Invoice line net amounts (BT-131).
 
-    Applies: BASIC+ where line items exist. ``BT-106`` is carthorse-
-    optional (MINIMUM doesn't have it) — the check is skipped when
-    it's absent or when there are no line items (``BR-16`` covers
-    that case).
+    Applies: BASIC+ except EXTENDED. At EXTENDED ``BR-FXEXT-CO-10``
+    replaces this with a tolerance-banded variant that also excludes
+    ``GROUP`` / ``INFORMATION`` lines from the sum. ``BT-106`` is
+    carthorse-optional (MINIMUM doesn't have it) — the check is
+    skipped when it's absent or when there are no line items
+    (``BR-16`` covers that case).
     """
+    if profile >= Profile.EXTENDED:
+        return []
     if not m.items:
         return []
     summation = m.settlement.monetary_summation
@@ -785,8 +789,12 @@ def br_co_11(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-CO-11: Sum of allowances on document level (BT-107) = sum of
     Document level allowance amounts (BT-92).
 
-    Applies: BASIC_WL+ where BT-107 is populated.
+    Applies: BASIC_WL+ except EXTENDED. At EXTENDED ``BR-FXEXT-CO-11``
+    replaces this with a tolerance-banded variant. Skipped when
+    BT-107 is absent.
     """
+    if profile >= Profile.EXTENDED:
+        return []
     summation = m.settlement.monetary_summation
     if summation.allowance_total is None:
         return []
@@ -814,8 +822,13 @@ def br_co_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-CO-12: Sum of charges on document level (BT-108) = sum of
     Document level charge amounts (BT-99).
 
-    Applies: BASIC_WL+ where BT-108 is populated.
+    Applies: BASIC_WL+ except EXTENDED. At EXTENDED
+    ``BR-FXEXT-CO-12`` replaces this with a tolerance-banded variant
+    that also folds ``Σ BT-X-272`` (logistics service fees) into the
+    sum. Skipped when BT-108 is absent.
     """
+    if profile >= Profile.EXTENDED:
+        return []
     summation = m.settlement.monetary_summation
     if summation.charge_total is None:
         return []
@@ -844,9 +857,16 @@ def br_co_13(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     line net amounts (BT-131) - sum of allowances on document level
     (BT-92) + sum of charges on document level (BT-99).
 
-    Applies: BASIC+ where line items exist (the line-totals sum is
-    only meaningful then).
+    Applies: BASIC+ except EXTENDED. At EXTENDED ``BR-FXEXT-CO-13``
+    replaces this with a tolerance-banded variant that excludes
+    ``GROUP`` / ``INFORMATION`` lines. (BT-X-272 deliberately does
+    NOT enter the EXTENDED identity — logistics fees flow into
+    BT-108 and are checked separately by ``BR-FXEXT-CO-12``.) The
+    check applies only where line items exist (the line-totals sum
+    is only meaningful then).
     """
+    if profile >= Profile.EXTENDED:
+        return []
     if not m.items:
         return []
     summation = m.settlement.monetary_summation
