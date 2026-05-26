@@ -28,23 +28,31 @@ from carthorse.schema.settlement import (
     PayeePartyCreditorFinancialAccount,
     PaymentMeans,
 )
+from carthorse.schema.types import UNTDID4461PaymentMeansCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 
 
 class TestPaymentMeansInformation:
     def test_construct(self) -> None:
-        pm = PaymentMeans(type_code="58", information="Pay before due date")
+        pm = PaymentMeans(
+            type_code=UNTDID4461PaymentMeansCode.CODE_58,
+            information="Pay before due date",
+        )
         assert pm.information == "Pay before due date"
 
     def test_renders_at_comfort(self) -> None:
-        pm = PaymentMeans(type_code="58", information="hello")
+        pm = PaymentMeans(
+            type_code=UNTDID4461PaymentMeansCode.CODE_58, information="hello"
+        )
         xml = pm.to_xml_internal(Profile.COMFORT).render(indent=True)
         assert "<ram:Information>" in xml
         assert "hello" in xml
 
     def test_below_comfort_raises(self) -> None:
-        pm = PaymentMeans(type_code="58", information="hello")
+        pm = PaymentMeans(
+            type_code=UNTDID4461PaymentMeansCode.CODE_58, information="hello"
+        )
         with pt.raises(ProfileMismatch):
             pm.to_xml_internal(Profile.BASIC_WL).render(indent=True)
 
@@ -68,7 +76,10 @@ class TestFinancialCard:
         assert "Alice" in xml
 
     def test_parent_render_below_comfort_raises(self) -> None:
-        pm = PaymentMeans(type_code="48", financial_card=FinancialCard(id="1234"))
+        pm = PaymentMeans(
+            type_code=UNTDID4461PaymentMeansCode.CODE_48,
+            financial_card=FinancialCard(id="1234"),
+        )
         with pt.raises(ProfileMismatch):
             pm.to_xml_internal(Profile.BASIC_WL).render(indent=True)
 
@@ -103,7 +114,7 @@ class TestCreditorFinancialInstitution:
 
     def test_parent_render_below_comfort_raises(self) -> None:
         pm = PaymentMeans(
-            type_code="58",
+            type_code=UNTDID4461PaymentMeansCode.CODE_58,
             creditor_institution=CreditorFinancialInstitution(bic_id="DEUTDEFFXXX"),
         )
         with pt.raises(ProfileMismatch):
@@ -113,7 +124,7 @@ class TestCreditorFinancialInstitution:
 class TestPaymentMeansRoundTrip:
     def test_full_payment_means_round_trip(self, parser: ParseFromBytes) -> None:
         pm = PaymentMeans(
-            type_code="58",
+            type_code=UNTDID4461PaymentMeansCode.CODE_58,
             information="SEPA credit transfer, due in 30 days",
             financial_card=FinancialCard(id="1234", cardholder_name="Alice"),
             payee=PayeePartyCreditorFinancialAccount(

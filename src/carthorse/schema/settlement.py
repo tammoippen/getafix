@@ -81,7 +81,12 @@ from carthorse.schema.accounting import (
 from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import PayeeTradeParty
 from carthorse.schema.references import InvoiceReferencedDocument
-from carthorse.schema.types import Namespace, Profile
+from carthorse.schema.types import (
+    Currency,
+    Namespace,
+    Profile,
+    UNTDID4461PaymentMeansCode,
+)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -232,7 +237,7 @@ class PaymentMeans(Element):
         br_61,
     )
 
-    type_code: str = field(metadata={"tag": "TypeCode"})
+    type_code: UNTDID4461PaymentMeansCode = field(metadata={"tag": "TypeCode"})
     """Payment means type code (BT-81).
 
     The expected or used means of payment, expressed as a code.
@@ -421,7 +426,7 @@ class TradeSettlement(Element):
     Information field. National-border SEPA payments may relax
     these rules.
     """
-    tax_currency_code: str | None = field(
+    tax_currency_code: Currency | None = field(
         default=None, metadata={"tag": "TaxCurrencyCode", "profile": Profile.BASIC_WL}
     )
     """VAT accounting currency code (BT-6); BASIC_WL+.
@@ -436,7 +441,7 @@ class TradeSettlement(Element):
 
     Code list: ISO 4217.
     """
-    currency_code: str = field(metadata={"tag": "InvoiceCurrencyCode"})
+    currency_code: Currency = field(metadata={"tag": "InvoiceCurrencyCode"})
     """Invoice currency code (BT-5).
 
     The currency in which all invoice amounts are given, except for

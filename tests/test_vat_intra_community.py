@@ -13,7 +13,7 @@ from carthorse.schema.delivery import SupplyChainEvent
 from carthorse.schema.element import ValidationErrors
 from carthorse.schema.party import PostalTradeAddressExtended, ShipToTradeParty
 from carthorse.schema.settlement import BillingSpecifiedPeriod
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, Country
 from tests._fixtures import make_vat_doc
 
 
@@ -32,7 +32,7 @@ class TestBrIcDelivery:
         doc.trade.delivery.event = SupplyChainEvent(occurrence=date(2025, 1, 15))
         # BR-IC-12 still needs deliver-to country.
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR")
+            address=PostalTradeAddressExtended(country_id=Country.FR)
         )
         doc.validate()
 
@@ -42,14 +42,14 @@ class TestBrIcDelivery:
             start=date(2025, 1, 1), end=date(2025, 1, 31)
         )
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR")
+            address=PostalTradeAddressExtended(country_id=Country.FR)
         )
         doc.validate()
 
     def test_br_ic_11_fires_without_date_or_period(self) -> None:
         doc = self._make_ic()
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR")
+            address=PostalTradeAddressExtended(country_id=Country.FR)
         )
         with pt.raises(ValidationErrors) as e:
             doc.validate()

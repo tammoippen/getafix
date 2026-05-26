@@ -33,7 +33,7 @@ from carthorse.schema.accounting import (
     TaxTotal,
 )
 from carthorse.schema.line import LineMonetarySummation
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
 
 
 def _run(elem, profile=Profile.BASIC_WL):
@@ -81,7 +81,7 @@ class TestApplicableTradeTax:
             calculated_amount=Decimal("0"),
             basis_amount=Decimal("1.234"),
             category_code=CategoryCode.T_S,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
             rate_applicable_percent=Decimal("19"),
         )
         errors = _run(tt)
@@ -92,7 +92,7 @@ class TestApplicableTradeTax:
             calculated_amount=Decimal("0.123"),
             basis_amount=Decimal("0"),
             category_code=CategoryCode.T_S,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
             rate_applicable_percent=Decimal("19"),
         )
         errors = _run(tt)
@@ -101,7 +101,7 @@ class TestApplicableTradeTax:
 
 class TestTaxTotal:
     def test_invoice_currency_three_decimals_fails(self) -> None:
-        tt = TaxTotal(amount=Decimal("19.123"), currency_id="EUR")
+        tt = TaxTotal(amount=Decimal("19.123"), currency_id=Currency.EUR)
         errors = _run(tt)
         assert any(e.code == "BR-DEC-13" for e in errors), errors
 

@@ -26,7 +26,11 @@ from carthorse.schema.accounting import ApplicableTradeTax
 from carthorse.schema.element import ValidationErrors
 from carthorse.schema.party import URIID, URIUniversalCommunication
 from carthorse.schema.settlement import PayeePartyCreditorFinancialAccount, PaymentMeans
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import (
+    CategoryCode,
+    UNTDID2475TaxPointDateCode,
+    UNTDID4461PaymentMeansCode,
+)
 from tests._fixtures import make_vat_doc
 
 
@@ -49,7 +53,7 @@ class TestBr48:
             basis_amount=Decimal("0"),
             category_code=CategoryCode.T_S,
             rate_applicable_percent=Decimal("19"),
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
         )
         errors = [
             e for v in ApplicableTradeTax._validators for e in v(tax, Profile.BASIC_WL)
@@ -61,7 +65,7 @@ class TestBr48:
             calculated_amount=Decimal("0"),
             basis_amount=Decimal("0"),
             category_code=CategoryCode.T_O,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
         )
         errors = [
             e for v in ApplicableTradeTax._validators for e in v(tax, Profile.BASIC_WL)
@@ -73,7 +77,7 @@ class TestBr48:
             calculated_amount=Decimal("0"),
             basis_amount=Decimal("0"),
             category_code=CategoryCode.T_S,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
         )
         errors = [
             e for v in ApplicableTradeTax._validators for e in v(tax, Profile.BASIC_WL)
@@ -82,8 +86,17 @@ class TestBr48:
 
 
 class TestBr61:
-    @pt.mark.parametrize("code", ["30", "42", "58"])
-    def test_fails_when_credit_transfer_lacks_iban(self, code: str) -> None:
+    @pt.mark.parametrize(
+        "code",
+        [
+            UNTDID4461PaymentMeansCode.CODE_30,
+            UNTDID4461PaymentMeansCode.CODE_42,
+            UNTDID4461PaymentMeansCode.CODE_58,
+        ],
+    )
+    def test_fails_when_credit_transfer_lacks_iban(
+        self, code: UNTDID4461PaymentMeansCode
+    ) -> None:
         doc = make_vat_doc()
         doc.trade.settlement.payment_means = [
             PaymentMeans(
@@ -95,8 +108,17 @@ class TestBr61:
             doc.validate()
         assert any(v.code == "BR-61" for v in e.value.errors)
 
-    @pt.mark.parametrize("code", ["30", "42", "58"])
-    def test_passes_when_credit_transfer_has_iban(self, code: str) -> None:
+    @pt.mark.parametrize(
+        "code",
+        [
+            UNTDID4461PaymentMeansCode.CODE_30,
+            UNTDID4461PaymentMeansCode.CODE_42,
+            UNTDID4461PaymentMeansCode.CODE_58,
+        ],
+    )
+    def test_passes_when_credit_transfer_has_iban(
+        self, code: UNTDID4461PaymentMeansCode
+    ) -> None:
         doc = make_vat_doc()
         doc.trade.settlement.payment_means = [
             PaymentMeans(
@@ -108,8 +130,20 @@ class TestBr61:
         ]
         doc.validate()
 
-    @pt.mark.parametrize("code", ["10", "20", "49", "57", "59", "97"])
-    def test_passes_when_non_credit_transfer_no_iban(self, code: str) -> None:
+    @pt.mark.parametrize(
+        "code",
+        [
+            UNTDID4461PaymentMeansCode.CODE_10,
+            UNTDID4461PaymentMeansCode.CODE_20,
+            UNTDID4461PaymentMeansCode.CODE_49,
+            UNTDID4461PaymentMeansCode.CODE_57,
+            UNTDID4461PaymentMeansCode.CODE_59,
+            UNTDID4461PaymentMeansCode.CODE_97,
+        ],
+    )
+    def test_passes_when_non_credit_transfer_no_iban(
+        self, code: UNTDID4461PaymentMeansCode
+    ) -> None:
         doc = make_vat_doc()
         doc.trade.settlement.payment_means = [PaymentMeans(type_code=code)]
         doc.validate()

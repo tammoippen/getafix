@@ -42,6 +42,7 @@ from carthorse.schema.settlement import (
     TradeSettlement,
 )
 from carthorse.schema.trade import Trade
+from carthorse.schema.types import Country, Currency, UNTDID4461PaymentMeansCode
 from tests._fixtures import make_vat_doc
 
 
@@ -62,15 +63,17 @@ def _minimum_doc() -> Document:
         trade=Trade(
             agreement=TradeAgreement(
                 seller=SellerTradeParty(
-                    name="Acme", address=PostalTradeAddressExtended(country_id="DE")
+                    name="Acme",
+                    address=PostalTradeAddressExtended(country_id=Country.DE),
                 ),
                 buyer=BuyerTradeParty(
-                    name="Beta", address=PostalTradeAddressExtended(country_id="DE")
+                    name="Beta",
+                    address=PostalTradeAddressExtended(country_id=Country.DE),
                 ),
             ),
             delivery=TradeDelivery(),
             settlement=TradeSettlement(
-                currency_code="EUR",
+                currency_code=Currency.EUR,
                 monetary_summation=MonetarySummation(
                     tax_basis_total=Decimal("100"),
                     grand_total=Decimal("119"),
@@ -117,7 +120,7 @@ def test_render_invoice_full_doc_emits_lines_taxes_and_payment():
     )
     doc.trade.settlement.payment_means = [
         PaymentMeans(
-            type_code="58",
+            type_code=UNTDID4461PaymentMeansCode.CODE_58,
             payee=PayeePartyCreditorFinancialAccount(iban_id="DE89370400440532013000"),
         )
     ]

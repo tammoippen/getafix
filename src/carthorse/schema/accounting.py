@@ -73,7 +73,13 @@ from carthorse.rules.accounting import (
     bt_118_0_vat_only,
 )
 from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import CategoryCode, Profile
+from carthorse.schema.types import (
+    CategoryCode,
+    Currency,
+    Profile,
+    UNTDID2475TaxPointDateCode,
+    VATEXCode,
+)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -109,7 +115,7 @@ class TaxTotal(Element):
 
     The sum of all VAT category tax amounts.
     """
-    currency_id: str
+    currency_id: Currency
     """Currency identifier (BT-110-0 / BT-111-0).
 
     Distinguishes BT-110 (invoice currency) from BT-111 (accounting
@@ -137,7 +143,7 @@ class TaxTotal(Element):
         if elem.text is None:
             raise ValueError
         value = elem.text.strip()
-        return cls(amount=Decimal(value), currency_id=currency_id)
+        return cls(amount=Decimal(value), currency_id=Currency(currency_id))
 
 
 @dataclass(kw_only=True, slots=True)
@@ -358,7 +364,7 @@ class ApplicableTradeTax(Element):
     * ``M`` — Tax for production, services and importation in Ceuta
       and Melilla (IPSI)
     """
-    exemption_reason_code: str | None = field(
+    exemption_reason_code: VATEXCode | None = field(
         default=None, metadata={"tag": "ExemptionReasonCode"}
     )
     """VAT exemption reason code (BT-121).
@@ -382,7 +388,9 @@ class ApplicableTradeTax(Element):
     supplied or services completed; see Article 226(7) of Council
     Directive 2006/112/EC.
     """
-    due_date_code: str | None = field(default=None, metadata={"tag": "DueDateTypeCode"})
+    due_date_code: UNTDID2475TaxPointDateCode | None = field(
+        default=None, metadata={"tag": "DueDateTypeCode"}
+    )
     """Value added tax point date code (BT-8).
 
     The code of the date when VAT becomes accountable for the

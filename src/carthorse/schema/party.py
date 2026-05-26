@@ -81,7 +81,7 @@ from carthorse.rules.party import (
     bt_31_0_scheme_id,
 )
 from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import Profile
+from carthorse.schema.types import Country, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -230,7 +230,7 @@ class PostalTradeAddress(Element):
 
     Example: ``München``.
     """
-    country_id: str = field(metadata={"tag": "CountryID"})
+    country_id: Country = field(metadata={"tag": "CountryID"})
     """Country code (BT-40 Seller / BT-55 Buyer / BT-69 TaxRep / BT-80 ShipTo).
 
     A code that identifies the country.

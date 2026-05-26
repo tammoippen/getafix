@@ -10,7 +10,7 @@ from carthorse.schema import Profile
 from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from carthorse.schema.party import TaxSchemeId
 from carthorse.schema.settlement import PaymentTerms, TradeSettlement
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 
@@ -22,8 +22,8 @@ def test_monetary_summation_two_tax_totals(parser: ParseFromBytes):
         line_total=Decimal("100.00"),
         tax_basis_total=Decimal("100.00"),
         tax_total=[
-            TaxTotal(amount=Decimal("19.00"), currency_id="EUR"),
-            TaxTotal(amount=Decimal("20.45"), currency_id="USD"),
+            TaxTotal(amount=Decimal("19.00"), currency_id=Currency.EUR),
+            TaxTotal(amount=Decimal("20.45"), currency_id=Currency.USD),
         ],
         grand_total=Decimal("119.00"),
         due_amount=Decimal("119.00"),
@@ -68,20 +68,20 @@ def test_tax_currency_code_requires_matching_tax_total():
     summation = MonetarySummation(
         line_total=Decimal("100"),
         tax_basis_total=Decimal("100"),
-        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id=Currency.EUR)],
         grand_total=Decimal("119"),
         due_amount=Decimal("119"),
     )
     settlement = TradeSettlement(
-        currency_code="EUR",
-        tax_currency_code="USD",
+        currency_code=Currency.EUR,
+        tax_currency_code=Currency.USD,
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
                 calculated_amount=Decimal("19"),
                 basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             )
         ],
@@ -92,8 +92,8 @@ def test_tax_currency_code_requires_matching_tax_total():
 
     # With matching second TaxTotal it passes.
     settlement.monetary_summation.tax_total = [
-        TaxTotal(amount=Decimal("19"), currency_id="EUR"),
-        TaxTotal(amount=Decimal("20.45"), currency_id="USD"),
+        TaxTotal(amount=Decimal("19"), currency_id=Currency.EUR),
+        TaxTotal(amount=Decimal("20.45"), currency_id=Currency.USD),
     ]
     settlement.validate_internal(Profile.BASIC_WL)
 

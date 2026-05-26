@@ -24,7 +24,7 @@ from carthorse.schema.line import (
 )
 from carthorse.schema.settlement import PaymentTerms, TradeSettlement
 from carthorse.schema.trade import TradeLineItem
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
 from tests._fixtures import make_vat_doc
 
 
@@ -50,19 +50,19 @@ def test_br_co_15_grand_total_equals_tax_basis_plus_tax_total():
     summation = MonetarySummation(
         line_total=Decimal("100"),
         tax_basis_total=Decimal("100"),
-        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id=Currency.EUR)],
         grand_total=Decimal("999"),  # WRONG — should be 119
         due_amount=Decimal("999"),
     )
     settlement = TradeSettlement(
-        currency_code="EUR",
+        currency_code=Currency.EUR,
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
                 calculated_amount=Decimal("19"),
                 basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             )
         ],
@@ -88,12 +88,12 @@ def test_br_co_15_with_no_tax_total_treats_bt_110_as_zero():
         due_amount=Decimal("100"),
     )
     settlement = TradeSettlement(
-        currency_code="EUR",
+        currency_code=Currency.EUR,
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
                 category_code=CategoryCode.T_E,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("0"),
                 exemption_reason="Exempt",
             )
@@ -109,22 +109,22 @@ def test_br_co_15_uses_only_invoice_currency_tax_total():
         line_total=Decimal("100"),
         tax_basis_total=Decimal("100"),
         tax_total=[
-            TaxTotal(amount=Decimal("19"), currency_id="EUR"),  # BT-110
-            TaxTotal(amount=Decimal("20"), currency_id="USD"),  # BT-111
+            TaxTotal(amount=Decimal("19"), currency_id=Currency.EUR),  # BT-110
+            TaxTotal(amount=Decimal("20"), currency_id=Currency.USD),  # BT-111
         ],
         grand_total=Decimal("119"),  # 100 + 19 only
         due_amount=Decimal("119"),
     )
     settlement = TradeSettlement(
-        currency_code="EUR",
-        tax_currency_code="USD",
+        currency_code=Currency.EUR,
+        tax_currency_code=Currency.USD,
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
                 calculated_amount=Decimal("19"),
                 basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             )
         ],
@@ -140,20 +140,20 @@ def test_br_co_16_due_amount_equals_grand_total_minus_prepaid():
     summation = MonetarySummation(
         line_total=Decimal("100"),
         tax_basis_total=Decimal("100"),
-        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id=Currency.EUR)],
         grand_total=Decimal("119"),
         prepaid_total=Decimal("19"),
         due_amount=Decimal("999"),  # WRONG — expected 100
     )
     settlement = TradeSettlement(
-        currency_code="EUR",
+        currency_code=Currency.EUR,
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
                 calculated_amount=Decimal("19"),
                 basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             )
         ],
@@ -172,19 +172,19 @@ def test_br_co_16_no_prepaid_total_means_due_equals_grand():
     summation = MonetarySummation(
         line_total=Decimal("100"),
         tax_basis_total=Decimal("100"),
-        tax_total=[TaxTotal(amount=Decimal("19"), currency_id="EUR")],
+        tax_total=[TaxTotal(amount=Decimal("19"), currency_id=Currency.EUR)],
         grand_total=Decimal("119"),
         due_amount=Decimal("119"),
     )
     settlement = TradeSettlement(
-        currency_code="EUR",
+        currency_code=Currency.EUR,
         monetary_summation=summation,
         trade_taxes=[
             ApplicableTradeTax(
                 calculated_amount=Decimal("19"),
                 basis_amount=Decimal("100"),
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             )
         ],
@@ -214,7 +214,7 @@ class TestBrCoArithmetic:
                 settlement=LineTradeSettlement(
                     applicable_trade_tax=ApplicableTradeTax(
                         category_code=CategoryCode.T_S,
-                        due_date_code="5",
+                        due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                         rate_applicable_percent=Decimal("19"),
                     ),
                     monetary_summation=LineMonetarySummation(line_total=Decimal("50")),
@@ -292,7 +292,7 @@ class TestBrCoArithmetic:
             calculated_amount=Decimal("17"),
             basis_amount=Decimal("100"),
             category_code=CategoryCode.T_S,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
             rate_applicable_percent=Decimal("19"),
         )
         errors = bad.validate_internal(Profile.BASIC_WL)
@@ -303,7 +303,7 @@ class TestBrCoArithmetic:
             calculated_amount=Decimal("19.00"),
             basis_amount=Decimal("100"),
             category_code=CategoryCode.T_S,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
             rate_applicable_percent=Decimal("19"),
         ).validate_internal(Profile.BASIC_WL)
 
@@ -312,7 +312,7 @@ class TestBrCoArithmetic:
             calculated_amount=Decimal("19.00"),
             basis_amount=Decimal("99.99"),
             category_code=CategoryCode.T_S,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
             rate_applicable_percent=Decimal("19"),
         ).validate_internal(Profile.BASIC_WL)
 
@@ -326,7 +326,7 @@ class TestBrCoArithmetic:
             calculated_amount=Decimal("0"),
             basis_amount=Decimal("100"),
             category_code=CategoryCode.T_O,
-            due_date_code="5",
+            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
         ).validate_internal(Profile.BASIC_WL)
 
     def test_br_co_14_tax_total_equals_sum_of_tax_amounts(self) -> None:
@@ -339,19 +339,19 @@ class TestBrCoArithmetic:
                 calculated_amount=Decimal("5"),
                 basis_amount=Decimal("50"),
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("10"),
             ),
             ApplicableTradeTax(
                 calculated_amount=Decimal("10"),
                 basis_amount=Decimal("50"),
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("20"),
             ),
         ]
         # Declare wrong BT-110.
-        summation.tax_total = [TaxTotal(amount=Decimal("99"), currency_id="EUR")]
+        summation.tax_total = [TaxTotal(amount=Decimal("99"), currency_id=Currency.EUR)]
         # Keep BR-CO-15 / 16 happy.
         summation.grand_total = summation.tax_basis_total + Decimal("99")
         summation.due_amount = summation.grand_total
@@ -360,7 +360,7 @@ class TestBrCoArithmetic:
         assert any(v.code == "BR-CO-14" for v in e.value.errors)
 
         # Correct sum.
-        summation.tax_total = [TaxTotal(amount=Decimal("15"), currency_id="EUR")]
+        summation.tax_total = [TaxTotal(amount=Decimal("15"), currency_id=Currency.EUR)]
         summation.grand_total = summation.tax_basis_total + Decimal("15")
         summation.due_amount = summation.grand_total
         doc.validate()

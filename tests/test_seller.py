@@ -12,13 +12,14 @@ from carthorse.schema.party import (
     SpecifiedTaxRegistration,
     TaxSchemeId,
 )
+from carthorse.schema.types import Country
 
 
 def test_br_co_26_seller_must_be_identifiable():
     """BR-CO-26: at least one of BT-29 (Seller.id),
     BT-30 (Seller.legal_organization.id) or BT-31
     (Seller.tax_registrations[VAT]) must be present."""
-    addr = PostalTradeAddressExtended(country_id="DE")
+    addr = PostalTradeAddressExtended(country_id=Country.DE)
 
     # No identifier — fails.
     seller = SellerTradeParty(name="Acme", address=addr)

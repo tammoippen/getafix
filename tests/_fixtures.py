@@ -54,7 +54,12 @@ from carthorse.schema.party import (
 )
 from carthorse.schema.settlement import PaymentTerms, TradeSettlement
 from carthorse.schema.trade import Trade, TradeLineItem
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import (
+    CategoryCode,
+    Country,
+    Currency,
+    UNTDID2475TaxPointDateCode,
+)
 
 NS_DECL = (
     'xmlns:ram="urn:un:unece:uncefact:data:standard:'
@@ -100,7 +105,7 @@ def make_vat_doc(
         )
     seller = SellerTradeParty(
         name="Seller",
-        address=PostalTradeAddressExtended(country_id="DE"),
+        address=PostalTradeAddressExtended(country_id=Country.DE),
         id=seller_id,
         tax_registrations=seller_regs or None,
     )
@@ -111,7 +116,7 @@ def make_vat_doc(
     )
     buyer = BuyerTradeParty(
         name="Buyer",
-        address=PostalTradeAddressExtended(country_id="DE"),
+        address=PostalTradeAddressExtended(country_id=Country.DE),
         tax_registrations=buyer_regs,
         legal_organization=(
             LegalOrganization(id=ISO6523SchemeId(id=buyer_legal_id, scheme_id="0021"))
@@ -226,7 +231,7 @@ def make_vat_doc(
                 calculated_amount=calculated,
                 basis_amount=basis,
                 category_code=cat,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=rate,
                 exemption_reason=exemption_text,
             )
@@ -241,13 +246,13 @@ def make_vat_doc(
             agreement=TradeAgreement(seller=seller, buyer=buyer),
             delivery=TradeDelivery(),
             settlement=TradeSettlement(
-                currency_code="EUR",
+                currency_code=Currency.EUR,
                 monetary_summation=MonetarySummation(
                     line_total=line_total,
                     allowance_total=allowance_amount or None,
                     charge_total=charge_amount or None,
                     tax_basis_total=tax_basis,
-                    tax_total=[TaxTotal(amount=total_vat, currency_id="EUR")],
+                    tax_total=[TaxTotal(amount=total_vat, currency_id=Currency.EUR)],
                     grand_total=grand_total,
                     due_amount=grand_total,
                 ),
@@ -268,7 +273,7 @@ def make_vat_doc(
                     settlement=LineTradeSettlement(
                         applicable_trade_tax=ApplicableTradeTax(
                             category_code=line_category,
-                            due_date_code="5",
+                            due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                             rate_applicable_percent=line_rate,
                         ),
                         monetary_summation=LineMonetarySummation(

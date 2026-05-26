@@ -13,7 +13,7 @@ from carthorse.schema.accounting import (
     CategoryTradeTax,
     HeaderTradeAllowanceCharge,
 )
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, UNTDID2475TaxPointDateCode, VATEXCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 
@@ -25,9 +25,9 @@ def test_exemption_reason_code_uses_distinct_tag(parser: ParseFromBytes):
         calculated_amount=Decimal("0.00"),
         basis_amount=Decimal("0.00"),
         category_code=CategoryCode.T_E,
-        due_date_code="5",
+        due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
         exemption_reason="exempt-text",
-        exemption_reason_code="VATEX-EU-79-C",
+        exemption_reason_code=VATEXCode.VATEX_EU_79_C,
     )
     xml = tax.to_xml_internal(Profile.BASIC_WL).render(indent=True)
     assert "<ram:ExemptionReason>" in xml

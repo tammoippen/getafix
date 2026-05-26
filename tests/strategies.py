@@ -28,7 +28,14 @@ from datetime import date
 import hypothesis.strategies as st
 import lxml.etree as etree
 
-from carthorse.schema.types import CategoryCode, Profile, TypeCode
+from carthorse.schema.types import (
+    CategoryCode,
+    Country,
+    Currency,
+    Profile,
+    TypeCode,
+    VATEXCode,
+)
 
 # ---------------------------------------------------------------------------
 # namespaces
@@ -67,10 +74,10 @@ _text = st.text(alphabet=_text_alphabet, min_size=1, max_size=40).filter(
     lambda s: bool(s.strip()) and s == s.strip()
 )
 
-# ISO 4217 alpha-3 currency code (shape only; the registry is not enforced).
-_currency_code = st.text(alphabet=string.ascii_uppercase, min_size=3, max_size=3)
-# ISO 3166-1 alpha-2 country code (shape only).
-_country_code = st.text(alphabet=string.ascii_uppercase, min_size=2, max_size=2)
+# ISO 4217 alpha-3 currency code, drawn from the modelled registry.
+_currency_code = st.sampled_from([c.value for c in Currency])
+# ISO 3166-1 alpha-2 country code, drawn from the modelled registry.
+_country_code = st.sampled_from([c.value for c in Country])
 
 # UNTDID 1001 document type codes (subset that carthorse models).
 _doc_type_codes = st.sampled_from([t.value for t in TypeCode])
@@ -82,6 +89,8 @@ _payment_means_codes = st.sampled_from(
 )
 # UNTDID 2475 due-date type codes.
 _due_date_codes = st.sampled_from(["5", "29", "72"])
+# CEF VATEX exemption-reason codes.
+_vatex_codes = st.sampled_from([c.value for c in VATEXCode])
 
 # Decimals as strings, matching the schema lexical space for xs:decimal.
 _amount = st.decimals(
@@ -372,7 +381,7 @@ def _put_trade_tax(draw, parent: etree._Element, local: str, profile: Profile) -
         _put_amount(tax, "ram", "BasisAmount", draw(_amount))
     _put_code(tax, "ram", "CategoryCode", draw(_vat_categories))
     if draw(st.booleans()):
-        _put_code(tax, "ram", "ExemptionReasonCode", draw(_token))
+        _put_code(tax, "ram", "ExemptionReasonCode", draw(_vatex_codes))
     if draw(st.booleans()):
         _put_code(tax, "ram", "DueDateTypeCode", draw(_due_date_codes))
     if draw(st.booleans()):

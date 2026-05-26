@@ -22,7 +22,7 @@ from carthorse.schema.party import (
     SpecifiedTaxRegistration,
     TaxSchemeId,
 )
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, Country, UNTDID2475TaxPointDateCode
 from tests._fixtures import make_vat_doc
 
 
@@ -104,7 +104,7 @@ class TestBrO:
         doc.trade.agreement.seller_tax_representative_party = (
             SellerTaxRepresentativeTradeParty(
                 name="TR",
-                address=PostalTradeAddressExtended(country_id="DE"),
+                address=PostalTradeAddressExtended(country_id=Country.DE),
                 tax_registrations=SpecifiedTaxRegistration(
                     id=TaxSchemeId(id="DE111222333", scheme_id="VA")
                 ),
@@ -135,12 +135,12 @@ class TestBrOSingleRate:
         doc.trade.settlement.trade_taxes = [
             ApplicableTradeTax(
                 category_code=CategoryCode.T_O,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("0"),
             ),
             ApplicableTradeTax(
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             ),
         ]
@@ -161,7 +161,7 @@ class TestBrOSingleRate:
         doc.trade.settlement.trade_taxes = [
             ApplicableTradeTax(
                 category_code=CategoryCode.T_O,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("0"),
             )
         ]
@@ -181,7 +181,7 @@ class TestBrOSingleRate:
         doc.trade.settlement.trade_taxes = [
             ApplicableTradeTax(
                 category_code=CategoryCode.T_O,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("0"),
             )
         ]
@@ -205,7 +205,7 @@ class TestBrOSingleRate:
         doc.trade.settlement.trade_taxes = [
             ApplicableTradeTax(
                 category_code=CategoryCode.T_O,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("0"),
             )
         ]

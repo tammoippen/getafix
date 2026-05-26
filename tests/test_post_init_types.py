@@ -20,7 +20,7 @@ from carthorse.schema.accounting import (
     TaxTotal,
 )
 from carthorse.schema.document import GuidelineDocument, Header, IncludedNote
-from carthorse.schema.types import TypeCode
+from carthorse.schema.types import Currency, TypeCode
 
 
 class TestScalarFields:
@@ -34,11 +34,11 @@ class TestScalarFields:
 
     def test_decimal_field_rejects_float(self) -> None:
         with pt.raises(TypeError, match=r"TaxTotal\.amount: expected Decimal"):
-            TaxTotal(amount=19.00, currency_id="EUR")  # type: ignore[arg-type]
+            TaxTotal(amount=19.00, currency_id=Currency.EUR)  # type: ignore[arg-type]
 
     def test_decimal_field_rejects_str(self) -> None:
         with pt.raises(TypeError, match=r"TaxTotal\.amount: expected Decimal"):
-            TaxTotal(amount="19.00", currency_id="EUR")  # type: ignore[arg-type]
+            TaxTotal(amount="19.00", currency_id=Currency.EUR)  # type: ignore[arg-type]
 
     def test_date_field_rejects_str(self) -> None:
         with pt.raises(TypeError, match=r"Header\.issue_date: expected date"):
@@ -189,7 +189,7 @@ class TestRequiredFields:
 
     def test_required_decimal_rejects_none(self) -> None:
         with pt.raises(TypeError, match=r"TaxTotal\.amount: required, got None"):
-            TaxTotal(amount=None, currency_id="EUR")  # type: ignore[arg-type]
+            TaxTotal(amount=None, currency_id=Currency.EUR)  # type: ignore[arg-type]
 
     def test_required_enum_rejects_none(self) -> None:
         with pt.raises(TypeError, match=r"GuidelineDocument\.id: required, got None"):

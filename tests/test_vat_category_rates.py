@@ -27,7 +27,7 @@ import pytest as pt
 from carthorse.schema import Document
 from carthorse.schema.accounting import CategoryTradeTax, HeaderTradeAllowanceCharge
 from carthorse.schema.element import ValidationErrors
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, Currency
 from tests._fixtures import make_vat_doc
 
 
@@ -155,7 +155,7 @@ class TestIgicCanary:
         doc.trade.settlement.trade_taxes[0].calculated_amount = Decimal("7.00")
         doc.trade.settlement.monetary_summation.tax_total = [
             type(doc.trade.settlement.monetary_summation.tax_total[0])(
-                amount=Decimal("7.00"), currency_id="EUR"
+                amount=Decimal("7.00"), currency_id=Currency.EUR
             )
         ]
         doc.trade.settlement.monetary_summation.grand_total = Decimal("107.00")

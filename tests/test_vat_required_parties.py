@@ -17,7 +17,7 @@ import pytest as pt
 from carthorse.schema.delivery import SupplyChainEvent
 from carthorse.schema.element import ValidationErrors
 from carthorse.schema.party import PostalTradeAddressExtended, ShipToTradeParty
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, Country
 from tests._fixtures import make_vat_doc
 
 
@@ -147,7 +147,7 @@ class TestBrIc:
         doc = make_vat_doc(line_category=CategoryCode.T_K)
         doc.trade.delivery.event = SupplyChainEvent(occurrence=date(2025, 1, 15))
         doc.trade.delivery.ship_to = ShipToTradeParty(
-            address=PostalTradeAddressExtended(country_id="FR")
+            address=PostalTradeAddressExtended(country_id=Country.FR)
         )
         doc.validate()
 

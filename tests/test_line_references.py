@@ -35,7 +35,7 @@ from carthorse.schema.line import (
     NetTradePrice,
 )
 from carthorse.schema.settlement import ReceivableAccountingAccount
-from carthorse.schema.types import CategoryCode
+from carthorse.schema.types import CategoryCode, UNTDID2475TaxPointDateCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 
@@ -100,7 +100,7 @@ class TestLineAdditionalReferencedDocument:
         settle = LineTradeSettlement(
             applicable_trade_tax=ApplicableTradeTax(
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             ),
             additional_references=[
@@ -122,7 +122,7 @@ class TestLineAccountingAccount:
         settle = LineTradeSettlement(
             applicable_trade_tax=ApplicableTradeTax(
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             ),
             accounting_account=ReceivableAccountingAccount(id="ACC-1"),
@@ -139,7 +139,7 @@ class TestLineAccountingAccount:
         settle = LineTradeSettlement(
             applicable_trade_tax=ApplicableTradeTax(
                 category_code=CategoryCode.T_S,
-                due_date_code="5",
+                due_date_code=UNTDID2475TaxPointDateCode.CODE_5,
                 rate_applicable_percent=Decimal("19"),
             ),
             accounting_account=ReceivableAccountingAccount(id="ACC-1"),
