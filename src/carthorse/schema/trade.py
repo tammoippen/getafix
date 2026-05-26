@@ -86,6 +86,15 @@ from carthorse.rules.trade import (
     vat_category_exemption_reason,
     vat_category_rates,
 )
+from carthorse.rules.extended import (
+    br_fxext_co_04,
+    br_fxext_co_10,
+    br_fxext_co_11,
+    br_fxext_co_12,
+    br_fxext_co_13,
+    br_fxext_co_15,
+    br_fxext_vat_category_sums,
+)
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.element import Element
@@ -189,6 +198,18 @@ class Trade(Element):
         # exemption-reason constraints (BR-{cat}-10).
         vat_category_rates,
         vat_category_exemption_reason,
+        # EXTENDED CIUS — tolerance-banded BR-CO-* replacements and
+        # per-VAT-category sum identities (§5.2 / §5.3 of EXTENDED.md).
+        # Each guards with `if profile < Profile.EXTENDED: return []`
+        # so it stays silent below; the matching EN 16931 br_co_*
+        # functions guard with the inverse.
+        br_fxext_co_04,
+        br_fxext_co_10,
+        br_fxext_co_11,
+        br_fxext_co_12,
+        br_fxext_co_13,
+        br_fxext_co_15,
+        br_fxext_vat_category_sums,
     )
 
     items: list[TradeLineItem] = field(default_factory=list)

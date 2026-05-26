@@ -250,7 +250,7 @@ is ``GROUP`` or ``INFORMATION`` are excluded from every ``Σ BT-131``
 | ``BR-FXEXT-CO-10`` | ``BR-CO-10`` | ``\|BT-106 − Σ BT-131\| ≤ 0.01 × #BT-131``. |
 | ``BR-FXEXT-CO-11`` | ``BR-CO-11`` | ``\|BT-107 − Σ BT-92\| ≤ 0.01 × #BT-92``. |
 | ``BR-FXEXT-CO-12`` | ``BR-CO-12`` | ``\|BT-108 − (Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 × (#BT-99 + #BT-X-272)``. |
-| ``BR-FXEXT-CO-13`` | ``BR-CO-13`` | ``\|BT-109 − Σ BT-131 + Σ BT-92 − Σ BT-99\| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99)``. **No** ``Σ BT-X-272`` on either side — confirmed against both the XLSX rulebook and the ``.sch``; logistics charges already flow into BT-108 and are checked by ``BR-FXEXT-CO-12``. |
+| ``BR-FXEXT-CO-13`` | ``BR-CO-13`` | ``\|BT-109 − Σ BT-131 + Σ BT-92 − (Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``. The human-readable assert text in both the XLSX rulebook and ``.sch`` describes CO-13 as excluding ``BT-X-272`` (and an earlier revision of this plan repeated that claim), but the actual XPath in the ``.sch``'s ``test=`` binds ``$BT99Sum`` to ``sum(charges) + sum(logistics)`` and ``$nbChargeItems`` to ``count(charges) + count(logistics)``. The implementation follows the executable expression. |
 | ``BR-FXEXT-CO-15`` | ``BR-CO-15`` | ``\|BT-112 − BT-109 − BT-110\| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``. |
 
 Each EN16931 rule short-circuits at ``profile >= Profile.EXTENDED``;
