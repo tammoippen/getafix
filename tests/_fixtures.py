@@ -258,7 +258,7 @@ def make_vat_doc(
                 ),
                 trade_taxes=trade_taxes,
                 allowance_charge=allowance_charges or None,
-                terms=PaymentTerms(due=date(2025, 2, 1)),
+                terms=[PaymentTerms(due=date(2025, 2, 1))],
             ),
             items=[
                 TradeLineItem(

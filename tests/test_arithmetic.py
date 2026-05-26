@@ -66,7 +66,7 @@ def test_br_co_15_grand_total_equals_tax_basis_plus_tax_total():
                 rate_applicable_percent=Decimal("19"),
             )
         ],
-        terms=PaymentTerms(due=date(2025, 2, 1)),
+        terms=[PaymentTerms(due=date(2025, 2, 1))],
     )
     errors = settlement.validate_internal(Profile.BASIC_WL)
     assert any(v.code == "BR-CO-15" for v in errors)
@@ -98,7 +98,7 @@ def test_br_co_15_with_no_tax_total_treats_bt_110_as_zero():
                 exemption_reason="Exempt",
             )
         ],
-        terms=PaymentTerms(due=date(2025, 2, 1)),
+        terms=[PaymentTerms(due=date(2025, 2, 1))],
     )
     settlement.validate_internal(Profile.BASIC_WL)
 
@@ -128,7 +128,7 @@ def test_br_co_15_uses_only_invoice_currency_tax_total():
                 rate_applicable_percent=Decimal("19"),
             )
         ],
-        terms=PaymentTerms(due=date(2025, 2, 1)),
+        terms=[PaymentTerms(due=date(2025, 2, 1))],
     )
     settlement.validate_internal(Profile.BASIC_WL)
 
@@ -157,7 +157,7 @@ def test_br_co_16_due_amount_equals_grand_total_minus_prepaid():
                 rate_applicable_percent=Decimal("19"),
             )
         ],
-        terms=PaymentTerms(due=date(2025, 2, 1)),
+        terms=[PaymentTerms(due=date(2025, 2, 1))],
     )
     errors = settlement.validate_internal(Profile.BASIC_WL)
     assert any(v.code == "BR-CO-16" for v in errors)
@@ -188,7 +188,7 @@ def test_br_co_16_no_prepaid_total_means_due_equals_grand():
                 rate_applicable_percent=Decimal("19"),
             )
         ],
-        terms=PaymentTerms(due=date(2025, 2, 1)),
+        terms=[PaymentTerms(due=date(2025, 2, 1))],
     )
     settlement.validate_internal(Profile.BASIC_WL)
 

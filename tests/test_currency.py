@@ -85,7 +85,7 @@ def test_tax_currency_code_requires_matching_tax_total():
                 rate_applicable_percent=Decimal("19"),
             )
         ],
-        terms=PaymentTerms(due=date(2025, 12, 16)),
+        terms=[PaymentTerms(due=date(2025, 12, 16))],
     )
     errors = settlement.validate_internal(Profile.BASIC_WL)
     assert any(v.code == "BR-53" for v in errors)
