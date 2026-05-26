@@ -95,7 +95,8 @@ def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
 
 def _line_has_category(m: _trade.Trade, category: CategoryCode) -> bool:
     return any(
-        item.settlement.applicable_trade_tax.category_code == category
+        item.settlement.applicable_trade_tax is not None
+        and item.settlement.applicable_trade_tax.category_code == category
         for item in m.items
     )
 
@@ -665,7 +666,8 @@ def br_o_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     if not _has_o_breakdown_row(m):
         return []
     if not any(
-        item.settlement.applicable_trade_tax.category_code != CategoryCode.T_O
+        item.settlement.applicable_trade_tax is not None
+        and item.settlement.applicable_trade_tax.category_code != CategoryCode.T_O
         for item in m.items
     ):
         return []
@@ -1122,10 +1124,14 @@ def vat_category_rates(m: _trade.Trade, profile: Profile) -> list[ValidationErro
     """
     errors: list[ValidationError] = []
 
-    # BR-X-5 — line-level (BT-151 / BT-152).
+    # BR-X-5 — line-level (BT-151 / BT-152). Lines without line VAT
+    # (EXTENDED GROUP / INFORMATION) carry no category to check.
     for idx, item in enumerate(m.items):
-        cat = item.settlement.applicable_trade_tax.category_code
-        rate = item.settlement.applicable_trade_tax.rate_applicable_percent
+        att = item.settlement.applicable_trade_tax
+        if att is None:
+            continue
+        cat = att.category_code
+        rate = att.rate_applicable_percent
         description = _check_rate(cat, rate)
         if description is not None:
             errors.append(
