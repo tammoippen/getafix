@@ -90,6 +90,11 @@ from carthorse.rules.extended import (
     br_fxext_06,
     br_fxext_08,
     br_fxext_11,
+    br_fxext_22,
+    br_fxext_23,
+    br_fxext_24,
+    br_fxext_26,
+    br_fxext_27,
     br_fxext_co_04,
     br_fxext_co_10,
     br_fxext_co_11,
@@ -219,6 +224,18 @@ class Trade(Element):
         br_fxext_06,
         br_fxext_08,
         br_fxext_11,
+        # EXTENDED CIUS — subtype-qualified line rules (§5.4).
+        # All five are no-op placeholders: the BT-* fields they gate
+        # are non-optional on carthorse dataclasses, so the EN 16931
+        # base requirements always hold and these never have anything
+        # to fire on. They become meaningful runtime checks if/when
+        # those fields are ever relaxed to Optional for GROUP /
+        # INFORMATION lines.
+        br_fxext_22,
+        br_fxext_23,
+        br_fxext_24,
+        br_fxext_26,
+        br_fxext_27,
     )
 
     items: list[TradeLineItem] = field(default_factory=list)

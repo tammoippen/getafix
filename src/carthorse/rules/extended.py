@@ -215,6 +215,69 @@ def br_fxext_11(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     return errors
 
 
+# ---- §5.4 subtype-qualified line rules (BR-FXEXT-22/23/24/26/27) -----------
+
+# Per §5.4, the EXTENDED variants of EN 16931 BR-22/23/24/26/27 gate the
+# corresponding line-level requirement on BT-X-8 being DETAIL or unset.
+# In carthorse the underlying fields (BT-129 ``billed_quantity``, BT-130
+# ``unit_code``, BT-131 ``line_total``, BT-146 ``net_price.charge_amount``)
+# are all *required* on their dataclasses — a TradeLineItem cannot be
+# constructed without them, regardless of profile or subtype. The
+# EXTENDED relaxations therefore land as no-op placeholders: they
+# correctly never fire (because the EN 16931 base requirement is also
+# never violated at parse time), and they become meaningful runtime
+# checks the moment those fields are relaxed to ``Optional`` for
+# GROUP / INFORMATION lines (out of scope for §7 step 5).
+#
+# BR-FXEXT-27 deserves a separate note: the carthorse BR-27 check
+# (rules/line.py::br_27, on NetTradePrice) keeps running at EXTENDED
+# and is *slightly* stricter than the spec — it fires on a GROUP /
+# INFORMATION line with a negative BT-146 even though BR-FXEXT-27
+# would not. No current sample exercises this case; revisit if a
+# future EXTENDED fixture trips it.
+
+
+def _line_qualifier_placeholder(
+    m: "_trade.Trade", profile: Profile
+) -> list[ValidationError]:
+    """Shared placeholder body for BR-FXEXT-22/-23/-24/-26/-27."""
+    if profile < Profile.EXTENDED:
+        return []
+    return []
+
+
+def br_fxext_22(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-22 replaces BR-22 (BT-129 invoiced quantity) on
+    DETAIL / unset lines. No-op placeholder — see comment above."""
+    return _line_qualifier_placeholder(m, profile)
+
+
+def br_fxext_23(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-23 replaces BR-23 (BT-130 unit of measure) on
+    DETAIL / unset lines. No-op placeholder — see comment above."""
+    return _line_qualifier_placeholder(m, profile)
+
+
+def br_fxext_24(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-24 replaces BR-24 (BT-131 line net amount) on
+    DETAIL / unset lines. XLSX-only — not asserted in the .sch.
+    No-op placeholder — see comment above."""
+    return _line_qualifier_placeholder(m, profile)
+
+
+def br_fxext_26(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-26 replaces BR-26 (BT-146 item net price) on
+    DETAIL / unset lines. No-op placeholder — see comment above."""
+    return _line_qualifier_placeholder(m, profile)
+
+
+def br_fxext_27(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-27 replaces BR-27 (BT-146 ≥ 0) on DETAIL / unset
+    lines. No-op placeholder — see comment above. The unconditional
+    carthorse BR-27 keeps running on every NetTradePrice."""
+    return _line_qualifier_placeholder(m, profile)
+
+
 # ---- §5.2 BR-FXEXT-CO-* (tolerance variants) -------------------------------
 
 
