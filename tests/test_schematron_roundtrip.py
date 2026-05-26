@@ -51,11 +51,16 @@ _SAMPLES = sorted(_SAMPLES_DIR.glob("EXTENDED_*.xml"))
 # here. New entries should never appear silently — the test fails
 # with a diff so the gap can be explicitly acknowledged.
 _EXPECTED_SCHEMATRON_ONLY: dict[str, frozenset[str]] = {
-    # BR-FXEXT-CO-15 (§5.2): EXTENDED tolerance variant of BR-CO-15
-    # replacing the strict-equality identity carthorse short-circuits
-    # at EXTENDED (rules/settlement.py:br_co_15). The EXTENDED variant
-    # is not yet implemented — tracked by the §5.2 row in
-    # docs/PROFILES/EXTENDED.md.
+    # BR-FXEXT-CO-15 — *elementpath* false positive, not a carthorse
+    # coverage gap. The .sch's test for CO-15 binds ``$Currency`` to
+    # the ``ram:InvoiceCurrencyCode`` *node* and then uses it in
+    # ``[@currencyID=$Currency]``; Saxon-class XSLT 2 processors do
+    # an implicit string-cast on that comparison, but elementpath
+    # returns an empty sequence (= assert failed). carthorse's
+    # br_fxext_co_15 implementation evaluates the identity correctly
+    # and both samples are clean per the spec. Move out of this dict
+    # once we either swap evaluators or work around the cast (e.g.
+    # rewrite the test expression's variable binding before evaling).
     "EXTENDED_factur-x-extended.xml": frozenset({"BR-FXEXT-CO-15"}),
     "EXTENDED_fremdwaehrung.xml": frozenset({"BR-FXEXT-CO-15"}),
 }
