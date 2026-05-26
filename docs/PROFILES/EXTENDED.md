@@ -350,12 +350,16 @@ piece in §4.5 / §5.1.
    handful of EN16931 rules that get replaced, the ``_coerce_enum``
    helper in ``element.py``, and the BR-IG → BR-AF / BR-IP → BR-AG
    rename. Single commit, ~80 LOC + test rewrites.
-2. **EXTENDED schematron round-trip fixture** — copy
-   ``FACTUR-X_EXTENDED.sch`` into ``tests/schemas/``, add a test that
-   runs every ``tests/samples/EXTENDED_*.xml`` through
-   ``lxml.isoschematron`` and asserts carthorse's emitted error-code
-   set equals the schematron's. Single source of truth for "what's
-   left".
+2. **EXTENDED schematron round-trip oracle** ✓ — landed in
+   ``tests/test_schematron_roundtrip.py`` + ``tests/_schematron.py``.
+   ``lxml.isoschematron`` can't compile ``FACTUR-X_EXTENDED.sch`` (the
+   ``.sch`` uses XPath 2 ``for $X in ...`` and ISO Schematron 2016
+   idioms that libxslt's XSLT-1 processor rejects), so the evaluator
+   bypasses the XSLT pipeline and walks the ``.sch`` directly with
+   ``elementpath`` (new dev dep, pure Python). Per-sample expected
+   coverage gaps live in ``_EXPECTED_SCHEMATRON_ONLY``; implementing a
+   missing rule shrinks that set, surprise new gaps fail the test
+   loudly. Single source of truth for "what's left".
 3. **§4.3 ``SpecifiedLogisticsServiceCharge`` alone** — unblocks the
    BR-CO-12/13 false-positive the user already hit. Smallest possible
    first vertical slice through new structure + new accumulator wiring.
