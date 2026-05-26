@@ -15,9 +15,9 @@ from decimal import Decimal
 import pytest as pt
 
 from carthorse.schema.accounting import (
+    HeaderTradeAllowanceCharge,
     MonetarySummation,
     TaxTotal,
-    TradeAllowanceCharge,
 )
 from carthorse.schema.document import GuidelineDocument, Header, IncludedNote
 from carthorse.schema.types import TypeCode
@@ -76,16 +76,16 @@ class TestBoolStrictness:
 
     def test_bool_field_rejects_int(self) -> None:
         with pt.raises(TypeError, match="expected bool"):
-            TradeAllowanceCharge(
+            HeaderTradeAllowanceCharge(
                 indicator=1,  # type: ignore[arg-type]
                 actual_amount=Decimal("5.00"),
             )
 
     def test_bool_field_accepts_true(self) -> None:
-        TradeAllowanceCharge(indicator=True, actual_amount=Decimal("5.00"))
+        HeaderTradeAllowanceCharge(indicator=True, actual_amount=Decimal("5.00"))
 
     def test_bool_field_accepts_false(self) -> None:
-        TradeAllowanceCharge(indicator=False, actual_amount=Decimal("5.00"))
+        HeaderTradeAllowanceCharge(indicator=False, actual_amount=Decimal("5.00"))
 
 
 class TestListFields:

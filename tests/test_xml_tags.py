@@ -11,7 +11,7 @@ from carthorse.schema import Profile
 from carthorse.schema.accounting import (
     ApplicableTradeTax,
     CategoryTradeTax,
-    TradeAllowanceCharge,
+    HeaderTradeAllowanceCharge,
 )
 from carthorse.schema.types import CategoryCode
 from tests._fixtures import wrap_subtree
@@ -41,7 +41,7 @@ def test_exemption_reason_code_uses_distinct_tag(parser: ParseFromBytes):
 def test_trade_allowance_charge_basis_amount_uses_correct_tag(parser: ParseFromBytes):
     """BT-93 (BasisAmount) must render under <ram:BasisAmount>, not
     <ram:CalculationPercent>. Bug sweep #4."""
-    ac = TradeAllowanceCharge(
+    ac = HeaderTradeAllowanceCharge(
         indicator=False,
         actual_amount=Decimal("5.00"),
         category_trade_tax=CategoryTradeTax(
@@ -54,7 +54,7 @@ def test_trade_allowance_charge_basis_amount_uses_correct_tag(parser: ParseFromB
     xml = ac.to_xml_internal(Profile.COMFORT).render(indent=True)
     assert "<ram:BasisAmount>" in xml
     assert "<ram:CalculationPercent>" in xml
-    parsed = TradeAllowanceCharge.from_xml(
+    parsed = HeaderTradeAllowanceCharge.from_xml(
         parser(wrap_subtree(xml, "SpecifiedTradeAllowanceCharge"))
     )
     assert parsed == ac

@@ -489,20 +489,18 @@ class TradeAllowanceCharge(Element):
     such as withheld taxes; the line form (BG-28) covers charges and
     taxes other than VAT applicable to the individual invoice line.
 
-    Two thin sentinel subclasses :class:`HeaderTradeAllowanceCharge`
-    and :class:`LineTradeAllowanceCharge` override the class-level
-    ``context`` flag so :meth:`_field_profile` can pick the right
-    BT-id when gating ``calculation_percent`` and ``basis_amount`` —
-    those fields ship at BASIC_WL (BT-93 / BT-94 / BT-100 / BT-101)
-    when on the document header but only at COMFORT (BT-137 / BT-138
-    / BT-141 / BT-142) on an invoice line. The bare
-    ``TradeAllowanceCharge`` keeps ``context = "header"`` for
-    backwards compatibility.
+    Abstract: instantiate :class:`HeaderTradeAllowanceCharge` or
+    :class:`LineTradeAllowanceCharge` — those sentinel subclasses set
+    the class-level ``context`` flag so :meth:`_field_profile` can
+    pick the right BT-id when gating ``calculation_percent`` and
+    ``basis_amount``. Those fields ship at BASIC_WL (BT-93 / BT-94 /
+    BT-100 / BT-101) when on the document header but only at COMFORT
+    (BT-137 / BT-138 / BT-141 / BT-142) on an invoice line.
     """
 
     tag: ClassVar[str] = "SpecifiedTradeAllowanceCharge"
     profile: ClassVar[Profile] = Profile.BASIC_WL
-    context: ClassVar[Literal["header", "line"]] = "header"
+    context: ClassVar[Literal["header", "line"]]
 
     _validators: ClassVar[tuple[Validator["TradeAllowanceCharge"], ...]] = (
         br_dec_tac_amounts,
@@ -578,6 +576,19 @@ class TradeAllowanceCharge(Element):
     # know whether this allowance/charge is at header or line level.
     # Keeping the check there means the same ``TradeAllowanceCharge``
     # dataclass works in both contexts.
+
+    @override
+    def __post_init__(self) -> None:
+        if type(self) is TradeAllowanceCharge:
+            raise TypeError(
+                "TradeAllowanceCharge is abstract; instantiate "
+                "HeaderTradeAllowanceCharge or LineTradeAllowanceCharge."
+            )
+        # NOTE: explicit super(TradeAllowanceCharge, self) — zero-arg
+        # super() breaks under @dataclass(slots=True) because the
+        # decorator returns a rebuilt class and the implicit __class__
+        # cell points at the original.
+        super(TradeAllowanceCharge, self).__post_init__()
 
     @override
     def _field_profile(self, name: str) -> Profile | None:

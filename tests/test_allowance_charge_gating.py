@@ -9,9 +9,8 @@ The same XSD element backs four BG groups:
 
 Carthorse models this via two thin sentinel subclasses
 ``HeaderTradeAllowanceCharge`` and ``LineTradeAllowanceCharge`` that
-override a class-level ``context`` flag. The base
-``TradeAllowanceCharge`` keeps the header default for backwards
-compatibility.
+override a class-level ``context`` flag on the abstract base
+``TradeAllowanceCharge``.
 
 The gating tests below pin the spec-correct behaviour: rendering a
 line-level allowance / charge with ``calculation_percent`` or
@@ -31,7 +30,6 @@ from carthorse.schema import Profile
 from carthorse.schema.accounting import (
     HeaderTradeAllowanceCharge,
     LineTradeAllowanceCharge,
-    TradeAllowanceCharge,
 )
 from carthorse.schema.element import ProfileMismatch
 
@@ -114,21 +112,13 @@ class TestHeaderContextGating:
             ac.to_xml_internal(Profile.MINIMUM).render(indent=True)
 
 
-class TestBackwardsCompatible:
-    """The bare ``TradeAllowanceCharge`` keeps the header default so
-    existing test fixtures continue to work without change."""
-
-    def test_bare_class_defaults_to_header_context(self) -> None:
-        ac = TradeAllowanceCharge(
-            indicator=False,
-            actual_amount=Decimal("5.00"),
-            calculation_percent=Decimal("5"),
-            reason="discount",
-        )
-        assert ac.context == "header"
-        xml = ac.to_xml_internal(Profile.BASIC_WL).render(indent=True)
-        assert "<ram:CalculationPercent>" in xml
-
+class TestAbstractBase:
     def test_subclasses_have_correct_context(self) -> None:
         assert HeaderTradeAllowanceCharge.context == "header"
         assert LineTradeAllowanceCharge.context == "line"
+
+    def test_bare_class_is_abstract(self) -> None:
+        from carthorse.schema.accounting import TradeAllowanceCharge
+
+        with pt.raises(TypeError, match="abstract"):
+            TradeAllowanceCharge(indicator=False, actual_amount=Decimal("5.00"))
