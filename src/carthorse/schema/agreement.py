@@ -52,6 +52,23 @@ class TradeAgreement(Element):
 
     Container for the process and contract details of the invoice:
     trading parties plus every upstream document reference.
+
+    EXTENDED gaps (no current sample exercises these; XSD slots
+    reserved for when a fixture lands):
+
+    * ``SalesAgentTradeParty`` — sales agent / broker party between
+      seller and buyer.
+    * ``BuyerTaxRepresentativeTradeParty`` — buyer-side counterpart
+      of the existing :class:`SellerTaxRepresentativeTradeParty`
+      (BG-11).
+    * ``ProductEndUserTradeParty`` — distinct from buyer when the
+      invoice covers a procured-on-behalf-of arrangement.
+    * ``BuyerAgentTradeParty`` — buyer's procurement agent.
+    * ``ApplicableTradeDeliveryTerms`` — Incoterms-equivalent
+      header-level delivery terms (BT-X-145 ``DeliveryTypeCode``).
+    * ``UltimateCustomerOrderReferencedDocument`` (0..*) — distinct
+      from the existing BuyerOrderReferencedDocument; expresses the
+      *ultimate* customer's order chain when intermediated.
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"

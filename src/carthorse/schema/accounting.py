@@ -421,6 +421,14 @@ class ApplicableTradeTax(Element):
     Note: mutually exclusive with ``due_date_code`` (BT-8) per
     ``BR-CO-3``. The tax point is usually the date goods were
     supplied or services completed; see Article 226(7) of Council
+
+    EXTENDED rule ``BR-FXEXT-CII-DT-097a`` requires the value to
+    render as ``YYYY-MM-DD`` (no time component, no ``DateTimeString
+    format="102"`` wrapper). This is implicit: Python's
+    ``datetime.date`` ISO-formats as ``YYYY-MM-DD`` and the schema
+    renderer for ``udt:DateType`` emits that string directly — no
+    runtime validator needed. No current sample populates BT-7 to
+    exercise this path; flagged here for traceability.
     Directive 2006/112/EC.
     """
     due_date_code: UNTDID2475TaxPointDateCode | None = field(
