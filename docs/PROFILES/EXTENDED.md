@@ -13,9 +13,17 @@ This file is the operational complement to:
 * ``docs/VALIDATION.md`` — rule narrative.
 
 Source of truth: ``ZF24_EN/Schema/4_Factur-X_1.08_EXTENDED/``
-(``FACTUR-X_EXTENDED.xsd``, ``FACTUR-X_EXTENDED.sch``) and the
-EXTENDED technical appendix
-(``ZF24_EN/Documentation/7_Factur-X_1.08_ZUGFeRD_2.4_technical_appendix_profile_EXTENDED.pdf``).
+(``FACTUR-X_EXTENDED.xsd``, ``FACTUR-X_EXTENDED.sch``), the EXTENDED
+technical appendix
+(``ZF24_EN/Documentation/7_Factur-X_1.08_ZUGFeRD_2.4_technical_appendix_profile_EXTENDED.pdf``),
+and the canonical rulebook
+``ZF24_EN/Documentation/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx``
+(sheet ``Business Rules``). When the ``.sch`` text and the XLSX
+disagree, the XLSX wins — the ``.sch`` carries a couple of
+copy-paste artefacts (the ``BR-FXEXT-BR-*`` double-prefix, a stray
+"Zero rated" qualifier on CO-10/12/13 text). The whole ``ZF24_EN/``
+tree lives on the ``docs`` branch, not on ``main`` — fetch it
+separately (``git worktree add /tmp/carthorse-docs origin/docs``).
 
 
 ## 1. Scope, in numbers
@@ -24,7 +32,7 @@ EXTENDED technical appendix
 |---|---:|---:|---:|
 | Distinct ``<xs:element>`` in the BAE XSD | 122 | 191 | **+69** EXTENDED-only |
 | Schematron ``<assert>`` rules | 428 | 901 | **+473** |
-| Unique ``BR-*`` rule codes | 178 | 194 | **+28** ``BR-FXEXT-*``; **−7** ``BR-CO-*`` replaced; 6 dropped at EXTENDED, 1 (``BR-CO-17``) removed entirely |
+| Unique ``BR-*`` rule codes | 178 | 194 | **+28** ``BR-FXEXT-*`` asserted in the ``.sch`` (plus **+6** XLSX-only ``BR-FXEXT-05/07/09/10/12/24`` — see §5.1 / §5.4); **−7** ``BR-CO-*`` replaced; 6 dropped at EXTENDED, 1 (``BR-CO-17``) removed entirely |
 | Per-VAT-category families touched | 9 | 9 | tolerance-banded variants only |
 
 EXTENDED adds **no new ``BR-DEC-*`` rule** (still 21) and **no new
@@ -186,7 +194,7 @@ note* (``INFORMATION``), and lets lines reference a parent.
 | BT-X / BG-X | Name | Target | Card. | Notes |
 |---|---|---|---|---|
 | BT-X-7 | ``LineStatusCode`` on ``DocumentLineDocument`` | new field ``DocumentLineDocument.status_code: LineStatusCode \| None`` | 0..1 | UNTDID-derived ``StrEnum`` (``DETAIL``/``GROUP``/``INFORMATION``). |
-| BT-X-8 | ``LineStatusReasonCode`` | new field ``DocumentLineDocument.status_reason_code: LineStatusReasonCode \| None`` | 0..1 | Same enum (subtype). Drives **every** ``BR-FXEXT-BR-2x`` and ``BR-FXEXT-CO-04`` qualification. |
+| BT-X-8 | ``LineStatusReasonCode`` | new field ``DocumentLineDocument.status_reason_code: LineStatusReasonCode \| None`` | 0..1 | Same enum (subtype). Drives **every** ``BR-FXEXT-2x`` and ``BR-FXEXT-CO-04`` qualification. |
 | BT-X-304 | ``ParentLineID`` | new field ``DocumentLineDocument.parent_line_id: str \| None`` | 0..1 | References another line's ``LineID`` (BT-126). |
 | — | ``SequenceNumeric`` | new field on ``TradeLineItem`` | 0..1 | Display ordering hint. |
 | BG-X-1 | ``IncludedReferencedProduct`` | recursive ``IncludedReferencedProduct`` on ``TradeProduct`` | 0..* | Sub-products inside a bundle. |
@@ -199,11 +207,18 @@ note* (``INFORMATION``), and lets lines reference a parent.
 
 ## 5. Missing business rules
 
-28 net-new ``BR-FXEXT-*`` ids. The substitutions are mechanical; the
-hard part is the cross-line walker needed for sub-invoice-line
+28 net-new ``BR-FXEXT-*`` ids asserted in
+``FACTUR-X_EXTENDED.sch``, plus 6 more documented in the canonical
+XLSX rulebook (``BR-FXEXT-05/07/09/10/12/24``) that the ``.sch``
+doesn't enforce — listed alongside the .sch-asserted rules in §5.1
+and §5.4 below, marked **(XLSX-only)**. Most of the XLSX-only entries
+are realised implicitly (the DETAIL-or-unset qualifier on §5.4 rules,
+the XSD codelist on BT-X-8) and don't need a separate ``_err`` emit;
+the table flags the ones that do. The substitutions are mechanical;
+the hard part is the cross-line walker needed for sub-invoice-line
 arithmetic.
 
-### 5.1 ``BR-FXEXT-*`` standalone (7 rules) — ``rules/extended.py``
+### 5.1 ``BR-FXEXT-*`` standalone (7 .sch-asserted + 5 XLSX-only) — ``rules/extended.py``
 
 | Code | What it checks | Field(s) |
 |---|---|---|
@@ -211,25 +226,32 @@ arithmetic.
 | ``BR-FXEXT-02`` | Same coupling on line-level note (BT-X-10 / BT-X-9 / BT-127). | ``LineIncludedNote`` |
 | ``BR-FXEXT-03`` | Only a VAT-registration id (``schemeID="VA"``) — not FC — may appear on every BT-X-* party (line ship-to, sales agent, buyer tax rep, product end user, buyer agent, header ship-to, ship-from, invoicer, invoicee, document payee, payer, term-specific payee). | every new party |
 | ``BR-FXEXT-04`` | BT-X-18 ``IndustryAssignedID`` codelist (UNTDED 6313 + Factur-X extension). | ``TradeProduct.industry_assigned_id`` |
+| ``BR-FXEXT-05`` *(XLSX-only)* | BT-X-8 value must come from the Line Status Reason codelist. | enforced implicitly by the ``LineStatusReasonCode`` ``StrEnum`` from §5.6 — no separate ``_err`` emit. |
 | ``BR-FXEXT-06`` | BT-X-8 must be set when the line has a ``ParentLineID`` (BT-X-304) **or** is referenced as parent by another line. | cross-line walker on ``Trade`` |
+| ``BR-FXEXT-07`` *(XLSX-only)* | If BT-X-8 = ``GROUP`` ⇒ BT-129 / BT-130 / BT-131 / BT-146 and BG-30 become optional. | realised as the DETAIL-or-unset qualifier on the §5.4 rules and on ``BR-FXEXT-CO-04`` — no separate emit. |
 | ``BR-FXEXT-08`` | If BT-X-8 = ``GROUP`` and BT-131 set ⇒ BT-131 equals the sum of all child lines' BT-131 (recursive over the ``ParentLineID`` tree, excluding ``INFORMATION``). | ``Trade._validate_subinvoice_line_sums`` |
+| ``BR-FXEXT-09`` *(XLSX-only)* | If BT-X-8 = ``INFORMATION`` ⇒ same fields as ``BR-FXEXT-07`` become optional. | same as ``BR-FXEXT-07`` — covered by the DETAIL-or-unset qualifier. |
+| ``BR-FXEXT-10`` *(XLSX-only)* | ``BG-X-1 IncludedReferencedProduct`` (nested sub-products inside a bundle) is excluded from the invoice calculation. | constrains the cross-line walker's sum accumulation; no emitted rule. |
 | ``BR-FXEXT-11`` | Every ``ParentLineID`` resolves to an existing line's ``LineID`` (BT-126). | cross-line walker on ``Trade`` |
+| ``BR-FXEXT-12`` *(XLSX-only)* | If a ``GROUP`` line carries BT-131, every nested ``GROUP`` child line must also carry BT-131. | companion to ``BR-FXEXT-08`` in ``Trade._validate_subinvoice_line_sums``; emits its own ``_err``. |
 
 ### 5.2 ``BR-FXEXT-CO-*`` arithmetic-with-tolerance (6 rules) — ``rules/extended.py``
 
-Each replaces an EN 16931 identity with ``|diff| ≤ 0.01 × N`` slack
-where ``N = #BT-131 + #BT-92 + #BT-99 + #BT-X-272`` (logistics
-charges). Lines whose ``BT-X-8`` is ``GROUP`` or ``INFORMATION`` are
-excluded from the sum (per the rule text).
+Each replaces an EN 16931 identity with ``|diff| ≤ 0.01 × N`` slack;
+the tolerance count ``N`` is rule-specific (see per-row formulas
+below — most use ``#BT-131 + #BT-92 + #BT-99 + #BT-X-272``, but
+``BR-FXEXT-CO-10/11/13`` use narrower counts). Lines whose ``BT-X-8``
+is ``GROUP`` or ``INFORMATION`` are excluded from every ``Σ BT-131``
+(per the rule text).
 
 | Code | Replaces | Notes |
 |---|---|---|
 | ``BR-FXEXT-CO-04`` | ``BR-CO-4`` | BT-151 required only when BT-X-8 is ``DETAIL`` or unset. |
-| ``BR-FXEXT-CO-10`` | ``BR-CO-10`` | ``\|BT-106 − Σ BT-131\| ≤ 0.01 × N``. |
+| ``BR-FXEXT-CO-10`` | ``BR-CO-10`` | ``\|BT-106 − Σ BT-131\| ≤ 0.01 × #BT-131``. |
 | ``BR-FXEXT-CO-11`` | ``BR-CO-11`` | ``\|BT-107 − Σ BT-92\| ≤ 0.01 × #BT-92``. |
 | ``BR-FXEXT-CO-12`` | ``BR-CO-12`` | ``\|BT-108 − (Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 × (#BT-99 + #BT-X-272)``. |
-| ``BR-FXEXT-CO-13`` | ``BR-CO-13`` | ``\|BT-109 − (Σ BT-131 − Σ BT-92 + Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 × N``. |
-| ``BR-FXEXT-CO-15`` | ``BR-CO-15`` | ``\|BT-112 − BT-109 − BT-110\| ≤ 0.01 × N``. |
+| ``BR-FXEXT-CO-13`` | ``BR-CO-13`` | ``\|BT-109 − Σ BT-131 + Σ BT-92 − Σ BT-99\| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99)``. **No** ``Σ BT-X-272`` on either side — confirmed against both the XLSX rulebook and the ``.sch``; logistics charges already flow into BT-108 and are checked by ``BR-FXEXT-CO-12``. |
+| ``BR-FXEXT-CO-15`` | ``BR-CO-15`` | ``\|BT-112 − BT-109 − BT-110\| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``. |
 
 Each EN16931 rule short-circuits at ``profile >= Profile.EXTENDED``;
 each EXTENDED variant short-circuits at ``profile <
@@ -258,18 +280,29 @@ category predicate, mirroring the ``vat_category_rates`` dispatcher at
 ``BR-CO-17`` itself is **removed at EXTENDED** — the EN16931
 implementation short-circuits as in §3.1.
 
-### 5.4 Subtype-qualified line rules (4 rules) — ``rules/extended.py``
+### 5.4 Subtype-qualified line rules (4 .sch-asserted + 1 XLSX-only) — ``rules/extended.py``
 
-EN16931 ``BR-21``/``BR-22``/``BR-26``/``BR-27`` require BT-129 /
-BT-130 / BT-146 / BT-131 on every BG-25 line. The EXTENDED variants
-exempt ``GROUP`` and ``INFORMATION`` lines:
+EN16931 ``BR-22`` / ``BR-23`` / ``BR-24`` / ``BR-26`` / ``BR-27``
+require BT-129 / BT-130 / BT-131 / BT-146 / BT-146≥0 on every BG-25
+line. The EXTENDED variants gate each on the line's BT-X-8 subtype —
+``GROUP`` and ``INFORMATION`` lines are exempt. (EN16931 ``BR-21``
+"Invoice line identifier" and ``BR-25`` "Item name" remain unchanged
+at EXTENDED.)
+
+The ``.sch`` spells these IDs with a double ``BR-FXEXT-BR-`` prefix
+(``[BR-FXEXT-BR-22]`` etc.) — treat that as a copy-paste artefact in
+the schematron; the canonical XLSX rulebook uses ``BR-FXEXT-22``,
+``BR-FXEXT-23``, ``BR-FXEXT-26``, ``BR-FXEXT-27`` (single prefix). The
+implementation follows the XLSX; any ``.sch`` round-trip diff in §7
+step 2 has to normalize the extra ``BR-`` away.
 
 | Code | Replaces | Qualifier |
 |---|---|---|
-| ``BR-FXEXT-BR-22`` | ``BR-21`` (quantity) | only when BT-X-8 is ``DETAIL`` or unset |
-| ``BR-FXEXT-BR-23`` | ``BR-22`` (unit code) | same |
-| ``BR-FXEXT-BR-26`` | ``BR-26`` (net price) | same |
-| ``BR-FXEXT-BR-27`` | ``BR-27`` (net price ≥ 0) | additionally: if BT-146 is omitted, no check. |
+| ``BR-FXEXT-22`` | ``BR-22`` (BT-129 invoiced quantity) | only when BT-X-8 is ``DETAIL`` or unset |
+| ``BR-FXEXT-23`` | ``BR-23`` (BT-130 unit of measure) | same |
+| ``BR-FXEXT-24`` *(XLSX-only)* | ``BR-24`` (BT-131 invoice line net amount) | same — not asserted in ``FACTUR-X_EXTENDED.sch`` but enforced per the XLSX |
+| ``BR-FXEXT-26`` | ``BR-26`` (BT-146 item net price) | same |
+| ``BR-FXEXT-27`` | ``BR-27`` (BT-146 ≥ 0) | additionally: if BT-146 is omitted, no check. |
 
 ### 5.5 Date format extension — ``schema/element.py``
 
@@ -331,10 +364,15 @@ piece in §4.5 / §5.1.
    Routed through the dispatcher at ``rules/trade.py:1096``.
 5. **§4.5 + §5.1 + §5.4 sub-invoice-line semantics** — biggest single
    commit (~600 LOC). BT-X-7/-8/-304 fields, the cross-line walker on
-   ``Trade``, all seven ``BR-FXEXT-0x`` rules, the four
-   ``BR-FXEXT-BR-2x`` qualifications. Needs a real sample (pull a
-   sub-invoice-line example from
-   ``ZF24_EN/Examples/4. EXTENDED`` into ``tests/samples/`` first).
+   ``Trade``, the §5.1 ``BR-FXEXT-0x`` rules (7 .sch-asserted +
+   ``BR-FXEXT-12`` companion to ``-08``), the five ``BR-FXEXT-2x``
+   qualifications (incl. XLSX-only ``BR-FXEXT-24``). Needs a real
+   sample (pull a sub-invoice-line example from
+   ``ZF24_EN/Examples/4. EXTENDED`` on the ``docs`` branch into
+   ``tests/samples/`` first — ``SubInvoiceLines Hardware Bsp 2`` is
+   the cleanest single-feature pick; ``Abschlagsrechnung
+   SubInvoiceLine Bsp 1`` combines sub-invoice-lines with advance
+   payments and exercises two §4.3 pieces in one fixture).
 6. **§4.3 remainder** — ``TaxApplicableTradeCurrencyExchange``,
    ``ApplicableTradePaymentPenaltyTerms`` /
    ``ApplicableTradePaymentDiscountTerms``, ``SpecifiedAdvancePayment``,
