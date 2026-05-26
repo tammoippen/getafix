@@ -50,6 +50,7 @@ Validation rules not yet enforced (see ``docs/VALIDATION.md``):
 """
 
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
 from typing import ClassVar, Literal, Self, override
 
@@ -459,16 +460,48 @@ class DocumentLineDocument(Element):
 class LineBuyerOrderReferencedDocument(Element):
     """Line-level purchase-order line reference (BT-132-00); COMFORT+.
 
-    Distinct from the header :class:`~carthorse.schema.references.BuyerOrderReferencedDocument`:
-    the line variant carries only ``LineID`` (BT-132 — referenced
-    purchase-order line position) and never ``IssuerAssignedID``.
+    Distinct from the header
+    :class:`~carthorse.schema.references.BuyerOrderReferencedDocument`:
+    at COMFORT this variant carries only ``LineID`` (BT-132 — the
+    referenced purchase-order line position). EXTENDED widens it to
+    additionally carry ``IssuerAssignedID`` (per-line purchase order
+    document ID — when an invoice line references a *different*
+    order from the header's) and ``FormattedIssueDateTime`` (the
+    referenced order's issue date).
     """
 
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    line_id: str = field(metadata={"tag": "LineID"})
-    """Referenced purchase-order line position (BT-132)."""
+    issuer_assigned_id: str | None = field(
+        default=None,
+        metadata={"tag": "IssuerAssignedID", "profile": Profile.EXTENDED},
+    )
+    """Per-line purchase order document ID (EXTENDED only).
+
+    Used when an invoice line references a different purchase order
+    than the header (BG-X-30-1 in the EXTENDED ``Sammelrechnung``
+    aggregated-invoice pattern). At COMFORT the header's
+    :class:`~carthorse.schema.references.BuyerOrderReferencedDocument`
+    carries the single shared order; at EXTENDED each line may
+    override.
+    """
+    line_id: str | None = field(default=None, metadata={"tag": "LineID"})
+    """Referenced purchase-order line position (BT-132).
+
+    Required in practice at COMFORT (the EN16931 use case for this
+    element is per-line PO positions), but the XSD makes every
+    field of ``ReferencedDocumentType`` optional and EXTENDED
+    samples use this class as a wrapper for a per-line
+    ``IssuerAssignedID`` reference without a ``LineID`` — so the
+    field is modelled as ``Optional`` and the "required at COMFORT"
+    contract is left to the consumer / future BR-X-* validator.
+    """
+    formatted_issue_date_time: date | None = field(
+        default=None,
+        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
+    )
+    """Issue date of the referenced order (EXTENDED only)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -581,8 +614,18 @@ class LineTradeSettlement(Element):
     tag: ClassVar[str] = "SpecifiedLineTradeSettlement"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    applicable_trade_tax: ApplicableTradeTax
+    applicable_trade_tax: ApplicableTradeTax | None = None
     """Line VAT information (BG-30).
+
+    Required at EN16931 (the EN16931 base requirement BR-21 / BR-CO-4
+    is implicit — a DETAIL line cannot omit the line VAT category).
+    EXTENDED relaxes this: GROUP subtotal headers and INFORMATION
+    lines may omit BG-30 entirely, because the per-VAT-category sums
+    (``BR-FXEXT-{cat}-08`` in §5.3) fold them by their child lines'
+    own categorisation rather than the GROUP's. Hence the field
+    becomes ``Optional`` overall; the runtime constraint is
+    enforced by ``BR-FXEXT-CO-04`` (``rules/extended.py``) at
+    EXTENDED.
 
     Note: only ``TypeCode``, ``CategoryCode`` and the optional rate
     are populated at line level — the calculated and basis amounts

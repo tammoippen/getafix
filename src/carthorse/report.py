@@ -251,12 +251,15 @@ def _lines_table(doc: Document) -> Table:
     table.add_column("VAT", justify="right", no_wrap=True)
     for item in doc.trade.items:
         tax = item.settlement.applicable_trade_tax
-        rate = tax.rate_applicable_percent
-        vat_str = (
-            f"{rate}% {tax.category_code.value}"
-            if rate is not None
-            else tax.category_code.value
-        )
+        if tax is None:
+            vat_str = "—"  # EXTENDED GROUP / INFORMATION lines have no line VAT
+        else:
+            rate = tax.rate_applicable_percent
+            vat_str = (
+                f"{rate}% {tax.category_code.value}"
+                if rate is not None
+                else tax.category_code.value
+            )
         table.add_row(
             item.associated_document.line_id,
             _item_cell(item.product),
