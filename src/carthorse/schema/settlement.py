@@ -276,18 +276,121 @@ class PaymentMeans(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class BasisPeriodMeasure(Element):
+    """Period measure (``udt:MeasureType``) — numeric value + ``unitCode``.
+
+    XSD shape: ``<Tag unitCode="DAY">10</Tag>``. Used by the EXTENDED
+    payment-penalty / payment-discount terms (BG-X-43 / BG-X-44) to
+    express the time window the penalty / discount applies over.
+    """
+
+    tag: ClassVar[str] = "BasisPeriodMeasure"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    value: Decimal
+    """Numeric period length."""
+    unit_code: str
+    """UN/ECE Rec.20 time unit code (``DAY``, ``WEE``, ``MON``, …)."""
+
+    @override
+    def to_xml_internal(self, profile: Profile) -> XML:
+        return XML(self.get_tag(), attrs={"unitCode": self.unit_code})[str(self.value)]
+
+    @override
+    @classmethod
+    def from_xml(cls, elem: ETElement) -> Self:
+        if elem.tag != cls.get_qualified_tag():
+            raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
+        unit_code = elem.attrib.get("unitCode")
+        if unit_code is None:
+            raise ValueError("BasisPeriodMeasure missing required unitCode")
+        if elem.text is None:
+            raise ValueError("BasisPeriodMeasure missing numeric content")
+        return cls(value=Decimal(elem.text.strip()), unit_code=unit_code)
+
+
+@dataclass(kw_only=True, slots=True)
+class PaymentPenaltyTerms(Element):
+    """Late-payment penalty terms (BG-X-43); EXTENDED only.
+
+    Nested 0..1 on :class:`PaymentTerms`. Shape matches the XSD
+    ``TradePaymentPenaltyTermsType``: every field is optional —
+    callers populate the subset they need (e.g. just
+    ``calculation_percent`` for a flat-rate late fee, or
+    ``basis_period_measure + actual_amount`` for "after N days, owe
+    X"). The mirror class :class:`PaymentDiscountTerms` covers the
+    early-payment side with the same shape modulo the final amount
+    field's XML tag.
+    """
+
+    tag: ClassVar[str] = "ApplicableTradePaymentPenaltyTerms"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    basis_date_time: date | None = field(
+        default=None, metadata={"tag": "BasisDateTime"}
+    )
+    """Penalty basis date (BT-X-?)."""
+    basis_period_measure: BasisPeriodMeasure | None = None
+    """Penalty basis period (BT-X-?)."""
+    basis_amount: Decimal | None = field(
+        default=None, metadata={"tag": "BasisAmount", "amount": True}
+    )
+    """Penalty basis amount (BT-X-?)."""
+    calculation_percent: Decimal | None = field(
+        default=None, metadata={"tag": "CalculationPercent"}
+    )
+    """Penalty rate percentage (BT-X-?)."""
+    actual_amount: Decimal | None = field(
+        default=None, metadata={"tag": "ActualPenaltyAmount", "amount": True}
+    )
+    """Penalty amount (BT-X-?)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class PaymentDiscountTerms(Element):
+    """Early-payment discount terms (BG-X-44); EXTENDED only.
+
+    Nested 0..1 on :class:`PaymentTerms`. Same shape as
+    :class:`PaymentPenaltyTerms` except the final amount carries
+    the ``ActualDiscountAmount`` XML tag rather than
+    ``ActualPenaltyAmount``.
+    """
+
+    tag: ClassVar[str] = "ApplicableTradePaymentDiscountTerms"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    basis_date_time: date | None = field(
+        default=None, metadata={"tag": "BasisDateTime"}
+    )
+    """Discount basis date (BT-X-?)."""
+    basis_period_measure: BasisPeriodMeasure | None = None
+    """Discount basis period (BT-X-?)."""
+    basis_amount: Decimal | None = field(
+        default=None, metadata={"tag": "BasisAmount", "amount": True}
+    )
+    """Discount basis amount (BT-X-?)."""
+    calculation_percent: Decimal | None = field(
+        default=None, metadata={"tag": "CalculationPercent"}
+    )
+    """Discount rate percentage (BT-X-?)."""
+    actual_amount: Decimal | None = field(
+        default=None, metadata={"tag": "ActualDiscountAmount", "amount": True}
+    )
+    """Discount amount (BT-X-?)."""
+
+
+@dataclass(kw_only=True, slots=True)
 class PaymentTerms(Element):
     """Payment terms (BT-20-00).
 
     A group of business terms providing the textual description of
     the payment terms, the payment due date and (for SEPA direct
-    debits) the mandate reference.
-
-    Note: XSD field order is ``Description`` (BT-20),
-    ``DueDateDateTime`` (BT-9), ``DirectDebitMandateID`` (BT-89).
-    EXTENDED upgrades the parent settlement to a *list* of
-    ``SpecifiedTradePaymentTerms`` — carthorse models the single
-    case only.
+    debits) the mandate reference. EXTENDED adds optional partial-
+    payment amount and nested penalty / discount terms; the
+    settlement-level cardinality also widens to 0..* at EXTENDED
+    (multiple payment-term schedules) — TODO when a sample
+    exercises it (the current XSD-position carthorse encoding still
+    models a single PaymentTerms).
     """
 
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
@@ -317,6 +420,31 @@ class PaymentTerms(Element):
     direct-debit mandate. Used to pre-notify the Buyer of a SEPA
     direct debit.
     """
+    partial_payment_amount: Decimal | None = field(
+        default=None,
+        metadata={
+            "tag": "PartialPaymentAmount",
+            "amount": True,
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Partial-payment amount for this term (EXTENDED only)."""
+    penalty_terms: PaymentPenaltyTerms | None = field(
+        default=None,
+        metadata={
+            "tag": "ApplicableTradePaymentPenaltyTerms",
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Late-payment penalty schedule (BG-X-43, EXTENDED only)."""
+    discount_terms: PaymentDiscountTerms | None = field(
+        default=None,
+        metadata={
+            "tag": "ApplicableTradePaymentDiscountTerms",
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Early-payment discount schedule (BG-X-44, EXTENDED only)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -435,6 +563,38 @@ class LogisticsServiceCharge(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class TaxCurrencyExchange(Element):
+    """Tax-accounting-currency conversion (BG-X-41); EXTENDED only.
+
+    Records the source → target currency exchange used to derive
+    the tax-accounting-currency totals (BT-X-260..264) when the
+    invoice is denominated in a currency different from the local
+    tax accounting currency.
+
+    Field order matches the XSD ``TradeCurrencyExchangeType``
+    ``<xs:sequence>``: ``SourceCurrencyCode`` →
+    ``TargetCurrencyCode`` → ``ConversionRate`` →
+    ``ConversionRateDateTime``.
+    """
+
+    tag: ClassVar[str] = "TaxApplicableTradeCurrencyExchange"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    source_currency_code: Currency = field(metadata={"tag": "SourceCurrencyCode"})
+    """Source currency code (BT-X-260)."""
+    target_currency_code: Currency = field(metadata={"tag": "TargetCurrencyCode"})
+    """Target (tax-accounting) currency code (BT-X-261)."""
+    conversion_rate: Decimal = field(metadata={"tag": "ConversionRate"})
+    """Conversion rate from source to target (BT-X-262)."""
+    conversion_rate_date_time: date | None = field(
+        default=None, metadata={"tag": "ConversionRateDateTime"}
+    )
+    """Conversion-rate date (BT-X-263). Plain date — XSD wraps it in
+    ``udt:DateTimeType`` with the same ``format="102"`` (YYYYMMDD)
+    pattern as BT-2 IssueDateTime."""
+
+
+@dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
     """Header trade settlement (BG-19).
 
@@ -513,6 +673,17 @@ class TradeSettlement(Element):
     payee: PayeeTradeParty | None = None
     """Payee (BG-10); BASIC_WL+ — provided when different from the
     Seller."""
+    currency_exchange: TaxCurrencyExchange | None = field(
+        default=None,
+        metadata={
+            "tag": "TaxApplicableTradeCurrencyExchange",
+            "profile": Profile.EXTENDED,
+        },
+    )
+    """Tax-accounting-currency conversion (BG-X-41, 0..1); EXTENDED
+    only. XSD position: after the payee (and the future BG-X-73
+    PayerTradeParty when it lands in §4.1 / §7 step 7), before
+    :attr:`payment_means`."""
     payment_means: list[PaymentMeans] | None = None
     """Payment means (BG-16, 0..*); BASIC_WL+."""
     trade_taxes: list[ApplicableTradeTax] | None = None
