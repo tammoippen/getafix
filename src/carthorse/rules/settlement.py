@@ -236,8 +236,8 @@ def br_co_25(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
         return []
     if m.monetary_summation.due_amount <= 0:
         return []
-    if m.terms is not None and (
-        m.terms.due is not None or m.terms.description is not None
+    if m.terms is not None and any(
+        t.due is not None or t.description is not None for t in m.terms
     ):
         return []
     return [

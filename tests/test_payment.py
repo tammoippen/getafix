@@ -31,11 +31,11 @@ def test_br_co_25_payment_terms_required_when_due():
     assert any(v.code == "BR-CO-25" for v in errors)
 
     # terms.due present → ok.
-    settlement.terms = PaymentTerms(due=date(2025, 12, 16))
+    settlement.terms = [PaymentTerms(due=date(2025, 12, 16))]
     settlement.validate_internal(Profile.BASIC_WL)
 
     # terms.description present, no due → ok.
-    settlement.terms = PaymentTerms(description="Net 30 days")
+    settlement.terms = [PaymentTerms(description="Net 30 days")]
     settlement.validate_internal(Profile.BASIC_WL)
 
     # due_amount = 0 → no requirement. Also adjust grand_total to keep

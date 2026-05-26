@@ -708,8 +708,15 @@ class TradeSettlement(Element):
     ``BR-FXEXT-CO-12`` and into its declared VAT category's BG-23 row
     via ``BR-FXEXT-{cat}-08``.
     """
-    terms: PaymentTerms | None = None
-    """Payment terms (BT-20-00); BASIC_WL+."""
+    terms: list[PaymentTerms] | None = None
+    """Payment terms (BT-20-00); BASIC_WL+ — singleton list at every
+    profile up to and including COMFORT; multiple entries permitted
+    only at EXTENDED (XSD widens from ``minOccurs=0`` to
+    ``minOccurs=0 maxOccurs=unbounded``). Constructing a list of
+    more than one entry at a non-EXTENDED profile renders fine but
+    fails XSD validation when checked against the lower-profile
+    schemas — exercised by ``test_xsd_validity``.
+    """
     monetary_summation: MonetarySummation
     """Document totals (BG-22); required at every profile."""
     invoice_referenced_document: list[InvoiceReferencedDocument] | None = None

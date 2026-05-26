@@ -437,13 +437,13 @@ def _payment_panel(doc: Document) -> RenderableType | None:
     grid.add_column()
     if settlement.payee is not None:
         grid.add_row("Payee (BG-10):", settlement.payee.name)
-    if settlement.terms is not None:
-        if settlement.terms.description:
-            grid.add_row("Terms:", settlement.terms.description)
-        if settlement.terms.due:
-            grid.add_row("Due date:", settlement.terms.due.isoformat())
-        if settlement.terms.debit_mandate_id:
-            grid.add_row("SEPA mandate:", settlement.terms.debit_mandate_id)
+    for t in settlement.terms or []:
+        if t.description:
+            grid.add_row("Terms:", t.description)
+        if t.due:
+            grid.add_row("Due date:", t.due.isoformat())
+        if t.debit_mandate_id:
+            grid.add_row("SEPA mandate:", t.debit_mandate_id)
     for pm in settlement.payment_means or []:
         grid.add_row("Means (BT-81):", pm.type_code)
         if pm.payee is not None:
