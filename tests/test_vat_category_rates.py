@@ -138,16 +138,16 @@ class TestNotSubjectToVat:
 
 
 class TestIgicCanary:
-    def test_br_ig_5_passes_at_zero(self) -> None:
+    def test_br_af_5_passes_at_zero(self) -> None:
         doc = make_vat_doc(line_category=CategoryCode.T_L)
         try:
             doc.validate()
             errors: list = []
         except ValidationErrors as e:
             errors = list(e.errors)
-        assert not any(v.code == "BR-IG-5" for v in errors), errors
+        assert not any(v.code == "BR-AF-5" for v in errors), errors
 
-    def test_br_ig_5_passes_at_positive_rate(self) -> None:
+    def test_br_af_5_passes_at_positive_rate(self) -> None:
         doc = make_vat_doc(line_category=CategoryCode.T_L)
         _set_line_rate(doc, Decimal("7"))
         doc.trade.settlement.trade_taxes[0].rate_applicable_percent = Decimal("7")
@@ -165,4 +165,4 @@ class TestIgicCanary:
             errors: list = []
         except ValidationErrors as e:
             errors = list(e.errors)
-        assert not any(v.code == "BR-IG-5" for v in errors), errors
+        assert not any(v.code == "BR-AF-5" for v in errors), errors

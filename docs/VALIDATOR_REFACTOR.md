@@ -264,8 +264,8 @@ one function per BR id — **31 functions** in `rules/trade.py`:
 | E      | `br_e_2`, `br_e_3`, `br_e_4`                         |
 | G      | `br_g_2`, `br_g_3`, `br_g_4`                         |
 | IC     | `br_ic_2`, `br_ic_3`, `br_ic_4`, `br_ic_11`, `br_ic_12` |
-| IG     | `br_ig_2`, `br_ig_3`, `br_ig_4`                      |
-| IP     | `br_ip_2`, `br_ip_3`, `br_ip_4`                      |
+| AF     | `br_af_2`, `br_af_3`, `br_af_4`                      |
+| AG     | `br_ag_2`, `br_ag_3`, `br_ag_4`                      |
 | O      | `br_o_2`, `br_o_3`, `br_o_4`, `br_o_11`, `br_o_12`, `br_o_13`, `br_o_14` |
 | S      | `br_s_2`, `br_s_3`, `br_s_4`                         |
 | Z      | `br_z_2`, `br_z_3`, `br_z_4`                         |

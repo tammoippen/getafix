@@ -176,8 +176,8 @@ class CategoryCode(enum.StrEnum):
     T_K = "K"  # Intra-community supply (BR-IC-*); also requires BT-72 or BG-14, plus BT-80
     T_G = "G"  # Export outside EU (BR-G-*); rate = 0; Seller VAT or tax-rep VAT (NOT BT-32)
     T_O = "O"  # Not subject to VAT (BR-O-*); rate forbidden, exclusive (BR-O-11..14)
-    T_L = "L"  # IGIC — Canary Islands (BR-IG-*); rate ≥ 0
-    T_M = "M"  # IPSI — Ceuta / Melilla (BR-IP-*); rate ≥ 0
+    T_L = "L"  # IGIC — Canary Islands (BR-AF-*); rate ≥ 0
+    T_M = "M"  # IPSI — Ceuta / Melilla (BR-AG-*); rate ≥ 0
 
 
 # AUTOGEN START Currency

@@ -14,8 +14,8 @@ The naming follows the spec:
 | `BR-E-*`     | VAT category "Exempt from VAT" (`E`)                                                 |
 | `BR-G-*`     | VAT category "Export outside the EU" (`G`)                                           |
 | `BR-IC-*`    | VAT category "Intra-community supply" (`K`)                                          |
-| `BR-IG-*`    | VAT category "IGIC" — Canary Islands (`L`)                                           |
-| `BR-IP-*`    | VAT category "IPSI" — Ceuta/Melilla (`M`)                                            |
+| `BR-AF-*`    | VAT category "IGIC" — Canary Islands (`L`)                                           |
+| `BR-AG-*`    | VAT category "IPSI" — Ceuta/Melilla (`M`)                                            |
 | `BR-O-*`     | VAT category "Not subject to VAT" (`O`)                                              |
 | `BR-S-*`     | VAT category "Standard rated" (`S`)                                                  |
 | `BR-Z-*`     | VAT category "Zero rated" (`Z`)                                                      |
@@ -283,8 +283,8 @@ charge dictates which seller/buyer identifier(s) must (or must not) be
 present at header level. Implemented as a single pass over
 `(line items, allowances, charges) → set of categories` followed by
 `Trade.validate_internal` walking the seller/buyer party blocks.
-Rules: `BR-AE-2..4`, `BR-E-2..4`, `BR-G-2..4`, `BR-IC-2..4`, `BR-IG-2..4`,
-`BR-IP-2..4`, `BR-O-2..4`, `BR-S-2..4`, `BR-Z-2..4`,
+Rules: `BR-AE-2..4`, `BR-E-2..4`, `BR-G-2..4`, `BR-IC-2..4`, `BR-AF-2..4`,
+`BR-AG-2..4`, `BR-O-2..4`, `BR-S-2..4`, `BR-Z-2..4`,
 `BR-IC-11`, `BR-IC-12`, `BR-O-11..14`.
 
 ### 5.2 Currency code coupling
@@ -321,7 +321,7 @@ totals. Per-VAT-row identities apply within `BG-23`. EXTENDED widens
 these to `≤ 0.01 × N` tolerance and adds `BT-X-272` (Logistics Service
 fees).
 Rules: `BR-CO-10..17`, `BR-AE-8/9`, `BR-E-8/9`, `BR-G-8/9`,
-`BR-IC-8/9`, `BR-IG-8/9`, `BR-IP-8/9`, `BR-O-8/9`, `BR-S-8/9`,
+`BR-IC-8/9`, `BR-AF-8/9`, `BR-AG-8/9`, `BR-O-8/9`, `BR-S-8/9`,
 `BR-Z-8/9`, `BR-FXEXT-CO-10..13/15`, `BR-FXEXT-{S,AE,AF,AG,IC,G,O,E,Z}-08/09`.
 
 ## 6. Summary
