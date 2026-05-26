@@ -288,10 +288,13 @@ def br_co_15(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     """BR-CO-15: Invoice total amount with VAT (BT-112) = Invoice total
     amount without VAT (BT-109) + Invoice total VAT amount (BT-110).
 
-    Applies: MINIMUM+. BT-111 (TaxTotalAmount in VAT accounting
-    currency) does NOT enter this identity — only BT-110 (in invoice
-    currency) does.
+    Applies: MINIMUM+ except EXTENDED. At EXTENDED
+    ``BR-FXEXT-CO-15`` replaces this with a tolerance-banded variant.
+    BT-111 (TaxTotalAmount in VAT accounting currency) does NOT
+    enter this identity — only BT-110 (in invoice currency) does.
     """
+    if profile >= Profile.EXTENDED:
+        return []
     bt_110 = next(
         (
             t.amount
