@@ -48,9 +48,7 @@ class SchematronResult:
     ok_count: int
 
 
-def evaluate_schematron(
-    sch_path: Path, xml_root: etree._Element
-) -> SchematronResult:
+def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronResult:
     """Run every ``<sch:assert>`` in ``sch_path`` against ``xml_root``.
 
     Rule IDs are taken from the leading ``[BR-...]`` token of each

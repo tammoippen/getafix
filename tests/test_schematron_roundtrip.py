@@ -38,8 +38,7 @@ from carthorse.schema.element import ValidationErrors
 from tests._schematron import evaluate_schematron
 
 _SCH_PATH = (
-    Path(__file__).parent
-    / "schemas/4_Factur-X_1.08_EXTENDED/FACTUR-X_EXTENDED.sch"
+    Path(__file__).parent / "schemas/4_Factur-X_1.08_EXTENDED/FACTUR-X_EXTENDED.sch"
 )
 _SAMPLES_DIR = Path(__file__).parent / "samples"
 _SAMPLES = sorted(_SAMPLES_DIR.glob("EXTENDED_*.xml"))
@@ -107,9 +106,7 @@ def test_extended_sample_matches_schematron(sample: Path) -> None:
     #    also fired by the schematron or lives in the indeterminate
     #    bucket (schematron couldn't evaluate it, so it's neither
     #    confirmed nor refuted).
-    false_positives = (
-        carthorse_codes - sch_result.violations - sch_result.indeterminate
-    )
+    false_positives = carthorse_codes - sch_result.violations - sch_result.indeterminate
     assert not false_positives, (
         f"{sample.name}: carthorse emits codes the schematron neither "
         f"fires nor flags indeterminate: {sorted(false_positives)}."
@@ -125,9 +122,7 @@ def test_extended_sample_matches_schematron(sample: Path) -> None:
     #    code lands in carthorse_codes and is subtracted naturally,
     #    so the suppression doesn't accidentally mask a real bug.
     expected_gaps = _EXPECTED_SCHEMATRON_ONLY.get(sample.name, frozenset())
-    actual_gaps = (
-        sch_result.violations - carthorse_codes - _ELEMENTPATH_FALSE_POSITIVES
-    )
+    actual_gaps = sch_result.violations - carthorse_codes - _ELEMENTPATH_FALSE_POSITIVES
     assert actual_gaps == expected_gaps, (
         f"{sample.name}: schematron-vs-carthorse coverage drift.\n"
         f"  expected schematron-only: {sorted(expected_gaps)}\n"

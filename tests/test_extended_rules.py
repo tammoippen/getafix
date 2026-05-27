@@ -114,8 +114,7 @@ class TestFXExtCOTolerance:
         doc.trade.settlement.trade_taxes[0].calculated_amount = Decimal("20.33")
         doc.trade.settlement.monetary_summation.tax_total = [
             type(doc.trade.settlement.monetary_summation.tax_total[0])(
-                amount=Decimal("20.33"),
-                currency_id=doc.trade.settlement.currency_code,
+                amount=Decimal("20.33"), currency_id=doc.trade.settlement.currency_code
             )
         ]
         doc.trade.settlement.monetary_summation.grand_total = Decimal("127.33")
@@ -168,8 +167,7 @@ class TestFXExtCOTolerance:
         doc.trade.settlement.trade_taxes[0].calculated_amount = Decimal("19.76")
         doc.trade.settlement.monetary_summation.tax_total = [
             type(doc.trade.settlement.monetary_summation.tax_total[0])(
-                amount=Decimal("19.76"),
-                currency_id=doc.trade.settlement.currency_code,
+                amount=Decimal("19.76"), currency_id=doc.trade.settlement.currency_code
             )
         ]
         doc.trade.settlement.monetary_summation.grand_total = Decimal("123.76")
@@ -287,16 +285,11 @@ class TestFXExtSubInvoiceLineWalker:
     def test_br_fxext_06_fires_when_subtype_missing_on_child(self) -> None:
         doc = _ext(make_vat_doc())
         # First mark the default line as GROUP so it can be a parent.
-        doc.trade.items[0].associated_document.status_reason_code = (
-            LineStatusReasonCode.GROUP
-        )
+        doc.trade.items[
+            0
+        ].associated_document.status_reason_code = LineStatusReasonCode.GROUP
         # Add a child without status_reason_code — should fire.
-        _add_line(
-            doc,
-            line_id="1a",
-            line_total=Decimal("100"),
-            parent_line_id="1",
-        )
+        _add_line(doc, line_id="1a", line_total=Decimal("100"), parent_line_id="1")
         with pt.raises(ValidationErrors) as e:
             doc.validate()
         assert "BR-FXEXT-06" in _codes(e.value)
@@ -379,7 +372,9 @@ class TestFXExtSubInvoiceLineSampleClean:
 
         from carthorse.schema import Document
 
-        xml = Path("tests/samples/EXTENDED_zf24_SubInvoiceLines_Hardware.xml").read_bytes()
+        xml = Path(
+            "tests/samples/EXTENDED_zf24_SubInvoiceLines_Hardware.xml"
+        ).read_bytes()
         doc = Document.from_xml(etree.fromstring(xml))
         # No errors — every parent ref resolves, GROUP totals match
         # children, subtypes are set everywhere they need to be.
@@ -404,9 +399,9 @@ class TestFXExtLineQualifiers:
 
     def test_br_fxext_22_silent_on_group_without_quantity(self) -> None:
         doc = _ext(make_vat_doc())
-        doc.trade.items[0].associated_document.status_reason_code = (
-            LineStatusReasonCode.GROUP
-        )
+        doc.trade.items[
+            0
+        ].associated_document.status_reason_code = LineStatusReasonCode.GROUP
         doc.trade.items[0].delivery.billed_quantity = None
         try:
             doc.validate()
@@ -443,9 +438,9 @@ class TestFXExtLineQualifiers:
 
     def test_br_fxext_27_silent_on_group_with_negative_price(self) -> None:
         doc = _ext(make_vat_doc())
-        doc.trade.items[0].associated_document.status_reason_code = (
-            LineStatusReasonCode.GROUP
-        )
+        doc.trade.items[
+            0
+        ].associated_document.status_reason_code = LineStatusReasonCode.GROUP
         doc.trade.items[0].agreement.net_price.charge_amount = Decimal("-1.00")
         try:
             doc.validate()
@@ -463,9 +458,9 @@ class TestFXExtLineQualifiers:
 
     def test_br_fxext_co_04_silent_on_group_without_line_vat(self) -> None:
         doc = _ext(make_vat_doc())
-        doc.trade.items[0].associated_document.status_reason_code = (
-            LineStatusReasonCode.GROUP
-        )
+        doc.trade.items[
+            0
+        ].associated_document.status_reason_code = LineStatusReasonCode.GROUP
         doc.trade.items[0].settlement.applicable_trade_tax = None
         try:
             doc.validate()

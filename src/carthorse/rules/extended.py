@@ -28,6 +28,8 @@ every line currently parses as ``DETAIL`` so the accumulators are
 already correct for present samples.
 """
 
+# pyright: reportImportCycles=false
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -102,17 +104,14 @@ def _allowance_amounts(m: _trade.Trade) -> list[Decimal]:
 def _charge_amounts(m: _trade.Trade) -> list[Decimal]:
     """``Σ BT-99`` across document-level charges (allowances excluded)."""
     return [
-        ac.actual_amount
-        for ac in (m.settlement.allowance_charge or [])
-        if ac.indicator
+        ac.actual_amount for ac in (m.settlement.allowance_charge or []) if ac.indicator
     ]
 
 
 def _logistics_amounts(m: _trade.Trade) -> list[Decimal]:
     """``Σ BT-X-272`` across header logistics service charges."""
     return [
-        lsc.applied_amount
-        for lsc in (m.settlement.logistics_service_charges or [])
+        lsc.applied_amount for lsc in (m.settlement.logistics_service_charges or [])
     ]
 
 
@@ -581,8 +580,7 @@ def br_fxext_vat_category_sums(
                 if _is_detail_line(item)
                 and item.settlement.applicable_trade_tax is not None
                 and item.settlement.applicable_trade_tax.category_code == cat
-                and item.settlement.applicable_trade_tax.rate_applicable_percent
-                == rate
+                and item.settlement.applicable_trade_tax.rate_applicable_percent == rate
                 and item.settlement.monetary_summation.line_total is not None
             ]
             alw_amts = [
