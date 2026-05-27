@@ -320,9 +320,7 @@ class ProductClassification(Element):
             XML(f"{Namespace.ram.name}:ClassCode", attrs=attrs)[self.class_code]
         ]
         if self.class_name is not None:
-            children.append(
-                XML(f"{Namespace.ram.name}:ClassName")[self.class_name]
-            )
+            children.append(XML(f"{Namespace.ram.name}:ClassName")[self.class_name])
         return XML(self.get_tag())[*children]
 
     @override
@@ -346,9 +344,7 @@ class ProductClassification(Element):
             elif child.tag == name_qtag:
                 class_name = child.text.strip() if child.text else None
         if class_code is None or list_id is None:
-            raise ValueError(
-                f"{cls.__name__}: ClassCode + listID are required"
-            )
+            raise ValueError(f"{cls.__name__}: ClassCode + listID are required")
         return cls(
             class_code=class_code,
             list_id=coerce_enum(list_id, cls, "list_id"),
@@ -505,8 +501,7 @@ class TradeProduct(Element):
     fixture exercises a recognised industry catalogue ID.
     """
     model_id: str | None = field(
-        default=None,
-        metadata={"tag": "ModelID", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "ModelID", "profile": Profile.EXTENDED}
     )
     """Model / variant identifier (BT-X-533); EXTENDED only.
 
@@ -519,8 +514,7 @@ class TradeProduct(Element):
     )
     """Item description (BT-154); COMFORT+."""
     batch_id: list[str] | None = field(
-        default=None,
-        metadata={"tag": "BatchID", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "BatchID", "profile": Profile.EXTENDED}
     )
     """Batch / lot identifiers (BT-X-534, 0..*); EXTENDED only.
 
@@ -531,16 +525,14 @@ class TradeProduct(Element):
     No current sample uses this list directly.
     """
     brand_name: str | None = field(
-        default=None,
-        metadata={"tag": "BrandName", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "BrandName", "profile": Profile.EXTENDED}
     )
     """Brand name (BT-X-535); EXTENDED only.
 
     No current sample populates this — XSD slot reserved.
     """
     model_name: str | None = field(
-        default=None,
-        metadata={"tag": "ModelName", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "ModelName", "profile": Profile.EXTENDED}
     )
     """Model name (BT-X-536); EXTENDED only.
 
@@ -552,10 +544,7 @@ class TradeProduct(Element):
     """Item classifications (BG-33, 0..*); COMFORT+."""
     individual_product_instances: list[IndividualTradeProductInstance] | None = field(
         default=None,
-        metadata={
-            "tag": "IndividualTradeProductInstance",
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "IndividualTradeProductInstance", "profile": Profile.EXTENDED},
     )
     """Per-instance batch / serial details (BG-X-84, 0..*); EXTENDED only.
 
@@ -567,10 +556,7 @@ class TradeProduct(Element):
     """Item country of origin (BG-34, 0..1); COMFORT+."""
     included_referenced_products: list[IncludedReferencedProduct] | None = field(
         default=None,
-        metadata={
-            "tag": "IncludedReferencedProduct",
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "IncludedReferencedProduct", "profile": Profile.EXTENDED},
     )
     """Sub-products bundled into this line item (BG-X-1, 0..*); EXTENDED only.
 
@@ -594,10 +580,7 @@ class DocumentLineDocument(Element):
 
     _validators: ClassVar[tuple[Validator["DocumentLineDocument"], ...]] = (
         fields_only_at(
-            Profile.EXTENDED,
-            "parent_line_id",
-            "status_code",
-            "status_reason_code",
+            Profile.EXTENDED, "parent_line_id", "status_code", "status_reason_code"
         ),
     )
 
@@ -607,8 +590,7 @@ class DocumentLineDocument(Element):
     A unique identifier for the individual line within the invoice.
     """
     parent_line_id: str | None = field(
-        default=None,
-        metadata={"tag": "ParentLineID", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "ParentLineID", "profile": Profile.EXTENDED}
     )
     """Identifier of parent line (BT-X-304); EXTENDED only.
 
@@ -621,8 +603,7 @@ class DocumentLineDocument(Element):
     is set (``BR-FXEXT-06``).
     """
     status_code: str | None = field(
-        default=None,
-        metadata={"tag": "LineStatusCode", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "LineStatusCode", "profile": Profile.EXTENDED}
     )
     """Line status code (BT-X-7); EXTENDED only.
 
@@ -665,17 +646,14 @@ class LineBuyerOrderReferencedDocument(Element):
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    _validators: ClassVar[
-        tuple[Validator["LineBuyerOrderReferencedDocument"], ...]
-    ] = (
+    _validators: ClassVar[tuple[Validator["LineBuyerOrderReferencedDocument"], ...]] = (
         fields_only_at(
             Profile.EXTENDED, "issuer_assigned_id", "formatted_issue_date_time"
         ),
     )
 
     issuer_assigned_id: str | None = field(
-        default=None,
-        metadata={"tag": "IssuerAssignedID", "profile": Profile.EXTENDED},
+        default=None, metadata={"tag": "IssuerAssignedID", "profile": Profile.EXTENDED}
     )
     """Per-line purchase order document ID (BT-X-21); EXTENDED only.
 
@@ -802,10 +780,7 @@ class LineTradeAgreement(Element):
     """Referenced purchase-order line (BT-132-00); COMFORT+."""
     quotation_ref: LineQuotationReferencedDocument | None = field(
         default=None,
-        metadata={
-            "tag": "QuotationReferencedDocument",
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "QuotationReferencedDocument", "profile": Profile.EXTENDED},
     )
     """Referenced quotation line (BG-X-47, 0..1); EXTENDED only.
 

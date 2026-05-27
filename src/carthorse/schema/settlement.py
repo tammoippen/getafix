@@ -640,9 +640,7 @@ class TradeSettlement(Element):
         # to 0..* at EXTENDED — cap the carthorse list to 1 entry below
         # EXTENDED so an over-populated list fails loud rather than
         # tripping XSD validation.
-        list_max_cardinality_below(
-            Profile.EXTENDED, max_count=1, field_name="terms"
-        ),
+        list_max_cardinality_below(Profile.EXTENDED, max_count=1, field_name="terms"),
         br_5_currency_shape,
         br_co_18,
         br_53,
