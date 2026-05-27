@@ -20,26 +20,17 @@ wheels = [
 ]
 
 [[package]]
-name = "beartype"
-version = "0.22.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a6/09/9003e5662691056e0e8b2e6f57c799e71875fac0be0e785d8cb11557cd2a/beartype-0.22.5.tar.gz", hash = "sha256:516a9096cc77103c96153474fa35c3ebcd9d36bd2ec8d0e3a43307ced0fa6341", size = 1586256, upload-time = "2025-11-01T05:49:20.771Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/f6/073d19f7b571c08327fbba3f8e011578da67ab62a11f98911274ff80653f/beartype-0.22.5-py3-none-any.whl", hash = "sha256:d9743dd7cd6d193696eaa1e025f8a70fb09761c154675679ff236e61952dfba0", size = 1321700, upload-time = "2025-11-01T05:49:18.436Z" },
-]
-
-[[package]]
 name = "carthorse"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "beartype" },
     { name = "tagic" },
 ]
 
 [package.optional-dependencies]
 cli = [
     { name = "lxml" },
+    { name = "pypdf" },
     { name = "rich" },
 ]
 lxml = [
@@ -67,9 +58,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beartype", specifier = ">=0.22.5" },
     { name = "lxml", marker = "extra == 'cli'", specifier = ">=6.0.2" },
     { name = "lxml", marker = "extra == 'lxml'", specifier = ">=6.0.2" },
+    { name = "pypdf", marker = "extra == 'cli'", specifier = ">=6.11.0" },
     { name = "pypdf", marker = "extra == 'pdf'", specifier = ">=6.11.0" },
     { name = "rich", marker = "extra == 'cli'", specifier = ">=13.0" },
     { name = "tagic", specifier = ">=1.4.0" },

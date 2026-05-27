@@ -8,13 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "beartype>=0.22.5",
     "tagic>=1.4.0",
 ]
 
 [project.optional-dependencies]
 lxml = ["lxml>=6.0.2"]
-cli = ["lxml>=6.0.2", "rich>=13.0"]
+cli = ["lxml>=6.0.2", "rich>=13.0", "pypdf>=6.11.0"]
 pdf = ["pypdf>=6.11.0"]
 
 [project.scripts]
