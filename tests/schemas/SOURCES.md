@@ -20,8 +20,6 @@ from the FNFE-MPE website; the schematron `.sch` files and the
 | `3_Factur-X_1.08_EN16931/` | `ZF24_EN/Schema/3_Factur-X_1.08_EN16931/` |
 | `4_Factur-X_1.08_EXTENDED/` | `ZF24_EN/Schema/4_Factur-X_1.08_EXTENDED/` (includes `FACTUR-X_EXTENDED.sch` + `FACTUR-X_EXTENDED_codedb.xml` for the schematron round-trip oracle in `tests/test_schematron_roundtrip.py`) |
 
-The full `ZF24_EN/` tree lives on the repo's `docs` branch.
-
 ## Updating
 
 After fetching a new spec release, copy the matching files from the

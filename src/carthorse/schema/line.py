@@ -302,7 +302,7 @@ class ProductClassification(Element):
     """Scheme version identifier (BT-158-2)."""
     class_name: str | None = None
     """Optional human-readable label for the classification scheme
-    (BT-X-22 ``ClassName``); EXTENDED only.
+    (BT-X-13 ``ClassName``); EXTENDED only.
 
     Real-world samples emit it next to the ``ClassCode`` listID to
     spell out the scheme verbatim — ``"Zolltarifnummer"`` for HS,
@@ -388,7 +388,7 @@ class UnitQuantity(Quantity):
 class IndividualTradeProductInstance(Element):
     """Per-instance product details (BG-X-84, 0..*); EXTENDED only.
 
-    Carries a per-unit batch lot ID (BT-X-?) and / or
+    Carries a per-unit batch lot ID (BT-X-306) and / or
     supplier-assigned serial number (BT-X-307). Exercised by the
     Maschinen_Serial sample.
     """
@@ -397,7 +397,7 @@ class IndividualTradeProductInstance(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     batch_id: str | None = field(default=None, metadata={"tag": "BatchID"})
-    """Batch / lot identifier."""
+    """Batch / lot identifier (BT-X-306)."""
     supplier_assigned_serial_id: str | None = field(
         default=None, metadata={"tag": "SupplierAssignedSerialID"}
     )
@@ -424,27 +424,28 @@ class IncludedReferencedProduct(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: str | None = field(default=None, metadata={"tag": "ID"})
-    """Local sub-product identifier."""
+    """Local sub-product identifier (BT-X-308)."""
     global_id: GlobalID | None = None
-    """Sub-product standard identifier (GS1 / EAN / GTIN, etc.)."""
+    """Sub-product standard identifier (BT-X-15; GS1 / EAN / GTIN, etc.)."""
     seller_assigned_id: str | None = field(
         default=None, metadata={"tag": "SellerAssignedID"}
     )
-    """Seller's sub-product identifier."""
+    """Seller's sub-product identifier (BT-X-16)."""
     buyer_assigned_id: str | None = field(
         default=None, metadata={"tag": "BuyerAssignedID"}
     )
-    """Buyer's sub-product identifier."""
+    """Buyer's sub-product identifier (BT-X-17)."""
     industry_assigned_id: str | None = field(
         default=None, metadata={"tag": "IndustryAssignedID"}
     )
-    """Industry sub-product identifier."""
+    """Industry sub-product identifier (BT-X-309)."""
     name: str = field(metadata={"tag": "Name"})
-    """Sub-product name (required)."""
+    """Sub-product name (BT-X-18, required)."""
     description: str | None = field(default=None, metadata={"tag": "Description"})
-    """Sub-product description."""
+    """Sub-product description (BT-X-19)."""
     unit_quantity: UnitQuantity | None = None
-    """Sub-product quantity per bundle (Quantity-shaped, tagged ``UnitQuantity``)."""
+    """Sub-product quantity per bundle (BT-X-20; Quantity-shaped,
+    tagged ``UnitQuantity``)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -485,7 +486,7 @@ class TradeProduct(Element):
         default=None,
         metadata={"tag": "IndustryAssignedID", "profile": Profile.EXTENDED},
     )
-    """Industry-assigned item identifier (BT-X-?); EXTENDED only.
+    """Industry-assigned item identifier (BT-X-532); EXTENDED only.
 
     No current sample populates this — add coverage if a future
     fixture exercises a recognised industry catalogue ID.
@@ -494,7 +495,7 @@ class TradeProduct(Element):
         default=None,
         metadata={"tag": "ModelID", "profile": Profile.EXTENDED},
     )
-    """Model / variant identifier (BT-X-21); EXTENDED only.
+    """Model / variant identifier (BT-X-533); EXTENDED only.
 
     No current sample populates this — XSD slot reserved.
     """
@@ -508,7 +509,7 @@ class TradeProduct(Element):
         default=None,
         metadata={"tag": "BatchID", "profile": Profile.EXTENDED},
     )
-    """Batch / lot identifiers (0..*); EXTENDED only.
+    """Batch / lot identifiers (BT-X-534, 0..*); EXTENDED only.
 
     Per-batch traceability codes attached at the parent item level.
     For per-instance serial / batch carry the value on
@@ -520,7 +521,7 @@ class TradeProduct(Element):
         default=None,
         metadata={"tag": "BrandName", "profile": Profile.EXTENDED},
     )
-    """Brand name (BT-X-23); EXTENDED only.
+    """Brand name (BT-X-535); EXTENDED only.
 
     No current sample populates this — XSD slot reserved.
     """
@@ -528,7 +529,7 @@ class TradeProduct(Element):
         default=None,
         metadata={"tag": "ModelName", "profile": Profile.EXTENDED},
     )
-    """Model name (BT-X-?); EXTENDED only.
+    """Model name (BT-X-536); EXTENDED only.
 
     No current sample populates this — XSD slot reserved.
     """
@@ -646,7 +647,7 @@ class LineBuyerOrderReferencedDocument(Element):
         default=None,
         metadata={"tag": "IssuerAssignedID", "profile": Profile.EXTENDED},
     )
-    """Per-line purchase order document ID (EXTENDED only).
+    """Per-line purchase order document ID (BT-X-21); EXTENDED only.
 
     Used when an invoice line references a different purchase order
     than the header (BG-X-30-1 in the EXTENDED ``Sammelrechnung``
@@ -670,12 +671,13 @@ class LineBuyerOrderReferencedDocument(Element):
         default=None,
         metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
     )
-    """Issue date of the referenced order (EXTENDED only)."""
+    """Issue date of the referenced order (BT-X-22, wrapped in
+    BT-X-22-00); EXTENDED only."""
 
 
 @dataclass(kw_only=True, slots=True)
 class LineQuotationReferencedDocument(Element):
-    """Line-level quotation reference (BT-X-?); EXTENDED only.
+    """Line-level quotation reference (BG-X-47); EXTENDED only.
 
     Per-line pointer to a previously issued quotation that this
     invoice line corresponds to. Same ``ReferencedDocumentType``
@@ -695,13 +697,13 @@ class LineQuotationReferencedDocument(Element):
     issuer_assigned_id: str | None = field(
         default=None, metadata={"tag": "IssuerAssignedID"}
     )
-    """Quotation document identifier."""
+    """Quotation document identifier (BT-X-310)."""
     line_id: str | None = field(default=None, metadata={"tag": "LineID"})
-    """Quotation line position."""
+    """Quotation line position (BT-X-311)."""
     formatted_issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
-    """Quotation issue date."""
+    """Quotation issue date (BT-X-312, wrapped in BT-X-312-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -771,7 +773,7 @@ class LineTradeAgreement(Element):
             "profile": Profile.EXTENDED,
         },
     )
-    """Referenced quotation line (BT-X-?, 0..1); EXTENDED only.
+    """Referenced quotation line (BG-X-47, 0..1); EXTENDED only.
 
     XSD position: after ``buyer_order_ref``
     (``BuyerOrderReferencedDocument``), before the price blocks.
