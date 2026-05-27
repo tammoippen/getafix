@@ -58,6 +58,9 @@ def render_invoice(doc: Document, console: Console | None = None) -> None:
     allowance_charges = _allowance_charge_panel(doc)
     if allowance_charges is not None:
         console.print(allowance_charges)
+    logistics_charges = _logistics_charges_panel(doc)
+    if logistics_charges is not None:
+        console.print(logistics_charges)
     console.print(_totals_panel(doc))
     payment = _payment_panel(doc)
     if payment is not None:
@@ -249,7 +252,32 @@ def _lines_table(doc: Document) -> Table:
     table.add_column(f"Net price [{currency}]", justify="right")
     table.add_column(f"Line total [{currency}]", justify="right")
     table.add_column("VAT", justify="right", no_wrap=True)
+
+    # Build a parent-line -> depth map so EXTENDED sub-invoice-line
+    # trees render indented (Hardware-style: GROUP "01" with DETAIL
+    # children "0101" / "0102" — children render two spaces deeper).
+    # Compute depth via the parent chain so the order in which lines
+    # appear in the document doesn't matter (the Hardware sample
+    # actually lists children BEFORE their parent).
+    parent_of: dict[str, str] = {
+        item.associated_document.line_id: item.associated_document.parent_line_id
+        for item in doc.trade.items
+        if item.associated_document.parent_line_id is not None
+    }
+
+    def _depth(line_id: str, _seen: frozenset[str] = frozenset()) -> int:
+        parent = parent_of.get(line_id)
+        if parent is None or parent in _seen:
+            return 0  # root, dangling ref, or cycle guard
+        return _depth(parent, _seen | {line_id}) + 1
+
+    depth_by_id = {
+        item.associated_document.line_id: _depth(item.associated_document.line_id)
+        for item in doc.trade.items
+    }
+
     for item in doc.trade.items:
+        ad = item.associated_document
         tax = item.settlement.applicable_trade_tax
         if tax is None:
             vat_str = "—"  # EXTENDED GROUP / INFORMATION lines have no line VAT
@@ -263,10 +291,18 @@ def _lines_table(doc: Document) -> Table:
         qty = item.delivery.billed_quantity
         net = item.agreement.net_price
         line_total = item.settlement.monetary_summation.line_total
+        # EXTENDED sub-invoice-line subtype (BT-X-8) — show as a tag
+        # next to the line id; indent children of GROUP lines.
+        indent = "  " * depth_by_id[ad.line_id]
+        subtype_tag = (
+            f" [dim]({ad.status_reason_code.value})[/dim]"
+            if ad.status_reason_code is not None
+            else ""
+        )
         # All four can be ``None`` on EXTENDED GROUP / INFORMATION lines;
         # render an em-dash placeholder in those cells.
         table.add_row(
-            item.associated_document.line_id,
+            f"{indent}{ad.line_id}{subtype_tag}",
             _item_cell(item.product),
             f"{qty.value}" if qty is not None else "—",
             qty.unit_code if qty is not None else "—",
@@ -390,6 +426,48 @@ def _allowance_charge_panel(doc: Document) -> Table | None:
             f"{ac.actual_amount}",
             calc,
             vat,
+        )
+    return table
+
+
+def _logistics_charges_panel(doc: Document) -> Table | None:
+    """Logistics service charges (BG-X-42); EXTENDED only.
+
+    One row per :class:`LogisticsServiceCharge` (description,
+    applied amount, VAT category + rate). Returns ``None`` for
+    BASIC / COMFORT documents and for EXTENDED documents that
+    don't carry any logistics charge.
+    """
+    items = doc.trade.settlement.logistics_service_charges or []
+    if not items:
+        return None
+    currency = doc.trade.settlement.currency_code
+    table = Table(
+        title="Logistics service charges (BG-X-42)",
+        title_style="bold",
+        header_style="bold",
+        border_style="blue",
+        expand=True,
+    )
+    table.add_column("Description")
+    table.add_column(f"Amount [{currency}]", justify="right")
+    table.add_column("VAT", justify="right", no_wrap=True)
+    for lsc in items:
+        # Each logistics charge has 1..* AppliedTradeTax rows; in the
+        # common case there's exactly one — render its category + rate.
+        # If there are multiple, join with " / ".
+        vat_cells = []
+        for atx in lsc.applied_trade_tax:
+            rate = atx.rate_applicable_percent
+            vat_cells.append(
+                f"{rate}% {atx.category_code.value}"
+                if rate is not None
+                else atx.category_code.value
+            )
+        table.add_row(
+            lsc.description,
+            f"{lsc.applied_amount}",
+            " / ".join(vat_cells) if vat_cells else "-",
         )
     return table
 

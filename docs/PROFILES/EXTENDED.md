@@ -341,17 +341,28 @@ One extra branch in the date renderer/parser; pairs with
 
 Three additive panels matching the COMFORT enrichments already shipped:
 
-1. **Logistics charges panel** — sibling to the document-level
-   allowance/charge table; one row per ``SpecifiedLogisticsServiceCharge``
-   (description, applied amount, VAT category + rate).
-2. **Advance payments panel** — one row per ``SpecifiedAdvancePayment``
-   (received date, paid amount, included tax breakdown).
-3. **Line subtype rendering** — show BT-X-7 status (``DETAIL`` /
-   ``GROUP`` / ``INFORMATION``) next to the line number in
-   ``_lines_table``; indent child lines under their ``ParentLineID``
-   for the ``GROUP`` hierarchy.
+1. **Logistics charges panel** ✓ — landed as
+   ``_logistics_charges_panel``: sibling to the document-level
+   allowance/charge table; one row per
+   :class:`LogisticsServiceCharge` (description, applied amount,
+   VAT category + rate). Returns ``None`` for non-EXTENDED documents
+   and for EXTENDED documents that don't carry any logistics charge.
+2. **Advance payments panel** — pending the
+   :class:`SpecifiedAdvancePayment` structure landing in §4.3 (no
+   sample exercises it yet, so the dataclass is also deferred).
+3. **Line subtype rendering** ✓ — ``_lines_table`` now appends the
+   BT-X-8 ``LineStatusReasonCode`` (``DETAIL`` / ``GROUP`` /
+   ``INFORMATION``) as a dim tag next to the line id, and indents
+   children under their parent (two spaces per depth level)
+   following the ``ParentLineID`` chain. Depth resolves through the
+   full parent chain so the order in which lines appear in the
+   document doesn't matter — children rendered before their parent
+   still indent correctly. BASIC / COMFORT documents print
+   unchanged (no parent_line_id, no status_reason_code → depth 0 and
+   no tag).
 
-All three are guarded so BASIC / COMFORT documents print unchanged.
+Panels 1 + 3 ship in the same commit. Panel 2 lands with the
+SpecifiedAdvancePayment structure.
 
 
 ## 7. Suggested ordering
@@ -402,7 +413,10 @@ piece in §4.5 / §5.1.
    attributes. One commit.
 9. **§4.4 + §5.5 VAT breakdown extras and date format** — small,
    landed last.
-10. **§6 CLI** — opportunistic alongside the structure commits.
+10. **§6 CLI** ✓ — logistics-charges panel +
+    sub-invoice-line subtype tag / indented child rendering landed
+    in ``src/carthorse/report.py``. Advance-payments panel deferred
+    pending the SpecifiedAdvancePayment dataclass.
 
 After step 5 the test loop is meaningful: any EXTENDED sample under
 ``tests/samples/EXTENDED_*.xml`` round-trips with no schematron

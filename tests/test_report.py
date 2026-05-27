@@ -172,3 +172,54 @@ def test_render_validation_errors_prints_codes_and_messages():
     assert "at least one line required" in text
     assert "BR-CO-15" in text
     assert "BT-112 mismatch" in text
+
+
+def test_render_invoice_extended_logistics_panel_shows_for_extended_doc() -> None:
+    """The Logistics-service-charges panel (BG-X-42) appears when
+    ``settlement.logistics_service_charges`` is populated."""
+    from pathlib import Path
+
+    from lxml import etree
+
+    doc = Document.from_xml(
+        etree.fromstring(
+            Path("tests/samples/EXTENDED_factur-x-extended.xml").read_bytes()
+        )
+    )
+    console = _record()
+    render_invoice(doc, console=console)
+    text = console.export_text()
+    assert "Logistics service charges (BG-X-42)" in text
+    assert "Transportkosten" in text  # description of the sample charge
+    assert "15.00" in text  # applied_amount
+    assert "19.00% S" in text  # VAT cell
+
+
+def test_render_invoice_indents_sub_invoice_line_children() -> None:
+    """EXTENDED GROUP / DETAIL sub-invoice-line trees render with
+    children indented two spaces under their parent, and the BT-X-8
+    subtype is appended as a dim tag next to the line id."""
+    from pathlib import Path
+
+    from lxml import etree
+
+    doc = Document.from_xml(
+        etree.fromstring(
+            Path(
+                "tests/samples/EXTENDED_zf24_SubInvoiceLines_Hardware.xml"
+            ).read_bytes()
+        )
+    )
+    console = _record()
+    render_invoice(doc, console=console)
+    text = console.export_text()
+    # Subtype tags appear next to line ids.
+    assert "(DETAIL)" in text
+    assert "(GROUP)" in text
+    # Children render with indentation (the regex catches "  0101"
+    # — two leading spaces — but not "  01 " which would be the
+    # parent at depth 0).
+    assert "  0101" in text
+    assert "  0102" in text
+    # GROUP parent line is at depth 0 (no leading indent before "01").
+    assert "01 (GROUP)" in text
