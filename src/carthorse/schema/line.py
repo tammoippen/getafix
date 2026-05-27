@@ -816,8 +816,16 @@ class LineTradeAgreement(Element):
     """
     gross_price: GrossTradePrice | None = None
     """Item gross price (BT-148-00)."""
-    net_price: NetTradePrice
-    """Item net price (BT-146-00); required."""
+    net_price: NetTradePrice | None = None
+    """Item net price (BT-146-00).
+
+    Required at every profile up to EN 16931 (the EN16931 base rule
+    ``BR-26`` makes BT-146 mandatory). EXTENDED relaxes this on
+    ``GROUP`` / ``INFORMATION`` lines — the relaxation is enforced
+    at runtime by ``br_fxext_26`` (rules/extended.py), and the
+    EN16931 ``BR-26`` short-circuits at EXTENDED via the same
+    machinery used for the rest of the BR-FXEXT-2x family.
+    """
 
 
 @dataclass(kw_only=True, slots=True)
@@ -830,9 +838,15 @@ class LineTradeDelivery(Element):
     tag: ClassVar[str] = "SpecifiedLineTradeDelivery"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    billed_quantity: Quantity = field(metadata={"tag": "BilledQuantity"})
-    """Invoiced quantity (BT-129) with unit-of-measure code (BT-130);
-    required."""
+    billed_quantity: Quantity | None = field(
+        default=None, metadata={"tag": "BilledQuantity"}
+    )
+    """Invoiced quantity (BT-129) with unit-of-measure code (BT-130).
+
+    Required at every profile up to EN 16931 (``BR-22`` / ``BR-23``).
+    EXTENDED relaxes both on ``GROUP`` / ``INFORMATION`` lines —
+    runtime enforcement lives in ``br_fxext_22`` / ``br_fxext_23``.
+    """
 
 
 @dataclass(kw_only=True, slots=True)
@@ -851,7 +865,9 @@ class LineMonetarySummation(Element):
         max_decimals("BR-DEC-23", field_name="line_total"),
     )
 
-    line_total: Decimal = field(metadata={"tag": "LineTotalAmount", "amount": True})
+    line_total: Decimal | None = field(
+        default=None, metadata={"tag": "LineTotalAmount", "amount": True}
+    )
     """Invoice line net amount (BT-131).
 
     The total amount of the invoice line — net of VAT but inclusive

@@ -78,11 +78,15 @@ def _line_amounts(m: "_trade.Trade") -> list[Decimal]:
     ``GROUP`` subtotal headers and ``INFORMATION`` lines are
     excluded per the EXTENDED schematron filter
     ``[not(LineStatusReasonCode) or LineStatusReasonCode='DETAIL']``.
+    Lines missing BT-131 entirely (allowed at EXTENDED on
+    non-DETAIL lines, but a BR-FXEXT-24 violation if DETAIL) are
+    also skipped here — they're surfaced via the dedicated rule.
     """
     return [
         item.settlement.monetary_summation.line_total
         for item in m.items
         if _is_detail_line(item)
+        and item.settlement.monetary_summation.line_total is not None
     ]
 
 
@@ -216,86 +220,142 @@ def br_fxext_11(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
 
 
 # ---- §5.4 subtype-qualified line rules (BR-FXEXT-22/23/24/26/27) -----------
-
-# Per §5.4, the EXTENDED variants of EN 16931 BR-22/23/24/26/27 gate the
-# corresponding line-level requirement on BT-X-8 being DETAIL or unset.
-# In carthorse the underlying fields (BT-129 ``billed_quantity``, BT-130
-# ``unit_code``, BT-131 ``line_total``, BT-146 ``net_price.charge_amount``)
-# are all *required* on their dataclasses — a TradeLineItem cannot be
-# constructed without them, regardless of profile or subtype. The
-# EXTENDED relaxations therefore land as no-op placeholders: they
-# correctly never fire (because the EN 16931 base requirement is also
-# never violated at parse time), and they become meaningful runtime
-# checks the moment those fields are relaxed to ``Optional`` for
-# GROUP / INFORMATION lines (out of scope for §7 step 5).
 #
-# BR-FXEXT-27 deserves a separate note: the carthorse BR-27 check
-# (rules/line.py::br_27, on NetTradePrice) keeps running at EXTENDED
-# and is *slightly* stricter than the spec — it fires on a GROUP /
-# INFORMATION line with a negative BT-146 even though BR-FXEXT-27
-# would not. No current sample exercises this case; revisit if a
-# future EXTENDED fixture trips it.
-
-
-def _line_qualifier_placeholder(
-    m: "_trade.Trade", profile: Profile
-) -> list[ValidationError]:
-    """Shared placeholder body for BR-FXEXT-22/-23/-24/-26/-27."""
-    if profile < Profile.EXTENDED:
-        return []
-    return []
+# EXTENDED variants of EN 16931 BR-22/23/24/26/27. Each gates the
+# corresponding line-level field requirement on the line's BT-X-8
+# subtype being DETAIL or unset — GROUP subtotal headers and
+# INFORMATION lines may legitimately omit the field. The base
+# EN 16931 versions (rules/trade.py::br_22/23/24/26 and
+# rules/line.py::br_27) short-circuit at EXTENDED so only the
+# EXTENDED variants here fire.
 
 
 def br_fxext_22(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-22 replaces BR-22 (BT-129 invoiced quantity) on
-    DETAIL / unset lines. No-op placeholder — see comment above."""
-    return _line_qualifier_placeholder(m, profile)
+    """BR-FXEXT-22: BT-129 (invoiced quantity) required on every
+    DETAIL / unset line."""
+    if profile < Profile.EXTENDED:
+        return []
+    return [
+        _err(
+            "BR-FXEXT-22",
+            f"line {item.associated_document.line_id!r}: invoiced "
+            f"quantity (BT-129) is required for DETAIL / unset lines.",
+        )
+        for item in m.items
+        if _is_detail_line(item) and item.delivery.billed_quantity is None
+    ]
 
 
 def br_fxext_23(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-23 replaces BR-23 (BT-130 unit of measure) on
-    DETAIL / unset lines. No-op placeholder — see comment above."""
-    return _line_qualifier_placeholder(m, profile)
+    """BR-FXEXT-23: BT-130 (unit of measure) required on every
+    DETAIL / unset line."""
+    if profile < Profile.EXTENDED:
+        return []
+    return [
+        _err(
+            "BR-FXEXT-23",
+            f"line {item.associated_document.line_id!r}: unit-of-measure "
+            f"code (BT-130) is required for DETAIL / unset lines.",
+        )
+        for item in m.items
+        if _is_detail_line(item)
+        and (
+            item.delivery.billed_quantity is None
+            or not item.delivery.billed_quantity.unit_code
+        )
+    ]
 
 
 def br_fxext_24(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-24 replaces BR-24 (BT-131 line net amount) on
-    DETAIL / unset lines. XLSX-only — not asserted in the .sch.
-    No-op placeholder — see comment above."""
-    return _line_qualifier_placeholder(m, profile)
+    """BR-FXEXT-24 (XLSX-only — not asserted in the .sch): BT-131
+    (invoice line net amount) required on every DETAIL / unset
+    line."""
+    if profile < Profile.EXTENDED:
+        return []
+    return [
+        _err(
+            "BR-FXEXT-24",
+            f"line {item.associated_document.line_id!r}: invoice line "
+            f"net amount (BT-131) is required for DETAIL / unset lines.",
+        )
+        for item in m.items
+        if _is_detail_line(item)
+        and item.settlement.monetary_summation.line_total is None
+    ]
 
 
 def br_fxext_26(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-26 replaces BR-26 (BT-146 item net price) on
-    DETAIL / unset lines. No-op placeholder — see comment above."""
-    return _line_qualifier_placeholder(m, profile)
+    """BR-FXEXT-26: BT-146 (item net price) required on every
+    DETAIL / unset line."""
+    if profile < Profile.EXTENDED:
+        return []
+    return [
+        _err(
+            "BR-FXEXT-26",
+            f"line {item.associated_document.line_id!r}: item net price "
+            f"(BT-146) is required for DETAIL / unset lines.",
+        )
+        for item in m.items
+        if _is_detail_line(item) and item.agreement.net_price is None
+    ]
 
 
 def br_fxext_27(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-27 replaces BR-27 (BT-146 ≥ 0) on DETAIL / unset
-    lines. No-op placeholder — see comment above. The unconditional
-    carthorse BR-27 keeps running on every NetTradePrice."""
-    return _line_qualifier_placeholder(m, profile)
+    """BR-FXEXT-27: BT-146 (item net price) shall not be negative on
+    DETAIL / unset lines (replaces EN 16931 BR-27).
+
+    GROUP / INFORMATION lines may carry a negative reference price
+    without firing. When BT-146 is omitted, no check runs (BR-FXEXT-26
+    catches that case for DETAIL / unset lines).
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    errors: list[ValidationError] = []
+    for item in m.items:
+        if not _is_detail_line(item):
+            continue
+        net = item.agreement.net_price
+        if net is None:
+            continue
+        if net.charge_amount < 0:
+            errors.append(
+                _err(
+                    "BR-FXEXT-27",
+                    f"line {item.associated_document.line_id!r}: item net "
+                    f"price (BT-146) shall not be negative "
+                    f"(got {net.charge_amount}).",
+                )
+            )
+    return errors
 
 
 # ---- §5.2 BR-FXEXT-CO-* (tolerance variants) -------------------------------
 
 
 def br_fxext_co_04(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-CO-04: BT-151 required when BT-X-8 is ``DETAIL`` or unset.
+    """BR-FXEXT-CO-04: line VAT category (BT-151) required when BT-X-8
+    is ``DETAIL`` or unset; ``GROUP`` / ``INFORMATION`` lines may
+    omit it.
 
-    EN 16931 ``BR-CO-4`` is implicit through
-    ``LineTradeSettlement.applicable_trade_tax`` being non-optional
-    on the dataclass. EXTENDED relaxes the requirement on
-    ``GROUP`` / ``INFORMATION`` lines, but BT-X-8 isn't modelled
-    yet (§4.5) so every line is ``DETAIL`` and the dataclass
-    constraint already covers it — this rule is a profile-gated
-    placeholder so the EN 16931 → EXTENDED substitution catalogue
-    stays complete.
+    Replaces EN 16931 ``BR-CO-4``
+    (:func:`carthorse.rules.trade.br_co_4`) which fires
+    unconditionally for any missing BT-151 below EXTENDED. At
+    EXTENDED the relaxation kicks in only on non-DETAIL lines —
+    GROUP subtotal headers and INFORMATION lines naturally drop
+    BG-30 because per-category sums fold them through their
+    children.
     """
     if profile < Profile.EXTENDED:
         return []
-    return []
+    return [
+        _err(
+            "BR-FXEXT-CO-04",
+            f"line {item.associated_document.line_id!r}: line VAT "
+            f"category (BT-151) is required for DETAIL / unset lines.",
+        )
+        for item in m.items
+        if _is_detail_line(item) and item.settlement.applicable_trade_tax is None
+    ]
 
 
 def br_fxext_co_10(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
@@ -516,9 +576,11 @@ def br_fxext_vat_category_sums(
                 item.settlement.monetary_summation.line_total
                 for item in m.items
                 if _is_detail_line(item)
+                and item.settlement.applicable_trade_tax is not None
                 and item.settlement.applicable_trade_tax.category_code == cat
                 and item.settlement.applicable_trade_tax.rate_applicable_percent
                 == rate
+                and item.settlement.monetary_summation.line_total is not None
             ]
             alw_amts = [
                 ac.actual_amount

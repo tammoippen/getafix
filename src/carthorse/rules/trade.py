@@ -93,6 +93,92 @@ def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
 # ---------------------------------------------------------------------------
 
 
+# EN16931 per-line "field shall be present" rules. Originally
+# implicit on carthorse via required dataclass fields, but the
+# fields had to be relaxed to ``Optional`` so EXTENDED GROUP /
+# INFORMATION lines can legitimately omit them (§5.4 / §3.1 of
+# docs/PROFILES/EXTENDED.md). Each rule short-circuits at EXTENDED
+# — the matching ``BR-FXEXT-2x`` / ``BR-FXEXT-CO-04`` in
+# :mod:`carthorse.rules.extended` re-implements the check with the
+# DETAIL / unset filter.
+
+
+def br_22(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-22: every BG-25 line shall carry an invoiced quantity (BT-129)."""
+    if profile >= Profile.EXTENDED:
+        return []
+    return [
+        ValidationError(
+            "BR-22",
+            f"line {item.associated_document.line_id!r}: invoiced "
+            f"quantity (BT-129) is required.",
+        )
+        for item in m.items
+        if item.delivery.billed_quantity is None
+    ]
+
+
+def br_23(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-23: every BG-25 line shall carry a unit of measure (BT-130)."""
+    if profile >= Profile.EXTENDED:
+        return []
+    return [
+        ValidationError(
+            "BR-23",
+            f"line {item.associated_document.line_id!r}: unit-of-measure "
+            f"code (BT-130) is required.",
+        )
+        for item in m.items
+        if item.delivery.billed_quantity is None
+        or not item.delivery.billed_quantity.unit_code
+    ]
+
+
+def br_24(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-24: every BG-25 line shall carry a line net amount (BT-131)."""
+    if profile >= Profile.EXTENDED:
+        return []
+    return [
+        ValidationError(
+            "BR-24",
+            f"line {item.associated_document.line_id!r}: invoice line "
+            f"net amount (BT-131) is required.",
+        )
+        for item in m.items
+        if item.settlement.monetary_summation.line_total is None
+    ]
+
+
+def br_26(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-26: every BG-25 line shall carry an item net price (BT-146)."""
+    if profile >= Profile.EXTENDED:
+        return []
+    return [
+        ValidationError(
+            "BR-26",
+            f"line {item.associated_document.line_id!r}: item net price "
+            f"(BT-146) is required.",
+        )
+        for item in m.items
+        if item.agreement.net_price is None
+    ]
+
+
+def br_co_4(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-CO-4: every BG-25 line shall carry a VAT category code (BT-151)."""
+    if profile >= Profile.EXTENDED:
+        return []
+    return [
+        ValidationError(
+            "BR-CO-4",
+            f"line {item.associated_document.line_id!r}: line VAT "
+            f"category (BT-151) is required.",
+        )
+        for item in m.items
+        if item.settlement.applicable_trade_tax is None
+    ]
+
+
 def _line_has_category(m: _trade.Trade, category: CategoryCode) -> bool:
     return any(
         item.settlement.applicable_trade_tax is not None
@@ -772,7 +858,11 @@ def br_co_10(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     if summation.line_total is None:
         return []
     sum_line_totals = sum(
-        (item.settlement.monetary_summation.line_total for item in m.items),
+        (
+            item.settlement.monetary_summation.line_total
+            for item in m.items
+            if item.settlement.monetary_summation.line_total is not None
+        ),
         Decimal("0"),
     )
     if summation.line_total == sum_line_totals:
@@ -873,7 +963,11 @@ def br_co_13(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
         return []
     summation = m.settlement.monetary_summation
     sum_line_totals = sum(
-        (item.settlement.monetary_summation.line_total for item in m.items),
+        (
+            item.settlement.monetary_summation.line_total
+            for item in m.items
+            if item.settlement.monetary_summation.line_total is not None
+        ),
         Decimal("0"),
     )
     sum_allowances = sum(

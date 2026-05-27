@@ -282,22 +282,25 @@ implementation short-circuits as in §3.1.
 
 ### 5.4 Subtype-qualified line rules (4 .sch-asserted + 1 XLSX-only) — ``rules/extended.py``
 
-All five landed as no-op placeholders. EN16931 ``BR-22`` / ``BR-23`` /
-``BR-24`` / ``BR-26`` / ``BR-27`` require BT-129 / BT-130 / BT-131 /
-BT-146 / BT-146≥0 on every BG-25 line. The EXTENDED variants gate
-each on the line's BT-X-8 subtype — ``GROUP`` and ``INFORMATION``
-lines are exempt. (EN16931 ``BR-21`` "Invoice line identifier" and
-``BR-25`` "Item name" remain unchanged at EXTENDED.)
+All five landed as real checks (no longer placeholders). EN16931
+``BR-22`` / ``BR-23`` / ``BR-24`` / ``BR-26`` / ``BR-27`` require
+BT-129 / BT-130 / BT-131 / BT-146 / BT-146≥0 on every BG-25 line.
+The EXTENDED variants gate each on the line's BT-X-8 subtype —
+``GROUP`` and ``INFORMATION`` lines are exempt. (EN16931 ``BR-21``
+"Invoice line identifier" and ``BR-25`` "Item name" remain
+unchanged at EXTENDED.)
 
-In carthorse the underlying BT-* fields (``billed_quantity``,
-``unit_code``, ``line_total``, ``net_price.charge_amount``) are
-all *required* on their dataclasses — a TradeLineItem cannot be
-constructed without them, so the EN 16931 base requirements always
-hold at parse time and the EXTENDED relaxations have nothing to
-fire on. The functions exist as profile-gated placeholders so the
-substitution catalogue stays complete; they become meaningful
-runtime checks the moment the underlying fields are ever relaxed
-to ``Optional`` (out of scope for §7 step 5).
+Required-field relaxations to make this work (commit ``fdXXXXX``):
+* ``LineTradeAgreement.net_price`` → ``Optional``
+* ``LineTradeDelivery.billed_quantity`` → ``Optional``
+* ``LineMonetarySummation.line_total`` → ``Optional``
+* ``LineTradeSettlement.applicable_trade_tax`` → ``Optional`` (already
+  landed earlier with the SubInvoiceLines Kaffee sample)
+
+Each EN16931 base rule (``br_22`` / ``br_23`` / ``br_24`` / ``br_26``
+/ ``br_27`` / ``br_co_4``) short-circuits at ``profile >= EXTENDED``;
+the matching EXTENDED variant fires when the same field is missing
+AND the line's ``BT-X-8`` is ``DETAIL`` or unset.
 
 The ``.sch`` spells these IDs with a double ``BR-FXEXT-BR-`` prefix
 (``[BR-FXEXT-BR-22]`` etc.) — treat that as a copy-paste artefact in
@@ -312,7 +315,7 @@ step 2 has to normalize the extra ``BR-`` away.
 | ``BR-FXEXT-23`` ✓ | ``BR-23`` (BT-130 unit of measure) | same |
 | ``BR-FXEXT-24`` ✓ *(XLSX-only)* | ``BR-24`` (BT-131 invoice line net amount) | same — not asserted in ``FACTUR-X_EXTENDED.sch`` but enforced per the XLSX |
 | ``BR-FXEXT-26`` ✓ | ``BR-26`` (BT-146 item net price) | same |
-| ``BR-FXEXT-27`` ✓ | ``BR-27`` (BT-146 ≥ 0) | additionally: if BT-146 is omitted, no check. **Caveat:** carthorse's unconditional ``BR-27`` keeps running and is slightly stricter than the spec — it fires on a GROUP / INFORMATION line with a negative BT-146 even though ``BR-FXEXT-27`` would not. No current sample exercises this; revisit if a future fixture trips it. |
+| ``BR-FXEXT-27`` ✓ | ``BR-27`` (BT-146 ≥ 0) | same — when BT-146 is omitted, no check (``BR-FXEXT-26`` catches it for DETAIL/unset lines). EN16931 ``BR-27`` now short-circuits at EXTENDED so the spec semantics are preserved exactly. |
 
 ### 5.5 Date format extension — ``schema/element.py``
 
