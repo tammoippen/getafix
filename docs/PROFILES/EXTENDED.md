@@ -32,7 +32,7 @@ separately (``git worktree add /tmp/carthorse-docs origin/docs``).
 |---|---:|---:|---:|
 | Distinct ``<xs:element>`` in the BAE XSD | 122 | 191 | **+69** EXTENDED-only |
 | Schematron ``<assert>`` rules | 428 | 901 | **+473** |
-| Unique ``BR-*`` rule codes | 178 | 194 | **+28** ``BR-FXEXT-*`` asserted in the ``.sch`` (plus **+6** XLSX-only ``BR-FXEXT-05/07/09/10/12/24`` — see §5.1 / §5.4); **−7** ``BR-CO-*`` replaced; 6 dropped at EXTENDED, 1 (``BR-CO-17``) removed entirely |
+| Unique ``BR-*`` rule codes | 178 | 194 | **+28** ``BR-FXEXT-*`` asserted in the ``.sch`` (plus **+6** XLSX-only ``BR-FXEXT-05/07/09/10/12/24`` — see §5.1 / §5.4); **-7** ``BR-CO-*`` replaced; 6 dropped at EXTENDED, 1 (``BR-CO-17``) removed entirely |
 | Per-VAT-category families touched | 9 | 9 | tolerance-banded variants only |
 
 EXTENDED adds **no new ``BR-DEC-*`` rule** (still 21) and **no new
@@ -237,7 +237,7 @@ arithmetic.
 
 ### 5.2 ``BR-FXEXT-CO-*`` arithmetic-with-tolerance (6 rules) — ``rules/extended.py``
 
-Each replaces an EN 16931 identity with ``|diff| ≤ 0.01 × N`` slack;
+Each replaces an EN 16931 identity with ``|diff| ≤ 0.01 * N`` slack;
 the tolerance count ``N`` is rule-specific (see per-row formulas
 below — most use ``#BT-131 + #BT-92 + #BT-99 + #BT-X-272``, but
 ``BR-FXEXT-CO-10/11/13`` use narrower counts). Lines whose ``BT-X-8``
@@ -247,11 +247,11 @@ is ``GROUP`` or ``INFORMATION`` are excluded from every ``Σ BT-131``
 | Code | Replaces | Notes |
 |---|---|---|
 | ``BR-FXEXT-CO-04`` | ``BR-CO-4`` | BT-151 required only when BT-X-8 is ``DETAIL`` or unset. |
-| ``BR-FXEXT-CO-10`` | ``BR-CO-10`` | ``\|BT-106 − Σ BT-131\| ≤ 0.01 × #BT-131``. |
-| ``BR-FXEXT-CO-11`` | ``BR-CO-11`` | ``\|BT-107 − Σ BT-92\| ≤ 0.01 × #BT-92``. |
-| ``BR-FXEXT-CO-12`` | ``BR-CO-12`` | ``\|BT-108 − (Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 × (#BT-99 + #BT-X-272)``. |
-| ``BR-FXEXT-CO-13`` | ``BR-CO-13`` | ``\|BT-109 − Σ BT-131 + Σ BT-92 − (Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``. The human-readable assert text in both the XLSX rulebook and ``.sch`` describes CO-13 as excluding ``BT-X-272`` (and an earlier revision of this plan repeated that claim), but the actual XPath in the ``.sch``'s ``test=`` binds ``$BT99Sum`` to ``sum(charges) + sum(logistics)`` and ``$nbChargeItems`` to ``count(charges) + count(logistics)``. The implementation follows the executable expression. |
-| ``BR-FXEXT-CO-15`` | ``BR-CO-15`` | ``\|BT-112 − BT-109 − BT-110\| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``. |
+| ``BR-FXEXT-CO-10`` | ``BR-CO-10`` | ``\|BT-106 - Σ BT-131\| ≤ 0.01 * #BT-131``. |
+| ``BR-FXEXT-CO-11`` | ``BR-CO-11`` | ``\|BT-107 - Σ BT-92\| ≤ 0.01 * #BT-92``. |
+| ``BR-FXEXT-CO-12`` | ``BR-CO-12`` | ``\|BT-108 - (Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 * (#BT-99 + #BT-X-272)``. |
+| ``BR-FXEXT-CO-13`` | ``BR-CO-13`` | ``\|BT-109 - Σ BT-131 + Σ BT-92 - (Σ BT-99 + Σ BT-X-272)\| ≤ 0.01 * (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``. The human-readable assert text in both the XLSX rulebook and ``.sch`` describes CO-13 as excluding ``BT-X-272`` (and an earlier revision of this plan repeated that claim), but the actual XPath in the ``.sch``'s ``test=`` binds ``$BT99Sum`` to ``sum(charges) + sum(logistics)`` and ``$nbChargeItems`` to ``count(charges) + count(logistics)``. The implementation follows the executable expression. |
+| ``BR-FXEXT-CO-15`` | ``BR-CO-15`` | ``\|BT-112 - BT-109 - BT-110\| ≤ 0.01 * (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``. |
 
 Each EN16931 rule short-circuits at ``profile >= Profile.EXTENDED``;
 each EXTENDED variant short-circuits at ``profile <
@@ -271,8 +271,8 @@ Profile.EXTENDED`` (see §3.1).
 | ``BR-FXEXT-AG-08`` | new at EXTENDED | IPSI (``M``) |
 | ``BR-FXEXT-O-08`` | ``BR-CO-17`` (O) | Not subject to VAT |
 
-Shape per category: ``|BT-116 − (Σ BT-131 − Σ BT-92 + Σ BT-99 +
-Σ BT-X-272)| ≤ 0.01 × N`` restricted to the rows that carry that
+Shape per category: ``|BT-116 - (Σ BT-131 - Σ BT-92 + Σ BT-99 +
+Σ BT-X-272)| ≤ 0.01 * N`` restricted to the rows that carry that
 category and rate. All nine route through one helper that takes the
 category predicate, mirroring the ``vat_category_rates`` dispatcher at
 ``rules/trade.py:1096``.

@@ -260,13 +260,18 @@ def _lines_table(doc: Document) -> Table:
                 if rate is not None
                 else tax.category_code.value
             )
+        qty = item.delivery.billed_quantity
+        net = item.agreement.net_price
+        line_total = item.settlement.monetary_summation.line_total
+        # All four can be ``None`` on EXTENDED GROUP / INFORMATION lines;
+        # render an em-dash placeholder in those cells.
         table.add_row(
             item.associated_document.line_id,
             _item_cell(item.product),
-            f"{item.delivery.billed_quantity.value}",
-            item.delivery.billed_quantity.unit_code,
-            f"{item.agreement.net_price.charge_amount}",
-            f"{item.settlement.monetary_summation.line_total}",
+            f"{qty.value}" if qty is not None else "—",
+            qty.unit_code if qty is not None else "—",
+            f"{net.charge_amount}" if net is not None else "—",
+            f"{line_total}" if line_total is not None else "—",
             vat_str,
         )
     return table
