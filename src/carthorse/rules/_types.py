@@ -67,3 +67,74 @@ def max_decimals[T: Element](
         return []
 
     return _check
+
+
+def fields_only_at[T: Element](
+    profile_required: Profile, *field_names: str
+) -> Validator[T]:
+    """Build a validator that asserts the listed fields are ``None``
+    when the runtime profile is *below* ``profile_required``.
+
+    Used for EXTENDED-only additions on elements that also live at
+    lower profiles — e.g. ``LineBuyerOrderReferencedDocument``
+    exists at COMFORT but its ``issuer_assigned_id`` /
+    ``formatted_issue_date_time`` extensions only become valid at
+    EXTENDED. Without the runtime check, setting one of those at
+    BASIC_WL would silently disappear at render time (the
+    ``_field_profile`` machinery skips it) — the validator catches
+    it loudly instead.
+
+    Emits ``CARTHORSE-FIELD-PROFILE`` for each populated-but-out-of-
+    profile field. (Synthetic code: this is a carthorse runtime
+    check, not a BR-* rule from the schematron — the schematron
+    relies on the XSD to enforce the profile gate.)
+    """
+
+    def _check(m: T, profile: Profile) -> list[ValidationError]:
+        if profile >= profile_required:
+            return []
+        return [
+            ValidationError(
+                "CARTHORSE-FIELD-PROFILE",
+                f"{type(m).__name__}.{name}: only allowed at "
+                f"{profile_required.name}+ profiles "
+                f"(current profile: {profile.name}).",
+            )
+            for name in field_names
+            if getattr(m, name, None) is not None
+        ]
+
+    return _check
+
+
+def list_max_cardinality_below[T: Element](
+    profile_below: Profile, max_count: int, field_name: str
+) -> Validator[T]:
+    """Build a validator that caps the length of a list field when
+    the runtime profile is *below* ``profile_below``.
+
+    Used for collections whose XSD ``maxOccurs`` widens at EXTENDED
+    — e.g. ``TradeSettlement.terms`` (singleton up to COMFORT,
+    unbounded at EXTENDED). Constructing a multi-entry list at a
+    lower profile would render fine but trip XSD validation against
+    the lower-profile schema; the validator catches it earlier.
+
+    Emits ``CARTHORSE-FIELD-CARDINALITY`` on violation.
+    """
+
+    def _check(m: T, profile: Profile) -> list[ValidationError]:
+        if profile >= profile_below:
+            return []
+        value = getattr(m, field_name, None)
+        if value is None or len(value) <= max_count:
+            return []
+        return [
+            ValidationError(
+                "CARTHORSE-FIELD-CARDINALITY",
+                f"{type(m).__name__}.{field_name}: at most {max_count} "
+                f"entry permitted below {profile_below.name} "
+                f"(current profile: {profile.name}, got {len(value)}).",
+            )
+        ]
+
+    return _check

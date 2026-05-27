@@ -387,3 +387,49 @@ class TestFXExtSubInvoiceLineSampleClean:
         # No errors — every parent ref resolves, GROUP totals match
         # children, subtypes are set everywhere they need to be.
         doc.validate()
+
+
+class TestFXExtProfileGating:
+    """Carthorse-emitted profile gates on EXTENDED-only fields —
+    ``CARTHORSE-FIELD-PROFILE`` and ``CARTHORSE-FIELD-CARDINALITY``."""
+
+    def test_partial_payment_amount_on_basic_wl_fires(self) -> None:
+        # Default doc is BASIC. Set an EXTENDED-only field; carthorse
+        # would silently drop it at render — but the new validator
+        # surfaces it as CARTHORSE-FIELD-PROFILE.
+        doc = make_vat_doc()
+        doc.trade.settlement.terms[0].partial_payment_amount = Decimal("50.00")
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "CARTHORSE-FIELD-PROFILE" in _codes(e.value)
+
+    def test_partial_payment_amount_on_extended_passes(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.settlement.terms[0].partial_payment_amount = Decimal("50.00")
+        doc.validate()  # clean — EXTENDED allows the field
+
+    def test_terms_list_capped_below_extended(self) -> None:
+        doc = make_vat_doc()  # BASIC profile
+        doc.trade.settlement.terms = [
+            doc.trade.settlement.terms[0],
+            doc.trade.settlement.terms[0],
+        ]
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "CARTHORSE-FIELD-CARDINALITY" in _codes(e.value)
+
+    def test_terms_list_unbounded_at_extended(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.settlement.terms = [
+            doc.trade.settlement.terms[0],
+            doc.trade.settlement.terms[0],
+        ]
+        # Cardinality cap doesn't fire at EXTENDED. (Other rules might,
+        # but they're not the focus of this test — assert only that
+        # the cardinality code isn't emitted.)
+        try:
+            doc.validate()
+            codes: set[str] = set()
+        except ValidationErrors as e:
+            codes = _codes(e.value)
+        assert "CARTHORSE-FIELD-CARDINALITY" not in codes

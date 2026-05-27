@@ -57,7 +57,7 @@ from typing import ClassVar, Literal, Self, override
 from tagic.xml import XML
 
 from carthorse.rules import Validator
-from carthorse.rules._types import max_decimals
+from carthorse.rules._types import fields_only_at, max_decimals
 from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from carthorse.schema.element import Element, ETElement, coerce_enum
@@ -467,6 +467,19 @@ class TradeProduct(Element):
     tag: ClassVar[str] = "SpecifiedTradeProduct"
     profile: ClassVar[Profile] = Profile.BASIC
 
+    _validators: ClassVar[tuple[Validator["TradeProduct"], ...]] = (
+        fields_only_at(
+            Profile.EXTENDED,
+            "industry_assigned_id",
+            "model_id",
+            "batch_id",
+            "brand_name",
+            "model_name",
+            "individual_product_instances",
+            "included_referenced_products",
+        ),
+    )
+
     global_id: GlobalID | None = None
     """Item standard identifier (BT-157).
 
@@ -579,6 +592,15 @@ class DocumentLineDocument(Element):
     tag: ClassVar[str] = "AssociatedDocumentLineDocument"
     profile: ClassVar[Profile] = Profile.BASIC
 
+    _validators: ClassVar[tuple[Validator["DocumentLineDocument"], ...]] = (
+        fields_only_at(
+            Profile.EXTENDED,
+            "parent_line_id",
+            "status_code",
+            "status_reason_code",
+        ),
+    )
+
     line_id: str = field(metadata={"tag": "LineID"})
     """Invoice line identifier (BT-126).
 
@@ -642,6 +664,14 @@ class LineBuyerOrderReferencedDocument(Element):
 
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
+
+    _validators: ClassVar[
+        tuple[Validator["LineBuyerOrderReferencedDocument"], ...]
+    ] = (
+        fields_only_at(
+            Profile.EXTENDED, "issuer_assigned_id", "formatted_issue_date_time"
+        ),
+    )
 
     issuer_assigned_id: str | None = field(
         default=None,
@@ -763,6 +793,10 @@ class LineTradeAgreement(Element):
 
     tag: ClassVar[str] = "SpecifiedLineTradeAgreement"
     profile: ClassVar[Profile] = Profile.BASIC
+
+    _validators: ClassVar[tuple[Validator["LineTradeAgreement"], ...]] = (
+        fields_only_at(Profile.EXTENDED, "quotation_ref"),
+    )
 
     buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
     """Referenced purchase-order line (BT-132-00); COMFORT+."""
