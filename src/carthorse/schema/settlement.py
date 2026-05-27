@@ -329,21 +329,22 @@ class PaymentPenaltyTerms(Element):
     basis_date_time: date | None = field(
         default=None, metadata={"tag": "BasisDateTime"}
     )
-    """Penalty basis date (BT-X-?)."""
+    """Penalty basis date (BT-X-276, wrapped in BT-X-276-00; format
+    attribute is BT-X-276-0)."""
     basis_period_measure: BasisPeriodMeasure | None = None
-    """Penalty basis period (BT-X-?)."""
+    """Penalty basis period (BT-X-277; ``@unitCode`` attribute is BT-X-278)."""
     basis_amount: Decimal | None = field(
         default=None, metadata={"tag": "BasisAmount", "amount": True}
     )
-    """Penalty basis amount (BT-X-?)."""
+    """Penalty basis amount (BT-X-279)."""
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent"}
     )
-    """Penalty rate percentage (BT-X-?)."""
+    """Penalty rate percentage (BT-X-280)."""
     actual_amount: Decimal | None = field(
         default=None, metadata={"tag": "ActualPenaltyAmount", "amount": True}
     )
-    """Penalty amount (BT-X-?)."""
+    """Penalty amount (BT-X-281)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -362,21 +363,22 @@ class PaymentDiscountTerms(Element):
     basis_date_time: date | None = field(
         default=None, metadata={"tag": "BasisDateTime"}
     )
-    """Discount basis date (BT-X-?)."""
+    """Discount basis date (BT-X-282, wrapped in BT-X-282-00; format
+    attribute is BT-X-282-0)."""
     basis_period_measure: BasisPeriodMeasure | None = None
-    """Discount basis period (BT-X-?)."""
+    """Discount basis period (BT-X-283; ``@unitCode`` attribute is BT-X-284)."""
     basis_amount: Decimal | None = field(
         default=None, metadata={"tag": "BasisAmount", "amount": True}
     )
-    """Discount basis amount (BT-X-?)."""
+    """Discount basis amount (BT-X-285)."""
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent"}
     )
-    """Discount rate percentage (BT-X-?)."""
+    """Discount rate percentage (BT-X-286)."""
     actual_amount: Decimal | None = field(
         default=None, metadata={"tag": "ActualDiscountAmount", "amount": True}
     )
-    """Discount amount (BT-X-?)."""
+    """Discount amount (BT-X-287)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -428,7 +430,7 @@ class PaymentTerms(Element):
             "profile": Profile.EXTENDED,
         },
     )
-    """Partial-payment amount for this term (EXTENDED only)."""
+    """Partial-payment amount for this term (BT-X-275); EXTENDED only."""
     penalty_terms: PaymentPenaltyTerms | None = field(
         default=None,
         metadata={
@@ -558,8 +560,20 @@ class LogisticsServiceCharge(Element):
     applied_trade_tax: list[AppliedTradeTax] = field(
         metadata={"tag": "AppliedTradeTax"}
     )
-    """Per-category VAT applied to the charge (1..* per XSD)."""
+    """Per-category VAT applied to the charge (BT-X-273-00 wrapper;
+    1..* per XSD). Non-empty asserted in :meth:`__post_init__`."""
     currency: str | None = None
+
+    def __post_init__(self) -> None:
+        # XSD minOccurs=1 on AppliedTradeTax — the dataclass type is
+        # ``list`` (not Optional), but a caller can still pass [];
+        # mirror the XSD here so we don't silently render an
+        # invalid LogisticsServiceCharge.
+        if not self.applied_trade_tax:
+            raise ValueError(
+                "LogisticsServiceCharge.applied_trade_tax: at least one "
+                "AppliedTradeTax entry is required (XSD minOccurs=1)."
+            )
 
 
 @dataclass(kw_only=True, slots=True)
@@ -581,17 +595,17 @@ class TaxCurrencyExchange(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     source_currency_code: Currency = field(metadata={"tag": "SourceCurrencyCode"})
-    """Source currency code (BT-X-260)."""
+    """Source currency code (BT-X-258)."""
     target_currency_code: Currency = field(metadata={"tag": "TargetCurrencyCode"})
-    """Target (tax-accounting) currency code (BT-X-261)."""
+    """Target (tax-accounting) currency code (BT-X-259)."""
     conversion_rate: Decimal = field(metadata={"tag": "ConversionRate"})
-    """Conversion rate from source to target (BT-X-262)."""
+    """Conversion rate from source to target (BT-X-260)."""
     conversion_rate_date_time: date | None = field(
         default=None, metadata={"tag": "ConversionRateDateTime"}
     )
-    """Conversion-rate date (BT-X-263). Plain date — XSD wraps it in
-    ``udt:DateTimeType`` with the same ``format="102"`` (YYYYMMDD)
-    pattern as BT-2 IssueDateTime."""
+    """Conversion-rate date (BT-X-261, wrapped in BT-X-261-00). Plain
+    date — XSD wraps it in ``udt:DateTimeType`` with the same
+    ``format="102"`` (YYYYMMDD) pattern as BT-2 IssueDateTime."""
 
 
 @dataclass(kw_only=True, slots=True)
