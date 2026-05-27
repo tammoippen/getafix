@@ -366,7 +366,7 @@ class TestFXExtSubInvoiceLineWalker:
             doc.validate()
             codes: set[str] = set()
         except ValidationErrors as e:
-            codes = _codes(e.value)
+            codes = _codes(e)
         assert "BR-FXEXT-08" not in codes
 
 
@@ -387,6 +387,143 @@ class TestFXExtSubInvoiceLineSampleClean:
         # No errors — every parent ref resolves, GROUP totals match
         # children, subtypes are set everywhere they need to be.
         doc.validate()
+
+
+class TestFXExtLineQualifiers:
+    """§5.4 — BR-FXEXT-22/23/24/26/27 and BR-FXEXT-CO-04 promoted
+    from placeholders to real DETAIL-qualified checks.
+
+    Each rule fires when an EXTENDED DETAIL / unset line is missing
+    a field the spec mandates; GROUP / INFORMATION lines may legitimately
+    omit the same field without firing.
+    """
+
+    def test_br_fxext_22_fires_on_detail_without_quantity(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].delivery.billed_quantity = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-22" in _codes(e.value)
+
+    def test_br_fxext_22_silent_on_group_without_quantity(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].associated_document.status_reason_code = (
+            LineStatusReasonCode.GROUP
+        )
+        doc.trade.items[0].delivery.billed_quantity = None
+        try:
+            doc.validate()
+            codes: set[str] = set()
+        except ValidationErrors as e:
+            codes = _codes(e)
+        assert "BR-FXEXT-22" not in codes
+
+    def test_br_fxext_24_fires_on_detail_without_line_total(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].settlement.monetary_summation.line_total = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-24" in _codes(e.value)
+
+    def test_br_fxext_26_fires_on_detail_without_net_price(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].agreement.net_price = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-26" in _codes(e.value)
+
+    def test_br_fxext_27_fires_on_detail_with_negative_price(self) -> None:
+        doc = _ext(make_vat_doc())
+        # Avoid BR-27 by ensuring the construction reaches validation:
+        # set a negative net price *after* construction.
+        doc.trade.items[0].agreement.net_price.charge_amount = Decimal("-1.00")
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        codes = _codes(e.value)
+        # The EXTENDED variant fires; the EN16931 BR-27 short-circuits.
+        assert "BR-FXEXT-27" in codes
+        assert "BR-27" not in codes
+
+    def test_br_fxext_27_silent_on_group_with_negative_price(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].associated_document.status_reason_code = (
+            LineStatusReasonCode.GROUP
+        )
+        doc.trade.items[0].agreement.net_price.charge_amount = Decimal("-1.00")
+        try:
+            doc.validate()
+            codes: set[str] = set()
+        except ValidationErrors as e:
+            codes = _codes(e)
+        assert "BR-FXEXT-27" not in codes
+
+    def test_br_fxext_co_04_fires_on_detail_without_line_vat(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].settlement.applicable_trade_tax = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-FXEXT-CO-04" in _codes(e.value)
+
+    def test_br_fxext_co_04_silent_on_group_without_line_vat(self) -> None:
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].associated_document.status_reason_code = (
+            LineStatusReasonCode.GROUP
+        )
+        doc.trade.items[0].settlement.applicable_trade_tax = None
+        try:
+            doc.validate()
+            codes: set[str] = set()
+        except ValidationErrors as e:
+            codes = _codes(e)
+        assert "BR-FXEXT-CO-04" not in codes
+
+
+class TestEN16931LineFieldChecks:
+    """EN 16931 BR-22/23/24/26/BR-CO-4 — line-level field-presence
+    rules that became explicit when their backing dataclass fields
+    were relaxed to ``Optional`` (so EXTENDED GROUP / INFORMATION
+    lines can drop them).
+    """
+
+    def test_br_22_fires_at_basic_when_quantity_missing(self) -> None:
+        doc = make_vat_doc()
+        doc.trade.items[0].delivery.billed_quantity = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-22" in _codes(e.value)
+
+    def test_br_24_fires_at_basic_when_line_total_missing(self) -> None:
+        doc = make_vat_doc()
+        doc.trade.items[0].settlement.monetary_summation.line_total = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-24" in _codes(e.value)
+
+    def test_br_26_fires_at_basic_when_net_price_missing(self) -> None:
+        doc = make_vat_doc()
+        doc.trade.items[0].agreement.net_price = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-26" in _codes(e.value)
+
+    def test_br_co_4_fires_at_basic_when_line_vat_missing(self) -> None:
+        doc = make_vat_doc()
+        doc.trade.items[0].settlement.applicable_trade_tax = None
+        with pt.raises(ValidationErrors) as e:
+            doc.validate()
+        assert "BR-CO-4" in _codes(e.value)
+
+    def test_br_22_silent_at_extended(self) -> None:
+        # Same setup as above but at EXTENDED — BR-22 short-circuits
+        # and BR-FXEXT-22 takes over (the DETAIL/unset filter applies).
+        doc = _ext(make_vat_doc())
+        doc.trade.items[0].delivery.billed_quantity = None
+        try:
+            doc.validate()
+            codes: set[str] = set()
+        except ValidationErrors as e:
+            codes = _codes(e)
+        assert "BR-22" not in codes
 
 
 class TestFXExtProfileGating:
@@ -431,5 +568,5 @@ class TestFXExtProfileGating:
             doc.validate()
             codes: set[str] = set()
         except ValidationErrors as e:
-            codes = _codes(e.value)
+            codes = _codes(e)
         assert "CARTHORSE-FIELD-CARDINALITY" not in codes

@@ -42,9 +42,14 @@ from typing import ClassVar
 from carthorse.rules import Validator
 from carthorse.rules.trade import (
     br_16,
+    br_22,
+    br_23,
+    br_24,
+    br_26,
     br_ae_2,
     br_ae_3,
     br_ae_4,
+    br_co_4,
     br_co_10,
     br_co_11,
     br_co_12,
@@ -156,6 +161,14 @@ class Trade(Element):
 
     _validators: ClassVar[tuple[Validator["Trade"], ...]] = (
         br_16,
+        # EN 16931 per-line "field shall be present" rules — short-
+        # circuit at EXTENDED; the matching BR-FXEXT-2x in
+        # rules/extended.py applies the DETAIL / unset filter there.
+        br_22,
+        br_23,
+        br_24,
+        br_26,
+        br_co_4,
         # Per-VAT-category required-party matrix (BR-AE/E/G/IC/IG/IP/S/Z-2,3,4).
         br_ae_2,
         br_ae_3,
