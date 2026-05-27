@@ -76,7 +76,7 @@ def evaluate_schematron(
                 raw_ctx = elementpath.select(
                     xml_root, context, namespaces=namespaces, parser=XPath2Parser
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001 — elementpath raises a wide variety; treat any as "indeterminate"
                 # Unsupported XPath in the context selector — every assert
                 # under this rule is effectively indeterminate, but we don't
                 # have their codes without iterating, so skip silently.
@@ -96,7 +96,7 @@ def evaluate_schematron(
                             parser=XPath2Parser,
                             item=ctx,
                         )
-                    except Exception:
+                    except Exception:  # noqa: BLE001 — elementpath raises a wide variety; treat any as "indeterminate"
                         indeterminate.add(code)
                         evaluated = False
                         break

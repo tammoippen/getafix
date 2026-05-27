@@ -40,6 +40,23 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 from carthorse.rules import Validator
+from carthorse.rules.extended import (
+    br_fxext_06,
+    br_fxext_08,
+    br_fxext_11,
+    br_fxext_22,
+    br_fxext_23,
+    br_fxext_24,
+    br_fxext_26,
+    br_fxext_27,
+    br_fxext_co_04,
+    br_fxext_co_10,
+    br_fxext_co_11,
+    br_fxext_co_12,
+    br_fxext_co_13,
+    br_fxext_co_15,
+    br_fxext_vat_category_sums,
+)
 from carthorse.rules.trade import (
     br_16,
     br_22,
@@ -49,6 +66,12 @@ from carthorse.rules.trade import (
     br_ae_2,
     br_ae_3,
     br_ae_4,
+    br_af_2,
+    br_af_3,
+    br_af_4,
+    br_ag_2,
+    br_ag_3,
+    br_ag_4,
     br_co_4,
     br_co_10,
     br_co_11,
@@ -69,12 +92,6 @@ from carthorse.rules.trade import (
     br_ic_4,
     br_ic_11,
     br_ic_12,
-    br_af_2,
-    br_af_3,
-    br_af_4,
-    br_ag_2,
-    br_ag_3,
-    br_ag_4,
     br_o_2,
     br_o_3,
     br_o_4,
@@ -90,23 +107,6 @@ from carthorse.rules.trade import (
     br_z_4,
     vat_category_exemption_reason,
     vat_category_rates,
-)
-from carthorse.rules.extended import (
-    br_fxext_06,
-    br_fxext_08,
-    br_fxext_11,
-    br_fxext_22,
-    br_fxext_23,
-    br_fxext_24,
-    br_fxext_26,
-    br_fxext_27,
-    br_fxext_co_04,
-    br_fxext_co_10,
-    br_fxext_co_11,
-    br_fxext_co_12,
-    br_fxext_co_13,
-    br_fxext_co_15,
-    br_fxext_vat_category_sums,
 )
 from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery

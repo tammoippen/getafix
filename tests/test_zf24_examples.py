@@ -223,7 +223,8 @@ class TestBasicWlEinfach:
 
     def test_payment_terms_due_date(self, basicwl_einfach: Document) -> None:
         terms = basicwl_einfach.trade.settlement.terms
-        assert terms is not None and len(terms) == 1
+        assert terms is not None
+        assert len(terms) == 1
         assert terms[0].due == date(2019, 11, 29)  # BT-9
 
     def test_monetary_summation_full(self, basicwl_einfach: Document) -> None:

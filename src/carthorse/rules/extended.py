@@ -5,7 +5,7 @@ Implements the rules from §5.2 and §5.3 of
 
 * §5.2 — six ``BR-FXEXT-CO-*`` tolerance-banded variants of
   EN 16931 ``BR-CO-04/10/11/12/13/15``. Each replaces the strict
-  identity with ``|diff| ≤ 0.01 × N`` slack and (for the cases that
+  identity with ``|diff| ≤ 0.01 * N`` slack and (for the cases that
   fold logistics charges) extends the input set with
   ``Σ BT-X-272``. ``BR-FXEXT-CO-13`` is the lone outlier whose
   identity and ``N`` deliberately exclude ``BT-X-272`` — logistics
@@ -40,15 +40,15 @@ if TYPE_CHECKING:
     from carthorse.schema import trade as _trade
 
 
-def _is_detail_line(item: object) -> bool:
+def _is_detail_line(item: _trade.TradeLineItem) -> bool:
     """``True`` if the line participates in monetary accumulators.
 
-    Per the EXTENDED schematron, ``Σ BT-131`` and ``#BT-131`` are
+    Per the EXTENDED schematron, ``sum BT-131`` and ``#BT-131`` are
     restricted to lines whose ``BT-X-8`` (``LineStatusReasonCode``)
     is ``DETAIL`` or absent — ``GROUP`` subtotal headers and
     ``INFORMATION`` lines are skipped.
     """
-    code = item.associated_document.status_reason_code  # type: ignore[attr-defined]
+    code = item.associated_document.status_reason_code
     return code is None or code == LineStatusReasonCode.DETAIL
 
 
@@ -60,7 +60,7 @@ def _err(code: str, msg: str) -> ValidationError:
 
 
 def _within(diff: Decimal, n: int) -> bool:
-    """``|diff| ≤ 0.01 × n``.
+    """``|diff| ≤ 0.01 * n``.
 
     When ``n == 0`` the rule devolves to strict equality
     (``|diff| ≤ 0``) — consistent with the schematron's behaviour
@@ -72,7 +72,7 @@ def _within(diff: Decimal, n: int) -> bool:
 # ---- per-aggregate amount accumulators -------------------------------------
 
 
-def _line_amounts(m: "_trade.Trade") -> list[Decimal]:
+def _line_amounts(m: _trade.Trade) -> list[Decimal]:
     """``Σ BT-131`` across detail-or-unset line items.
 
     ``GROUP`` subtotal headers and ``INFORMATION`` lines are
@@ -90,7 +90,7 @@ def _line_amounts(m: "_trade.Trade") -> list[Decimal]:
     ]
 
 
-def _allowance_amounts(m: "_trade.Trade") -> list[Decimal]:
+def _allowance_amounts(m: _trade.Trade) -> list[Decimal]:
     """``Σ BT-92`` across document-level allowances (charges excluded)."""
     return [
         ac.actual_amount
@@ -99,7 +99,7 @@ def _allowance_amounts(m: "_trade.Trade") -> list[Decimal]:
     ]
 
 
-def _charge_amounts(m: "_trade.Trade") -> list[Decimal]:
+def _charge_amounts(m: _trade.Trade) -> list[Decimal]:
     """``Σ BT-99`` across document-level charges (allowances excluded)."""
     return [
         ac.actual_amount
@@ -108,7 +108,7 @@ def _charge_amounts(m: "_trade.Trade") -> list[Decimal]:
     ]
 
 
-def _logistics_amounts(m: "_trade.Trade") -> list[Decimal]:
+def _logistics_amounts(m: _trade.Trade) -> list[Decimal]:
     """``Σ BT-X-272`` across header logistics service charges."""
     return [
         lsc.applied_amount
@@ -119,7 +119,7 @@ def _logistics_amounts(m: "_trade.Trade") -> list[Decimal]:
 # ---- §5.1 cross-line walker for sub-invoice-line semantics -----------------
 
 
-def br_fxext_06(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_06(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-06: BT-X-8 (``LineStatusReasonCode``) required when a
     line participates in the sub-invoice-line tree — either by
     carrying a ``ParentLineID`` (BT-X-304) or by being referenced
@@ -150,7 +150,7 @@ def br_fxext_06(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     return errors
 
 
-def br_fxext_08(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_08(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-08: if a ``GROUP`` line has BT-131, that BT-131
     equals the sum of its immediate children's BT-131 — excluding
     ``INFORMATION`` children. ``DETAIL`` and nested ``GROUP``
@@ -163,7 +163,7 @@ def br_fxext_08(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     """
     if profile < Profile.EXTENDED:
         return []
-    children_by_parent: dict[str, list[object]] = {}
+    children_by_parent: dict[str, list[_trade.TradeLineItem]] = {}
     for item in m.items:
         pid = item.associated_document.parent_line_id
         if pid is not None:
@@ -174,14 +174,17 @@ def br_fxext_08(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
         ad = item.associated_document
         if ad.status_reason_code != LineStatusReasonCode.GROUP:
             continue
-        own_total = item.settlement.monetary_summation.line_total  # type: ignore[attr-defined]
+        own_total = item.settlement.monetary_summation.line_total
+        if own_total is None:
+            continue  # BR-FXEXT-08 is "if BT-131 is set" — skip on None
         children = children_by_parent.get(ad.line_id, [])
         child_sum = sum(
             (
-                c.settlement.monetary_summation.line_total  # type: ignore[attr-defined]
+                c.settlement.monetary_summation.line_total
                 for c in children
-                if c.associated_document.status_reason_code  # type: ignore[attr-defined]
+                if c.associated_document.status_reason_code
                 != LineStatusReasonCode.INFORMATION
+                and c.settlement.monetary_summation.line_total is not None
             ),
             Decimal("0"),
         )
@@ -197,7 +200,7 @@ def br_fxext_08(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     return errors
 
 
-def br_fxext_11(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_11(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-11: every ``ParentLineID`` (BT-X-304) resolves to an
     existing line's ``LineID`` (BT-126).
     """
@@ -230,7 +233,7 @@ def br_fxext_11(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
 # EXTENDED variants here fire.
 
 
-def br_fxext_22(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_22(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-22: BT-129 (invoiced quantity) required on every
     DETAIL / unset line."""
     if profile < Profile.EXTENDED:
@@ -246,7 +249,7 @@ def br_fxext_22(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_fxext_23(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_23(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-23: BT-130 (unit of measure) required on every
     DETAIL / unset line."""
     if profile < Profile.EXTENDED:
@@ -266,7 +269,7 @@ def br_fxext_23(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_fxext_24(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_24(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-24 (XLSX-only — not asserted in the .sch): BT-131
     (invoice line net amount) required on every DETAIL / unset
     line."""
@@ -284,7 +287,7 @@ def br_fxext_24(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_fxext_26(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_26(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-26: BT-146 (item net price) required on every
     DETAIL / unset line."""
     if profile < Profile.EXTENDED:
@@ -300,7 +303,7 @@ def br_fxext_26(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_fxext_27(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_27(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-27: BT-146 (item net price) shall not be negative on
     DETAIL / unset lines (replaces EN 16931 BR-27).
 
@@ -332,7 +335,7 @@ def br_fxext_27(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
 # ---- §5.2 BR-FXEXT-CO-* (tolerance variants) -------------------------------
 
 
-def br_fxext_co_04(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
+def br_fxext_co_04(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-CO-04: line VAT category (BT-151) required when BT-X-8
     is ``DETAIL`` or unset; ``GROUP`` / ``INFORMATION`` lines may
     omit it.
@@ -358,8 +361,8 @@ def br_fxext_co_04(m: "_trade.Trade", profile: Profile) -> list[ValidationError]
     ]
 
 
-def br_fxext_co_10(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-CO-10: ``|BT-106 − Σ BT-131| ≤ 0.01 × #BT-131``."""
+def br_fxext_co_10(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-CO-10: ``|BT-106 - Σ BT-131| ≤ 0.01 * #BT-131``."""
     if profile < Profile.EXTENDED:
         return []
     if not m.items:
@@ -377,13 +380,13 @@ def br_fxext_co_10(m: "_trade.Trade", profile: Profile) -> list[ValidationError]
             f"Sum of Invoice line net amount (BT-106) = "
             f"{summation.line_total} differs from Σ BT-131 = "
             f"{sum(line_amts, Decimal('0'))} by more than the EXTENDED "
-            f"tolerance 0.01 × {len(line_amts)}.",
+            f"tolerance 0.01 * {len(line_amts)}.",
         )
     ]
 
 
-def br_fxext_co_11(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-CO-11: ``|BT-107 − Σ BT-92| ≤ 0.01 × #BT-92``."""
+def br_fxext_co_11(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-CO-11: ``|BT-107 - Σ BT-92| ≤ 0.01 * #BT-92``."""
     if profile < Profile.EXTENDED:
         return []
     summation = m.settlement.monetary_summation
@@ -399,13 +402,13 @@ def br_fxext_co_11(m: "_trade.Trade", profile: Profile) -> list[ValidationError]
             f"Sum of allowances on document level (BT-107) = "
             f"{summation.allowance_total} differs from Σ BT-92 = "
             f"{sum(alw_amts, Decimal('0'))} by more than the EXTENDED "
-            f"tolerance 0.01 × {len(alw_amts)}.",
+            f"tolerance 0.01 * {len(alw_amts)}.",
         )
     ]
 
 
-def br_fxext_co_12(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-CO-12: ``|BT-108 − (Σ BT-99 + Σ BT-X-272)| ≤ 0.01 × (#BT-99 + #BT-X-272)``.
+def br_fxext_co_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-CO-12: ``|BT-108 - (Σ BT-99 + Σ BT-X-272)| ≤ 0.01 * (#BT-99 + #BT-X-272)``.
 
     Folds logistics service fees (BT-X-272) into the charge total
     — this is the rule the bare EN 16931 BR-CO-12 was previously
@@ -429,13 +432,13 @@ def br_fxext_co_12(m: "_trade.Trade", profile: Profile) -> list[ValidationError]
             f"Sum of charges on document level (BT-108) = "
             f"{summation.charge_total} differs from Σ BT-99 + Σ BT-X-272 "
             f"= {expected} by more than the EXTENDED tolerance "
-            f"0.01 × {n}.",
+            f"0.01 * {n}.",
         )
     ]
 
 
-def br_fxext_co_13(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-CO-13: ``|BT-109 − Σ BT-131 + Σ BT-92 − (Σ BT-99 + Σ BT-X-272)| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``.
+def br_fxext_co_13(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-CO-13: ``|BT-109 - Σ BT-131 + Σ BT-92 - (Σ BT-99 + Σ BT-X-272)| ≤ 0.01 * (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``.
 
     The human-readable assert text in ``FACTUR-X_EXTENDED.sch``
     (and the canonical XLSX) describes CO-13 as excluding
@@ -470,14 +473,14 @@ def br_fxext_co_13(m: "_trade.Trade", profile: Profile) -> list[ValidationError]
             "BR-FXEXT-CO-13",
             f"Invoice total amount without VAT (BT-109) = "
             f"{summation.tax_basis_total} differs from "
-            f"Σ BT-131 − Σ BT-92 + Σ BT-99 + Σ BT-X-272 = {expected} "
-            f"by more than the EXTENDED tolerance 0.01 × {n}.",
+            f"Σ BT-131 - Σ BT-92 + Σ BT-99 + Σ BT-X-272 = {expected} "
+            f"by more than the EXTENDED tolerance 0.01 * {n}.",
         )
     ]
 
 
-def br_fxext_co_15(m: "_trade.Trade", profile: Profile) -> list[ValidationError]:
-    """BR-FXEXT-CO-15: ``|BT-112 − BT-109 − BT-110| ≤ 0.01 × (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``.
+def br_fxext_co_15(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """BR-FXEXT-CO-15: ``|BT-112 - BT-109 - BT-110| ≤ 0.01 * (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``.
 
     Replaces EN 16931 ``BR-CO-15``. Tolerance now scales with every
     input row count (including logistics fees) even though the
@@ -506,7 +509,7 @@ def br_fxext_co_15(m: "_trade.Trade", profile: Profile) -> list[ValidationError]
             f"Invoice total amount with VAT (BT-112) = "
             f"{summation.grand_total} differs from BT-109 + BT-110 = "
             f"{summation.tax_basis_total + bt_110} by more than the "
-            f"EXTENDED tolerance 0.01 × {n}.",
+            f"EXTENDED tolerance 0.01 * {n}.",
         )
     ]
 
@@ -530,7 +533,7 @@ _PER_CATEGORY_PREFIX: dict[CategoryCode, str] = {
 }
 
 
-def _category_n(m: "_trade.Trade") -> int:
+def _category_n(m: _trade.Trade) -> int:
     """``#BT-131 + #BT-92 + #BT-99 + #BT-X-272`` — the tolerance count
     common to all §5.3 per-category checks."""
     return (
@@ -542,7 +545,7 @@ def _category_n(m: "_trade.Trade") -> int:
 
 
 def br_fxext_vat_category_sums(
-    m: "_trade.Trade", profile: Profile
+    m: _trade.Trade, profile: Profile
 ) -> list[ValidationError]:
     """BR-FXEXT-{S,Z,E,AE,G,IC,AF,AG,O}-08 and BR-FXEXT-S-09 — per-VAT-category
     sum identities at each BG-23 row.
@@ -550,11 +553,11 @@ def br_fxext_vat_category_sums(
     For every header VAT breakdown row (BG-23) carrying category
     ``X`` at rate ``r``:
 
-    * **-08**: ``|BT-116 − Σ_rel(BT-131) + Σ_rel(BT-92) − Σ_rel(BT-99)
-      − Σ_rel(BT-X-272)| ≤ 0.01 × N`` where ``Σ_rel`` restricts the
+    * **-08**: ``|BT-116 - Σ_rel(BT-131) + Σ_rel(BT-92) - Σ_rel(BT-99)
+      - Σ_rel(BT-X-272)| ≤ 0.01 * N`` where ``Σ_rel`` restricts the
       input set to lines / allowances / charges / logistics-charges
       whose VAT category matches ``X`` and rate matches ``r``.
-    * **-09** (S only): ``|BT-117 − BT-116 × BT-119 / 100| ≤ 0.01 × N``.
+    * **-09** (S only): ``|BT-117 - BT-116 * BT-119 / 100| ≤ 0.01 * N``.
 
     Replaces the global ``BR-CO-17`` with one variant per category,
     each with tolerance ``N = #BT-131 + #BT-92 + #BT-99 + #BT-X-272``.
@@ -623,13 +626,13 @@ def br_fxext_vat_category_sums(
                         f"BR-FXEXT-{prefix}-08",
                         f"VAT breakdown {cat.value!r} @ rate {rate}: "
                         f"basis (BT-116) = {tt.basis_amount} differs from "
-                        f"Σ_rel BT-131 − Σ_rel BT-92 + Σ_rel BT-99 + "
+                        f"Σ_rel BT-131 - Σ_rel BT-92 + Σ_rel BT-99 + "
                         f"Σ_rel BT-X-272 = {expected} by more than the "
-                        f"EXTENDED tolerance 0.01 × {n}.",
+                        f"EXTENDED tolerance 0.01 * {n}.",
                     )
                 )
 
-        # -09 (S only): rate × basis derivation.
+        # -09 (S only): rate * basis derivation.
         if (
             cat == CategoryCode.T_S
             and tt.calculated_amount is not None
@@ -644,8 +647,8 @@ def br_fxext_vat_category_sums(
                         "BR-FXEXT-S-09",
                         f"VAT breakdown 'S' @ rate {rate}: tax amount "
                         f"(BT-117) = {tt.calculated_amount} differs from "
-                        f"BT-116 × BT-119 / 100 = {expected_tax} by more "
-                        f"than the EXTENDED tolerance 0.01 × {n}.",
+                        f"BT-116 * BT-119 / 100 = {expected_tax} by more "
+                        f"than the EXTENDED tolerance 0.01 * {n}.",
                     )
                 )
 

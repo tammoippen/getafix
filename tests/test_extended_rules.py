@@ -34,10 +34,7 @@ from carthorse.schema.line import (
     Quantity,
     TradeProduct,
 )
-from carthorse.schema.settlement import (
-    AppliedTradeTax,
-    LogisticsServiceCharge,
-)
+from carthorse.schema.settlement import AppliedTradeTax, LogisticsServiceCharge
 from carthorse.schema.trade import TradeLineItem
 from carthorse.schema.types import (
     CategoryCode,
@@ -61,7 +58,7 @@ class TestFXExtCOTolerance:
     """§5.2 — tolerance-banded BR-CO-* replacements."""
 
     def test_co_10_accepts_one_cent_per_line_drift(self) -> None:
-        # Single-line doc: tolerance = 0.01 × 1 = 0.01. Drift BT-106
+        # Single-line doc: tolerance = 0.01 * 1 = 0.01. Drift BT-106
         # by exactly 0.01 and expect the EN 16931 BR-CO-10 to NOT
         # fire (because it short-circuits at EXTENDED) and the
         # EXTENDED variant to accept the drift.
@@ -221,7 +218,7 @@ class TestFXExtPerCategorySums:
 
     def test_s_09_fires_on_tax_amount_mismatch(self) -> None:
         doc = _ext(make_vat_doc())
-        # BG-23 row: 100 × 19% = 19.00. Set calculated_amount way
+        # BG-23 row: 100 * 19% = 19.00. Set calculated_amount way
         # off to trigger -09 — but keep tax_basis_total / grand
         # consistent so the cross-rule machinery doesn't drown the
         # signal.
