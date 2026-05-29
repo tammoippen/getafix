@@ -99,6 +99,28 @@ class ContractReferencedDocument(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class QuotationReferencedDocument(Element):
+    """Header quotation reference (BG-X-61); EXTENDED-only.
+
+    Reference to the quotation that this invoice as a whole responds
+    to. Distinct from the per-line
+    :class:`~carthorse.schema.line.LineQuotationReferencedDocument`
+    (BG-X-47). XSD position: between ``BuyerOrderReferencedDocument``
+    and ``ContractReferencedDocument``.
+    """
+
+    tag: ClassVar[str] = "QuotationReferencedDocument"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
+    """Quotation document identifier (BT-X-403)."""
+    issue_date_time: date | None = field(
+        default=None, metadata={"tag": "FormattedIssueDateTime"}
+    )
+    """Quotation issue date (BT-X-404, wrapped in BT-X-404-00)."""
+
+
+@dataclass(kw_only=True, slots=True)
 class UltimateCustomerOrderReferencedDocument(Element):
     """Ultimate customer order reference (BG-X-23).
 
