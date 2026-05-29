@@ -86,6 +86,7 @@ in `tests/test_extended_structures.py`.
 | File | Exercises |
 |------|-----------|
 | `EXTENDED_synth_agent_parties.xml` | §4.1 header agent parties — `SalesAgentTradeParty` (BG-X-49), `BuyerTaxRepresentativeTradeParty` (BG-X-54), `BuyerAgentTradeParty` (BG-X-62) — plus `ApplicableTradeDeliveryTerms` (BG-X-22, `FCA` + `RelevantTradeLocation`) and the header `QuotationReferencedDocument` (BG-X-61) |
+| `EXTENDED_synth_settlement_parties.xml` | §4.3 settlement parties + advance payment — `InvoiceIssuerReference` (BT-X-204), `InvoicerTradeParty` (BG-X-33), `InvoiceeTradeParty` (BG-X-36), `PayerTradeParty` (BG-X-73), `SpecifiedAdvancePayment` (BG-X-45/46 + prepayment-invoice ref BG-X-85), and a term-specific `PayeeTradeParty` (BG-X-77) — a factoring + prepayment scenario |
 
 Because they derive from the Apache-2.0 mustangproject base, the synthetic
 files inherit that licence. To regenerate after a schema bump or a builder

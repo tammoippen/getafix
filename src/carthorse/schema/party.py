@@ -876,6 +876,98 @@ class UltimateShipToTradeParty(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class InvoicerTradeParty(Element):
+    """Invoicer party (BG-X-33); EXTENDED-only.
+
+    The party that issued the invoice, when different from the
+    Seller (e.g. a shared service centre or an outsourced billing
+    provider). Generic ``TradePartyType`` shape — only ``name`` is
+    required.
+    """
+
+    tag: ClassVar[str] = "InvoicerTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Invoicer identifier (BT-X-205)."""
+    global_ids: list[GlobalID] | None = None
+    """Invoicer global identifier(s) (BT-X-206)."""
+    name: str = field(metadata={"tag": "Name"})
+    """Invoicer name (BT-X-207)."""
+    legal_organization: LegalOrganization | None = None
+    """Invoicer legal organisation."""
+    contact: TradeContact | None = None
+    """Invoicer contact details."""
+    address: PostalTradeAddressExtended | None = None
+    """Invoicer postal address."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Invoicer electronic address."""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Invoicer tax registration."""
+
+
+@dataclass(kw_only=True, slots=True)
+class InvoiceeTradeParty(Element):
+    """Invoicee party (BG-X-36); EXTENDED-only.
+
+    The party the invoice is addressed to for accounting purposes,
+    when different from the Buyer (e.g. a parent company or a
+    payer-pays-on-behalf-of arrangement). Generic ``TradePartyType``
+    shape.
+    """
+
+    tag: ClassVar[str] = "InvoiceeTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Invoicee identifier (BT-X-224)."""
+    global_ids: list[GlobalID] | None = None
+    """Invoicee global identifier(s) (BT-X-225)."""
+    name: str = field(metadata={"tag": "Name"})
+    """Invoicee name (BT-X-226)."""
+    legal_organization: LegalOrganization | None = None
+    """Invoicee legal organisation."""
+    contact: TradeContact | None = None
+    """Invoicee contact details."""
+    address: PostalTradeAddressExtended | None = None
+    """Invoicee postal address."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Invoicee electronic address."""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Invoicee tax registration."""
+
+
+@dataclass(kw_only=True, slots=True)
+class PayerTradeParty(Element):
+    """Payer party (BG-X-73); EXTENDED-only.
+
+    The party that actually settles the invoice when it is neither
+    the Buyer nor the Payee — e.g. a factor or a paying agent.
+    Generic ``TradePartyType`` shape.
+    """
+
+    tag: ClassVar[str] = "PayerTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Payer identifier (BT-X-478)."""
+    global_ids: list[GlobalID] | None = None
+    """Payer global identifier(s) (BT-X-479)."""
+    name: str = field(metadata={"tag": "Name"})
+    """Payer name (BT-X-476)."""
+    legal_organization: LegalOrganization | None = None
+    """Payer legal organisation."""
+    contact: TradeContact | None = None
+    """Payer contact details."""
+    address: PostalTradeAddressExtended | None = None
+    """Payer postal address."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Payer electronic address."""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Payer tax registration."""
+
+
+@dataclass(kw_only=True, slots=True)
 class PayeeTradeParty(Element):
     """Payee (BG-10); BASIC_WL+.
 
