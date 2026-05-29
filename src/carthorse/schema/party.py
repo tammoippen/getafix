@@ -633,6 +633,97 @@ class SellerTaxRepresentativeTradeParty(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class SalesAgentTradeParty(Element):
+    """Sales agent party (BG-X-49); EXTENDED-only.
+
+    A commercial intermediary (broker / agent) acting on the
+    Seller's behalf between Seller and Buyer. Same generic
+    ``TradePartyType`` shape as :class:`ProductEndUserTradeParty`;
+    every field except ``name`` is optional.
+    """
+
+    tag: ClassVar[str] = "SalesAgentTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Sales agent identifier (BT-X-337)."""
+    global_ids: list[GlobalID] | None = None
+    """Sales agent global identifier(s) (BT-X-338)."""
+    name: str = field(metadata={"tag": "Name"})
+    """Sales agent name (BT-X-335)."""
+    legal_organization: LegalOrganization | None = None
+    """Sales agent legal organisation."""
+    contact: TradeContact | None = None
+    """Sales agent contact details."""
+    address: PostalTradeAddressExtended | None = None
+    """Sales agent postal address."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Sales agent electronic address."""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Sales agent tax registration (VAT id only — ``BR-FXEXT-03``)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class BuyerTaxRepresentativeTradeParty(Element):
+    """Buyer tax representative party (BG-X-54); EXTENDED-only.
+
+    Buyer-side counterpart of :class:`SellerTaxRepresentativeTradeParty`
+    (BG-11) — the party responsible for the Buyer's VAT obligations
+    when the Buyer is represented by a fiscal representative.
+    """
+
+    tag: ClassVar[str] = "BuyerTaxRepresentativeTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Buyer tax representative identifier (BT-X-364)."""
+    global_ids: list[GlobalID] | None = None
+    """Buyer tax representative global identifier(s) (BT-X-365)."""
+    name: str = field(metadata={"tag": "Name"})
+    """Buyer tax representative name (BT-X-362)."""
+    legal_organization: LegalOrganization | None = None
+    """Buyer tax representative legal organisation."""
+    contact: TradeContact | None = None
+    """Buyer tax representative contact details."""
+    address: PostalTradeAddressExtended | None = None
+    """Buyer tax representative postal address."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Buyer tax representative electronic address."""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Buyer tax representative VAT identifier."""
+
+
+@dataclass(kw_only=True, slots=True)
+class BuyerAgentTradeParty(Element):
+    """Buyer agent party (BG-X-62); EXTENDED-only.
+
+    The Buyer's procurement agent — a party acting on the Buyer's
+    behalf in the purchasing transaction. Same generic
+    ``TradePartyType`` shape; only ``name`` is required.
+    """
+
+    tag: ClassVar[str] = "BuyerAgentTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Buyer agent identifier (BT-X-408)."""
+    global_ids: list[GlobalID] | None = None
+    """Buyer agent global identifier(s) (BT-X-409)."""
+    name: str = field(metadata={"tag": "Name"})
+    """Buyer agent name (BT-X-406)."""
+    legal_organization: LegalOrganization | None = None
+    """Buyer agent legal organisation."""
+    contact: TradeContact | None = None
+    """Buyer agent contact details."""
+    address: PostalTradeAddressExtended | None = None
+    """Buyer agent postal address."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Buyer agent electronic address."""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Buyer agent tax registration."""
+
+
+@dataclass(kw_only=True, slots=True)
 class ProductEndUserTradeParty(Element):
     """Product end user party (BG-X-18); EXTENDED-only.
 

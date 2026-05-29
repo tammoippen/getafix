@@ -16,7 +16,12 @@ Per-profile contents:
 * COMFORT: adds ``SellerOrderReferencedDocument`` (BT-14-00),
   ``AdditionalReferencedDocument`` 0..* (BG-24), and
   ``SpecifiedProcuringProject`` (BT-11-00).
-* EXTENDED: adds ``ProductEndUserTradeParty`` (BG-X-18) and
+* EXTENDED: adds ``SalesAgentTradeParty`` (BG-X-49),
+  ``BuyerTaxRepresentativeTradeParty`` (BG-X-54),
+  ``ProductEndUserTradeParty`` (BG-X-18),
+  ``ApplicableTradeDeliveryTerms`` (BG-X-22),
+  ``QuotationReferencedDocument`` (BG-X-61),
+  ``BuyerAgentTradeParty`` (BG-X-62), and
   ``UltimateCustomerOrderReferencedDocument`` (BG-X-23).
 
 No business rules are enforced in this module. ``BR-6`` (Seller name
@@ -31,8 +36,11 @@ from typing import ClassVar
 
 from carthorse.schema.element import Element
 from carthorse.schema.party import (
+    BuyerAgentTradeParty,
+    BuyerTaxRepresentativeTradeParty,
     BuyerTradeParty,
     ProductEndUserTradeParty,
+    SalesAgentTradeParty,
     SellerTaxRepresentativeTradeParty,
     SellerTradeParty,
 )
@@ -41,9 +49,54 @@ from carthorse.schema.references import (
     BuyerOrderReferencedDocument,
     ContractReferencedDocument,
     ProcuringProject,
+    QuotationReferencedDocument,
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
 )
+from carthorse.schema.types import Country, Profile
+
+
+@dataclass(kw_only=True, slots=True)
+class RelevantTradeLocation(Element):
+    """Relevant trade location for delivery terms (BG-X-88); EXTENDED-only.
+
+    The named place referenced by the Incoterm — e.g. the port /
+    terminal for ``FCA`` / ``CIP``. Both children are optional.
+    """
+
+    tag: ClassVar[str] = "RelevantTradeLocation"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    country_id: Country | None = field(default=None, metadata={"tag": "CountryID"})
+    """Location country code (BT-X-563)."""
+    name: str | None = field(default=None, metadata={"tag": "Name"})
+    """Location name (BT-X-564) — e.g. ``"Hamburg Hafen"``."""
+
+
+@dataclass(kw_only=True, slots=True)
+class TradeDeliveryTerms(Element):
+    """Delivery / trade terms (BG-X-22); EXTENDED-only.
+
+    Header-level Incoterms statement. The ``delivery_type_code``
+    (BT-X-145) is required when the group is present.
+    """
+
+    tag: ClassVar[str] = "ApplicableTradeDeliveryTerms"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    delivery_type_code: str = field(metadata={"tag": "DeliveryTypeCode"})
+    """Delivery condition code (BT-X-145).
+
+    The XSD type ``qdt:DeliveryTermsCodeType`` is an unrestricted
+    token; the schematron validates it against the Incoterms
+    codelist (``EXW`` / ``FCA`` / ``CPT`` / ``CIP`` / ``DAP`` /
+    ``DPU`` / ``DDP`` / ``FAS`` / ``FOB`` / ``CFR`` / ``CIF``).
+    Modelled as a plain ``str`` — matching the BT-X-7
+    ``LineStatusCode`` precedent — until carthorse ships the
+    Incoterms codelist enum.
+    """
+    relevant_location: RelevantTradeLocation | None = None
+    """Named place the Incoterm applies to (BG-X-88, 0..1)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -89,6 +142,18 @@ class TradeAgreement(Element):
     """Seller (BG-4) — supplier of the goods or services."""
     buyer: BuyerTradeParty
     """Buyer (BG-7) — recipient of the goods or services."""
+    sales_agent: SalesAgentTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Sales agent party (BG-X-49); EXTENDED-only.
+
+    XSD position: between ``BuyerTradeParty`` and
+    ``BuyerTaxRepresentativeTradeParty``.
+    """
+    buyer_tax_representative: BuyerTaxRepresentativeTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Buyer tax representative party (BG-X-54); EXTENDED-only."""
     seller_tax_representative_party: SellerTaxRepresentativeTradeParty | None = None
     """Seller tax representative party (BG-11); BASIC_WL+."""
     end_user: ProductEndUserTradeParty | None = None
@@ -97,14 +162,38 @@ class TradeAgreement(Element):
     The party acting as the end user for the products in this header
     trade agreement.
     """
+    delivery_terms: TradeDeliveryTerms | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Delivery / trade terms (BG-X-22); EXTENDED-only.
+
+    XSD position: between ``ProductEndUserTradeParty`` and
+    ``SellerOrderReferencedDocument``.
+    """
     seller_order: SellerOrderReferencedDocument | None = None
     """Sales order reference (BT-14-00); COMFORT+."""
     buyer_order: BuyerOrderReferencedDocument | None = None
     """Purchase order reference (BT-13-00); MINIMUM+."""
+    quotation: QuotationReferencedDocument | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Header quotation reference (BG-X-61); EXTENDED-only.
+
+    XSD position: between ``BuyerOrderReferencedDocument`` and
+    ``ContractReferencedDocument``.
+    """
     contract: ContractReferencedDocument | None = None
     """Contract reference (BT-12-00); BASIC_WL+."""
     additional_references: list[AdditionalReferencedDocument] | None = None
     """Additional supporting documents (BG-24, 0..*); COMFORT+."""
+    buyer_agent: BuyerAgentTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Buyer agent party (BG-X-62); EXTENDED-only.
+
+    XSD position: between ``AdditionalReferencedDocument`` and
+    ``SpecifiedProcuringProject``.
+    """
     procuring_project: ProcuringProject | None = None
     """Project reference (BT-11-00); COMFORT+."""
     customer_order: UltimateCustomerOrderReferencedDocument | None = None

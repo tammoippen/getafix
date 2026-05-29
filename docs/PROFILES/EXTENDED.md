@@ -148,12 +148,12 @@ of the work.
 
 | BT-X / BG-X | Name | Target | Card. | Notes |
 |---|---|---|---|---|
-| BG-X-49 | ``SalesAgentTradeParty`` | new ``SalesAgentTradeParty`` in ``schema/party.py``; field on ``TradeAgreement.sales_agent`` | 0..1 | XSD position: after ``SellerTaxRepresentativeTradeParty``. Follows the same shape as ``SellerTaxRepresentativeTradeParty`` (``Name`` + ``PostalTradeAddress`` + ``SpecifiedTaxRegistration``). |
-| BG-X-54 | ``BuyerTaxRepresentativeTradeParty`` | new ``BuyerTaxRepresentativeTradeParty`` | 0..1 | XSD position: after ``BuyerTradeParty``. Same shape as seller tax rep. |
-| BG-X-62 | ``BuyerAgentTradeParty`` | new ``BuyerAgentTradeParty`` | 0..1 | XSD position: after ``BuyerTaxRepresentativeTradeParty``. |
-| BG-X-61 | ``QuotationReferencedDocument`` | new ``QuotationReferencedDocument`` in ``schema/references.py`` carrying ``IssuerAssignedID`` + ``FormattedIssueDateTime`` | 0..1 | XSD position: between ``BuyerOrderReferencedDocument`` and ``ContractReferencedDocument``. |
-| BG-X-22 | ``ApplicableTradeDeliveryTerms`` | new ``TradeDeliveryTerms`` in ``schema/agreement.py`` with ``DeliveryTypeCode`` (UNTDID 4053, ``StrEnum``) | 0..1 | XSD position: last child of ``HeaderTradeAgreement``. |
-| BT-X-29-1 | Header ``BuyerOrderReferencedDocument`` widening | extend existing ``BuyerOrderReferencedDocument`` (``schema/references.py:51``) with optional ``LineID``, ``FormattedIssueDateTime`` | — | These are EXTENDED-only optional children; gated at the field metadata via ``profile`` key. |
+| BG-X-49 ✓ | ``SalesAgentTradeParty`` | ``SalesAgentTradeParty`` in ``schema/party.py``; field ``TradeAgreement.sales_agent`` | 0..1 | Landed. XSD position: between ``BuyerTradeParty`` and ``BuyerTaxRepresentativeTradeParty``. Generic ``TradePartyType`` shape (only ``Name`` required). Exercised by ``EXTENDED_synth_agent_parties.xml``. |
+| BG-X-54 ✓ | ``BuyerTaxRepresentativeTradeParty`` | ``BuyerTaxRepresentativeTradeParty`` in ``schema/party.py``; field ``TradeAgreement.buyer_tax_representative`` | 0..1 | Landed. XSD position: between ``SalesAgentTradeParty`` and ``SellerTaxRepresentativeTradeParty``. |
+| BG-X-62 ✓ | ``BuyerAgentTradeParty`` | ``BuyerAgentTradeParty`` in ``schema/party.py``; field ``TradeAgreement.buyer_agent`` | 0..1 | Landed. XSD position: between ``AdditionalReferencedDocument`` and ``SpecifiedProcuringProject`` (**not** after BuyerTaxRep — the original plan was wrong). |
+| BG-X-61 ✓ | ``QuotationReferencedDocument`` | ``QuotationReferencedDocument`` in ``schema/references.py`` (``IssuerAssignedID`` BT-X-403 + ``FormattedIssueDateTime`` BT-X-404); field ``TradeAgreement.quotation`` | 0..1 | Landed. XSD position: between ``BuyerOrderReferencedDocument`` and ``ContractReferencedDocument``. |
+| BG-X-22 ✓ | ``ApplicableTradeDeliveryTerms`` | ``TradeDeliveryTerms`` in ``schema/agreement.py`` with ``DeliveryTypeCode`` (BT-X-145) + optional ``RelevantTradeLocation`` (BG-X-88) | 0..1 | Landed. XSD position: between ``ProductEndUserTradeParty`` and ``SellerOrderReferencedDocument`` (**not** last child — the original plan was wrong). ``DeliveryTypeCode`` is a plain ``str`` (Incoterms codelist enforced only by schematron), matching the BT-X-7 precedent. |
+| BT-X-29-1 ✓ | Header ``BuyerOrderReferencedDocument`` widening | done in the prior PR (optional ``LineID`` / ``FormattedIssueDateTime``) | — | — |
 
 ### 4.2 ``HeaderTradeDelivery`` — already 90 % covered
 
