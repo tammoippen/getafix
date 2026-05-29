@@ -150,6 +150,7 @@ class TestProductLine:
         assert prod.model_id == "MOD-4711"
         assert prod.brand_name == "MusterBrand"
         assert prod.model_name == "EcoLine 200"
+        assert prod.batch_id == ["LOT-2026-08", "LOT-2026-09"]
 
     def test_item_seller_parsed(self) -> None:
         ag = _load(self.SAMPLE).trade.items[0].agreement

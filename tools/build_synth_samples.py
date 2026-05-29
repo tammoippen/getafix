@@ -269,6 +269,7 @@ def build_product_line() -> bytes:
     prod.model_id = "MOD-4711"
     prod.brand_name = "MusterBrand"
     prod.model_name = "EcoLine 200"
+    prod.batch_id = ["LOT-2026-08", "LOT-2026-09"]
 
     item.agreement.item_seller = ItemSellerTradeParty(
         name="Drittanbieter Direkt GmbH",

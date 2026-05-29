@@ -104,24 +104,14 @@ class TradeAgreement(Element):
     """Header trade agreement (BT-10-00).
 
     Container for the process and contract details of the invoice:
-    trading parties plus every upstream document reference.
-
-    EXTENDED gaps (no current sample exercises these; XSD slots
-    reserved for when a fixture lands):
-
-    * ``SalesAgentTradeParty`` — sales agent / broker party between
-      seller and buyer.
-    * ``BuyerTaxRepresentativeTradeParty`` — buyer-side counterpart
-      of the existing :class:`SellerTaxRepresentativeTradeParty`
-      (BG-11).
-    * ``ProductEndUserTradeParty`` — distinct from buyer when the
-      invoice covers a procured-on-behalf-of arrangement.
-    * ``BuyerAgentTradeParty`` — buyer's procurement agent.
-    * ``ApplicableTradeDeliveryTerms`` — Incoterms-equivalent
-      header-level delivery terms (BT-X-145 ``DeliveryTypeCode``).
-    * ``UltimateCustomerOrderReferencedDocument`` (0..*) — distinct
-      from the existing BuyerOrderReferencedDocument; expresses the
-      *ultimate* customer's order chain when intermediated.
+    trading parties plus every upstream document reference. The
+    EXTENDED agent parties (:class:`SalesAgentTradeParty` BG-X-49,
+    :class:`BuyerTaxRepresentativeTradeParty` BG-X-54,
+    :class:`BuyerAgentTradeParty` BG-X-62), the header
+    :class:`~carthorse.schema.references.QuotationReferencedDocument`
+    (BG-X-61) and :class:`TradeDeliveryTerms` (BG-X-22) are all
+    modelled here — exercised by
+    ``tests/samples/EXTENDED_synth_agent_parties.xml``.
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"
