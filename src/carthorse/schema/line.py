@@ -61,7 +61,12 @@ from carthorse.rules._types import fields_only_at, max_decimals
 from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from carthorse.schema.element import Element, ETElement, coerce_enum
-from carthorse.schema.party import GlobalID
+from carthorse.schema.party import (
+    GlobalID,
+    ItemSellerTradeParty,
+    ShipToTradeParty,
+    UltimateShipToTradeParty,
+)
 from carthorse.schema.settlement import (
     BillingSpecifiedPeriod,
     ReceivableAccountingAccount,
@@ -381,6 +386,33 @@ class UnitQuantity(Quantity):
 
 
 @dataclass(kw_only=True, slots=True)
+class ChargeFreeQuantity(Quantity):
+    """Free-goods quantity on an invoice line (BT-X-46); EXTENDED-only.
+
+    The number of units delivered free of charge (e.g. "buy 10, get
+    1 free"). Same numeric+unitCode shape as :class:`Quantity`."""
+
+    tag: ClassVar[str] = "ChargeFreeQuantity"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+
+@dataclass(kw_only=True, slots=True)
+class PackageQuantity(Quantity):
+    """Number of packages for an invoice line (BT-X-47); EXTENDED-only."""
+
+    tag: ClassVar[str] = "PackageQuantity"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+
+@dataclass(kw_only=True, slots=True)
+class PerPackageUnitQuantity(Quantity):
+    """Units per package for an invoice line (BT-X-561); EXTENDED-only."""
+
+    tag: ClassVar[str] = "PerPackageUnitQuantity"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+
+@dataclass(kw_only=True, slots=True)
 class IndividualTradeProductInstance(Element):
     """Per-instance product details (BG-X-84, 0..*); EXTENDED only.
 
@@ -497,15 +529,15 @@ class TradeProduct(Element):
     )
     """Industry-assigned item identifier (BT-X-532); EXTENDED only.
 
-    No current sample populates this — add coverage if a future
-    fixture exercises a recognised industry catalogue ID.
+    Codelist UNTDED 6313 + Factur-X extension (``BR-FXEXT-04``).
+    Exercised by ``EXTENDED_synth_product_line.xml``.
     """
     model_id: str | None = field(
         default=None, metadata={"tag": "ModelID", "profile": Profile.EXTENDED}
     )
     """Model / variant identifier (BT-X-533); EXTENDED only.
 
-    No current sample populates this — XSD slot reserved.
+    Exercised by ``EXTENDED_synth_product_line.xml``.
     """
     name: str = field(metadata={"tag": "Name"})
     """Item name (BT-153)."""
@@ -529,14 +561,14 @@ class TradeProduct(Element):
     )
     """Brand name (BT-X-535); EXTENDED only.
 
-    No current sample populates this — XSD slot reserved.
+    Exercised by ``EXTENDED_synth_product_line.xml``.
     """
     model_name: str | None = field(
         default=None, metadata={"tag": "ModelName", "profile": Profile.EXTENDED}
     )
     """Model name (BT-X-536); EXTENDED only.
 
-    No current sample populates this — XSD slot reserved.
+    Exercised by ``EXTENDED_synth_product_line.xml``.
     """
     characteristics: list[ProductCharacteristic] | None = None
     """Item attributes (BG-32, 0..*); COMFORT+."""
@@ -773,7 +805,7 @@ class LineTradeAgreement(Element):
     profile: ClassVar[Profile] = Profile.BASIC
 
     _validators: ClassVar[tuple[Validator["LineTradeAgreement"], ...]] = (
-        fields_only_at(Profile.EXTENDED, "quotation_ref"),
+        fields_only_at(Profile.EXTENDED, "quotation_ref", "item_seller"),
     )
 
     buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
@@ -801,6 +833,15 @@ class LineTradeAgreement(Element):
     EN16931 ``BR-26`` short-circuits at EXTENDED via the same
     machinery used for the rest of the BR-FXEXT-2x family.
     """
+    item_seller: ItemSellerTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Line-level deviating seller (BG-X-90); EXTENDED-only.
+
+    XSD position: after ``NetPriceProductTradePrice``, before
+    ``UltimateCustomerOrderReferencedDocument``. The seller-of-record
+    for this line when it differs from the header Seller (marketplace
+    / drop-ship)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -813,6 +854,17 @@ class LineTradeDelivery(Element):
     tag: ClassVar[str] = "SpecifiedLineTradeDelivery"
     profile: ClassVar[Profile] = Profile.BASIC
 
+    _validators: ClassVar[tuple[Validator["LineTradeDelivery"], ...]] = (
+        fields_only_at(
+            Profile.EXTENDED,
+            "charge_free_quantity",
+            "package_quantity",
+            "per_package_unit_quantity",
+            "ship_to",
+            "ultimate_ship_to",
+        ),
+    )
+
     billed_quantity: Quantity | None = field(
         default=None, metadata={"tag": "BilledQuantity"}
     )
@@ -822,6 +874,22 @@ class LineTradeDelivery(Element):
     EXTENDED relaxes both on ``GROUP`` / ``INFORMATION`` lines —
     runtime enforcement lives in ``br_fxext_22`` / ``br_fxext_23``.
     """
+    charge_free_quantity: ChargeFreeQuantity | None = None
+    """Free-goods quantity (BT-X-46); EXTENDED-only. XSD position:
+    after ``BilledQuantity``."""
+    package_quantity: PackageQuantity | None = None
+    """Number of packages (BT-X-47); EXTENDED-only."""
+    per_package_unit_quantity: PerPackageUnitQuantity | None = None
+    """Units per package (BT-X-561); EXTENDED-only."""
+    ship_to: ShipToTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Line-level ship-to party (BG-X-7); EXTENDED-only — overrides
+    the header ship-to for this line."""
+    ultimate_ship_to: UltimateShipToTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Line-level ultimate ship-to party (BG-X-10); EXTENDED-only."""
 
 
 @dataclass(kw_only=True, slots=True)

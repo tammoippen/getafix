@@ -876,6 +876,37 @@ class UltimateShipToTradeParty(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class ItemSellerTradeParty(Element):
+    """Line-level deviating seller (BG-X-90); EXTENDED-only.
+
+    The seller-of-record for an individual invoice line, when it
+    differs from the header Seller — e.g. a marketplace / drop-ship
+    arrangement where each line is fulfilled by a different vendor.
+    Generic ``TradePartyType`` shape; only ``name`` is required.
+    """
+
+    tag: ClassVar[str] = "ItemSellerTradeParty"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    id: str | None = field(default=None, metadata={"tag": "ID"})
+    """Item seller identifier."""
+    global_ids: list[GlobalID] | None = None
+    """Item seller global identifier(s)."""
+    name: str = field(metadata={"tag": "Name"})
+    """Item seller name (BT-X-569)."""
+    legal_organization: LegalOrganization | None = None
+    """Item seller legal organisation."""
+    contact: TradeContact | None = None
+    """Item seller contact details."""
+    address: PostalTradeAddressExtended | None = None
+    """Item seller postal address."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Item seller electronic address."""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Item seller tax registration (VAT id only — ``BR-FXEXT-03``)."""
+
+
+@dataclass(kw_only=True, slots=True)
 class InvoicerTradeParty(Element):
     """Invoicer party (BG-X-33); EXTENDED-only.
 

@@ -47,17 +47,25 @@ from lxml import etree
 from carthorse.schema import Document
 from carthorse.schema.agreement import RelevantTradeLocation, TradeDeliveryTerms
 from carthorse.schema.element import ValidationErrors
+from carthorse.schema.line import (
+    ChargeFreeQuantity,
+    PackageQuantity,
+    PerPackageUnitQuantity,
+)
 from carthorse.schema.party import (
     BuyerAgentTradeParty,
     BuyerTaxRepresentativeTradeParty,
     InvoiceeTradeParty,
     InvoicerTradeParty,
+    ItemSellerTradeParty,
     PayeeTradeParty,
     PayerTradeParty,
     PostalTradeAddressExtended,
     SalesAgentTradeParty,
+    ShipToTradeParty,
     SpecifiedTaxRegistration,
     TaxSchemeId,
+    UltimateShipToTradeParty,
 )
 from carthorse.schema.references import QuotationReferencedDocument
 from carthorse.schema.settlement import (
@@ -239,9 +247,67 @@ def build_settlement_parties() -> bytes:
     return _serialize(doc)
 
 
+def build_product_line() -> bytes:
+    """§4.5 — line/product enrichments on the first invoice line.
+
+    A marketplace / drop-ship line: the item carries model, brand and
+    industry identifiers (``ModelID`` / ``ModelName`` / ``BrandName`` /
+    ``IndustryAssignedID``), is sold by a deviating line seller
+    (``ItemSellerTradeParty``), ships to a per-line address with a
+    distinct ultimate recipient (``ShipToTradeParty`` /
+    ``UltimateShipToTradeParty``), and records free-goods,
+    package-count and units-per-package quantities
+    (``ChargeFreeQuantity`` / ``PackageQuantity`` /
+    ``PerPackageUnitQuantity``).
+    """
+    doc = _load_base()
+    item = doc.trade.items[0]
+    unit = item.delivery.billed_quantity.unit_code  # type: ignore[union-attr]
+
+    prod = item.product
+    prod.industry_assigned_id = "39121600"  # UNSPSC-style class id
+    prod.model_id = "MOD-4711"
+    prod.brand_name = "MusterBrand"
+    prod.model_name = "EcoLine 200"
+
+    item.agreement.item_seller = ItemSellerTradeParty(
+        name="Drittanbieter Direkt GmbH",
+        address=PostalTradeAddressExtended(
+            postcode="04109", city_name="Leipzig", country_id=Country.DE
+        ),
+        tax_registrations=SpecifiedTaxRegistration(
+            id=TaxSchemeId(id="DE246810121", scheme_id="VA")
+        ),
+    )
+
+    item.delivery.charge_free_quantity = ChargeFreeQuantity(
+        value=Decimal("10.0000"), unit_code=unit
+    )
+    item.delivery.package_quantity = PackageQuantity(
+        value=Decimal("1.0000"), unit_code="XPK"
+    )
+    item.delivery.per_package_unit_quantity = PerPackageUnitQuantity(
+        value=Decimal("1000.0000"), unit_code=unit
+    )
+    item.delivery.ship_to = ShipToTradeParty(
+        name="Filiale Süd",
+        address=PostalTradeAddressExtended(
+            postcode="70173", city_name="Stuttgart", country_id=Country.DE
+        ),
+    )
+    item.delivery.ultimate_ship_to = UltimateShipToTradeParty(
+        name="Endkunde Karl Käufer",
+        address=PostalTradeAddressExtended(
+            postcode="79098", city_name="Freiburg", country_id=Country.DE
+        ),
+    )
+    return _serialize(doc)
+
+
 _BUILDERS: dict[str, Callable[[], bytes]] = {
     "EXTENDED_synth_agent_parties.xml": build_agent_parties,
     "EXTENDED_synth_settlement_parties.xml": build_settlement_parties,
+    "EXTENDED_synth_product_line.xml": build_product_line,
 }
 
 
