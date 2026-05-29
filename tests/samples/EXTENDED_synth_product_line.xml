@@ -51,6 +51,8 @@ GLN 4304171000002</ram:Content>
         <ram:IndustryAssignedID>39121600</ram:IndustryAssignedID>
         <ram:ModelID>MOD-4711</ram:ModelID>
         <ram:Name>Wirkarbeit HT</ram:Name>
+        <ram:BatchID>LOT-2026-08</ram:BatchID>
+        <ram:BatchID>LOT-2026-09</ram:BatchID>
         <ram:BrandName>MusterBrand</ram:BrandName>
         <ram:ModelName>EcoLine 200</ram:ModelName>
         <ram:ApplicableProductCharacteristic>

@@ -554,7 +554,8 @@ class TradeProduct(Element):
     For per-instance serial / batch carry the value on
     :attr:`individual_product_instances` instead — that's the
     pattern exercised by ``EXTENDED_zf24_Maschinen_Serial.xml``.
-    No current sample uses this list directly.
+    The item-level list is exercised by
+    ``EXTENDED_synth_product_line.xml``.
     """
     brand_name: str | None = field(
         default=None, metadata={"tag": "BrandName", "profile": Profile.EXTENDED}
@@ -786,17 +787,18 @@ class LineTradeAgreement(Element):
     ``GrossPriceProductTradePrice`` (optional) which precedes
     ``NetPriceProductTradePrice`` (required).
 
-    EXTENDED gaps (no current sample exercises these; XSD slots
-    reserved for when a fixture lands):
+    :class:`~carthorse.schema.party.ItemSellerTradeParty` (BG-X-90)
+    is modelled here (field :attr:`item_seller`) — exercised by
+    ``tests/samples/EXTENDED_synth_product_line.xml``.
+
+    Deferred EXTENDED slots (per-line twins of structures already
+    modelled at header level; no observed real-world use — add when
+    a fixture needs them):
 
     * ``ApplicableTradeDeliveryTerms`` — line-level Incoterms.
-    * ``SellerOrderReferencedDocument`` — per-line seller's order
-      reference (counterpart to ``buyer_order_ref``).
+    * ``SellerOrderReferencedDocument`` — per-line seller's order ref.
     * ``ContractReferencedDocument`` — per-line contract reference.
-    * ``AdditionalReferencedDocument`` (0..*) — extra per-line
-      document refs (catalogue numbers, regulatory citations).
-    * ``ItemSellerTradeParty`` (BG-X-90) — distinct seller for the
-      line item (drop-shipper / marketplace seller-of-record).
+    * ``AdditionalReferencedDocument`` (0..*) — extra per-line refs.
     * ``UltimateCustomerOrderReferencedDocument`` (0..*) — per-line
       ultimate-customer order ref.
     """
