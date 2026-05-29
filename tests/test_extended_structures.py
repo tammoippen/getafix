@@ -138,6 +138,57 @@ class TestSettlementParties:
             assert tag in out, f"{tag} missing from re-rendered XML"
 
 
+class TestProductLine:
+    """``EXTENDED_synth_product_line.xml`` — §4.5 line/product
+    enrichments on the first invoice line."""
+
+    SAMPLE = "EXTENDED_synth_product_line.xml"
+
+    def test_product_leaves_parsed(self) -> None:
+        prod = _load(self.SAMPLE).trade.items[0].product
+        assert prod.industry_assigned_id == "39121600"
+        assert prod.model_id == "MOD-4711"
+        assert prod.brand_name == "MusterBrand"
+        assert prod.model_name == "EcoLine 200"
+
+    def test_item_seller_parsed(self) -> None:
+        ag = _load(self.SAMPLE).trade.items[0].agreement
+        assert ag.item_seller is not None
+        assert ag.item_seller.name == "Drittanbieter Direkt GmbH"
+
+    def test_line_quantities_parsed(self) -> None:
+        dl = _load(self.SAMPLE).trade.items[0].delivery
+        assert dl.charge_free_quantity is not None
+        assert dl.charge_free_quantity.value == Decimal("10.0000")
+        assert dl.package_quantity is not None
+        assert dl.package_quantity.unit_code == "XPK"
+        assert dl.per_package_unit_quantity is not None
+        assert dl.per_package_unit_quantity.value == Decimal("1000.0000")
+
+    def test_line_ship_to_parsed(self) -> None:
+        dl = _load(self.SAMPLE).trade.items[0].delivery
+        assert dl.ship_to is not None
+        assert dl.ship_to.name == "Filiale Süd"
+        assert dl.ultimate_ship_to is not None
+        assert dl.ultimate_ship_to.name == "Endkunde Karl Käufer"
+
+    def test_roundtrip_emits_all_new_elements(self) -> None:
+        out = _rendered(_load(self.SAMPLE))
+        for tag in (
+            "ModelID",
+            "BrandName",
+            "ModelName",
+            "IndustryAssignedID",
+            "ItemSellerTradeParty",
+            "ChargeFreeQuantity",
+            "PackageQuantity",
+            "PerPackageUnitQuantity",
+            "ShipToTradeParty",
+            "UltimateShipToTradeParty",
+        ):
+            assert tag in out, f"{tag} missing from re-rendered XML"
+
+
 def test_synth_samples_in_sync() -> None:
     """The committed ``EXTENDED_synth_*.xml`` files match what
     ``tools/build_synth_samples.py`` produces — i.e. nobody hand-edited
