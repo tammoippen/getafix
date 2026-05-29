@@ -50,13 +50,22 @@ from carthorse.schema.element import ValidationErrors
 from carthorse.schema.party import (
     BuyerAgentTradeParty,
     BuyerTaxRepresentativeTradeParty,
+    InvoiceeTradeParty,
+    InvoicerTradeParty,
+    PayeeTradeParty,
+    PayerTradeParty,
     PostalTradeAddressExtended,
     SalesAgentTradeParty,
     SpecifiedTaxRegistration,
     TaxSchemeId,
 )
 from carthorse.schema.references import QuotationReferencedDocument
-from carthorse.schema.types import Country
+from carthorse.schema.settlement import (
+    AdvancePayment,
+    AdvancePaymentReferencedDocument,
+    AdvancePaymentTradeTax,
+)
+from carthorse.schema.types import CategoryCode, Country
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SAMPLES = _ROOT / "tests" / "samples"
@@ -156,8 +165,83 @@ def build_agent_parties() -> bytes:
     return _serialize(doc)
 
 
+def build_settlement_parties() -> bytes:
+    """§4.3 — settlement parties + advance payment.
+
+    A factoring scenario: the invoice is issued by a shared billing
+    service (``InvoicerTradeParty``), addressed for accounting to a
+    parent company (``InvoiceeTradeParty``), and settled by a factor
+    (``PayerTradeParty``). A 119.00 EUR prepayment (incl. 19.00 EUR
+    VAT) was already received against a proforma invoice
+    (``SpecifiedAdvancePayment``), and the single payment term names
+    the factor's collection account holder as its term-specific
+    payee. ``InvoiceIssuerReference`` carries the Seller's file no.
+    """
+    doc = _load_base()
+    s = doc.trade.settlement
+    s.invoice_issuer_reference = "BILLING-REF-2026-0815"
+    s.invoicer = InvoicerTradeParty(
+        name="Konzern Shared Services GmbH",
+        address=PostalTradeAddressExtended(
+            postcode="60311", city_name="Frankfurt am Main", country_id=Country.DE
+        ),
+        tax_registrations=SpecifiedTaxRegistration(
+            id=TaxSchemeId(id="DE777888999", scheme_id="VA")
+        ),
+    )
+    s.invoicee = InvoiceeTradeParty(
+        name="Muster-Konzern Holding AG",
+        address=PostalTradeAddressExtended(
+            postcode="40213", city_name="Düsseldorf", country_id=Country.DE
+        ),
+        tax_registrations=SpecifiedTaxRegistration(
+            id=TaxSchemeId(id="DE123123123", scheme_id="VA")
+        ),
+    )
+    s.payer = PayerTradeParty(
+        name="Nord Factoring AG",
+        address=PostalTradeAddressExtended(
+            postcode="20354", city_name="Hamburg", country_id=Country.DE
+        ),
+        tax_registrations=SpecifiedTaxRegistration(
+            id=TaxSchemeId(id="DE321321321", scheme_id="VA")
+        ),
+    )
+    # One prepayment of 119.00 (= 100.00 net + 19.00 VAT @ 19 % S).
+    s.advance_payments = [
+        AdvancePayment(
+            paid_amount=Decimal("119.00"),
+            received_date_time=date(2026, 4, 15),
+            included_trade_tax=[
+                AdvancePaymentTradeTax(
+                    calculated_amount=Decimal("19.00"),
+                    category_code=CategoryCode.T_S,
+                    rate_applicable_percent=Decimal("19.00"),
+                    currency="EUR",
+                )
+            ],
+            invoice_referenced_document=AdvancePaymentReferencedDocument(
+                issuer_assigned_id="PROFORMA-2026-0042",
+                type_code="389",
+                issue_date_time=date(2026, 4, 15),
+            ),
+            currency="EUR",
+        )
+    ]
+    # Reconcile BT-113 (prepaid) and BT-115 (due) with the prepayment so
+    # BR-CO-16 (BT-115 = BT-112 - BT-113 + BT-114) holds.
+    ms = s.monetary_summation
+    ms.prepaid_total = Decimal("119.00")
+    ms.due_amount = ms.grand_total - Decimal("119.00")
+    # Name the factor's collection account holder on the payment term.
+    if s.terms:
+        s.terms[0].payee = PayeeTradeParty(name="Nord Factoring AG - Inkasso")
+    return _serialize(doc)
+
+
 _BUILDERS: dict[str, Callable[[], bytes]] = {
-    "EXTENDED_synth_agent_parties.xml": build_agent_parties
+    "EXTENDED_synth_agent_parties.xml": build_agent_parties,
+    "EXTENDED_synth_settlement_parties.xml": build_settlement_parties,
 }
 
 

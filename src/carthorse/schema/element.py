@@ -443,10 +443,13 @@ def _date_inner_namespace(tag: str) -> Namespace:
     nests ``udt:DateTimeString``) for plain dates like BT-2 IssueDateTime,
     BT-72 OccurrenceDateTime, BT-9 DueDateDateTime, BT-73/74 Start/EndDateTime,
     BT-X-6 CompleteDateTime — and ``qdt:FormattedDateTimeType`` (which
-    nests ``qdt:DateTimeString``) for the formatted issue dates of
-    referenced documents (BT-26 etc.).
+    nests ``qdt:DateTimeString``) for the ``Formatted*`` dates:
+    ``FormattedIssueDateTime`` on referenced documents (BT-26 etc.)
+    and ``FormattedReceivedDateTime`` on advance payments (BT-X-292).
+    Every ``qdt:FormattedDateTimeType`` element name starts with
+    ``Formatted``, so that prefix is the discriminator.
     """
-    return Namespace.qdt if tag == "FormattedIssueDateTime" else Namespace.udt
+    return Namespace.qdt if tag.startswith("Formatted") else Namespace.udt
 
 
 def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:

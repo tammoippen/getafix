@@ -16,6 +16,7 @@ against the committed copies drifting from that generator.
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 from lxml import etree
@@ -79,6 +80,60 @@ class TestAgentParties:
             "DeliveryTypeCode",
             "RelevantTradeLocation",
             "QuotationReferencedDocument",
+        ):
+            assert tag in out, f"{tag} missing from re-rendered XML"
+
+
+class TestSettlementParties:
+    """``EXTENDED_synth_settlement_parties.xml`` — §4.3 settlement
+    parties, advance payment, and term-specific payee."""
+
+    SAMPLE = "EXTENDED_synth_settlement_parties.xml"
+
+    def test_invoice_issuer_reference_parsed(self) -> None:
+        s = _load(self.SAMPLE).trade.settlement
+        assert s.invoice_issuer_reference == "BILLING-REF-2026-0815"
+
+    def test_invoicer_invoicee_payer_parsed(self) -> None:
+        s = _load(self.SAMPLE).trade.settlement
+        assert s.invoicer is not None
+        assert s.invoicer.name == "Konzern Shared Services GmbH"
+        assert s.invoicee is not None
+        assert s.invoicee.name == "Muster-Konzern Holding AG"
+        assert s.payer is not None
+        assert s.payer.name == "Nord Factoring AG"
+
+    def test_advance_payment_parsed(self) -> None:
+        s = _load(self.SAMPLE).trade.settlement
+        assert s.advance_payments is not None
+        adv = s.advance_payments[0]
+        assert adv.paid_amount == Decimal("119.00")
+        assert adv.received_date_time == date(2026, 4, 15)
+        assert adv.included_trade_tax[0].calculated_amount == Decimal("19.00")
+        assert adv.included_trade_tax[0].rate_applicable_percent == Decimal("19.00")
+        assert adv.invoice_referenced_document is not None
+        assert (
+            adv.invoice_referenced_document.issuer_assigned_id == "PROFORMA-2026-0042"
+        )
+
+    def test_term_specific_payee_parsed(self) -> None:
+        s = _load(self.SAMPLE).trade.settlement
+        assert s.terms is not None
+        assert s.terms[0].payee is not None
+        assert s.terms[0].payee.name == "Nord Factoring AG - Inkasso"
+
+    def test_roundtrip_emits_all_new_elements(self) -> None:
+        out = _rendered(_load(self.SAMPLE))
+        for tag in (
+            "InvoiceIssuerReference",
+            "InvoicerTradeParty",
+            "InvoiceeTradeParty",
+            "PayerTradeParty",
+            "SpecifiedAdvancePayment",
+            "PaidAmount",
+            "FormattedReceivedDateTime",
+            "IncludedTradeTax",
+            "InvoiceSpecifiedReferencedDocument",
         ):
             assert tag in out, f"{tag} missing from re-rendered XML"
 

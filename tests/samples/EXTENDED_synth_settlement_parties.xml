@@ -245,53 +245,10 @@ GLN 4304171000002</ram:Content>
           <ram:CountryID>DE</ram:CountryID>
         </ram:PostalTradeAddress>
       </ram:BuyerTradeParty>
-      <ram:SalesAgentTradeParty>
-        <ram:Name>Handelsvertretung Meyer GmbH</ram:Name>
-        <ram:PostalTradeAddress>
-          <ram:PostcodeCode>20095</ram:PostcodeCode>
-          <ram:CityName>Hamburg</ram:CityName>
-          <ram:CountryID>DE</ram:CountryID>
-        </ram:PostalTradeAddress>
-        <ram:SpecifiedTaxRegistration>
-          <ram:ID schemeID="VA">DE111222333</ram:ID>
-        </ram:SpecifiedTaxRegistration>
-      </ram:SalesAgentTradeParty>
-      <ram:BuyerTaxRepresentativeTradeParty>
-        <ram:Name>Fiskalvertretung Schmidt KG</ram:Name>
-        <ram:PostalTradeAddress>
-          <ram:PostcodeCode>80331</ram:PostcodeCode>
-          <ram:CityName>München</ram:CityName>
-          <ram:CountryID>DE</ram:CountryID>
-        </ram:PostalTradeAddress>
-        <ram:SpecifiedTaxRegistration>
-          <ram:ID schemeID="VA">DE444555666</ram:ID>
-        </ram:SpecifiedTaxRegistration>
-      </ram:BuyerTaxRepresentativeTradeParty>
-      <ram:ApplicableTradeDeliveryTerms>
-        <ram:DeliveryTypeCode>FCA</ram:DeliveryTypeCode>
-        <ram:RelevantTradeLocation>
-          <ram:CountryID>DE</ram:CountryID>
-          <ram:Name>Hamburg Hafen</ram:Name>
-        </ram:RelevantTradeLocation>
-      </ram:ApplicableTradeDeliveryTerms>
-      <ram:QuotationReferencedDocument>
-        <ram:IssuerAssignedID>ANG-2026-0042</ram:IssuerAssignedID>
-        <ram:FormattedIssueDateTime>
-          <qdt:DateTimeString format="102">20260501</qdt:DateTimeString>
-        </ram:FormattedIssueDateTime>
-      </ram:QuotationReferencedDocument>
       <ram:AdditionalReferencedDocument>
         <ram:IssuerAssignedID>A777123</ram:IssuerAssignedID>
         <ram:TypeCode>130</ram:TypeCode>
       </ram:AdditionalReferencedDocument>
-      <ram:BuyerAgentTradeParty>
-        <ram:Name>Einkaufsbüro Nord eG</ram:Name>
-        <ram:PostalTradeAddress>
-          <ram:PostcodeCode>28195</ram:PostcodeCode>
-          <ram:CityName>Bremen</ram:CityName>
-          <ram:CountryID>DE</ram:CountryID>
-        </ram:PostalTradeAddress>
-      </ram:BuyerAgentTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeDelivery>
       <ram:ShipToTradeParty>
@@ -321,17 +278,40 @@ GLN 4304171000002</ram:Content>
     </ram:ApplicableHeaderTradeDelivery>
     <ram:ApplicableHeaderTradeSettlement>
       <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
-      <ram:InvoiceeTradeParty>
-        <ram:ID>339420</ram:ID>
-        <ram:GlobalID schemeID="0088">4304171000002</ram:GlobalID>
-        <ram:Name>MUSTER-KUNDE GMBH</ram:Name>
+      <ram:InvoiceIssuerReference>BILLING-REF-2026-0815</ram:InvoiceIssuerReference>
+      <ram:InvoicerTradeParty>
+        <ram:Name>Konzern Shared Services GmbH</ram:Name>
         <ram:PostalTradeAddress>
-          <ram:PostcodeCode>40235</ram:PostcodeCode>
-          <ram:LineOne>KUNDENWEG 88</ram:LineOne>
-          <ram:CityName>DUESSELDORF</ram:CityName>
+          <ram:PostcodeCode>60311</ram:PostcodeCode>
+          <ram:CityName>Frankfurt am Main</ram:CityName>
           <ram:CountryID>DE</ram:CountryID>
         </ram:PostalTradeAddress>
+        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">DE777888999</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+      </ram:InvoicerTradeParty>
+      <ram:InvoiceeTradeParty>
+        <ram:Name>Muster-Konzern Holding AG</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>40213</ram:PostcodeCode>
+          <ram:CityName>Düsseldorf</ram:CityName>
+          <ram:CountryID>DE</ram:CountryID>
+        </ram:PostalTradeAddress>
+        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">DE123123123</ram:ID>
+        </ram:SpecifiedTaxRegistration>
       </ram:InvoiceeTradeParty>
+      <ram:PayerTradeParty>
+        <ram:Name>Nord Factoring AG</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:PostcodeCode>20354</ram:PostcodeCode>
+          <ram:CityName>Hamburg</ram:CityName>
+          <ram:CountryID>DE</ram:CountryID>
+        </ram:PostalTradeAddress>
+        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">DE321321321</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+      </ram:PayerTradeParty>
       <ram:ApplicableTradeTax>
         <ram:CalculatedAmount>76.67</ram:CalculatedAmount>
         <ram:TypeCode>VAT</ram:TypeCode>
@@ -369,6 +349,9 @@ GLN 4304171000002</ram:Content>
           <ram:BasisPeriodMeasure unitCode="DAY">10</ram:BasisPeriodMeasure>
           <ram:CalculationPercent>2.00</ram:CalculationPercent>
         </ram:ApplicableTradePaymentDiscountTerms>
+        <ram:PayeeTradeParty>
+          <ram:Name>Nord Factoring AG - Inkasso</ram:Name>
+        </ram:PayeeTradeParty>
       </ram:SpecifiedTradePaymentTerms>
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
         <ram:LineTotalAmount>410.10</ram:LineTotalAmount>
@@ -377,9 +360,28 @@ GLN 4304171000002</ram:Content>
         <ram:TaxBasisTotalAmount>403.55</ram:TaxBasisTotalAmount>
         <ram:TaxTotalAmount currencyID="EUR">76.67</ram:TaxTotalAmount>
         <ram:GrandTotalAmount>480.22</ram:GrandTotalAmount>
-        <ram:TotalPrepaidAmount>0.00</ram:TotalPrepaidAmount>
-        <ram:DuePayableAmount>480.22</ram:DuePayableAmount>
+        <ram:TotalPrepaidAmount>119.00</ram:TotalPrepaidAmount>
+        <ram:DuePayableAmount>361.22</ram:DuePayableAmount>
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+      <ram:SpecifiedAdvancePayment>
+        <ram:PaidAmount currencyID="EUR">119.00</ram:PaidAmount>
+        <ram:FormattedReceivedDateTime>
+          <qdt:DateTimeString format="102">20260415</qdt:DateTimeString>
+        </ram:FormattedReceivedDateTime>
+        <ram:IncludedTradeTax>
+          <ram:CalculatedAmount currencyID="EUR">19.00</ram:CalculatedAmount>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>S</ram:CategoryCode>
+          <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
+        </ram:IncludedTradeTax>
+        <ram:InvoiceSpecifiedReferencedDocument>
+          <ram:IssuerAssignedID>PROFORMA-2026-0042</ram:IssuerAssignedID>
+          <ram:TypeCode>389</ram:TypeCode>
+          <ram:FormattedIssueDateTime>
+            <qdt:DateTimeString format="102">20260415</qdt:DateTimeString>
+          </ram:FormattedIssueDateTime>
+        </ram:InvoiceSpecifiedReferencedDocument>
+      </ram:SpecifiedAdvancePayment>
     </ram:ApplicableHeaderTradeSettlement>
   </rsm:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoice>

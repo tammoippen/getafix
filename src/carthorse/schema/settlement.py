@@ -8,6 +8,9 @@
 * SEPA-specific creditor reference (BT-90) and remittance
   information (BT-83);
 * payee details if different from seller (BG-10);
+* EXTENDED-only settlement parties: the Seller's invoice file
+  reference (BT-X-204), the Invoicer (BG-X-33), the Invoicee
+  (BG-X-36), and the Payer (BG-X-73);
 * zero-or-more payment means (BG-16) with the associated debited
   account (BT-91-00) and creditor account (BG-17);
 * one or more VAT breakdowns (BG-23) at BASIC_WL+;
@@ -20,7 +23,10 @@
 * the monetary summation (BG-22) — defined in :mod:`accounting`;
 * zero-or-more preceding-invoice references (BG-3) — defined in
   :mod:`references`;
-* zero-or-more accounting references (BT-19-00).
+* zero-or-more accounting references (BT-19-00);
+* zero-or-more EXTENDED advance payments (BG-X-45) with their
+  included VAT (BG-X-46) and an optional prepayment-invoice
+  reference (BG-X-85).
 
 Validation rules enforced here:
 
@@ -81,7 +87,12 @@ from carthorse.schema.accounting import (
     MonetarySummation,
 )
 from carthorse.schema.element import Element, ETElement
-from carthorse.schema.party import PayeeTradeParty
+from carthorse.schema.party import (
+    InvoiceeTradeParty,
+    InvoicerTradeParty,
+    PayeeTradeParty,
+    PayerTradeParty,
+)
 from carthorse.schema.references import InvoiceReferencedDocument
 from carthorse.schema.types import (
     CategoryCode,
@@ -405,6 +416,7 @@ class PaymentTerms(Element):
             "partial_payment_amount",
             "penalty_terms",
             "discount_terms",
+            "payee",
         ),
     )
 
@@ -457,6 +469,16 @@ class PaymentTerms(Element):
         },
     )
     """Early-payment discount schedule (BG-X-44, EXTENDED only)."""
+    payee: PayeeTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Term-specific payee (BG-X-77, BT-X-504); EXTENDED only.
+
+    A payee that applies to this particular payment-term schedule —
+    e.g. when different instalments are collected by different
+    parties. Reuses the BG-10 :class:`PayeeTradeParty` shape (same
+    ``PayeeTradeParty`` element name). XSD position: last child of
+    ``TradePaymentTermsType``."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -619,6 +641,105 @@ class TaxCurrencyExchange(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class AdvancePaymentTradeTax(Element):
+    """VAT included in an advance payment (BG-X-46); EXTENDED-only.
+
+    The ``IncludedTradeTax`` of a :class:`AdvancePayment` — the VAT
+    already accounted for in a prepayment. Same ``ram:TradeTaxType``
+    as the BG-23 breakdown; only the fields the prepayment populates
+    are modelled, in XSD-sequence order.
+    """
+
+    tag: ClassVar[str] = "IncludedTradeTax"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    calculated_amount: Decimal | None = field(
+        default=None, metadata={"tag": "CalculatedAmount", "amount": True}
+    )
+    """VAT amount included in the prepayment (BT-X-293)."""
+    type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
+    """Tax type code (BT-X-294); UNTDID 5153, normally ``"VAT"``."""
+    exemption_reason: str | None = field(
+        default=None, metadata={"tag": "ExemptionReason"}
+    )
+    """VAT exemption reason text (BT-X-295)."""
+    category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
+    """VAT category code (BT-X-296)."""
+    exemption_reason_code: str | None = field(
+        default=None, metadata={"tag": "ExemptionReasonCode"}
+    )
+    """VAT exemption reason code (BT-X-297)."""
+    rate_applicable_percent: Decimal | None = field(
+        default=None, metadata={"tag": "RateApplicablePercent"}
+    )
+    """VAT rate (BT-X-298)."""
+    currency: str | None = None
+    """Document currency echoed as ``currencyID`` on ``CalculatedAmount``."""
+
+
+@dataclass(kw_only=True, slots=True)
+class AdvancePaymentReferencedDocument(Element):
+    """Prepayment-invoice reference on an advance payment (BG-X-85); EXTENDED-only.
+
+    The ``InvoiceSpecifiedReferencedDocument`` of a
+    :class:`AdvancePayment` — points at the prepayment / proforma
+    invoice that recorded the advance.
+    """
+
+    tag: ClassVar[str] = "InvoiceSpecifiedReferencedDocument"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
+    """Prepayment invoice identifier (BT-X-558)."""
+    type_code: str | None = field(default=None, metadata={"tag": "TypeCode"})
+    """Document type code (BT-X-559); UNTDID 1001."""
+    issue_date_time: date | None = field(
+        default=None, metadata={"tag": "FormattedIssueDateTime"}
+    )
+    """Prepayment invoice date (BT-X-560, wrapped in BT-X-560-00)."""
+
+
+@dataclass(kw_only=True, slots=True)
+class AdvancePayment(Element):
+    """Advance payment / prepayment (BG-X-45); EXTENDED-only.
+
+    Records an amount already paid before the invoice, together with
+    the VAT it included and an optional reference to the prepayment
+    invoice. ``PaidAmount`` (BT-X-291) reduces the amount still due.
+
+    Field order matches the XSD ``AdvancePaymentType`` sequence:
+    ``PaidAmount`` → ``FormattedReceivedDateTime`` →
+    ``IncludedTradeTax`` (1..*) → ``InvoiceSpecifiedReferencedDocument``.
+    """
+
+    tag: ClassVar[str] = "SpecifiedAdvancePayment"
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    paid_amount: Decimal = field(metadata={"tag": "PaidAmount", "amount": True})
+    """Prepaid amount (BT-X-291)."""
+    received_date_time: date | None = field(
+        default=None, metadata={"tag": "FormattedReceivedDateTime"}
+    )
+    """Date the prepayment was received (BT-X-292, wrapped in BT-X-292-00)."""
+    included_trade_tax: list[AdvancePaymentTradeTax] = field(
+        metadata={"tag": "IncludedTradeTax"}
+    )
+    """VAT included in the prepayment (BG-X-46, 1..* per XSD)."""
+    invoice_referenced_document: AdvancePaymentReferencedDocument | None = None
+    """Reference to the prepayment invoice (BG-X-85, 0..1)."""
+    currency: str | None = None
+    """Document currency echoed as ``currencyID`` on ``PaidAmount``."""
+
+    def __post_init__(self) -> None:
+        # XSD minOccurs=1 on IncludedTradeTax.
+        if not self.included_trade_tax:
+            raise ValueError(
+                "AdvancePayment.included_trade_tax: at least one IncludedTradeTax "
+                "entry is required (XSD minOccurs=1)."
+            )
+
+
+@dataclass(kw_only=True, slots=True)
 class TradeSettlement(Element):
     """Header trade settlement (BG-19).
 
@@ -634,7 +755,14 @@ class TradeSettlement(Element):
         # EXTENDED-only fields: must be None at lower profiles, lest the
         # render machinery silently drop them.
         fields_only_at(
-            Profile.EXTENDED, "currency_exchange", "logistics_service_charges"
+            Profile.EXTENDED,
+            "invoice_issuer_reference",
+            "invoicer",
+            "invoicee",
+            "payer",
+            "currency_exchange",
+            "logistics_service_charges",
+            "advance_payments",
         ),
         # SpecifiedTradePaymentTerms widens from 0..1 (BASIC_WL..COMFORT)
         # to 0..* at EXTENDED — cap the carthorse list to 1 entry below
@@ -704,9 +832,32 @@ class TradeSettlement(Element):
 
     Code list: ISO 4217.
     """
+    invoice_issuer_reference: str | None = field(
+        default=None,
+        metadata={"tag": "InvoiceIssuerReference", "profile": Profile.EXTENDED},
+    )
+    """Seller's reference / file number for the invoice (BT-X-204);
+    EXTENDED-only. XSD position: between ``InvoiceCurrencyCode`` and
+    ``InvoicerTradeParty``."""
+    invoicer: InvoicerTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Invoicer party (BG-X-33); EXTENDED-only — the party that
+    issued the invoice when different from the Seller."""
+    invoicee: InvoiceeTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Invoicee party (BG-X-36); EXTENDED-only — the party the
+    invoice is addressed to when different from the Buyer."""
     payee: PayeeTradeParty | None = None
     """Payee (BG-10); BASIC_WL+ — provided when different from the
     Seller."""
+    payer: PayerTradeParty | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Payer party (BG-X-73); EXTENDED-only — the party that settles
+    the invoice when neither Buyer nor Payee. XSD position: between
+    ``PayeeTradeParty`` and ``TaxApplicableTradeCurrencyExchange``."""
     currency_exchange: TaxCurrencyExchange | None = field(
         default=None,
         metadata={
@@ -715,8 +866,7 @@ class TradeSettlement(Element):
         },
     )
     """Tax-accounting-currency conversion (BG-X-41, 0..1); EXTENDED
-    only. XSD position: after the payee (and the future BG-X-73
-    PayerTradeParty when it lands in §4.1 / §7 step 7), before
+    only. XSD position: after :attr:`payer`, before
     :attr:`payment_means`."""
     payment_means: list[PaymentMeans] | None = None
     """Payment means (BG-16, 0..*); BASIC_WL+."""
@@ -757,3 +907,11 @@ class TradeSettlement(Element):
     """Preceding-invoice references (BG-3, 0..*); BASIC_WL+."""
     accounting_account: list[ReceivableAccountingAccount] | None = None
     """Buyer accounting references (BT-19-00, 0..*); BASIC_WL+."""
+    advance_payments: list[AdvancePayment] | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Advance payments / prepayments (BG-X-45, 0..*); EXTENDED-only.
+
+    XSD position: last child of ``HeaderTradeSettlement``, after
+    :attr:`accounting_account`. Each entry's ``PaidAmount`` reduces
+    the amount still due."""
