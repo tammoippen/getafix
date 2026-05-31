@@ -53,7 +53,7 @@ from carthorse.schema.references import (
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
 )
-from carthorse.schema.types import Country, Profile
+from carthorse.schema.types import Country, Incoterms, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -84,16 +84,13 @@ class TradeDeliveryTerms(Element):
     tag: ClassVar[str] = "ApplicableTradeDeliveryTerms"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    delivery_type_code: str = field(metadata={"tag": "DeliveryTypeCode"})
+    delivery_type_code: Incoterms = field(metadata={"tag": "DeliveryTypeCode"})
     """Delivery condition code (BT-X-145).
 
     The XSD type ``qdt:DeliveryTermsCodeType`` is an unrestricted
-    token; the schematron validates it against the Incoterms
-    codelist (``EXW`` / ``FCA`` / ``CPT`` / ``CIP`` / ``DAP`` /
-    ``DPU`` / ``DDP`` / ``FAS`` / ``FOB`` / ``CFR`` / ``CIF``).
-    Modelled as a plain ``str`` — matching the BT-X-7
-    ``LineStatusCode`` precedent — until carthorse ships the
-    Incoterms codelist enum.
+    token; the EXTENDED schematron validates it against
+    :class:`~carthorse.schema.types.Incoterms` (the 11 Incoterms
+    2020 codes).
     """
     relevant_location: RelevantTradeLocation | None = None
     """Named place the Incoterm applies to (BG-X-88, 0..1)."""
@@ -105,13 +102,12 @@ class TradeAgreement(Element):
 
     Container for the process and contract details of the invoice:
     trading parties plus every upstream document reference. The
-    EXTENDED agent parties (:class:`SalesAgentTradeParty` BG-X-49,
+    EXTENDED additions are the agent parties
+    (:class:`SalesAgentTradeParty` BG-X-49,
     :class:`BuyerTaxRepresentativeTradeParty` BG-X-54,
     :class:`BuyerAgentTradeParty` BG-X-62), the header
     :class:`~carthorse.schema.references.QuotationReferencedDocument`
-    (BG-X-61) and :class:`TradeDeliveryTerms` (BG-X-22) are all
-    modelled here — exercised by
-    ``tests/samples/EXTENDED_synth_agent_parties.xml``.
+    (BG-X-61) and :class:`TradeDeliveryTerms` (BG-X-22).
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"
@@ -135,11 +131,7 @@ class TradeAgreement(Element):
     sales_agent: SalesAgentTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Sales agent party (BG-X-49); EXTENDED-only.
-
-    XSD position: between ``BuyerTradeParty`` and
-    ``BuyerTaxRepresentativeTradeParty``.
-    """
+    """Sales agent party (BG-X-49); EXTENDED-only."""
     buyer_tax_representative: BuyerTaxRepresentativeTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
@@ -155,11 +147,7 @@ class TradeAgreement(Element):
     delivery_terms: TradeDeliveryTerms | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Delivery / trade terms (BG-X-22); EXTENDED-only.
-
-    XSD position: between ``ProductEndUserTradeParty`` and
-    ``SellerOrderReferencedDocument``.
-    """
+    """Delivery / trade terms (BG-X-22); EXTENDED-only."""
     seller_order: SellerOrderReferencedDocument | None = None
     """Sales order reference (BT-14-00); COMFORT+."""
     buyer_order: BuyerOrderReferencedDocument | None = None
@@ -167,11 +155,7 @@ class TradeAgreement(Element):
     quotation: QuotationReferencedDocument | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Header quotation reference (BG-X-61); EXTENDED-only.
-
-    XSD position: between ``BuyerOrderReferencedDocument`` and
-    ``ContractReferencedDocument``.
-    """
+    """Header quotation reference (BG-X-61); EXTENDED-only."""
     contract: ContractReferencedDocument | None = None
     """Contract reference (BT-12-00); BASIC_WL+."""
     additional_references: list[AdditionalReferencedDocument] | None = None
@@ -179,11 +163,7 @@ class TradeAgreement(Element):
     buyer_agent: BuyerAgentTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Buyer agent party (BG-X-62); EXTENDED-only.
-
-    XSD position: between ``AdditionalReferencedDocument`` and
-    ``SpecifiedProcuringProject``.
-    """
+    """Buyer agent party (BG-X-62); EXTENDED-only."""
     procuring_project: ProcuringProject | None = None
     """Project reference (BT-11-00); COMFORT+."""
     customer_order: UltimateCustomerOrderReferencedDocument | None = None

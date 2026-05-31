@@ -417,8 +417,7 @@ class IndividualTradeProductInstance(Element):
     """Per-instance product details (BG-X-84, 0..*); EXTENDED only.
 
     Carries a per-unit batch lot ID (BT-X-306) and / or
-    supplier-assigned serial number (BT-X-307). Exercised by the
-    Maschinen_Serial sample.
+    supplier-assigned serial number (BT-X-307).
     """
 
     tag: ClassVar[str] = "IndividualTradeProductInstance"
@@ -439,8 +438,7 @@ class IncludedReferencedProduct(Element):
     Used when a single line item ships as a composite (bundle, set,
     case-pack) and the invoice needs to enumerate the constituents
     — e.g. a "Joghurt-Variety-12er" line with three sub-products
-    Erdbeer / Banane / Schoko. Exercised by the Warenrechnung
-    sample.
+    Erdbeer / Banane / Schoko.
 
     Field order matches the XSD ``ReferencedProductType``: ``ID`` →
     ``GlobalID`` → ``SellerAssignedID`` → ``BuyerAssignedID`` →
@@ -530,15 +528,11 @@ class TradeProduct(Element):
     """Industry-assigned item identifier (BT-X-532); EXTENDED only.
 
     Codelist UNTDED 6313 + Factur-X extension (``BR-FXEXT-04``).
-    Exercised by ``EXTENDED_synth_product_line.xml``.
     """
     model_id: str | None = field(
         default=None, metadata={"tag": "ModelID", "profile": Profile.EXTENDED}
     )
-    """Model / variant identifier (BT-X-533); EXTENDED only.
-
-    Exercised by ``EXTENDED_synth_product_line.xml``.
-    """
+    """Model / variant identifier (BT-X-533); EXTENDED only."""
     name: str = field(metadata={"tag": "Name"})
     """Item name (BT-153)."""
     description: str | None = field(
@@ -552,25 +546,16 @@ class TradeProduct(Element):
 
     Per-batch traceability codes attached at the parent item level.
     For per-instance serial / batch carry the value on
-    :attr:`individual_product_instances` instead — that's the
-    pattern exercised by ``EXTENDED_zf24_Maschinen_Serial.xml``.
-    The item-level list is exercised by
-    ``EXTENDED_synth_product_line.xml``.
+    :attr:`individual_product_instances` instead.
     """
     brand_name: str | None = field(
         default=None, metadata={"tag": "BrandName", "profile": Profile.EXTENDED}
     )
-    """Brand name (BT-X-535); EXTENDED only.
-
-    Exercised by ``EXTENDED_synth_product_line.xml``.
-    """
+    """Brand name (BT-X-535); EXTENDED only."""
     model_name: str | None = field(
         default=None, metadata={"tag": "ModelName", "profile": Profile.EXTENDED}
     )
-    """Model name (BT-X-536); EXTENDED only.
-
-    Exercised by ``EXTENDED_synth_product_line.xml``.
-    """
+    """Model name (BT-X-536); EXTENDED only."""
     characteristics: list[ProductCharacteristic] | None = None
     """Item attributes (BG-32, 0..*); COMFORT+."""
     classifications: list[ProductClassification] | None = None
@@ -726,10 +711,6 @@ class LineQuotationReferencedDocument(Element):
     ``IssuerAssignedID`` (the quotation document identifier),
     ``LineID`` (the quotation's line position), and an optional
     ``FormattedIssueDateTime`` for the quotation's issue date.
-
-    Exercised by ``EXTENDED_zf24_Steuerfreie_IG.xml`` (every line
-    references the upstream offer ``ANG987654`` at the matching
-    position).
     """
 
     tag: ClassVar[str] = "QuotationReferencedDocument"
@@ -788,8 +769,7 @@ class LineTradeAgreement(Element):
     ``NetPriceProductTradePrice`` (required).
 
     :class:`~carthorse.schema.party.ItemSellerTradeParty` (BG-X-90)
-    is modelled here (field :attr:`item_seller`) — exercised by
-    ``tests/samples/EXTENDED_synth_product_line.xml``.
+    is modelled here (field :attr:`item_seller`).
 
     Deferred EXTENDED slots (per-line twins of structures already
     modelled at header level; no observed real-world use — add when
@@ -816,13 +796,7 @@ class LineTradeAgreement(Element):
         default=None,
         metadata={"tag": "QuotationReferencedDocument", "profile": Profile.EXTENDED},
     )
-    """Referenced quotation line (BG-X-47, 0..1); EXTENDED only.
-
-    XSD position: after ``buyer_order_ref``
-    (``BuyerOrderReferencedDocument``), before the price blocks.
-    Exercised by the Steuerfreie_IG sample where each invoice line
-    points back to a quotation line position.
-    """
+    """Referenced quotation line (BG-X-47, 0..1); EXTENDED only."""
     gross_price: GrossTradePrice | None = None
     """Item gross price (BT-148-00)."""
     net_price: NetTradePrice | None = None
@@ -840,10 +814,8 @@ class LineTradeAgreement(Element):
     )
     """Line-level deviating seller (BG-X-90); EXTENDED-only.
 
-    XSD position: after ``NetPriceProductTradePrice``, before
-    ``UltimateCustomerOrderReferencedDocument``. The seller-of-record
-    for this line when it differs from the header Seller (marketplace
-    / drop-ship)."""
+    The seller-of-record for this line when it differs from the
+    header Seller (marketplace / drop-ship)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -877,8 +849,7 @@ class LineTradeDelivery(Element):
     runtime enforcement lives in ``br_fxext_22`` / ``br_fxext_23``.
     """
     charge_free_quantity: ChargeFreeQuantity | None = None
-    """Free-goods quantity (BT-X-46); EXTENDED-only. XSD position:
-    after ``BilledQuantity``."""
+    """Free-goods quantity (BT-X-46); EXTENDED-only."""
     package_quantity: PackageQuantity | None = None
     """Number of packages (BT-X-47); EXTENDED-only."""
     per_package_unit_quantity: PerPackageUnitQuantity | None = None

@@ -151,6 +151,42 @@ class UNTDID1001TypeCode(enum.StrEnum):
 
 
 @enum.unique
+class Incoterms(enum.StrEnum):
+    """ICC Incoterms 2020 — delivery condition code (BT-X-145) on
+    :class:`~carthorse.schema.agreement.TradeDeliveryTerms`.
+
+    The XSD type ``qdt:DeliveryTermsCodeType`` is an unrestricted
+    token; the EXTENDED schematron validates the value against the
+    11-entry codelist shipped in ``FACTUR-X_EXTENDED_codedb.xml``
+    (Incoterms 2020). ``DAT`` from Incoterms 2010 was renamed
+    ``DPU`` in the 2020 revision and isn't accepted.
+    """
+
+    EXW = "EXW"
+    """Ex Works — buyer collects at seller's premises."""
+    FCA = "FCA"
+    """Free Carrier — seller delivers to a named carrier."""
+    CPT = "CPT"
+    """Carriage Paid To — seller pays freight to a named destination."""
+    CIP = "CIP"
+    """Carriage and Insurance Paid To — CPT plus insurance."""
+    DAP = "DAP"
+    """Delivered At Place — seller delivers to a named place, unloaded."""
+    DPU = "DPU"
+    """Delivered at Place Unloaded — DAP with seller-side unloading."""
+    DDP = "DDP"
+    """Delivered Duty Paid — seller carries all costs incl. import duty."""
+    FAS = "FAS"
+    """Free Alongside Ship (sea / inland waterway only)."""
+    FOB = "FOB"
+    """Free On Board (sea / inland waterway only)."""
+    CFR = "CFR"
+    """Cost and Freight (sea / inland waterway only)."""
+    CIF = "CIF"
+    """Cost, Insurance and Freight (sea / inland waterway only)."""
+
+
+@enum.unique
 class MIME(enum.StrEnum):
     pdf = "application/pdf"
     png = "image/png"
