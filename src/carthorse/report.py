@@ -62,6 +62,9 @@ def render_invoice(doc: Document, console: Console | None = None) -> None:
     if logistics_charges is not None:
         console.print(logistics_charges)
     console.print(_totals_panel(doc))
+    advance_payments = _advance_payments_panel(doc)
+    if advance_payments is not None:
+        console.print(advance_payments)
     payment = _payment_panel(doc)
     if payment is not None:
         console.print(payment)
@@ -468,6 +471,58 @@ def _logistics_charges_panel(doc: Document) -> Table | None:
             lsc.description,
             f"{lsc.applied_amount}",
             " / ".join(vat_cells) if vat_cells else "-",
+        )
+    return table
+
+
+def _advance_payments_panel(doc: Document) -> Table | None:
+    """Advance payments / prepayments (BG-X-45); EXTENDED only.
+
+    One row per :class:`AdvancePayment` (received date, paid amount,
+    included tax category + rate + amount, optional prepayment
+    invoice reference). Returns ``None`` for BASIC / COMFORT
+    documents and for EXTENDED documents with no prepayment.
+    """
+    items = doc.trade.settlement.advance_payments or []
+    if not items:
+        return None
+    currency = doc.trade.settlement.currency_code
+    table = Table(
+        title="Advance payments (BG-X-45)",
+        title_style="bold",
+        header_style="bold",
+        border_style="blue",
+        expand=True,
+    )
+    table.add_column("Received", no_wrap=True)
+    table.add_column(f"Paid [{currency}]", justify="right")
+    table.add_column("Included VAT", justify="right", no_wrap=True)
+    table.add_column("Prepayment invoice")
+    for adv in items:
+        # IncludedTradeTax is 1..* per XSD; common case is one row.
+        # Render each as "<calculated> @ <rate>% <category>" and
+        # join with " / " when several.
+        vat_cells: list[str] = []
+        for tax in adv.included_trade_tax:
+            rate = tax.rate_applicable_percent
+            calc = tax.calculated_amount
+            cell = f"{calc}" if calc is not None else "—"
+            if rate is not None:
+                cell = f"{cell} @ {rate}% {tax.category_code.value}"
+            else:
+                cell = f"{cell} {tax.category_code.value}"
+            vat_cells.append(cell)
+        ref = adv.invoice_referenced_document
+        ref_cell = "—"
+        if ref is not None:
+            ref_cell = ref.issuer_assigned_id
+            if ref.issue_date_time is not None:
+                ref_cell = f"{ref_cell} ({ref.issue_date_time.isoformat()})"
+        table.add_row(
+            adv.received_date_time.isoformat() if adv.received_date_time else "—",
+            f"{adv.paid_amount}",
+            " / ".join(vat_cells) if vat_cells else "-",
+            ref_cell,
         )
     return table
 

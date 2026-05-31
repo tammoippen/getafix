@@ -223,3 +223,37 @@ def test_render_invoice_indents_sub_invoice_line_children() -> None:
     assert "  0102" in text
     # GROUP parent line is at depth 0 (no leading indent before "01").
     assert "01 (GROUP)" in text
+
+
+def test_render_invoice_advance_payments_panel_shows_for_extended_doc() -> None:
+    """The Advance-payments panel (BG-X-45) appears when
+    ``settlement.advance_payments`` is populated. The
+    ``EXTENDED_synth_settlement_parties.xml`` fixture carries a
+    single 119.00 EUR prepayment (incl. 19.00 EUR VAT @ 19 % S)
+    against the proforma invoice ``PROFORMA-2026-0042``."""
+    from pathlib import Path
+
+    from lxml import etree
+
+    doc = Document.from_xml(
+        etree.fromstring(
+            Path("tests/samples/EXTENDED_synth_settlement_parties.xml").read_bytes()
+        )
+    )
+    console = _record()
+    render_invoice(doc, console=console)
+    text = console.export_text()
+    assert "Advance payments (BG-X-45)" in text
+    assert "2026-04-15" in text  # received_date_time
+    assert "119.00" in text  # paid_amount
+    assert "19.00 @ 19.00% S" in text  # IncludedTradeTax cell
+    assert "PROFORMA-2026-0042" in text  # referenced prepayment invoice
+
+
+def test_render_invoice_no_advance_payments_panel_for_basic_doc() -> None:
+    """BASIC / COMFORT documents print no Advance-payments panel —
+    the helper short-circuits on the empty / None list."""
+    doc = make_vat_doc()
+    console = _record()
+    render_invoice(doc, console=console)
+    assert "Advance payments" not in console.export_text()

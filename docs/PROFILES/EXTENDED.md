@@ -348,9 +348,16 @@ Three additive panels matching the COMFORT enrichments already shipped:
    :class:`LogisticsServiceCharge` (description, applied amount,
    VAT category + rate). Returns ``None`` for non-EXTENDED documents
    and for EXTENDED documents that don't carry any logistics charge.
-2. **Advance payments panel** — pending the
-   :class:`SpecifiedAdvancePayment` structure landing in §4.3 (no
-   sample exercises it yet, so the dataclass is also deferred).
+2. **Advance payments panel** ✓ — landed as
+   ``_advance_payments_panel``: one row per
+   :class:`AdvancePayment` with the received date, the paid amount,
+   the included VAT (rendered as ``<calculated> @ <rate>% <cat>``,
+   joined with `` / `` when more than one tax row), and the
+   optional prepayment-invoice reference (``IssuerAssignedID``
+   plus issue date when present). Returns ``None`` for
+   non-EXTENDED documents and for EXTENDED documents with no
+   prepayment — exercised by
+   ``EXTENDED_synth_settlement_parties.xml``.
 3. **Line subtype rendering** ✓ — ``_lines_table`` now appends the
    BT-X-8 ``LineStatusReasonCode`` (``DETAIL`` / ``GROUP`` /
    ``INFORMATION``) as a dim tag next to the line id, and indents
@@ -362,8 +369,8 @@ Three additive panels matching the COMFORT enrichments already shipped:
    unchanged (no parent_line_id, no status_reason_code → depth 0 and
    no tag).
 
-Panels 1 + 3 ship in the same commit. Panel 2 lands with the
-SpecifiedAdvancePayment structure.
+All three panels are guarded so BASIC / COMFORT documents print
+exactly as before.
 
 
 ## 7. Suggested ordering
