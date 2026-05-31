@@ -301,9 +301,13 @@ class BasisPeriodMeasure(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     value: Decimal
-    """Numeric period length."""
+    """Numeric period length. Role-dependent BT id — BT-X-277 on
+    :class:`PaymentPenaltyTerms.basis_period_measure`, BT-X-283 on
+    :class:`PaymentDiscountTerms.basis_period_measure`."""
     unit_code: str
-    """UN/ECE Rec.20 time unit code (``DAY``, ``WEE``, ``MON``, …)."""
+    """UN/ECE Rec.20 time unit code (``DAY``, ``WEE``, ``MON``, …).
+    Rendered as the ``@unitCode`` attribute — BT-X-278 on the
+    penalty measure, BT-X-284 on the discount measure."""
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
@@ -674,7 +678,10 @@ class AdvancePaymentTradeTax(Element):
     )
     """VAT rate (BT-X-298)."""
     currency: str | None = None
-    """Document currency echoed as ``currencyID`` on ``CalculatedAmount``."""
+    """Document currency (BT-5) echoed as ``currencyID`` on
+    ``CalculatedAmount`` (BT-X-293). Carthorse helper — not a BT
+    field itself (the XSD encodes it as an attribute, not an
+    element)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -732,7 +739,9 @@ class AdvancePayment(Element):
     invoice_referenced_document: AdvancePaymentReferencedDocument | None = None
     """Reference to the prepayment invoice (BG-X-85, 0..1)."""
     currency: str | None = None
-    """Document currency echoed as ``currencyID`` on ``PaidAmount``."""
+    """Document currency (BT-5) echoed as ``currencyID`` on
+    ``PaidAmount`` (BT-X-291). Carthorse helper — not a BT field
+    itself (the XSD encodes it as an attribute, not an element)."""
 
     def __post_init__(self) -> None:
         # XSD minOccurs=1 on IncludedTradeTax.
