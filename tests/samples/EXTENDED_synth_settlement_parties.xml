@@ -376,7 +376,7 @@ GLN 4304171000002</ram:Content>
         </ram:IncludedTradeTax>
         <ram:InvoiceSpecifiedReferencedDocument>
           <ram:IssuerAssignedID>PROFORMA-2026-0042</ram:IssuerAssignedID>
-          <ram:TypeCode>389</ram:TypeCode>
+          <ram:TypeCode>325</ram:TypeCode>
           <ram:FormattedIssueDateTime>
             <qdt:DateTimeString format="102">20260415</qdt:DateTimeString>
           </ram:FormattedIssueDateTime>

@@ -652,15 +652,16 @@ class SalesAgentTradeParty(Element):
     name: str = field(metadata={"tag": "Name"})
     """Sales agent name (BT-X-335)."""
     legal_organization: LegalOrganization | None = None
-    """Sales agent legal organisation."""
+    """Sales agent legal organisation (BG-X-50)."""
     contact: TradeContact | None = None
-    """Sales agent contact details."""
+    """Sales agent contact details (BG-X-51)."""
     address: PostalTradeAddressExtended | None = None
-    """Sales agent postal address."""
+    """Sales agent postal address (BG-X-52)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Sales agent electronic address."""
+    """Sales agent electronic address (BT-X-341-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = None
-    """Sales agent tax registration (VAT id only — ``BR-FXEXT-03``)."""
+    """Sales agent tax registration (BT-X-340-00; VAT id only —
+    ``BR-FXEXT-03``)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -682,15 +683,15 @@ class BuyerTaxRepresentativeTradeParty(Element):
     name: str = field(metadata={"tag": "Name"})
     """Buyer tax representative name (BT-X-362)."""
     legal_organization: LegalOrganization | None = None
-    """Buyer tax representative legal organisation."""
+    """Buyer tax representative legal organisation (BG-X-58)."""
     contact: TradeContact | None = None
-    """Buyer tax representative contact details."""
+    """Buyer tax representative contact details (BG-X-55)."""
     address: PostalTradeAddressExtended | None = None
-    """Buyer tax representative postal address."""
+    """Buyer tax representative postal address (BG-X-56)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Buyer tax representative electronic address."""
+    """Buyer tax representative electronic address (BT-X-368-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = None
-    """Buyer tax representative VAT identifier."""
+    """Buyer tax representative VAT identifier (BT-X-367-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -712,15 +713,15 @@ class BuyerAgentTradeParty(Element):
     name: str = field(metadata={"tag": "Name"})
     """Buyer agent name (BT-X-406)."""
     legal_organization: LegalOrganization | None = None
-    """Buyer agent legal organisation."""
+    """Buyer agent legal organisation (BG-X-63)."""
     contact: TradeContact | None = None
-    """Buyer agent contact details."""
+    """Buyer agent contact details (BG-X-64)."""
     address: PostalTradeAddressExtended | None = None
-    """Buyer agent postal address."""
+    """Buyer agent postal address (BG-X-65)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Buyer agent electronic address."""
+    """Buyer agent electronic address (BT-X-412-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = None
-    """Buyer agent tax registration."""
+    """Buyer agent tax registration (BT-X-411-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -889,21 +890,22 @@ class ItemSellerTradeParty(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: str | None = field(default=None, metadata={"tag": "ID"})
-    """Item seller identifier."""
+    """Item seller identifier (BT-X-571)."""
     global_ids: list[GlobalID] | None = None
-    """Item seller global identifier(s)."""
+    """Item seller global identifier(s) (BT-X-570)."""
     name: str = field(metadata={"tag": "Name"})
     """Item seller name (BT-X-569)."""
     legal_organization: LegalOrganization | None = None
-    """Item seller legal organisation."""
+    """Item seller legal organisation (BT-X-572-00)."""
     contact: TradeContact | None = None
-    """Item seller contact details."""
+    """Item seller contact details (BG-X-91)."""
     address: PostalTradeAddressExtended | None = None
-    """Item seller postal address."""
+    """Item seller postal address (BG-X-92)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Item seller electronic address."""
+    """Item seller electronic address (BT-X-586-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = None
-    """Item seller tax registration (VAT id only — ``BR-FXEXT-03``)."""
+    """Item seller tax registration (BT-X-587-00 / BT-X-588-00;
+    VAT id only — ``BR-FXEXT-03``)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -926,15 +928,15 @@ class InvoicerTradeParty(Element):
     name: str = field(metadata={"tag": "Name"})
     """Invoicer name (BT-X-207)."""
     legal_organization: LegalOrganization | None = None
-    """Invoicer legal organisation."""
+    """Invoicer legal organisation (BT-X-208-00)."""
     contact: TradeContact | None = None
-    """Invoicer contact details."""
+    """Invoicer contact details (BG-X-34)."""
     address: PostalTradeAddressExtended | None = None
-    """Invoicer postal address."""
+    """Invoicer postal address (BG-X-35)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Invoicer electronic address."""
+    """Invoicer electronic address (BT-X-222-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = None
-    """Invoicer tax registration."""
+    """Invoicer tax registration (BT-X-223-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -957,15 +959,15 @@ class InvoiceeTradeParty(Element):
     name: str = field(metadata={"tag": "Name"})
     """Invoicee name (BT-X-226)."""
     legal_organization: LegalOrganization | None = None
-    """Invoicee legal organisation."""
+    """Invoicee legal organisation (BT-X-227-00)."""
     contact: TradeContact | None = None
-    """Invoicee contact details."""
+    """Invoicee contact details (BG-X-37)."""
     address: PostalTradeAddressExtended | None = None
-    """Invoicee postal address."""
+    """Invoicee postal address (BG-X-38)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Invoicee electronic address."""
+    """Invoicee electronic address (BT-X-241-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = None
-    """Invoicee tax registration."""
+    """Invoicee tax registration (BT-X-242-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -987,15 +989,15 @@ class PayerTradeParty(Element):
     name: str = field(metadata={"tag": "Name"})
     """Payer name (BT-X-476)."""
     legal_organization: LegalOrganization | None = None
-    """Payer legal organisation."""
+    """Payer legal organisation (BT-X-480-00)."""
     contact: TradeContact | None = None
-    """Payer contact details."""
+    """Payer contact details (BG-X-74)."""
     address: PostalTradeAddressExtended | None = None
-    """Payer postal address."""
+    """Payer postal address (BG-X-75)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Payer electronic address."""
+    """Payer electronic address (BT-X-482-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = None
-    """Payer tax registration."""
+    """Payer tax registration (BT-X-481-00)."""
 
 
 @dataclass(kw_only=True, slots=True)

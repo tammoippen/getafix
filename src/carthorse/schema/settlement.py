@@ -99,6 +99,7 @@ from carthorse.schema.types import (
     Currency,
     Namespace,
     Profile,
+    TypeCode,
     UNTDID4461PaymentMeansCode,
 )
 
@@ -477,8 +478,7 @@ class PaymentTerms(Element):
     A payee that applies to this particular payment-term schedule —
     e.g. when different instalments are collected by different
     parties. Reuses the BG-10 :class:`PayeeTradeParty` shape (same
-    ``PayeeTradeParty`` element name). XSD position: last child of
-    ``TradePaymentTermsType``."""
+    ``PayeeTradeParty`` element name)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -691,8 +691,12 @@ class AdvancePaymentReferencedDocument(Element):
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Prepayment invoice identifier (BT-X-558)."""
-    type_code: str | None = field(default=None, metadata={"tag": "TypeCode"})
-    """Document type code (BT-X-559); UNTDID 1001."""
+    type_code: TypeCode | None = field(default=None, metadata={"tag": "TypeCode"})
+    """Document type code (BT-X-559); UNTDID 1001 — typically
+    :attr:`~carthorse.schema.types.TypeCode.T_ProformaInvoice`
+    (``"325"``) or
+    :attr:`~carthorse.schema.types.TypeCode.T_PrepaymentInvoice`
+    (``"386"``)."""
     issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
@@ -837,8 +841,7 @@ class TradeSettlement(Element):
         metadata={"tag": "InvoiceIssuerReference", "profile": Profile.EXTENDED},
     )
     """Seller's reference / file number for the invoice (BT-X-204);
-    EXTENDED-only. XSD position: between ``InvoiceCurrencyCode`` and
-    ``InvoicerTradeParty``."""
+    EXTENDED-only."""
     invoicer: InvoicerTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
@@ -856,8 +859,7 @@ class TradeSettlement(Element):
         default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Payer party (BG-X-73); EXTENDED-only — the party that settles
-    the invoice when neither Buyer nor Payee. XSD position: between
-    ``PayeeTradeParty`` and ``TaxApplicableTradeCurrencyExchange``."""
+    the invoice when neither Buyer nor Payee."""
     currency_exchange: TaxCurrencyExchange | None = field(
         default=None,
         metadata={
@@ -865,9 +867,7 @@ class TradeSettlement(Element):
             "profile": Profile.EXTENDED,
         },
     )
-    """Tax-accounting-currency conversion (BG-X-41, 0..1); EXTENDED
-    only. XSD position: after :attr:`payer`, before
-    :attr:`payment_means`."""
+    """Tax-accounting-currency conversion (BG-X-41, 0..1); EXTENDED only."""
     payment_means: list[PaymentMeans] | None = None
     """Payment means (BG-16, 0..*); BASIC_WL+."""
     trade_taxes: list[ApplicableTradeTax] | None = None
@@ -886,9 +886,7 @@ class TradeSettlement(Element):
     )
     """Logistics service charges (BG-X-42, 0..*); EXTENDED only.
 
-    XSD position: between :attr:`allowance_charge`
-    (``SpecifiedTradeAllowanceCharge``) and :attr:`terms`
-    (``SpecifiedTradePaymentTerms``). Each entry sums into BT-108 via
+    Each entry sums into BT-108 via
     ``BR-FXEXT-CO-12`` and into its declared VAT category's BG-23 row
     via ``BR-FXEXT-{cat}-08``.
     """
@@ -912,6 +910,4 @@ class TradeSettlement(Element):
     )
     """Advance payments / prepayments (BG-X-45, 0..*); EXTENDED-only.
 
-    XSD position: last child of ``HeaderTradeSettlement``, after
-    :attr:`accounting_account`. Each entry's ``PaidAmount`` reduces
-    the amount still due."""
+    Each entry's ``PaidAmount`` reduces the amount still due."""

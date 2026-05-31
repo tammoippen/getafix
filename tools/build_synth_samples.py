@@ -73,7 +73,7 @@ from carthorse.schema.settlement import (
     AdvancePaymentReferencedDocument,
     AdvancePaymentTradeTax,
 )
-from carthorse.schema.types import CategoryCode, Country
+from carthorse.schema.types import CategoryCode, Country, Incoterms, TypeCode
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SAMPLES = _ROOT / "tests" / "samples"
@@ -89,7 +89,22 @@ def _load_base() -> Document:
 
 
 def _serialize(doc: Document) -> bytes:
-    """Render ``doc`` to oracle-safe, pretty-printed XML bytes."""
+    """Render ``doc`` to oracle-safe, pretty-printed XML bytes.
+
+    ``tagic``'s ``render(indent=True)`` injects whitespace *inside*
+    text-only leaves (a 2-decimal money value goes from ``"52.00"``
+    flat to ``"\\n    52.00\\n  "`` indented). The XML is still
+    XSD-valid (``xs:decimal`` per the W3C spec trims surrounding
+    whitespace), but the schematron ``BR-DEC-*`` checks count
+    decimal places with raw string ops
+    (``string-length(substring-after(string(.), '.'))``) and see
+    the trailing whitespace as fractional digits — firing
+    BR-DEC-09/10/11/12/14/16/18/19/20/23 on every monetary leaf.
+    Workaround: render flat, then let ``lxml`` pretty-print with
+    ``remove_blank_text=True`` — ``lxml`` correctly leaves
+    text-only leaves on a single line. Tracked in PR review with
+    a minimal reproducer; remove once ``tagic`` is fixed upstream.
+    """
     flat = doc.to_xml().render(indent=False).encode()
     parser = etree.XMLParser(remove_blank_text=True)
     tree = etree.fromstring(flat, parser)
@@ -162,7 +177,7 @@ def build_agent_parties() -> bytes:
         ),
     )
     ag.delivery_terms = TradeDeliveryTerms(
-        delivery_type_code="FCA",
+        delivery_type_code=Incoterms.FCA,
         relevant_location=RelevantTradeLocation(
             country_id=Country.DE, name="Hamburg Hafen"
         ),
@@ -230,7 +245,7 @@ def build_settlement_parties() -> bytes:
             ],
             invoice_referenced_document=AdvancePaymentReferencedDocument(
                 issuer_assigned_id="PROFORMA-2026-0042",
-                type_code="389",
+                type_code=TypeCode.T_ProformaInvoice,
                 issue_date_time=date(2026, 4, 15),
             ),
             currency="EUR",
@@ -333,10 +348,6 @@ def main() -> int:
         return 1
     return 0
 
-
-# ``Decimal`` is imported for builders added in later commits (advance
-# payments, line monetary extras); keep the import stable.
-_ = Decimal
 
 if __name__ == "__main__":
     raise SystemExit(main())
