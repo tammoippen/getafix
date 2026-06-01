@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import cast
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -35,7 +36,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "XML file and report business-rule violations."
         ),
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "source",
         type=Path,
         help=(
@@ -43,7 +44,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "Factur-X / ZUGFeRD PDF with one embedded."
         ),
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--no-validate",
         action="store_true",
         help="Skip running the BR-* business-rule validators.",
@@ -68,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
         import lxml.etree as etree
         from rich.console import Console
     except ImportError as exc:
-        sys.stderr.write(
+        _ = sys.stderr.write(
             f"carthorse CLI needs the optional 'cli' extra ({exc.name}): "
             f"{exc.msg}.\nInstall with: pip install 'carthorse[cli]'\n"
         )
@@ -80,7 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     out = Console()
     err = Console(stderr=True)
 
-    source: Path = args.source
+    source = cast("Path", args.source)
+    no_validate = cast("bool", args.no_validate)
     if not source.is_file():
         err.print(f"[red]Could not read {source}: not a file[/red]")
         return 2
@@ -131,7 +133,7 @@ def main(argv: list[str] | None = None) -> int:
 
     render_invoice(doc, console=out)
 
-    if args.no_validate:
+    if no_validate:
         return 0
 
     profile = doc.context.guideline.id

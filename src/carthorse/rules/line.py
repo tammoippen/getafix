@@ -45,7 +45,7 @@ def br_27(m: _line.NetTradePrice, profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_28(m: _line.GrossTradePrice, profile: Profile) -> list[ValidationError]:
+def br_28(m: _line.GrossTradePrice, _profile: Profile) -> list[ValidationError]:
     """BR-28: The Item gross price (BT-148) shall NOT be negative.
 
     Applies: BASIC+ (line items first appear at BASIC).

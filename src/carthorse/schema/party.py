@@ -80,7 +80,7 @@ from carthorse.rules.party import (
     br_co_26,
     bt_31_0_scheme_id,
 )
-from carthorse.schema.element import Element, ETElement, coerce_enum
+from carthorse.schema.element import Element, ETElement
 from carthorse.schema.types import Country, Profile
 
 
@@ -116,10 +116,7 @@ class SchemeID(Element):
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
         if elem.text is None:
             raise ValueError
-        return cls(
-            id=elem.text.strip(),
-            scheme_id=coerce_enum(elem.attrib.get("schemeID"), cls, "scheme_id"),
-        )
+        return cls(id=elem.text.strip(), scheme_id=elem.attrib.get("schemeID"))
 
 
 @dataclass(kw_only=True, slots=True)

@@ -73,7 +73,7 @@ from carthorse.rules.accounting import (
     bt_95_0_102_0_vat_only,
     bt_118_0_vat_only,
 )
-from carthorse.schema.element import Element, ETElement, coerce_enum
+from carthorse.schema.element import Element, ETElement
 from carthorse.schema.types import (
     CategoryCode,
     Currency,
@@ -144,10 +144,7 @@ class TaxTotal(Element):
         if elem.text is None:
             raise ValueError
         value = elem.text.strip()
-        return cls(
-            amount=Decimal(value),
-            currency_id=coerce_enum(currency_id, cls, "currency_id"),
-        )
+        return cls(amount=Decimal(value), currency_id=Currency(currency_id))
 
 
 @dataclass(kw_only=True, slots=True)

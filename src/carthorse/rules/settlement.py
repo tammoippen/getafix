@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 def br_50(
-    m: _set.PayeePartyCreditorFinancialAccount, profile: Profile
+    m: _set.PayeePartyCreditorFinancialAccount, _profile: Profile
 ) -> list[ValidationError]:
     """BR-50: A Payment account identifier (BT-84) shall be present if Credit
     transfer (BG-16) information is provided in the Invoice.
@@ -51,7 +51,7 @@ def br_50(
     ]
 
 
-def br_51(m: _set.FinancialCard, profile: Profile) -> list[ValidationError]:
+def br_51(m: _set.FinancialCard, _profile: Profile) -> list[ValidationError]:
     """BR-51: The last 4 to 6 digits of the Payment card primary account
     number (BT-87) shall be present if Payment card information (BG-18)
     is provided in the Invoice.
@@ -72,7 +72,7 @@ def br_51(m: _set.FinancialCard, profile: Profile) -> list[ValidationError]:
 _CREDIT_TRANSFER_CODES = {"30", "42", "58"}
 
 
-def br_61(m: _set.PaymentMeans, profile: Profile) -> list[ValidationError]:
+def br_61(m: _set.PaymentMeans, _profile: Profile) -> list[ValidationError]:
     """BR-61: If the Payment means type code (BT-81) means SEPA credit
     transfer, Local credit transfer or Non-SEPA international credit
     transfer, the Payment account identifier (BT-84) shall be present.
@@ -96,7 +96,7 @@ def br_61(m: _set.PaymentMeans, profile: Profile) -> list[ValidationError]:
     ]
 
 
-def bt_81_code_shape(m: _set.PaymentMeans, profile: Profile) -> list[ValidationError]:
+def bt_81_code_shape(m: _set.PaymentMeans, _profile: Profile) -> list[ValidationError]:
     """BT-81 (Payment means type code) must be a UNTDID 4461 code
     (digits up to 3 chars, or ``ZZZ``).
 
@@ -116,7 +116,9 @@ def bt_81_code_shape(m: _set.PaymentMeans, profile: Profile) -> list[ValidationE
     ]
 
 
-def br_co_19(m: _set.BillingSpecifiedPeriod, profile: Profile) -> list[ValidationError]:
+def br_co_19(
+    m: _set.BillingSpecifiedPeriod, _profile: Profile
+) -> list[ValidationError]:
     """BR-CO-19: If Invoicing period (BG-14) is used, the Invoicing period
     start date (BT-73) or the Invoicing period end date (BT-74) shall be
     filled, or both.
@@ -136,7 +138,7 @@ def br_co_19(m: _set.BillingSpecifiedPeriod, profile: Profile) -> list[Validatio
     ]
 
 
-def br_29(m: _set.BillingSpecifiedPeriod, profile: Profile) -> list[ValidationError]:
+def br_29(m: _set.BillingSpecifiedPeriod, _profile: Profile) -> list[ValidationError]:
     """BR-29: If both Invoicing period start date (BT-73) and Invoicing
     period end date (BT-74) are given then the Invoicing period end date
     (BT-74) shall be later or equal to the Invoicing period start date
@@ -161,7 +163,7 @@ def br_29(m: _set.BillingSpecifiedPeriod, profile: Profile) -> list[ValidationEr
 
 
 def br_5_currency_shape(
-    m: _set.TradeSettlement, profile: Profile
+    m: _set.TradeSettlement, _profile: Profile
 ) -> list[ValidationError]:
     """BR-5: An Invoice shall have an Invoice currency code (BT-5).
 
@@ -201,7 +203,7 @@ def br_co_18(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     ]
 
 
-def br_53(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]:
+def br_53(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError]:
     """BR-53: If the VAT accounting currency code (BT-6) is present, then
     the Invoice total VAT amount in accounting currency (BT-111) shall be
     provided.
@@ -250,7 +252,7 @@ def br_co_25(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     ]
 
 
-def br_co_14(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]:
+def br_co_14(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError]:
     """BR-CO-14: Invoice total VAT amount (BT-110) = sum of VAT category
     tax amounts (BT-117) across BG-23 rows.
 
@@ -318,7 +320,7 @@ def br_co_15(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     ]
 
 
-def br_co_16(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]:
+def br_co_16(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError]:
     """BR-CO-16: Amount due for payment (BT-115) = Invoice total amount
     with VAT (BT-112) - Paid amount (BT-113) + Rounding amount (BT-114).
 

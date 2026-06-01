@@ -1,5 +1,15 @@
+# This module is the reflective core: it walks ``dataclasses.fields``
+# at runtime, indexes ``f.metadata`` (typed ``Mapping[str, Any]`` by the
+# dataclasses spec), and dispatches on the field's type annotation via
+# ``typing.get_origin`` / ``get_args``. Each of those Python APIs is
+# ``Any``-typed by construction — there's no way to encode "a value
+# that is itself a type annotation" without falling back to ``Any``.
+# Suppress the ``Any`` / ``Unknown`` categories here only; elsewhere
+# in the package they stay on.
+# pyright: reportAny=false, reportExplicitAny=false
+# pyright: reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
+
 import datetime
-import enum
 import json
 import types
 import xml.etree.ElementTree as _stdlib_etree
@@ -7,33 +17,25 @@ from abc import ABC
 from collections.abc import Callable
 from dataclasses import Field, dataclass, fields
 from decimal import Decimal
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Literal,
-    Self,
-    get_args,
-    get_origin,
-    get_type_hints,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, get_args, get_origin
 
 from tagic.xml import XML
 
 from carthorse.schema.types import Namespace, Profile
 
 if TYPE_CHECKING:
-    # lxml is an optional runtime dependency; the ``ETElement`` alias unions
-    # the stdlib ``Element`` with lxml's ``_Element`` so :meth:`Element.from_xml`
-    # accepts either parser's output. The TYPE_CHECKING guard keeps lxml off
-    # the import path at runtime — pyright still sees the lxml branch.
+    # lxml is an optional runtime dependency; the ``ETElement`` alias
+    # unions the stdlib ``Element`` with lxml's ``_Element`` so
+    # :meth:`Element.from_xml` accepts either parser's output. The
+    # TYPE_CHECKING guard keeps lxml off the runtime import path —
+    # pyright still sees the lxml branch. ``_Element`` is the
+    # canonical public element type in lxml (the leading underscore is
+    # historical, not a privacy boundary); ``reportPrivateUsage`` is
+    # disabled project-wide on that basis.
     from lxml.etree import _Element as _LxmlElement
 
     type ETElement = _stdlib_etree.Element | _LxmlElement
 else:
-    # Runtime alias — both parsers expose the same duck-typed shape
-    # (tag/text/attrib/__iter__/__len__/__getitem__), so the runtime form
-    # carries only the always-importable stdlib type.
     type ETElement = _stdlib_etree.Element
 
 
@@ -145,7 +147,7 @@ class Element(ABC):
     def get_qualified_tag(cls) -> str:
         return cls.namespace.get_qualified_tag(cls.tag)
 
-    def _field_profile(self, name: str) -> Profile | None:
+    def _field_profile(self, _name: str) -> Profile | None:
         """Hook for context-dependent per-field profile gates.
 
         Returns ``None`` by default so the per-field ``metadata['profile']``
@@ -170,14 +172,12 @@ class Element(ABC):
                 # Internal: not rendered as its own element; it shows up
                 # as the ``currencyID`` attribute on amount fields.
                 continue
-            value = getattr(self, f.name)
+            value: object = getattr(self, f.name)
             if value is None:
                 # not required
                 continue
 
-            p = self._field_profile(f.name)
-            if p is None:
-                p = f.metadata.get("profile")
+            p = self._field_profile(f.name) or _meta_profile(f)
             if p is None:
                 # For list-of-Element fields, the framework consults the
                 # item's class profile so a 0..* group declared at e.g.
@@ -189,17 +189,15 @@ class Element(ABC):
             if p is None:
                 p = Profile.MINIMUM
 
-            assert isinstance(p, Profile)
             if profile < p:
                 raise ProfileMismatch(
                     f"{self.__class__.__name__}.{f.name}: {profile} < {p}"
                 )
-            if not isinstance(value, list):
-                value = [value]
+            items: list[object] = value if isinstance(value, list) else [value]
             extra_attrs: dict[str, str] | None = None
-            if f.metadata.get("amount") and currency:
+            if _meta_is_amount(f) and currency:
                 extra_attrs = {"currencyID": currency}
-            for v in value:
+            for v in items:
                 match v:
                     case str():
                         children += [_render_str(v, f, extra_attrs)]
@@ -296,30 +294,6 @@ def _get_non_none_type(field_type: Any) -> Any:
     return field_type
 
 
-def coerce_enum(value: str | None, owner_cls: type, field_name: str) -> Any:
-    """Coerce an XML attribute value into the annotated type of
-    ``owner_cls.<field_name>``.
-
-    Element-text fields auto-coerce inside :func:`_parse_str`, which
-    calls ``curr_type(el.text.strip())`` on every parsed value. This
-    helper is the companion for *attribute* reads in custom
-    ``from_xml`` overrides (``TaxTotal``, ``AttachmentBinaryObject``,
-    ``ProductClassification``, ``SchemeID``, …) that pull code values
-    from an XML attribute instead of element text.
-
-    Returns ``None`` when ``value`` is ``None`` (attribute absent),
-    ``target(value)`` when the field's non-Optional type is a
-    ``StrEnum`` subclass, and ``value`` unchanged otherwise.
-    """
-    if value is None:
-        return None
-    hints = get_type_hints(owner_cls)
-    target = _get_non_none_type(hints.get(field_name, str))
-    if isinstance(target, type) and issubclass(target, enum.StrEnum):
-        return target(value)
-    return value
-
-
 def _allows_none(field_type: Any) -> bool:
     return get_origin(field_type) is types.UnionType and type(None) in get_args(
         field_type
@@ -374,24 +348,42 @@ def _check_scalar(cls_name: str, name: str, value: Any, expected: Any) -> None:
         )
 
 
-def _render_bool(value: bool, field: Field[bool]) -> XML:
+def _meta_tag(field: Field[Any]) -> str:
+    """XML element name for ``field`` (required ``metadata['tag']``)."""
     tag = field.metadata["tag"]
     assert isinstance(tag, str)
+    return tag
+
+
+def _meta_ns(field: Field[Any]) -> Namespace:
+    """XML namespace for ``field`` — defaults to ``ram:``."""
     ns = field.metadata.get("ns", Namespace.ram)
     assert isinstance(ns, Namespace)
-    p = field.metadata.get("profile", Profile.MINIMUM)
-    assert isinstance(p, Profile)
+    return ns
 
-    return XML(f"{ns.name}:{tag}")[XML("udt:Indicator")[str(value).lower()]]
+
+def _meta_profile(field: Field[Any]) -> Profile | None:
+    """Per-field profile gate (``metadata['profile']``) or ``None``."""
+    p = field.metadata.get("profile")
+    if p is None:
+        return None
+    assert isinstance(p, Profile)
+    return p
+
+
+def _meta_is_amount(field: Field[Any]) -> bool:
+    """``True`` when the field renders as a monetary ``udt:AmountType``."""
+    return bool(field.metadata.get("amount"))
+
+
+def _render_bool(value: bool, field: Field[bool]) -> XML:
+    return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}")[
+        XML("udt:Indicator")[str(value).lower()]
+    ]
 
 
 def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
-    tag = field.metadata["tag"]
-    assert isinstance(tag, str)
-    ns = field.metadata.get("ns", Namespace.ram)
-    assert isinstance(ns, Namespace)
-
-    if el.tag != ns.get_qualified_tag(tag):
+    if el.tag != _meta_ns(field).get_qualified_tag(_meta_tag(field)):
         return {}
     if len(el) != 1:
         raise ValueError
@@ -405,24 +397,14 @@ def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
 def _render_str(
     value: str, field: Field[str], extra_attrs: dict[str, str] | None = None
 ) -> XML:
-    tag = field.metadata["tag"]
-    assert isinstance(tag, str)
-    ns = field.metadata.get("ns", Namespace.ram)
-    assert isinstance(ns, Namespace)
-
     attrs: dict[str, str | bool] = dict(extra_attrs) if extra_attrs else {}
-    return XML(f"{ns.name}:{tag}", attrs=attrs)[value]
+    return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}", attrs=attrs)[value]
 
 
 def _parse_str[T: str](
     el: ETElement, field: Field[str], curr_type: type[T]
 ) -> T | None:
-    tag = field.metadata["tag"]
-    assert isinstance(tag, str)
-    ns = field.metadata.get("ns", Namespace.ram)
-    assert isinstance(ns, Namespace)
-
-    if el.tag != ns.get_qualified_tag(tag):
+    if el.tag != _meta_ns(field).get_qualified_tag(_meta_tag(field)):
         return None
     if el.text is None:
         # Self-closing or whitespace-only element (e.g. ``<ram:LineTwo/>``)
@@ -450,13 +432,9 @@ def _date_inner_namespace(tag: str) -> Namespace:
 
 
 def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:
-    tag = field.metadata["tag"]
-    assert isinstance(tag, str)
-    ns = field.metadata.get("ns", Namespace.ram)
-    assert isinstance(ns, Namespace)
+    tag = _meta_tag(field)
     inner_ns = _date_inner_namespace(tag)
-
-    return XML(f"{ns.name}:{tag}")[
+    return XML(f"{_meta_ns(field).name}:{tag}")[
         XML(f"{inner_ns.name}:DateTimeString", attrs={"format": "102"})[
             value.strftime("%Y%m%d")
         ]
@@ -464,14 +442,10 @@ def _render_date(value: datetime.date, field: Field[datetime.date]) -> XML:
 
 
 def _parse_date(el: ETElement, field: Field[datetime.date]) -> dict[str, datetime.date]:
-    tag = field.metadata["tag"]
-    assert isinstance(tag, str)
-    ns = field.metadata.get("ns", Namespace.ram)
-    assert isinstance(ns, Namespace)
-    inner_ns = _date_inner_namespace(tag)
-
-    if el.tag != ns.get_qualified_tag(tag):
+    tag = _meta_tag(field)
+    if el.tag != _meta_ns(field).get_qualified_tag(tag):
         return {}
+    inner_ns = _date_inner_namespace(tag)
     if len(el) != 1:
         raise ValueError
     if el[0].tag != inner_ns.get_qualified_tag("DateTimeString"):

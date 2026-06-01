@@ -22,9 +22,12 @@ from rich.console import Console, RenderableType
 from rich.panel import Panel
 from rich.table import Table
 
+from carthorse.schema.party import PostalTradeAddressExtended
+
 if TYPE_CHECKING:
     from carthorse.schema import Document
     from carthorse.schema.element import ValidationError
+    from carthorse.schema.line import TradeProduct
     from carthorse.schema.party import (
         BuyerTradeParty,
         PostalTradeAddress,
@@ -151,47 +154,42 @@ def _party_panel(role: str, party: SellerTradeParty | BuyerTradeParty | None) ->
     grid.add_column(style="bold", no_wrap=True)
     grid.add_column()
     grid.add_row("Name:", party.name or "")
-    legal = getattr(party, "legal_organization", None)
-    if legal is not None and legal.trade_name:
-        grid.add_row("Trading as:", legal.trade_name)
-    address = getattr(party, "address", None)
-    addr_text = _format_address(address)
+    if party.legal_organization is not None and party.legal_organization.trade_name:
+        grid.add_row("Trading as:", party.legal_organization.trade_name)
+    addr_text = _format_address(party.address)
     if addr_text:
         grid.add_row("Address:", addr_text)
-    contact = getattr(party, "contact", None)
-    if contact is not None:
-        if contact.person_name:
-            grid.add_row("Contact:", contact.person_name)
-        if contact.email and contact.email.address:
-            grid.add_row("E-mail:", contact.email.address)
-        if contact.telephone and contact.telephone.number:
-            grid.add_row("Phone:", contact.telephone.number)
-    electronic = getattr(party, "electronic_address", None)
-    if electronic is not None and electronic.uri_id.id:
-        scheme = electronic.uri_id.scheme_id
+    if party.contact is not None:
+        if party.contact.person_name:
+            grid.add_row("Contact:", party.contact.person_name)
+        if party.contact.email and party.contact.email.address:
+            grid.add_row("E-mail:", party.contact.email.address)
+        if party.contact.telephone and party.contact.telephone.number:
+            grid.add_row("Phone:", party.contact.telephone.number)
+    if party.electronic_address is not None and party.electronic_address.uri_id.id:
+        uri = party.electronic_address.uri_id
         grid.add_row(
             "Electronic addr.:",
-            f"{electronic.uri_id.id}"
-            + (f" [dim](scheme {scheme})[/dim]" if scheme else ""),
+            f"{uri.id}"
+            + (f" [dim](scheme {uri.scheme_id})[/dim]" if uri.scheme_id else ""),
         )
     for label, value in _iter_tax_ids(party):
         grid.add_row(f"{label}:", value)
     return Panel(grid, title=f"[bold]{role}[/bold]", border_style="green")
 
 
-def _iter_tax_ids(party: object) -> Iterable[tuple[str, str]]:
-    registrations = getattr(party, "tax_registrations", None)
-    if registrations is None:
-        return
-    if not isinstance(registrations, list):
-        registrations = [registrations]
-    for reg in registrations:
+def _iter_tax_ids(
+    party: SellerTradeParty | BuyerTradeParty,
+) -> Iterable[tuple[str, str]]:
+    for reg in party.tax_registrations or []:
         scheme = reg.id.scheme_id or "Tax ID"
         label = {"VA": "VAT ID", "FC": "Tax number"}.get(scheme, scheme)
         yield label, reg.id.id
 
 
-def _format_address(addr: PostalTradeAddress | None) -> str:
+def _format_address(
+    addr: PostalTradeAddress | PostalTradeAddressExtended | None,
+) -> str:
     if addr is None:
         return ""
     lines: list[str] = [
@@ -200,41 +198,35 @@ def _format_address(addr: PostalTradeAddress | None) -> str:
     city_bits = [bit for bit in (addr.postcode, addr.city_name) if bit]
     if city_bits:
         lines.append(" ".join(city_bits))
-    subdivision = getattr(addr, "country_subdivision", None)
-    if subdivision:
-        lines.append(subdivision)
+    if isinstance(addr, PostalTradeAddressExtended) and addr.country_subdivision:
+        lines.append(addr.country_subdivision)
     if addr.country_id:
         lines.append(addr.country_id)
     return "\n".join(lines)
 
 
-def _item_cell(product: object) -> str:
+def _item_cell(product: TradeProduct) -> str:
     """Compose the ``Item`` cell: name plus optional COMFORT enrichments
     (BT-154 description, BT-155 / BT-156 ids, BG-32 characteristics,
     BG-34 origin) as dim follow-up lines."""
-    name = getattr(product, "name", None) or ""
-    lines: list[str] = [name]
-    description = getattr(product, "description", None)
-    if description:
-        lines.append(f"[dim]{description}[/dim]")
+    lines: list[str] = [product.name or ""]
+    if product.description:
+        lines.append(f"[dim]{product.description}[/dim]")
     id_bits: list[str] = []
-    seller_id = getattr(product, "seller_assigned_id", None)
-    if seller_id:
-        id_bits.append(f"Seller#: {seller_id}")
-    buyer_id = getattr(product, "buyer_assigned_id", None)
-    if buyer_id:
-        id_bits.append(f"Buyer#: {buyer_id}")
+    if product.seller_assigned_id:
+        id_bits.append(f"Seller#: {product.seller_assigned_id}")
+    if product.buyer_assigned_id:
+        id_bits.append(f"Buyer#: {product.buyer_assigned_id}")
     if id_bits:
         lines.append(f"[dim]{' · '.join(id_bits)}[/dim]")
-    chars = getattr(product, "characteristics", None) or []
+    chars = product.characteristics or []
     if chars:
         rendered = " · ".join(f"{c.description}: {c.value}" for c in chars[:3])
         if len(chars) > 3:
             rendered += f" · (+{len(chars) - 3})"
         lines.append(f"[dim]{rendered}[/dim]")
-    origin = getattr(product, "origin_country", None)
-    if origin is not None:
-        lines.append(f"[dim]Origin: {origin.id}[/dim]")
+    if product.origin_country is not None:
+        lines.append(f"[dim]Origin: {product.origin_country.id}[/dim]")
     return "\n".join(lines)
 
 
@@ -268,7 +260,9 @@ def _lines_table(doc: Document) -> Table:
         if item.associated_document.parent_line_id is not None
     }
 
-    def _depth(line_id: str, _seen: frozenset[str] = frozenset()) -> int:
+    _EMPTY: frozenset[str] = frozenset()
+
+    def _depth(line_id: str, _seen: frozenset[str] = _EMPTY) -> int:
         parent = parent_of.get(line_id)
         if parent is None or parent in _seen:
             return 0  # root, dangling ref, or cycle guard
@@ -459,7 +453,7 @@ def _logistics_charges_panel(doc: Document) -> Table | None:
         # Each logistics charge has 1..* AppliedTradeTax rows; in the
         # common case there's exactly one — render its category + rate.
         # If there are multiple, join with " / ".
-        vat_cells = []
+        vat_cells: list[str] = []
         for atx in lsc.applied_trade_tax:
             rate = atx.rate_applicable_percent
             vat_cells.append(

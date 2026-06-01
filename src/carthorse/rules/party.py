@@ -26,7 +26,9 @@ if TYPE_CHECKING:
     from carthorse.schema import party as _party
 
 
-def bt_31_0_scheme_id(m: _party.TaxSchemeId, profile: Profile) -> list[ValidationError]:
+def bt_31_0_scheme_id(
+    m: _party.TaxSchemeId, _profile: Profile
+) -> list[ValidationError]:
     """BT-31-0 / BT-32-0: ``schemeID`` on a ``SpecifiedTaxRegistration`` must
     be ``"VA"`` (VAT identifier) or ``"FC"`` (local tax identifier).
 
@@ -46,7 +48,7 @@ def bt_31_0_scheme_id(m: _party.TaxSchemeId, profile: Profile) -> list[Validatio
     ]
 
 
-def br_co_9(m: _party.TaxSchemeId, profile: Profile) -> list[ValidationError]:
+def br_co_9(m: _party.TaxSchemeId, _profile: Profile) -> list[ValidationError]:
     """BR-CO-9: The Seller VAT identifier (BT-31), the Seller tax
     representative VAT identifier (BT-63) and the Buyer VAT identifier
     (BT-48) shall have a prefix in accordance with ISO 3166-1 alpha-2 by
@@ -76,7 +78,7 @@ def br_co_9(m: _party.TaxSchemeId, profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_co_26(m: _party.SellerTradeParty, profile: Profile) -> list[ValidationError]:
+def br_co_26(m: _party.SellerTradeParty, _profile: Profile) -> list[ValidationError]:
     """BR-CO-26: In order for the buyer to automatically identify a
     supplier, the Seller identifier (BT-29), the Seller legal registration
     identifier (BT-30) and/or the Seller VAT identifier (BT-31) shall be
@@ -120,7 +122,7 @@ def br_10(m: _party.BuyerTradeParty, profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_62(m: _party.SellerTradeParty, profile: Profile) -> list[ValidationError]:
+def br_62(m: _party.SellerTradeParty, _profile: Profile) -> list[ValidationError]:
     """BR-62: The Seller electronic address (BT-34) shall have a Scheme
     identifier.
 
@@ -139,7 +141,7 @@ def br_62(m: _party.SellerTradeParty, profile: Profile) -> list[ValidationError]
     ]
 
 
-def br_63(m: _party.BuyerTradeParty, profile: Profile) -> list[ValidationError]:
+def br_63(m: _party.BuyerTradeParty, _profile: Profile) -> list[ValidationError]:
     """BR-63: The Buyer electronic address (BT-49) shall have a Scheme
     identifier.
 
