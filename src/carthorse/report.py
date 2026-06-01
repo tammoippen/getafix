@@ -36,10 +36,10 @@ def render_invoice(doc: Document, console: Console | None = None) -> None:
     """Print a structured, colourised report of ``doc`` to ``console``."""
     console = console or Console()
     console.print(_header_panel(doc))
-    # Force a true 50/50 split — ``Columns(equal=True)`` only equalises
-    # widths when content fits, so a long Seller block was previously
-    # squishing the Buyer side. A 2-column grid with ``ratio=1`` columns
-    # gives each panel exactly half the terminal width.
+    # Force a true 50/50 split: a 2-column grid with ``ratio=1``
+    # columns gives each party panel exactly half the terminal width.
+    # ``Columns(equal=True)`` only equalises widths when content fits,
+    # which truncates a long Seller block against the Buyer side.
     parties = Table.grid(expand=True, padding=(0, 1))
     parties.add_column(ratio=1)
     parties.add_column(ratio=1)

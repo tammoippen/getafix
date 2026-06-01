@@ -158,20 +158,20 @@ Notes on the totals:
 | BR-CO-7    | BASIC          | —      | line allowance                                                                               |
 | BR-CO-8    | BASIC          | —      | line charge                                                                                  |
 | BR-CO-9    | MINIMUM        | ✓      | `TaxSchemeId.validate_internal` enforces the ISO 3166-1 alpha-2 country prefix on `VA`-scheme identifiers (with `EL` allowed for Greece). |
-| BR-CO-10   | BASIC          | ✓      | `Trade._validate_document_arithmetic` — `BT-106 = ΣBT-131`. Skipped when BT-106 absent or items list empty. |
-| BR-CO-11   | BASIC_WL       | ✓      | `Trade._validate_document_arithmetic` — `BT-107 = ΣBT-92`.                                   |
-| BR-CO-12   | BASIC_WL       | ✓      | `Trade._validate_document_arithmetic` — `BT-108 = ΣBT-99`.                                   |
-| BR-CO-13   | BASIC          | ✓      | `Trade._validate_document_arithmetic` — `BT-109 = ΣBT-131 − ΣBT-92 + ΣBT-99`. |
+| BR-CO-10   | BASIC          | ✓      | `carthorse.rules.trade` — `BT-106 = ΣBT-131`. Skipped when BT-106 absent or items list empty. |
+| BR-CO-11   | BASIC_WL       | ✓      | `carthorse.rules.trade` — `BT-107 = ΣBT-92`.                                   |
+| BR-CO-12   | BASIC_WL       | ✓      | `carthorse.rules.trade` — `BT-108 = ΣBT-99`.                                   |
+| BR-CO-13   | BASIC          | ✓      | `carthorse.rules.trade` — `BT-109 = ΣBT-131 − ΣBT-92 + ΣBT-99`. |
 | BR-CO-14   | BASIC_WL       | ✓      | `TradeSettlement.validate_internal` — BT-110 = sum of BT-117 across BG-23 rows.              |
 | BR-CO-15   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` — `BT-112 = BT-109 + BT-110`.                            |
-| BR-CO-16   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` — `BT-115 = BT-112 − BT-113 + BT-114`. BT-114 not yet modelled — treated as 0. |
+| BR-CO-16   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` — `BT-115 = BT-112 − BT-113 + BT-114`. BT-114 absent ⇒ treated as 0. |
 | BR-CO-17   | BASIC_WL       | ✓      | `ApplicableTradeTax.validate_internal` — `BT-117 = round(BT-116 × BT-119 / 100, 2)` per BG-23 row. **Dropped at EXTENDED**, replaced by per-category `BR-FXEXT-S-09` etc. |
-| BR-CO-18   | MINIMUM        | ✓      | `TradeSettlement.validate_internal` raises `BR-CO-18` when no `trade_taxes` at `>= BASIC_WL`. **Note:** the comparator bug in `Profile.__lt__` makes this fire at MINIMUM as well today, see `docs/IMPLEMENTATION_PLAN.md §1 #8`. |
+| BR-CO-18   | BASIC_WL       | ✓      | `TradeSettlement.validate_internal` raises `BR-CO-18` when no `trade_taxes` at `>= BASIC_WL`. |
 | BR-CO-19   | BASIC_WL       | ✓      | `BillingSpecifiedPeriod.validate_internal` — at least one of BT-73 (start) or BT-74 (end) is required when BG-14 is present. |
 | BR-CO-20   | BASIC          | ✓      | same validator applied to BG-26 (line invoicing period) — inherited |
-| BR-CO-21   | BASIC_WL       | ✓      | `Trade._validate_document_arithmetic` — header allowance reason or reason-code (or both) |
+| BR-CO-21   | BASIC_WL       | ✓      | `carthorse.rules.trade` — header allowance reason or reason-code (or both) |
 | BR-CO-22   | BASIC_WL       | ✓      | same for header charge                                                                       |
-| BR-CO-23   | BASIC          | ✓      | `Trade._validate_document_arithmetic` — line allowance (BG-27) reason coupling               |
+| BR-CO-23   | BASIC          | ✓      | `carthorse.rules.trade` — line allowance (BG-27) reason coupling               |
 | BR-CO-24   | BASIC          | ✓      | same for line charge (BG-28)                                                                 |
 | BR-CO-25   | BASIC_WL       | ✓      | `TradeSettlement.validate_internal` — gated on ``profile >= BASIC_WL`` since the source fields BT-9 / BT-20 live in ``SpecifiedTradePaymentTerms`` which the MINIMUM XSD does not include. Checks that positive ``due_amount`` (BT-115) is paired with ``terms.due`` (BT-9) or ``terms.description`` (BT-20). |
 | BR-CO-26   | MINIMUM        | ✓      | `SellerTradeParty.validate_internal` raises if neither `id` (BT-29), `legal_organization.id` (BT-30) nor a VAT-scheme `tax_registrations[*]` (BT-31) is present. |
@@ -230,7 +230,7 @@ Also:
 
 * ✓ Required-party `-2/-3/-4` rules across **AE / E / G / IC / IG / IP /
   S / Z** — implemented in
-  :meth:`carthorse.schema.trade.Trade._validate_vat_category_required_parties`.
+  :mod:`carthorse.rules.trade` as the per-category ``br_{ae,e,g,ic,af,ag,s,z}_2/3/4`` family.
 * ✓ `BR-O-2/-3/-4` (forbid identifier set) — same hook.
 * ✓ `BR-O-11..14` single-rate restriction.
 * ✓ `BR-IC-11`, `BR-IC-12` (intra-community delivery date / period and

@@ -51,10 +51,11 @@ Validation rules enforced here:
 * ✓ ``BR-CO-25`` — positive ``DuePayableAmount`` (BT-115) requires
   BT-9 or BT-20 (gated on BASIC_WL+ since BT-9 / BT-20 live in
   ``SpecifiedTradePaymentTerms`` which MINIMUM omits).
-
-Validation rules not yet enforced (see ``docs/VALIDATION.md``):
-
-* ``BR-61`` — SEPA / local / non-SEPA credit transfer needs BT-84.
+* ✓ ``BR-51`` — :meth:`FinancialCard.validate_internal` requires
+  BT-87 to be 4..6 digits.
+* ✓ ``BR-61`` — :meth:`PaymentMeans.validate_internal` requires
+  ``BT-84`` (IBAN) when ``type_code`` (BT-81) is in the
+  credit-transfer family (UNTDID 4461 ``30`` / ``42`` / ``58``).
 """
 
 from dataclasses import dataclass, field
@@ -150,7 +151,7 @@ class PayeePartyCreditorFinancialAccount(Element):
 
     Note: per ``BR-50`` either ``iban_id`` or ``proprietary_id``
     must be present; ``BR-61`` further requires an IBAN for SEPA /
-    local / non-SEPA credit transfers (not yet enforced).
+    local / non-SEPA credit transfers.
     """
     account_name: str | None = field(
         default=None, metadata={"tag": "AccountName", "profile": Profile.COMFORT}
@@ -406,10 +407,11 @@ class PaymentTerms(Element):
     the payment terms, the payment due date and (for SEPA direct
     debits) the mandate reference. EXTENDED adds optional partial-
     payment amount and nested penalty / discount terms; the
-    settlement-level cardinality also widens to 0..* at EXTENDED
-    (multiple payment-term schedules) — TODO when a sample
-    exercises it (the current XSD-position carthorse encoding still
-    models a single PaymentTerms).
+    settlement-level cardinality widens from 0..1 (BASIC_WL through
+    COMFORT) to 0..* at EXTENDED (multiple payment-term schedules),
+    so :attr:`TradeSettlement.terms` is modelled as a list and
+    capped to one entry below EXTENDED by
+    :func:`carthorse.rules._types.list_max_cardinality_below`.
     """
 
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
@@ -459,19 +461,11 @@ class PaymentTerms(Element):
     )
     """Partial-payment amount for this term (BT-X-275); EXTENDED only."""
     penalty_terms: PaymentPenaltyTerms | None = field(
-        default=None,
-        metadata={
-            "tag": "ApplicableTradePaymentPenaltyTerms",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Late-payment penalty schedule (BG-X-43, EXTENDED only)."""
     discount_terms: PaymentDiscountTerms | None = field(
-        default=None,
-        metadata={
-            "tag": "ApplicableTradePaymentDiscountTerms",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Early-payment discount schedule (BG-X-44, EXTENDED only)."""
     payee: PayeeTradeParty | None = field(
@@ -593,9 +587,7 @@ class LogisticsServiceCharge(Element):
     """Logistics service charge description (BT-X-271)."""
     applied_amount: Decimal = field(metadata={"tag": "AppliedAmount", "amount": True})
     """Logistics service charge amount (BT-X-272)."""
-    applied_trade_tax: list[AppliedTradeTax] = field(
-        metadata={"tag": "AppliedTradeTax"}
-    )
+    applied_trade_tax: list[AppliedTradeTax]
     """Per-category VAT applied to the charge (BT-X-273-00 wrapper;
     1..* per XSD). Non-empty asserted in :meth:`__post_init__`."""
     currency: str | None = None
@@ -732,9 +724,7 @@ class AdvancePayment(Element):
         default=None, metadata={"tag": "FormattedReceivedDateTime"}
     )
     """Date the prepayment was received (BT-X-292, wrapped in BT-X-292-00)."""
-    included_trade_tax: list[AdvancePaymentTradeTax] = field(
-        metadata={"tag": "IncludedTradeTax"}
-    )
+    included_trade_tax: list[AdvancePaymentTradeTax]
     """VAT included in the prepayment (BG-X-46, 1..* per XSD)."""
     invoice_referenced_document: AdvancePaymentReferencedDocument | None = None
     """Reference to the prepayment invoice (BG-X-85, 0..1)."""
@@ -870,11 +860,7 @@ class TradeSettlement(Element):
     """Payer party (BG-X-73); EXTENDED-only — the party that settles
     the invoice when neither Buyer nor Payee."""
     currency_exchange: TaxCurrencyExchange | None = field(
-        default=None,
-        metadata={
-            "tag": "TaxApplicableTradeCurrencyExchange",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Tax-accounting-currency conversion (BG-X-41, 0..1); EXTENDED only."""
     payment_means: list[PaymentMeans] | None = None
@@ -887,11 +873,7 @@ class TradeSettlement(Element):
     allowance_charge: list[HeaderTradeAllowanceCharge] | None = None
     """Header allowances (BG-20) and charges (BG-21), 0..*."""
     logistics_service_charges: list[LogisticsServiceCharge] | None = field(
-        default=None,
-        metadata={
-            "tag": "SpecifiedLogisticsServiceCharge",
-            "profile": Profile.EXTENDED,
-        },
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Logistics service charges (BG-X-42, 0..*); EXTENDED only.
 

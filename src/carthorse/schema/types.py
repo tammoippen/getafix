@@ -158,8 +158,8 @@ class Incoterms(enum.StrEnum):
     The XSD type ``qdt:DeliveryTermsCodeType`` is an unrestricted
     token; the EXTENDED schematron validates the value against the
     11-entry codelist shipped in ``FACTUR-X_EXTENDED_codedb.xml``
-    (Incoterms 2020). ``DAT`` from Incoterms 2010 was renamed
-    ``DPU`` in the 2020 revision and isn't accepted.
+    (Incoterms 2020). The Incoterms 2010 term ``DAT`` (replaced by
+    ``DPU`` in 2020) is not part of this codelist.
     """
 
     EXW = "EXW"

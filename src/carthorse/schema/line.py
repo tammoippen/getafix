@@ -31,22 +31,27 @@ per-line deviating-party groups are tracked in
 
 Validation rules covered:
 
-* ✓ ``BR-27`` (BT-146 ≥ 0) — :meth:`NetTradePrice.validate_internal`.
-* ✓ ``BR-28`` (BT-148 ≥ 0) — :meth:`GrossTradePrice.validate_internal`.
+* ✓ ``BR-21`` (BT-126 line identifier) — implicit through
+  :attr:`DocumentLineDocument.line_id` being required.
+* ✓ ``BR-22`` / ``BR-23`` (BT-129 quantity / BT-130 unit code),
+  ``BR-24`` (BT-131 line net amount), ``BR-26`` (BT-146 net price)
+  and ``BR-CO-4`` (BT-151 line VAT category) — enforced in
+  :mod:`carthorse.rules.trade`. At EXTENDED the matching
+  ``BR-FXEXT-2x`` / ``BR-FXEXT-CO-04`` in :mod:`carthorse.rules.extended`
+  re-apply the check with a DETAIL / unset filter so GROUP and
+  INFORMATION lines may omit the field.
+* ✓ ``BR-25`` (BT-146 required) — implicit at MINIMUM..COMFORT
+  via :attr:`LineTradeAgreement.net_price`; explicit at EXTENDED
+  through the same DETAIL filter as above.
+* ✓ ``BR-27`` (BT-146 ≥ 0) — :func:`carthorse.rules.line.br_27`.
+* ✓ ``BR-28`` (BT-148 ≥ 0) — :func:`carthorse.rules.line.br_28`.
 * ✓ ``BR-29`` / ``BR-CO-19`` (period start ≤ end / at least one
   endpoint) inherited from :class:`BillingSpecifiedPeriod`.
-* ✓ ``BR-CO-21..24`` allowance/charge reason coupling — inherited
-  from :class:`TradeAllowanceCharge`.
-
-Validation rules not yet enforced (see ``docs/VALIDATION.md``):
-
-* ``BR-21..26`` — required line-level fields. Implicit through the
-  required dataclass fields.
-* ``BR-CO-4`` — line VAT category required. Implicit through
-  ``LineTradeSettlement.applicable_trade_tax`` being non-optional.
-* ``BR-CO-10`` / ``BR-CO-13`` — sum identities ``BT-106 = sum(BT-131)``
-  and ``BT-109 = sum(BT-131) - sum(BT-92) + sum(BT-99)``. Cross-line;
-  live in :mod:`trade`.
+* ✓ ``BR-CO-21..24`` allowance/charge reason coupling — header-
+  side via :func:`carthorse.rules.trade.br_co_21..22`, line-side
+  via :func:`carthorse.rules.trade.br_co_23..24`.
+* ✓ ``BR-CO-10`` / ``BR-CO-13`` — cross-line sum identities live
+  in :mod:`carthorse.rules.trade`.
 """
 
 from dataclasses import dataclass, field
@@ -112,9 +117,13 @@ class Quantity(Element):
     profile: ClassVar[Profile] = Profile.BASIC
 
     value: Decimal
-    """The numeric quantity."""
+    """Numeric quantity — role-dependent BT id: BT-129 on
+    ``BilledQuantity`` (invoiced quantity), BT-149 / BT-149-1 on
+    ``BasisQuantity`` (item price base quantity)."""
     unit_code: str
-    """Unit-of-measure code (BT-130 / BT-150).
+    """Unit-of-measure code — role-dependent BT id: BT-130 on
+    ``BilledQuantity``, BT-150 / BT-150-1 on ``BasisQuantity``.
+    Rendered as the ``unitCode`` attribute.
 
     Code list: UN/ECE Recommendation 20 (and 21 for passengers, types
     of cargo, packages and packaging materials) — e.g. ``C62`` for
@@ -170,7 +179,7 @@ class AppliedTradeAllowanceCharge(Element):
     profile: ClassVar[Profile] = Profile.BASIC
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
-    """Allowance / charge indicator.
+    """Allowance / charge indicator (BT-147-00 ``ChargeIndicator``).
 
     Note: the spec only permits an *allowance* (``false``) at price
     level — a price-level charge is not modelled by EN 16931.
@@ -561,8 +570,7 @@ class TradeProduct(Element):
     classifications: list[ProductClassification] | None = None
     """Item classifications (BG-33, 0..*); COMFORT+."""
     individual_product_instances: list[IndividualTradeProductInstance] | None = field(
-        default=None,
-        metadata={"tag": "IndividualTradeProductInstance", "profile": Profile.EXTENDED},
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Per-instance batch / serial details (BG-X-84, 0..*); EXTENDED only.
 
@@ -573,8 +581,7 @@ class TradeProduct(Element):
     origin_country: OriginCountry | None = None
     """Item country of origin (BG-34, 0..1); COMFORT+."""
     included_referenced_products: list[IncludedReferencedProduct] | None = field(
-        default=None,
-        metadata={"tag": "IncludedReferencedProduct", "profile": Profile.EXTENDED},
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Sub-products bundled into this line item (BG-X-1, 0..*); EXTENDED only.
 
@@ -627,9 +634,8 @@ class DocumentLineDocument(Element):
 
     Per the XSD this is ``qdt:LineStatusCodeType`` (UNTDID 1229,
     "action request" — ADD / DELETE / CHANGE / NO_ACTION / …).
-    Modelled as a plain ``str`` for now since carthorse doesn't
-    yet ship the UNTDID 1229 subset codelist; tighten to a
-    ``StrEnum`` when §5.6's codelist work lands.
+    Modelled as a plain ``str`` — the UNTDID 1229 codelist is not
+    enumerated by carthorse.
     """
     status_reason_code: LineStatusReasonCode | None = field(
         default=None,
@@ -793,8 +799,7 @@ class LineTradeAgreement(Element):
     buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
     """Referenced purchase-order line (BT-132-00); COMFORT+."""
     quotation_ref: LineQuotationReferencedDocument | None = field(
-        default=None,
-        metadata={"tag": "QuotationReferencedDocument", "profile": Profile.EXTENDED},
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Referenced quotation line (BG-X-47, 0..1); EXTENDED only."""
     gross_price: GrossTradePrice | None = None

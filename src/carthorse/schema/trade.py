@@ -238,12 +238,11 @@ class Trade(Element):
         br_fxext_08,
         br_fxext_11,
         # EXTENDED CIUS — subtype-qualified line rules (§5.4).
-        # All five are no-op placeholders: the BT-* fields they gate
-        # are non-optional on carthorse dataclasses, so the EN 16931
-        # base requirements always hold and these never have anything
-        # to fire on. They become meaningful runtime checks if/when
-        # those fields are ever relaxed to Optional for GROUP /
-        # INFORMATION lines.
+        # Replace the EN 16931 BR-22..27 / BR-CO-4 with DETAIL-or-unset
+        # filters so GROUP / INFORMATION lines may legitimately omit
+        # BT-129 / BT-130 / BT-131 / BT-146 / BT-151. The corresponding
+        # ``br_*`` in :mod:`carthorse.rules.trade` short-circuit at
+        # EXTENDED so only these fire.
         br_fxext_22,
         br_fxext_23,
         br_fxext_24,
