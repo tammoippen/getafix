@@ -1,17 +1,16 @@
-"""EXTENDED-only business rules — ``BR-FXEXT-*`` (§5.2 + §5.3 of
-``docs/PROFILES/EXTENDED.md``).
+"""EXTENDED-only business rules — ``BR-FXEXT-*``.
 
-Two themes:
+Two themes (see ``docs/VALIDATION.md §4`` for the full table):
 
-* §5.2 — tolerance-banded replacements for the strict EN 16931
+* Tolerance-banded replacements for the strict EN 16931
   ``BR-CO-{10,11,12,13,15}`` identities. The matching EN 16931
   rules short-circuit at EXTENDED so only the EXTENDED variants
   fire. ``BR-FXEXT-CO-04`` and ``BR-FXEXT-CO-15`` are placeholders
   whose strict identity is preserved.
 
-* §5.3 — per-VAT-category sum identities replacing ``BR-CO-17``
-  with one ``BR-FXEXT-{cat}-08`` per category, plus ``BR-FXEXT-S-09``
-  (the per-rate VAT-amount derivation check, only meaningful for
+* Per-VAT-category sum identities replacing ``BR-CO-17`` with one
+  ``BR-FXEXT-{cat}-08`` per category, plus ``BR-FXEXT-S-09`` (the
+  per-rate VAT-amount derivation check, only meaningful for
   category ``S``).
 """
 

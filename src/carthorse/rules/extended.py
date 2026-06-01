@@ -1,21 +1,16 @@
 """EXTENDED-only business rules (``BR-FXEXT-*``).
 
-Implements the rules from §5.2 and §5.3 of
-``docs/PROFILES/EXTENDED.md``:
+Two families live here:
 
-* §5.2 — six ``BR-FXEXT-CO-*`` tolerance-banded variants of
-  EN 16931 ``BR-CO-04/10/11/12/13/15``. Each replaces the strict
-  identity with ``|diff| ≤ 0.01 * N`` slack and (for the cases that
-  fold logistics charges) extends the input set with
-  ``Σ BT-X-272``. ``BR-FXEXT-CO-13`` is the lone outlier whose
-  identity and ``N`` deliberately exclude ``BT-X-272`` — logistics
-  fees flow into BT-108 separately and are checked by
-  ``BR-FXEXT-CO-12``.
+* ``BR-FXEXT-CO-*`` — six tolerance-banded variants of EN 16931
+  ``BR-CO-04/10/11/12/13/15``. Each replaces the strict identity
+  with ``|diff| ≤ 0.01 * N`` slack and (for the cases that fold
+  logistics charges) extends the input set with ``Σ BT-X-272``.
 
-* §5.3 — ten ``BR-FXEXT-{cat}-08`` per-VAT-category sum identities
-  replacing the per-row ``BR-CO-17`` for nine VAT categories, plus
-  ``BR-FXEXT-S-09`` (the per-rate VAT-amount derivation check that
-  only matters for category ``S``).
+* ``BR-FXEXT-{cat}-08`` — nine per-VAT-category sum identities
+  replacing the per-row ``BR-CO-17``, plus ``BR-FXEXT-S-09`` (the
+  per-rate VAT-amount derivation check that only matters for
+  category ``S``).
 
 Every rule guards with ``if profile < Profile.EXTENDED: return []``
 to stay silent below EXTENDED. The matching EN 16931 versions in

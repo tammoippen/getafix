@@ -16,7 +16,7 @@ per call (deduplicated by rule code). ``br_co_21..24`` use
 per-occurrence semantics — one error per offending allowance /
 charge.
 
-See ``docs/VALIDATOR_REFACTOR.md`` for the rework plan.
+See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
 # pyright: reportImportCycles=false
@@ -96,11 +96,10 @@ def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
 # EN 16931 per-line "field shall be present" rules. The line-level
 # fields they gate (BT-129 / BT-130 / BT-131 / BT-146 / BT-151) are
 # ``Optional`` on the carthorse dataclasses so EXTENDED GROUP /
-# INFORMATION lines can legitimately omit them (§5.4 / §3.1 of
-# docs/PROFILES/EXTENDED.md). Each rule short-circuits at EXTENDED;
-# the matching ``BR-FXEXT-2x`` / ``BR-FXEXT-CO-04`` in
-# :mod:`carthorse.rules.extended` enforce the same constraint with
-# the DETAIL / unset filter applied.
+# INFORMATION lines can legitimately omit them. Each rule
+# short-circuits at EXTENDED; the matching ``BR-FXEXT-2x`` /
+# ``BR-FXEXT-CO-04`` in :mod:`carthorse.rules.extended` enforce the
+# same constraint with the DETAIL / unset filter applied.
 
 
 def br_22(m: _trade.Trade, profile: Profile) -> list[ValidationError]:

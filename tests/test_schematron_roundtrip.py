@@ -1,7 +1,6 @@
 """Cross-validate carthorse's EXTENDED rule emission against
 ``FACTUR-X_EXTENDED.sch`` — the single source of truth for "what's
-left" in the EXTENDED migration (§7 step 2 of
-``docs/PROFILES/EXTENDED.md``).
+left" in EXTENDED rule coverage.
 
 For each ``tests/samples/EXTENDED_*.xml`` sample we collect three
 sets of error codes:

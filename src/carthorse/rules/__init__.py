@@ -7,7 +7,7 @@ accounting, party, line, trade). Element classes in
 directly and wire them into a ``_validators: ClassVar[tuple[...]]``
 attribute that ``Element.validate_internal`` iterates.
 
-See ``docs/VALIDATOR_REFACTOR.md`` for the rework plan.
+See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
 from carthorse.rules._types import Validator as Validator

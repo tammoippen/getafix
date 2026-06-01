@@ -10,7 +10,7 @@ Each function:
 * returns ``list[ValidationError]`` (empty on success);
 * never raises.
 
-See ``docs/VALIDATOR_REFACTOR.md`` for the rework plan.
+See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
 # pyright: reportImportCycles=false

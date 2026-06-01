@@ -1,10 +1,11 @@
 """BR-CL-* — code-list membership enforcement via vendored StrEnums.
 
-The plan in ``docs/PROFILES/COMFORT.md §4.6`` enforces every BR-CL-*
-rule by re-typing the affected schema fields to a vendored
-``StrEnum``. The :py:class:`StrEnum` constructor rejects any value
-outside the enum, so construction- and parse-time both raise on
-out-of-list inputs — that's the spec-required behaviour.
+Carthorse enforces every BR-CL-* rule by re-typing the affected
+schema fields to a vendored ``StrEnum``. The :py:class:`StrEnum`
+constructor rejects any value outside the enum, so construction- and
+parse-time both raise on out-of-list inputs — that's the
+spec-required behaviour. See ``docs/VALIDATION.md §6`` for the
+field-to-enum registry.
 
 This file pins the smoke-level constraint: every vendored enum
 should accept the canonical example values from the EN 16931 code
