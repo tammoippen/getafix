@@ -103,3 +103,10 @@ exclude = [
 ]
 
  failOnWarnings = false
+
+# Suppress reportImplicitStringConcatenation — the rule flags adjacent
+# string literals across line breaks, which we use for narrative
+# wrapping of long error / docstring text. Re-enable selectively per
+# file with `# pyright: enableImplicitStringConcatenation=true` if a
+# specific module wants the check.
+reportImplicitStringConcatenation = false
