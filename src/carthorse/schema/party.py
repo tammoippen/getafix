@@ -63,7 +63,7 @@ Validation rules enforced here:
   ``schemeID`` on the electronic-address ``URIID`` when present.
 
 All ``SchemeID`` / ``SchemeId`` / ``scheme_id`` names follow the XSD
-``schemeID`` attribute spelling (no ``a`` after ``schem``).
+``schemeID`` attribute spelling.
 """
 
 from dataclasses import dataclass, field
@@ -421,8 +421,7 @@ class TaxSchemeId(ISO6523SchemeId):
 
     Note: rendered as ``<ram:ID schemeID="VA|FC">…</ram:ID>`` inside
     :class:`SpecifiedTaxRegistration`. The element name is plain
-    ``ID`` (inherited from :class:`SchemeID`); earlier versions of
-    this module incorrectly emitted ``<ram:GlobalID>``.
+    ``ID`` (inherited from :class:`SchemeID`).
 
     ``validate_internal`` enforces:
 
@@ -571,11 +570,12 @@ class BuyerTradeParty(Element):
     electronic_address: URIUniversalCommunication | None = None
     """Buyer electronic address (BT-49-00); BASIC_WL+."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Buyer tax registrations (BT-48-00 VAT / BT-48-00 local).
+    """Buyer tax registrations (BT-48-00).
 
-    The XSD permits up to two sibling registrations — typically a
-    VAT identifier (``schemeID="VA"``, BT-48) and optionally a local
-    tax identifier (``schemeID="FC"``).
+    The XSD permits up to two sibling registrations. EN 16931 only
+    names BT-48 — the Buyer VAT identifier (``schemeID="VA"``); a
+    local tax identifier (``schemeID="FC"``) is allowed by the XSD
+    but has no dedicated BT id.
     """
 
 
@@ -766,7 +766,6 @@ class ShipToTradeParty(Element):
     tag: ClassVar[str] = "ShipToTradeParty"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
     """Deliver-to location identifier (BT-71).
 
@@ -826,7 +825,6 @@ class ShipFromTradeParty(Element):
     tag: ClassVar[str] = "ShipFromTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
     """Ship-from party identifier."""
     global_id: GlobalID | None = None
@@ -857,7 +855,6 @@ class UltimateShipToTradeParty(Element):
     tag: ClassVar[str] = "UltimateShipToTradeParty"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    # TODO: check other parties: 0..n
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
     """Ultimate ship-to party identifier."""
     global_ids: list[GlobalID] | None = None
@@ -1024,7 +1021,7 @@ class PayeeTradeParty(Element):
     assigned by the Buyer or Seller.
     """
     global_id: GlobalID | None = None
-    """Payee global identifier."""
+    """Payee global identifier (BT-60-0; ``schemeID`` per ISO/IEC 6523)."""
     name: str = field(metadata={"tag": "Name"})
     """Payee name (BT-59).
 
@@ -1032,16 +1029,19 @@ class PayeeTradeParty(Element):
     to the Seller; may be the same as the Seller name.
     """
     legal_organization: LegalOrganization | None = None
-    """Payee legal organisation."""
-
-    # contact: TradeContact | None = None
-    # """Payee contact details."""
-    # address: PostalTradeAddressExtended | None = None
-    # """Payee address details."""
-    # electronic_address: URIUniversalCommunication | None = None
-    # """Electronic address details."""
-    # tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    # """Payee tax registration details.
-    #
-    # Tax number, VAT identifier.
-    # """
+    """Payee legal organisation (BT-61-00) — carries the legal
+    registration identifier (BT-61) and its ``schemeID`` (BT-61-1)."""
+    contact: TradeContact | None = None
+    """Payee contact details. XSD-allowed on every ``TradePartyType``;
+    EN 16931 does not assign a dedicated BT id for the Payee."""
+    address: PostalTradeAddressExtended | None = None
+    """Payee postal address. XSD-allowed on every ``TradePartyType``;
+    EN 16931 does not assign a dedicated BT id for the Payee."""
+    electronic_address: URIUniversalCommunication | None = None
+    """Payee electronic address. XSD-allowed on every
+    ``TradePartyType``; EN 16931 does not assign a dedicated BT id
+    for the Payee."""
+    tax_registrations: list[SpecifiedTaxRegistration] | None = None
+    """Payee tax registrations (VAT and / or local tax id). XSD-allowed
+    on every ``TradePartyType`` (max 2 entries); EN 16931 does not
+    assign a dedicated BT id for the Payee."""

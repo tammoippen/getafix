@@ -45,7 +45,8 @@ Validation rules that live elsewhere:
 * ``BR-CO-18`` (≥ 1 BG-23 row at BASIC_WL+) — in
   :meth:`carthorse.schema.settlement.TradeSettlement.validate_internal`.
 * ``BR-53`` (BT-6 ⇒ second BT-111 TaxTotal) — same place.
-* ``BR-48`` (rate required unless not-subject-to-VAT) — not enforced.
+* ``BR-48`` (rate required unless not-subject-to-VAT) — enforced in
+  :func:`carthorse.rules.accounting.br_48`.
 
 For the per-VAT-category ``BR-AE/E/G/IC/IG/IP/O/S/Z`` rule families
 and the EXTENDED ``BR-FXEXT-*`` rounding-tolerance variants, see
@@ -421,15 +422,9 @@ class ApplicableTradeTax(Element):
     Note: mutually exclusive with ``due_date_code`` (BT-8) per
     ``BR-CO-3``. The tax point is usually the date goods were
     supplied or services completed; see Article 226(7) of Council
-
-    EXTENDED rule ``BR-FXEXT-CII-DT-097a`` requires the value to
-    render as ``YYYY-MM-DD`` (no time component, no ``DateTimeString
-    format="102"`` wrapper). This is implicit: Python's
-    ``datetime.date`` ISO-formats as ``YYYY-MM-DD`` and the schema
-    renderer for ``udt:DateType`` emits that string directly — no
-    runtime validator needed. No current sample populates BT-7 to
-    exercise this path; flagged here for traceability.
-    Directive 2006/112/EC.
+    Directive 2006/112/EC. Rendered as
+    ``<ram:TaxPointDate><udt:DateTimeString format="102">YYYYMMDD</udt:DateTimeString></ram:TaxPointDate>``
+    per the EN16931 / Factur-X 1.08 appendix.
     """
     due_date_code: UNTDID2475TaxPointDateCode | None = field(
         default=None, metadata={"tag": "DueDateTypeCode"}
@@ -622,12 +617,6 @@ class TradeAllowanceCharge(Element):
     programmatically.
     """
 
-    # Note: BR-CO-21..24 (allowance/charge reason coupling) are enforced
-    # by ``Trade._validate_document_arithmetic`` because they need to
-    # know whether this allowance/charge is at header or line level.
-    # Keeping the check there means the same ``TradeAllowanceCharge``
-    # dataclass works in both contexts.
-
     @override
     def __post_init__(self) -> None:
         if type(self) is TradeAllowanceCharge:
@@ -635,10 +624,9 @@ class TradeAllowanceCharge(Element):
                 "TradeAllowanceCharge is abstract; instantiate "
                 "HeaderTradeAllowanceCharge or LineTradeAllowanceCharge."
             )
-        # NOTE: explicit super(TradeAllowanceCharge, self) — zero-arg
-        # super() breaks under @dataclass(slots=True) because the
-        # decorator returns a rebuilt class and the implicit __class__
-        # cell points at the original.
+        # Zero-arg super() breaks under @dataclass(slots=True): the
+        # decorator returns a rebuilt class so the implicit __class__
+        # cell points at the original. Name the class explicitly.
         super(TradeAllowanceCharge, self).__post_init__()
 
     @override

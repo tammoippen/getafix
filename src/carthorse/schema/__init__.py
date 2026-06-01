@@ -27,8 +27,9 @@ business term groupings:
   ``ProcuringProject``; ``AttachmentBinaryObject`` is the BT-125 binary
   payload.
 * :mod:`carthorse.schema.trade` — ``SupplyChainTradeTransaction``
-  (BG-25-00) wrapper plus a stub ``TradeLineItem`` (BG-25). The line
-  item content (BG-29 / BG-30 / BG-31 etc.) is not yet modelled.
+  (BG-25-00) wrapper plus ``TradeLineItem`` (BG-25). The line-item
+  sub-tree (BG-29 agreement, BG-30 settlement, BG-31 product, …)
+  lives in :mod:`carthorse.schema.line`.
 * :mod:`carthorse.schema.element` — base :class:`Element`, generic XML
   render/parse, and the ``ProfileMismatch`` / ``ValidationError``
   exceptions.

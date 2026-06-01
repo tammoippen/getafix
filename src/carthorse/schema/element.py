@@ -190,7 +190,6 @@ class Element(ABC):
                 p = Profile.MINIMUM
 
             assert isinstance(p, Profile)
-            # TODO: check in validate and only ignore here?
             if profile < p:
                 raise ProfileMismatch(
                     f"{self.__class__.__name__}.{f.name}: {profile} < {p}"
@@ -222,13 +221,12 @@ class Element(ABC):
 
     @classmethod
     def from_xml(cls, elem: ETElement) -> Self:
-        """Parse the document from a lxml / xml Element.
+        """Parse the dataclass from an XML ``Element``.
 
-        Typing those modules is difficult, but for what we do here,
-        they are interchangeable. Hence, we use duck-typing. Sorry for you having to
-        ignore possible warnings.
-
-        FIXME: Better typing for ETElement
+        Accepts both ``lxml.etree._Element`` and
+        ``xml.etree.ElementTree.Element`` — the two duck-type
+        identically for ``tag`` / ``text`` / ``attrib`` / iteration,
+        which is all we read.
         """
         if elem.tag != cls.get_qualified_tag():
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
@@ -302,9 +300,8 @@ def coerce_enum(value: str | None, owner_cls: type, field_name: str) -> Any:
     """Coerce an XML attribute value into the annotated type of
     ``owner_cls.<field_name>``.
 
-    ``_parse_str`` (used for element-text fields) already calls
-    ``curr_type(el.text.strip())`` at line 401, so any element-text
-    field annotated as a ``StrEnum`` subclass auto-coerces. This
+    Element-text fields auto-coerce inside :func:`_parse_str`, which
+    calls ``curr_type(el.text.strip())`` on every parsed value. This
     helper is the companion for *attribute* reads in custom
     ``from_xml`` overrides (``TaxTotal``, ``AttachmentBinaryObject``,
     ``ProductClassification``, ``SchemeID``, …) that pull code values

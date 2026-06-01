@@ -25,11 +25,11 @@ Five profiles, ordered by completeness:
 `Profile` is a `StrEnum` whose value is the URN that goes into
 `<ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>…</ram:ID></ram:GuidelineSpecifiedDocumentContextParameter>`.
 
-> **Caveat.** `Profile.__lt__` is overridden to ordinal compare, but
-> `__le__`, `__gt__`, `__ge__` aren't — they fall back to `StrEnum`'s
-> lexicographic compare and produce wrong answers (e.g.
-> `Profile.BASIC_WL <= Profile.MINIMUM` returns `True`). See
-> `docs/IMPLEMENTATION_PLAN.md §1 #8`.
+All four order comparators (`__lt__` / `__le__` / `__gt__` /
+`__ge__`) are overridden on `Profile` to use ordinal compare based on
+member declaration order, so e.g. `Profile.BASIC_WL <= Profile.MINIMUM`
+returns `False` (the inherited `StrEnum` lexicographic compare would
+have answered `True`).
 
 ## 1a. Per-profile field-coverage summary
 
@@ -99,7 +99,7 @@ Module map:
 | `schema/settlement.py`         | `TradeSettlement` (BG-19), `PaymentMeans`, `PaymentTerms`, financial accounts, `ReceivableAccountingAccount` |
 | `schema/accounting.py`         | `MonetarySummation`, `TaxTotal`, `ApplicableTradeTax`, `CategoryTradeTax`, `TradeAllowanceCharge` |
 | `schema/references.py`         | every `*ReferencedDocument`, `AdditionalReferencedDocument`, `AttachmentBinaryObject`, `ProcuringProject` |
-| `schema/trade.py`              | `Trade` (top-level transaction wrapper), `TradeLineItem` (BG-25), and `Trade._validate_document_arithmetic` / `Trade._validate_vat_category_required_parties` |
+| `schema/trade.py`              | `Trade` (top-level transaction wrapper) and `TradeLineItem` (BG-25); cross-sibling validators live in :mod:`carthorse.rules.trade` |
 | `schema/line.py`               | line-level sub-tree: `DocumentLineDocument`, `TradeProduct`, `LineTradeAgreement` (with `GrossTradePrice`, `NetTradePrice`, `AppliedTradeAllowanceCharge`, `Quantity`, `BasisQuantity`), `LineTradeDelivery`, `LineTradeSettlement`, `LineMonetarySummation`, `LineIncludedNote` |
 
 ## 3. Field reference
@@ -272,8 +272,8 @@ ApplicableTradeTax (header BG-23, line BG-30)
   ExemptionReason                  BT-120  BASIC_WL  optional
   BasisAmount                      BT-116  BASIC_WL  required
   CategoryCode                     BT-118  BASIC_WL  required
-  ExemptionReasonCode              BT-121  BASIC_WL  optional ⚠ field tag bug — see plan §1 #3
-  TaxPointDate                     BT-7    EN16931   ✗ NOT MODELLED
+  ExemptionReasonCode              BT-121  BASIC_WL  optional
+  TaxPointDate                     BT-7    EN16931   optional `COMFORT`; mutually exclusive with BT-8 via BR-CO-3
   DueDateTypeCode                  BT-8    BASIC_WL  optional
   RateApplicablePercent            BT-119  BASIC_WL  optional
 ```

@@ -22,10 +22,10 @@ to stay silent below EXTENDED. The matching EN 16931 versions in
 :mod:`carthorse.rules.trade` and :mod:`carthorse.rules.settlement`
 guard with the inverse so the rule set is correct at every profile.
 
-Sub-invoice-line exclusion of ``BT-X-8 == GROUP / INFORMATION``
-lines (per the .sch rule text) is a no-op until §4.5 lands BT-X-8 —
-every line currently parses as ``DETAIL`` so the accumulators are
-already correct for present samples.
+Sub-invoice-line filtering uses :func:`_is_detail_line`, which
+reads ``BT-X-8`` (``LineStatusReasonCode``) on each line and
+excludes ``GROUP`` subtotal headers and ``INFORMATION`` lines from
+the monetary accumulators.
 """
 
 # pyright: reportImportCycles=false
@@ -410,8 +410,7 @@ def br_fxext_co_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-CO-12: ``|BT-108 - (Σ BT-99 + Σ BT-X-272)| ≤ 0.01 * (#BT-99 + #BT-X-272)``.
 
     Folds logistics service fees (BT-X-272) into the charge total
-    — this is the rule the bare EN 16931 BR-CO-12 was previously
-    false-positive on EXTENDED samples carrying logistics charges.
+    that the EN 16931 ``BR-CO-12`` summed across BG-21 alone.
     """
     if profile < Profile.EXTENDED:
         return []
@@ -481,9 +480,9 @@ def br_fxext_co_13(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
 def br_fxext_co_15(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     """BR-FXEXT-CO-15: ``|BT-112 - BT-109 - BT-110| ≤ 0.01 * (#BT-131 + #BT-92 + #BT-99 + #BT-X-272)``.
 
-    Replaces EN 16931 ``BR-CO-15``. Tolerance now scales with every
-    input row count (including logistics fees) even though the
-    identity itself doesn't change.
+    Replaces EN 16931 ``BR-CO-15``. The identity is unchanged; the
+    tolerance scales with every input row count (including
+    logistics fees).
     """
     if profile < Profile.EXTENDED:
         return []

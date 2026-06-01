@@ -12,9 +12,9 @@ Each function:
 * never raises.
 
 Most family / single-rate rules emit at most one ``ValidationError``
-per call (the original implementation deduplicated by rule code).
-``br_co_21..24`` retain their per-occurrence semantics — one error
-per offending allowance / charge.
+per call (deduplicated by rule code). ``br_co_21..24`` use
+per-occurrence semantics — one error per offending allowance /
+charge.
 
 See ``docs/VALIDATOR_REFACTOR.md`` for the rework plan.
 """
@@ -88,19 +88,19 @@ def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
 # * ``br_X_3`` — at least one document-level allowance carries category X.
 # * ``br_X_4`` — at least one document-level charge carries category X.
 #
-# Each function emits at most one ValidationError (the original
-# implementation deduplicated by rule code).
+# Each function emits at most one ValidationError; offences are
+# deduplicated by rule code.
 # ---------------------------------------------------------------------------
 
 
-# EN16931 per-line "field shall be present" rules. Originally
-# implicit on carthorse via required dataclass fields, but the
-# fields had to be relaxed to ``Optional`` so EXTENDED GROUP /
+# EN 16931 per-line "field shall be present" rules. The line-level
+# fields they gate (BT-129 / BT-130 / BT-131 / BT-146 / BT-151) are
+# ``Optional`` on the carthorse dataclasses so EXTENDED GROUP /
 # INFORMATION lines can legitimately omit them (§5.4 / §3.1 of
-# docs/PROFILES/EXTENDED.md). Each rule short-circuits at EXTENDED
-# — the matching ``BR-FXEXT-2x`` / ``BR-FXEXT-CO-04`` in
-# :mod:`carthorse.rules.extended` re-implements the check with the
-# DETAIL / unset filter.
+# docs/PROFILES/EXTENDED.md). Each rule short-circuits at EXTENDED;
+# the matching ``BR-FXEXT-2x`` / ``BR-FXEXT-CO-04`` in
+# :mod:`carthorse.rules.extended` enforce the same constraint with
+# the DETAIL / unset filter applied.
 
 
 def br_22(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
@@ -232,8 +232,7 @@ def _buyer_predicate_vat_or_legal(m: _trade.Trade) -> bool:
 
 
 def _err(code: str, message: str) -> ValidationError:
-    """Build a ValidationError with the BR id stamped into the message
-    (preserves the original ``Trade._validate_*`` formatting)."""
+    """Build a ValidationError whose message is prefixed with the BR id."""
     return ValidationError(code, f"{code}: {message}")
 
 
