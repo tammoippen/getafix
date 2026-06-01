@@ -23,4 +23,6 @@ ZF24_EN.zip
 
 # Derived from ZF24_EN xlsx — regenerate with
 # `uv run python tools/extract_business_terms.py`
+# `uv run python tools/extract_business_rules.py`
 tools/business_terms.json
+tools/business_rules.json
