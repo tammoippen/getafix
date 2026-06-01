@@ -15,7 +15,7 @@ Header references by profile:
 * COMFORT: ``SellerOrderReferencedDocument`` (BT-14-00),
   ``ReceivingAdviceReferencedDocument`` (BT-15-00),
   ``AdditionalReferencedDocument`` (BG-24) carrying
-  ``AttachmentBinaryObject`` (BT-125-00), ``SpecifiedProcuringProject``
+  ``AttachmentBinaryObject`` (BT-125), ``SpecifiedProcuringProject``
   (BT-11-00).
 * EXTENDED: ``DeliveryNoteReferencedDocument`` (BT-X-202-00),
   ``UltimateCustomerOrderReferencedDocument`` (BG-X-23).
@@ -267,7 +267,7 @@ class AdditionalReferencedDocument(Element):
     sheet", "usage report".
     """
     attached_object: AttachmentBinaryObject | None = None
-    """Embedded supporting document (BT-125-00); COMFORT+."""
+    """Embedded supporting document (BT-125); COMFORT+."""
 
 
 @dataclass(kw_only=True, slots=True)
