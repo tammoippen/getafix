@@ -34,7 +34,7 @@ the Python stdlib XML parser. The optional extras unlock more:
 Install several at once:
 
 ```bash
-pip install 'carthorse[cli,pdf]'
+pip install 'carthorse[lxml,pdf]'
 ```
 
 ## Quickstart — build an invoice
