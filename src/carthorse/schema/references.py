@@ -24,11 +24,12 @@ No business rules are enforced in this module. ``BR-52`` (every BG-24
 entry must carry BT-122) is implicit through ``AdditionalReferencedDocument.issuer_assigned_id``
 being a required field.
 
-Line-level analogues of these references (``BG-X-13`` despatch advice,
-``BG-X-82`` receiving advice, ``BG-X-83`` delivery note, line-level
-``AdditionalReferencedDocument`` and ``BuyerOrderReferencedDocument``)
-are EXTENDED-only and not yet modelled; see
-``docs/IMPLEMENTATION_PLAN.md §2.EN16931`` and ``§2.EXTENDED``.
+Line-level twins of the despatch advice, receiving advice and
+delivery note references live on ``LineTradeDelivery`` (EXTENDED) and
+are tracked in ``docs/STRUCTURES.md §5.1``.
+:class:`~carthorse.schema.line.LineBuyerOrderReferencedDocument` (BT-132-00)
+and :class:`~carthorse.schema.line.LineAdditionalReferencedDocument`
+(BT-128-00) cover the COMFORT line-level references.
 """
 
 from dataclasses import dataclass, field

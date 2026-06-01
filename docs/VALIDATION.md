@@ -49,40 +49,32 @@ aggregate.
 ## Per-profile rule enforcement summary
 
 Coverage counts every rule whose **lowest enforcing profile** is at or
-below the row's profile and whose status is either ✓ (explicit
-``ValidationError``) or ◯ (implicit via required dataclass field). △
-(partial) and ⚠ (over-strict) entries count as covered for ✓ purposes
-but are flagged in the source tables. EXTENDED CIUS overlay rules
-(`BR-FXEXT-*`, `BR-FX-DE-*`) are out of scope and not counted.
+below the row's profile and whose status is ✓ (explicit
+``ValidationError``) or ◯ (implicit via required dataclass field).
 
-| Profile   | BR-* structural | BR-CO-* arithmetic | VAT-category families | Total enforceable | Carthorse coverage |
-|-----------|-----------------|--------------------|------------------------|-------------------|--------------------|
-| MINIMUM   | 12 / 12         | 4 / 4              | 0 / 0                  | 16                | 16 / 16 (100%)    |
-| BASIC_WL  | 25 / 33         | 13 / 14            | 32 / 32                | 79                | 70 / 79 (89%)     |
-| BASIC     | 33 / 49         | 15 / 18            | 32 / 32                | 99                | 80 / 99 (81%)     |
-| COMFORT   | 34 / 53         | 15 / 18            | 32 / 32                | 103               | 81 / 103 (79%)    |
-| EXTENDED  | 34 / 53         | 15 / 18            | 32 / 32                | 103               | 81 / 103 (79%)    |
+| Profile   | BR-* structural (§1) | BR-CO-* arithmetic (§2) | VAT-category families (§3) | Outstanding |
+|-----------|----------------------|--------------------------|----------------------------|-------------|
+| MINIMUM   | 12 / 12              | 4 / 4                    | n/a                        | BR-5 only checks the alpha-3 uppercase shape, not the ISO 4217 registry |
+| BASIC_WL  | 27 / 27              | 13 / 14                  | full required-party + rate + exemption-reason (`*-2/-3/-4/-5/-6/-7/-10`) | BR-CO-5 / -6 (document-level allowance / charge reason coherence) |
+| BASIC     | 36 / 36              | 16 / 18                  | full required-party + rate + exemption-reason | BR-CO-7 / -8 (line-level allowance / charge reason coherence); BR-42 / BR-44 cover the "or both" half only |
+| COMFORT   | 39 / 39              | 16 / 18                  | full required-party + rate + exemption-reason | same as BASIC plus `BR-*-8 / -9` (per-category sum identities at BG-23) |
+| EXTENDED  | 39 / 39              | 16 / 18                  | full required-party + rate + exemption-reason + BR-FXEXT-{cat}-08/09 tolerance variants | BR-FXEXT-01..05/07/10 and BR-FX-DE-04 — feature flags carthorse parses but doesn't yet check |
 
-Notes on the totals:
-* "BR-* structural" counts every entry in §1 whose lowest profile is at
-  or below the row's profile. Missing rules are those still marked —
-  in §1 (BR-41..44 line allowance/charge reason coupling, BR-48 rate-
-  required, BR-51 financial card, BR-54 product characteristic, BR-61..63
-  payment-means / electronic-address coupling, BR-65 product
-  classification).
-* "BR-CO-* arithmetic" counts §2 entries. ``BR-CO-25`` is no longer
-  enforceable at MINIMUM (its source fields BT-9 / BT-20 live in
-  ``SpecifiedTradePaymentTerms`` which the MINIMUM XSD omits — the
-  validator is gated on BASIC_WL+). The four still-uncovered rules at
-  BASIC and above are BR-CO-5, BR-CO-6, BR-CO-7, BR-CO-8 (reason ↔
-  code coherence at document / line level).
-* "VAT-category families" counts the 32 enforced category rules
-  (``BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4}`` = 24, plus ``BR-O-2..4`` = 3,
-  ``BR-O-11..14`` = 4, ``BR-IC-11``, ``BR-IC-12``). Rate / sum-identity
-  rules (`*-5/-6/-7/-8/-9/-10`) are not yet enforced (~70 rules).
-* COMFORT and EXTENDED add ``BR-51``, ``BR-52``, ``BR-54``, ``BR-65``
-  to the BASIC totals (3 of those are still uncovered). EXTENDED CIUS
-  overlay rules (``BR-FXEXT-*``, ``BR-FX-DE-*``) are out of scope.
+Notes:
+
+* The four uncovered `BR-CO-*` rules are `BR-CO-5..8` (reason ↔
+  reason-code coherence). The free-text "or both" half is enforced
+  via `BR-CO-21..24`; the "agree when both are present" coupling
+  needs a code-list join carthorse doesn't ship.
+* The §3 per-VAT-category sum identities `BR-*-8 / -9` are not
+  enforced at MINIMUM..COMFORT. EXTENDED replaces them with
+  `BR-FXEXT-{cat}-08 / -09` (tolerance-banded, logistics-fee aware),
+  which **are** implemented in
+  :mod:`carthorse.rules.extended.br_fxext_vat_category_sums`.
+* The MINIMUM profile lacks `SpecifiedTradePaymentTerms`, so
+  `BR-CO-25` is gated on BASIC_WL+.
+* BR-5 only validates the alpha-3 uppercase shape of the currency
+  code; the ISO 4217 registry is not consulted.
 
 ## 1. Structural and required-field rules (`BR-*`)
 
@@ -131,21 +123,21 @@ Notes on the totals:
 | BR-45 | BASIC_WL       | ◯      | `ApplicableTradeTax.basis_amount`                 |
 | BR-46 | BASIC_WL       | ◯      | `ApplicableTradeTax.calculated_amount`            |
 | BR-47 | BASIC_WL       | ◯      | `ApplicableTradeTax.category_code`                |
-| BR-48 | BASIC_WL       | —      | rate-required-unless-not-subject not enforced     |
-| BR-49 | BASIC_WL       | ◯      | `PaymentMeans.type_code`                          |
+| BR-48 | BASIC_WL       | ✓      | `carthorse.rules.accounting.br_48` — `RateApplicablePercent` (BT-119) required unless `CategoryCode == "O"` |
+| BR-49 | BASIC_WL       | ◯      | `PaymentMeans.type_code` (required); shape guard `BT-81` |
 | BR-50 | BASIC_WL       | ✓      | `PayeePartyCreditorFinancialAccount.validate_internal` |
-| BR-51 | EN16931        | —      | financial card not modelled                       |
-| BR-52 | EN16931        | ◯      | `AdditionalReferencedDocument.issuer_assigned_id` |
+| BR-51 | COMFORT        | ✓      | `carthorse.rules.settlement.br_51` — `FinancialCard.id` must be 4..6 digits |
+| BR-52 | COMFORT        | ◯      | `AdditionalReferencedDocument.issuer_assigned_id` |
 | BR-53 | BASIC_WL       | ✓      | `TradeSettlement.validate_internal` — when BT-6 (`tax_currency_code`) is set, the `tax_total` list must contain an entry with `currency_id == BT-6` |
-| BR-54 | EN16931        | —      | `ApplicableProductCharacteristic` not modelled    |
-| BR-55 | BASIC_WL       | ◯      | `InvoiceReferencedDocument.issuer_assigned_id` (now `list[InvoiceReferencedDocument]`) |
+| BR-54 | COMFORT        | ◯      | `ProductCharacteristic` requires both `description` (BT-160) and `value` (BT-161) — both non-Optional |
+| BR-55 | BASIC_WL       | ◯      | `InvoiceReferencedDocument.issuer_assigned_id` (`list[InvoiceReferencedDocument]`) |
 | BR-56 | BASIC_WL       | ◯      | `SellerTaxRepresentativeTradeParty.tax_registrations` (required) |
 | BR-57 | BASIC_WL       | ◯      | `PostalTradeAddress.country_id` on ship-to        |
-| BR-61 | BASIC_WL       | —      | Type-code → IBAN coupling not enforced            |
-| BR-62 | BASIC_WL       | —      | electronic-address scheme id required             |
-| BR-63 | BASIC_WL       | —      | electronic-address scheme id required             |
-| BR-64 | BASIC          | △      | `TradeProduct.global_id: GlobalID \| None` — the `GlobalID` class requires a `schemeID` when set, but the rule (item-standard-ID ⇒ schemeID) is implicit via the required field on the type |
-| BR-65 | EN16931        | —      | product classification not modelled               |
+| BR-61 | BASIC_WL       | ✓      | `carthorse.rules.settlement.br_61` — credit-transfer type codes (UNTDID 4461 `30`/`42`/`58`) require IBAN |
+| BR-62 | BASIC_WL       | ✓      | `carthorse.rules.party.br_62` — Seller electronic-address `URIID` must carry `schemeID` |
+| BR-63 | BASIC_WL       | ✓      | `carthorse.rules.party.br_63` — Buyer electronic-address `URIID` must carry `schemeID` |
+| BR-64 | BASIC          | ◯      | `TradeProduct.global_id: GlobalID \| None` — the `GlobalID` class requires `schemeID` when set |
+| BR-65 | COMFORT        | ◯      | `ProductClassification.list_id` required (non-Optional `str`) |
 
 ## 2. Cross-field arithmetic / conditional rules (`BR-CO-*`)
 
@@ -231,13 +223,19 @@ Also:
 * ✓ Required-party `-2/-3/-4` rules across **AE / E / G / IC / IG / IP /
   S / Z** — implemented in
   :mod:`carthorse.rules.trade` as the per-category ``br_{ae,e,g,ic,af,ag,s,z}_2/3/4`` family.
-* ✓ `BR-O-2/-3/-4` (forbid identifier set) — same hook.
+* ✓ `BR-O-2/-3/-4` (forbid identifier set) — same module.
 * ✓ `BR-O-11..14` single-rate restriction.
 * ✓ `BR-IC-11`, `BR-IC-12` (intra-community delivery date / period and
   deliver-to country).
-* — Rate constraints (`BR-*-5/-6/-7`) and tax-amount math
-  (`BR-*-8/-9/-10`) are not yet enforced — they need the BR-CO-10..17
-  arithmetic pass over line / allowance / charge amounts.
+* ✓ Rate constraints `BR-*-5/-6/-7` (line / allowance / charge VAT
+  rate vs category) — :func:`carthorse.rules.trade.vat_category_rates`.
+* ✓ Exemption-reason coupling `BR-*-10` (categories that levy VAT
+  must NOT carry an exemption reason; categories that don't levy VAT
+  must) — :func:`carthorse.rules.trade.vat_category_exemption_reason`.
+* — Tax-amount math `BR-*-8/-9` (per-category sum identities at
+  BG-23) is not enforced at MINIMUM..COMFORT. At EXTENDED the
+  tolerance-banded ``BR-FXEXT-{cat}-08/09`` family supersedes it
+  and is implemented in :mod:`carthorse.rules.extended`.
 
 ## 4. EXTENDED (`BR-FXEXT-*`, `BR-FX-DE-*`)
 
@@ -267,8 +265,24 @@ EXTENDED-only sub-line-item structure (`BT-X-8` line subtype,
 | `BR-FX-DE-04`  | New (DE)                      | Non-down-payment invoice (`BT-3` ≠ `386`) must include `BT-72` or `BG-14` or `BG-26` on every line; without `BT-72`, `BT-80` (deliver-to country) must be present |
 | `PEPPOL-EN16931-R008` | Informational (warning) | Document MUST NOT contain empty elements                                      |
 
-EXTENDED-specific rules are not in carthorse's roadmap (see
-`docs/IMPLEMENTATION_PLAN.md §5`).
+**Enforcement status (EXTENDED overlay):**
+
+* ✓ `BR-FXEXT-06` / `BR-FXEXT-08` / `BR-FXEXT-11` — sub-invoice-line
+  parent/child / status / sum walker, in
+  :mod:`carthorse.rules.extended`.
+* ✓ `BR-FXEXT-22..27` and `BR-FXEXT-CO-04` — DETAIL / unset filter
+  variants of `BR-22..27` / `BR-CO-4`. Wired alongside the EN 16931
+  versions that short-circuit at EXTENDED.
+* ✓ `BR-FXEXT-CO-10..13` and `BR-FXEXT-CO-15` — tolerance-banded
+  replacements for `BR-CO-10..13/15`, folding `BT-X-272`
+  (logistics-service fees) into the charge sums.
+* ✓ Per-category sum identities `BR-FXEXT-{S,Z,E,AE,G,IC,AF,AG,O}-08`
+  and the rate-derivation check `BR-FXEXT-S-09` — implemented in
+  :func:`carthorse.rules.extended.br_fxext_vat_category_sums`.
+* — `BR-FXEXT-01..05`, `BR-FXEXT-07`, `BR-FXEXT-10`, `BR-FX-DE-04`
+  and `PEPPOL-EN16931-R008` are not enforced today; their input
+  fields exist in the model but the checks themselves have no
+  observed sample-driven need yet.
 
 ## 5. Cross-field validation patterns
 
@@ -311,8 +325,9 @@ Allowance/charge groups (BG-20, BG-21, BG-27, BG-28) require either a
 free-text reason or a coded reason or both, and when both are present
 they must agree.
 Rules: `BR-31..33`, `BR-36..38`, `BR-41..44`, `BR-CO-5..8`,
-`BR-CO-21..24`. carthorse implements the "or both" half of `BR-CO-21/22`
-in `TradeAllowanceCharge.validate_internal`.
+`BR-CO-21..24`. Carthorse implements the "or both" half of all four
+`BR-CO-21..24` rules in :mod:`carthorse.rules.trade`. The "agree
+when both present" coupling (`BR-CO-5..8`) is not yet enforced.
 
 ### 5.5 Sums and arithmetic identities
 
@@ -327,27 +342,20 @@ Rules: `BR-CO-10..17`, `BR-AE-8/9`, `BR-E-8/9`, `BR-G-8/9`,
 ## 6. Summary
 
 See the *Per-profile rule enforcement summary* near the top of this
-file for the up-to-date numbers; the gist:
+file for the per-profile counts. The remaining gaps are narrow:
 
-* MINIMUM: every applicable rule is enforced (16 / 16; BR-5 only at the
-  shape level — the ISO 4217 registry is not consulted).
-* BASIC_WL: 70 / 79 ≈ 89% — open gaps are document-level reason
-  coupling (BR-CO-5/-6), the BR-48 rate-required-unless-not-subject
-  rule, the electronic-address scheme-id requirements (BR-61..63), and
-  the rate / sum-identity arms of the VAT-category families (`*-5..10`).
-* BASIC: 80 / 99 ≈ 81% — BR-21..26 satisfied implicitly via the BG-25
-  line dataclasses (see §3 of `docs/STRUCTURES.md`); BR-27 / BR-28
-  (price ≥ 0) explicitly enforced on `NetTradePrice` / `GrossTradePrice`.
-  Open gaps: line-level reason coupling (BR-CO-7/-8) and the
-  free-form-flagged BR-42 / BR-44.
-* COMFORT / EXTENDED: no new rules over BASIC are enforced today; the
-  EXTENDED CIUS overlay (`BR-FXEXT-*`, `BR-FX-DE-*`) is out of scope
-  per `docs/IMPLEMENTATION_PLAN.md §5`.
-
-The `tests/test_hypothesis.py::test_parse_and_regenerate` xfails
-exercise both the remaining structural gaps and the bugs listed in
-`docs/IMPLEMENTATION_PLAN.md §1`. As gaps close, individual examples
-flip from xfail to pass without test changes.
+* **Reason ↔ reason-code coherence** (`BR-CO-5..8`): only the "or
+  both" half is enforced today via `BR-CO-21..24`; checking that the
+  free text actually agrees with the coded value needs a codelist
+  join carthorse doesn't ship.
+* **Per-category sum identities** (`BR-{cat}-8/-9` at COMFORT, full
+  per-row identities at EXTENDED): EXTENDED's tolerance-banded
+  replacements (`BR-FXEXT-{cat}-08/-09`) are implemented; the strict
+  COMFORT versions are not.
+* **EXTENDED feature-flag rules** (`BR-FXEXT-01..05`, `-07`, `-10`,
+  `BR-FX-DE-04`, `PEPPOL-EN16931-R008`): the input fields exist in
+  the model but the checks themselves have no sample-driven need
+  yet.
 
 ## 7. Wire-conformance entry
 

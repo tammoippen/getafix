@@ -36,9 +36,8 @@ src/carthorse/
     └── extended.py        # BR-FXEXT-* CIUS overlay
 
 docs/
-├── STRUCTURES.md          # module → BG/BT field map, profile applicability
+├── STRUCTURES.md          # module → BG/BT field map, profile applicability, EXTENDED gap diff
 ├── VALIDATION.md          # every BR-*/BR-CO-*/BR-X-* rule + status
-├── IMPLEMENTATION_PLAN.md # gap list and ordered roadmap
 ├── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
 └── PROFILES/              # per-profile parity checklists (COMFORT, EXTENDED)
 
@@ -255,19 +254,18 @@ The test suite includes:
   not vendored. If we want automated BR-* enforcement against the
   official rules, those are the source of truth — today the BR-*
   checks are hand-coded.
-- **EXTENDED CIUS full coverage.** Selective EXTENDED structures
-  (sub-line hierarchy, logistics charges, advance payments, deviating
-  parties) are modelled; the long tail of `BT-X-*` extension fields
-  is added on demand. See `docs/IMPLEMENTATION_PLAN.md §5`.
+- **EXTENDED CIUS full coverage.** Every top-level EXTENDED
+  structure is modelled; the residual leaf attributes and line-level
+  twins of header references are enumerated in
+  `docs/STRUCTURES.md §5` and added on demand.
 
 ## See also
 
 - `docs/READING_OFFICIAL_DOCS.md` — how to navigate the vendored
   Factur-X 1.08 / ZUGFeRD 2.4 documentation kit.
 - `docs/STRUCTURES.md` — module → BG/BT field map with profile
-  applicability and wire conventions.
+  applicability, wire conventions and the EXTENDED gap diff.
 - `docs/VALIDATION.md` — every business rule, with enforcement status
   and the function that implements it.
-- `docs/IMPLEMENTATION_PLAN.md` — gap list and ordered roadmap.
 - `docs/PROFILES/COMFORT.md` and `docs/PROFILES/EXTENDED.md` —
   per-profile parity checklists.

@@ -244,11 +244,9 @@ These are mechanical add-ons against the EXTENDED XSD; carthorse
 will accept a PR (or wait for a sample that needs them).
 
 - [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — module → BG/BT field
-  map with profile applicability.
+  map with profile applicability and the EXTENDED coverage diff.
 - [`docs/VALIDATION.md`](docs/VALIDATION.md) — every BR-* rule with
   enforcement status.
-- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — gap
-  list and ordered roadmap.
 
 PDF/A-3 packaging is out of scope; use `factur-x` (PyPI),
 [Mustangproject](https://github.com/ZUGFeRD/mustangproject) or a
