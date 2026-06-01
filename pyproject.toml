@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "tagic>=1.4.0",
+    "tagic>=1.5.0",
 ]
 
 [project.optional-dependencies]
