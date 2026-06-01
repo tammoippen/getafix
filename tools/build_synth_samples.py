@@ -89,28 +89,8 @@ def _load_base() -> Document:
 
 
 def _serialize(doc: Document) -> bytes:
-    """Render ``doc`` to oracle-safe, pretty-printed XML bytes.
-
-    ``tagic``'s ``render(indent=True)`` injects whitespace *inside*
-    text-only leaves (a 2-decimal money value goes from ``"52.00"``
-    flat to ``"\\n    52.00\\n  "`` indented). The XML is still
-    XSD-valid (``xs:decimal`` per the W3C spec trims surrounding
-    whitespace), but the schematron ``BR-DEC-*`` checks count
-    decimal places with raw string ops
-    (``string-length(substring-after(string(.), '.'))``) and see
-    the trailing whitespace as fractional digits — firing
-    BR-DEC-09/10/11/12/14/16/18/19/20/23 on every monetary leaf.
-    Workaround: render flat, then let ``lxml`` pretty-print with
-    ``remove_blank_text=True`` — ``lxml`` correctly leaves
-    text-only leaves on a single line. Tracked in PR review with
-    a minimal reproducer; remove once ``tagic`` is fixed upstream.
-    """
-    flat = doc.to_xml().render(indent=False).encode()
-    parser = etree.XMLParser(remove_blank_text=True)
-    tree = etree.fromstring(flat, parser)
-    return etree.tostring(
-        tree, pretty_print=True, xml_declaration=True, encoding="UTF-8"
-    )
+    """Render ``doc`` to oracle-safe, pretty-printed XML bytes."""
+    return doc.to_xml().render(indent=True).encode()
 
 
 def _validate(xml: bytes, name: str) -> None:

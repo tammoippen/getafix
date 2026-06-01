@@ -63,7 +63,7 @@ requires-dist = [
     { name = "pypdf", marker = "extra == 'cli'", specifier = ">=6.11.0" },
     { name = "pypdf", marker = "extra == 'pdf'", specifier = ">=6.11.0" },
     { name = "rich", marker = "extra == 'cli'", specifier = ">=13.0" },
-    { name = "tagic", specifier = ">=1.4.0" },
+    { name = "tagic", specifier = ">=1.5.0" },
 ]
 provides-extras = ["lxml", "cli", "pdf"]
 
@@ -471,6 +471,6 @@ wheels = [
 
 [[package]]
 name = "tagic"
-version = "1.4.0"
+version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/03/ee/908713a6ee85bf4c85f92c99a72fed97e95b0aff783a02bbcb6935b3bef8/tagic-1.4.0.tar.gz", hash = "sha256:6424338261a69f2220f2721bb085b0adae6e8c947ad34daea89eeaddab525e98", size = 13618, upload-time = "2025-11-15T21:20:45.588Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/0c/ca8c224781120340394cfdbaf3c7c40c6ecd0362093000dd1ada75bd6583/tagic-1.5.0.tar.gz", hash = "sha256:8c9d10f9bd4cb14f2e28d2b1f41756c8d515409b03e8b58d2be96fe8677a260e", size = 13684, upload-time = "2026-06-01T07:07:43.974Z" }
