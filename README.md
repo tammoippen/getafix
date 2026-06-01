@@ -210,11 +210,38 @@ higher profile raises `ProfileMismatch`.
 
 ## Status and known gaps
 
-Carthorse covers MINIMUM, BASIC_WL, BASIC and EN 16931 (COMFORT)
-fully for the modelled fields, with selective EXTENDED coverage
-(sub-line hierarchy, logistics service charges, advance payments,
-EXTENDED-only deviating parties). The long tail of `BT-X-*` extension
-fields is added on demand.
+Carthorse models every field that the MINIMUM, BASIC_WL, BASIC and
+EN 16931 (COMFORT) profiles permit. EXTENDED coverage is broad —
+sub-line hierarchy (`BT-X-7` / `BT-X-8` / `BT-X-304`), bundle
+composition (`BG-X-1` `IncludedReferencedProduct`), per-instance
+batch / serial details (`BG-X-84`), logistics service charges
+(`BG-X-42`), advance payments (`BG-X-45` with `BG-X-46` /
+`BG-X-85`), the EXTENDED-only deviating parties (sales agent,
+buyer agent, buyer / item-level seller / tax representative,
+invoicer, invoicee, payer, product end-user), the
+penalty / discount payment-term schedules (`BG-X-43` / `BG-X-44`),
+tax-currency exchange (`BG-X-41`), delivery terms (`BG-X-22`),
+quotation / ultimate-customer-order references, and the
+`PEPPOL`-flavoured rule overlay (`BR-FXEXT-*`) are all modelled.
+
+The remaining EXTENDED gaps — mostly leaf attributes the carthorse
+samples don't exercise — are enumerated in
+[`docs/STRUCTURES.md §6`](docs/STRUCTURES.md). The headline ones:
+
+* Line-level twins of header references on `LineTradeAgreement` /
+  `LineTradeDelivery` / `LineTradeSettlement`: per-line
+  delivery-terms / seller-order / contract / additional /
+  ultimate-customer-order references; line-level
+  ActualDeliverySupplyChainEvent and despatch / receiving /
+  delivery-note references; line-level preceding-invoice reference.
+* Leaf attributes on shared types: `TradeParty.role_code` /
+  `description`, `TradeContact.type_code`, `ProductCharacteristic.type_code`
+  / `value_measure`, `TradeProduct.id`, `TradeAllowanceCharge.sequence_numeric`
+  / `basis_quantity`, `MonetarySummation.total_allowance_charge_amount`,
+  `TradePrice.included_trade_tax`.
+
+These are mechanical add-ons against the EXTENDED XSD; carthorse
+will accept a PR (or wait for a sample that needs them).
 
 - [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — module → BG/BT field
   map with profile applicability.

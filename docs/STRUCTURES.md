@@ -426,3 +426,66 @@ TradeLineItem (BG-25)                                profile = BASIC
 * The vendored XSDs under `tests/schemas/` are the structural source
   of truth; any modelling change must keep
   `tests/test_hypothesis.py::test_generated_xml_is_xsd_valid` green.
+
+## 6. EXTENDED coverage diff
+
+Carthorse models the EXTENDED profile broadly — see the README
+"Status and known gaps" section for the headline structures that
+are present. This section enumerates every EXTENDED-permitted
+field that is **not** yet on a carthorse dataclass, grouped by the
+XSD complex type that declares it. Each entry is the XSD element
+name; the BT id (often `BT-X-*`) lives in the per-profile appendix
+PDF.
+
+### 6.1 Line-level twins of header references
+
+The EXTENDED profile allows the line sub-tree to carry per-line
+overrides of references that the header normally provides. Modelled
+selectively today; full set:
+
+| Complex type            | Missing element                              | Equivalent header field |
+|-------------------------|----------------------------------------------|--------------------------|
+| `LineTradeAgreementType`| `ApplicableTradeDeliveryTerms`               | `TradeAgreement.delivery_terms` (BG-X-22) |
+| `LineTradeAgreementType`| `SellerOrderReferencedDocument`              | `TradeAgreement.seller_order` (BT-14-00) |
+| `LineTradeAgreementType`| `ContractReferencedDocument`                 | `TradeAgreement.contract` (BT-12-00) |
+| `LineTradeAgreementType`| `AdditionalReferencedDocument` (0..*)        | `TradeAgreement.additional_references` (BG-24) |
+| `LineTradeAgreementType`| `UltimateCustomerOrderReferencedDocument` (0..*) | `TradeAgreement.customer_order` (BG-X-23) |
+| `LineTradeDeliveryType` | `ActualDeliverySupplyChainEvent`             | `TradeDelivery.event` (BT-72-000) |
+| `LineTradeDeliveryType` | `DespatchAdviceReferencedDocument`           | `TradeDelivery.despatch_advice` (BT-16-00) |
+| `LineTradeDeliveryType` | `ReceivingAdviceReferencedDocument`          | `TradeDelivery.receiving_advice` (BT-15-00) |
+| `LineTradeDeliveryType` | `DeliveryNoteReferencedDocument`             | `TradeDelivery.delivery_note` (BT-X-202-00) |
+| `LineTradeSettlementType`| `InvoiceReferencedDocument`                 | `TradeSettlement.invoice_referenced_document` (BG-3) |
+
+### 6.2 Leaf attributes on shared complex types
+
+EXTENDED widens several shared complex types with optional leaf
+attributes. Adding them is mechanical — declare a new `field()` in
+XSD-sequence order, gated `Profile.EXTENDED`.
+
+| Complex type                          | Missing element              | Notes |
+|---------------------------------------|------------------------------|-------|
+| `TradePartyType` (every party role)   | `RoleCode`                   | `qdt:PartyRoleCodeType` slot for the party's role in the transaction. |
+| `TradePartyType`                      | `Description`                | Free-text description of the party. |
+| `TradeContactType` (BG-6 / BG-9)      | `TypeCode`                   | `qdt:ContactTypeCodeType` — distinguishes responsibility / department / etc. |
+| `TradeProductType` (BG-31)            | `ID`                         | Per-line product local identifier (separate from `GlobalID`). |
+| `ProductCharacteristicType` (BG-32)   | `TypeCode`                   | Item-attribute classification code. |
+| `ProductCharacteristicType` (BG-32)   | `ValueMeasure`               | Numeric attribute value with `unitCode`. |
+| `TradeAllowanceChargeType` (BG-20/21/27/28) | `SequenceNumeric`      | Numeric ordering hint when multiple allowance/charge entries apply. |
+| `TradeAllowanceChargeType`            | `BasisQuantity`              | Quantity-based base for the percentage calculation. |
+| `TradePriceType` (BT-146-00 / BT-148-00) | `IncludedTradeTax`         | VAT included in the unit price. |
+| `TradeSettlementHeaderMonetarySummationType` (BG-22) | `TotalAllowanceChargeAmount` | Net of all document-level allowances and charges. |
+
+### 6.3 Cardinality widenings already modelled
+
+For reference, the EXTENDED-only cardinality widenings that *are*
+honoured by the runtime gates:
+
+* `SpecifiedTradePaymentTerms` — singleton at BASIC_WL..COMFORT,
+  0..unbounded at EXTENDED. Capped by
+  `list_max_cardinality_below(Profile.EXTENDED, max_count=1, ...)`
+  on `TradeSettlement.terms`.
+* `AppliedTradeAllowanceCharge` on `TradePriceType` — 0..1 at
+  BASIC..COMFORT, 0..unbounded at EXTENDED. Carthorse currently
+  models a singleton on `GrossTradePrice.applied_allowance_charge`;
+  the multi-entry case on EXTENDED gross / net prices is not yet
+  modelled.
