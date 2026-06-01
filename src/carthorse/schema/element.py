@@ -172,7 +172,7 @@ class Element(ABC):
                 # Internal: not rendered as its own element; it shows up
                 # as the ``currencyID`` attribute on amount fields.
                 continue
-            value: object = getattr(self, f.name)
+            value: Any = getattr(self, f.name)
             if value is None:
                 # not required
                 continue
@@ -193,7 +193,7 @@ class Element(ABC):
                 raise ProfileMismatch(
                     f"{self.__class__.__name__}.{f.name}: {profile} < {p}"
                 )
-            items: list[object] = value if isinstance(value, list) else [value]
+            items: list[Any] = value if isinstance(value, list) else [value]
             extra_attrs: dict[str, str] | None = None
             if _meta_is_amount(f) and currency:
                 extra_attrs = {"currencyID": currency}
