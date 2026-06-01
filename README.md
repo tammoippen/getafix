@@ -1,16 +1,43 @@
 # carthorse
 
-Build and parse [**ZUGFeRD 2.x / Factur-X**](https://www.ferd-net.de/standards/zugferd)
-Cross-Industry-Invoice (CII) XML in Python, modelled directly on the EN 16931
-business terms (BT-/BG-codes) so that the dataclasses stay traceable to the spec.
+Build, parse and validate
+[**ZUGFeRD 2.x / Factur-X**](https://www.ferd-net.de/standards/zugferd)
+Cross-Industry-Invoice (CII) XML in Python. The dataclass model is
+traceable to the EN 16931 business terms (`BT-…`) and groups
+(`BG-…`), so every field on every class maps back to a line in the
+spec.
 
-> **Status: early WIP.** The XML serialiser ("create") is solid for the fields
-> that are modelled; the parser ("parse") works for documents this library
-> itself emits but trips over real-world samples (see *Known gaps* below).
-> There is **no PDF/A-3 packaging** yet — carthorse handles the embedded XML
-> only, not the surrounding Factur-X PDF container.
+> **Status: pre-1.0.** Solid for the fields that are modelled across
+> MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); selective EXTENDED
+> coverage. PDF/A-3 conformance for the host PDF is **out of scope** —
+> `carthorse` attaches the embedded `factur-x.xml` but does not
+> upgrade the surrounding PDF to PDF/A-3.
 
-## Quickstart
+## Installation
+
+Requires **Python 3.12+**. We recommend
+[`uv`](https://docs.astral.sh/uv/) for dependency management.
+
+```bash
+pip install carthorse
+```
+
+The base install lets you build / serialise / validate documents with
+the Python stdlib XML parser. The optional extras unlock more:
+
+| Extra            | Pulls in                  | Enables |
+|------------------|---------------------------|---------|
+| `carthorse[lxml]` | `lxml`                    | Round-tripping XML produced by other tools (the stdlib parser is fine for most documents; `lxml` is faster and more tolerant of large / namespaced inputs). |
+| `carthorse[pdf]`  | `pypdf`                   | Embedding / extracting `factur-x.xml` in a PDF (`carthorse.pdf.attach_xml` and `extract_xml`). |
+| `carthorse[cli]`  | `lxml`, `rich`, `pypdf`   | The `carthorse` console script — pretty-print an invoice and run the BR-* validators against it. |
+
+Install several at once:
+
+```bash
+pip install 'carthorse[cli,pdf]'
+```
+
+## Quickstart — build an invoice
 
 ```python
 from datetime import date
@@ -24,184 +51,195 @@ from carthorse.schema.agreement import TradeAgreement
 from carthorse.schema.delivery import TradeDelivery
 from carthorse.schema.party import (
     BuyerTradeParty, PostalTradeAddressExtended, SellerTradeParty,
+    SpecifiedTaxRegistration, TaxSchemeId,
 )
 from carthorse.schema.settlement import TradeSettlement
 from carthorse.schema.trade import Trade
+from carthorse.schema.types import Country, Currency
 
 doc = Document(
     context=Context(guideline=GuidelineDocument(id=Profile.MINIMUM)),
     header=Header(
         id="INV-2025-0001",
-        type_code=TypeCode.T_Handelsrechnung,  # 380 = commercial invoice
+        type_code=TypeCode.T_CommercialInvoice,  # 380
         issue_date=date(2025, 11, 16),
     ),
     trade=Trade(
         agreement=TradeAgreement(
             seller=SellerTradeParty(
                 name="Acme GmbH",
-                address=PostalTradeAddressExtended(country_id="DE"),
+                address=PostalTradeAddressExtended(country_id=Country.DE),
+                tax_registrations=[
+                    SpecifiedTaxRegistration(
+                        id=TaxSchemeId(id="DE123456789", scheme_id="VA"),
+                    ),
+                ],
             ),
             buyer=BuyerTradeParty(
                 name="Beta AG",
-                address=PostalTradeAddressExtended(country_id="DE"),
+                address=PostalTradeAddressExtended(country_id=Country.DE),
             ),
         ),
         delivery=TradeDelivery(),
         settlement=TradeSettlement(
-            currency_code="EUR",
+            currency_code=Currency.EUR,
             monetary_summation=MonetarySummation(
-                line_total=Decimal("100.00"),
                 tax_basis_total=Decimal("100.00"),
-                tax_total=TaxTotal(amount=Decimal("19.00"), currency_id="EUR"),
+                tax_total=[TaxTotal(amount=Decimal("19.00"), currency_id=Currency.EUR)],
                 grand_total=Decimal("119.00"),
                 due_amount=Decimal("119.00"),
+                currency="EUR",
             ),
         ),
     ),
 )
 
-xml = doc.to_xml().render(indent=True)        # serialise
-doc.validate()                                # raises ValidationError on BR-* failures
-
-# Round-trip back into a Document
-import lxml.etree as etree
-parsed = Document.from_xml(etree.fromstring(xml.encode()))
-assert parsed == doc
+xml = doc.to_xml().render(indent=True)   # str — ready to write to factur-x.xml
+doc.validate()                           # raises ValidationErrors on BR-* failures
 ```
 
-## Requirements
+`doc.to_xml()` picks the right profile from `Context.guideline.id`.
+Setting a field that requires a higher profile than the document
+raises `ProfileMismatch` at render time.
 
-- Python **3.12+** (uses PEP 695 generics, `override`, `StrEnum`, etc.)
-- [`uv`](https://docs.astral.sh/uv/) for env / dependency management
+## Quickstart — parse an invoice
 
-Runtime deps (locked in `uv.lock`): `lxml`, `tagic` (tiny XML builder), `beartype`.
+From XML bytes or a file:
 
-## Development
+```python
+import xml.etree.ElementTree as ET
+from carthorse.schema import Document
+
+tree = ET.parse("factur-x.xml")
+doc = Document.from_xml(tree.getroot())
+
+print(doc.header.id, doc.header.type_code, doc.header.issue_date)
+print(doc.trade.settlement.monetary_summation.grand_total)
+
+doc.validate()   # raises ValidationErrors with every violation
+```
+
+`lxml.etree` works the same way — pass the root element to
+`Document.from_xml`.
+
+From a Factur-X / ZUGFeRD PDF (`carthorse[pdf]` extra):
+
+```python
+import xml.etree.ElementTree as ET
+from carthorse.pdf import extract_xml
+from carthorse.schema import Document
+
+payload = extract_xml(Path("invoice.pdf"))   # bytes or None
+if payload is None:
+    raise SystemExit("No factur-x.xml found in the PDF")
+doc = Document.from_xml(ET.fromstring(payload))
+```
+
+To embed an XML into an existing PDF:
+
+```python
+from pathlib import Path
+from carthorse.pdf import attach_xml
+
+attach_xml(Path("invoice.pdf"), Path("factur-x.xml"))   # in-place
+attach_xml(Path("invoice.pdf"), Path("factur-x.xml"),
+           pdf_out=Path("invoice-with-xml.pdf"))
+```
+
+`attach_xml` produces a valid PDF with a generic embedded file; it
+does **not** upgrade the host PDF to PDF/A-3, which is the formal
+Factur-X compliance requirement. Pair with a dedicated PDF/A-3
+converter for full conformance.
+
+## Validation
+
+```python
+from carthorse.schema.element import ValidationErrors
+
+try:
+    doc.validate()
+except ValidationErrors as exc:
+    for err in exc.errors:
+        print(f"{err.code}: {err.message}")
+```
+
+`Document.validate()` walks the document tree once and collects every
+business-rule violation, raising a single `ValidationErrors`
+aggregate. Each `ValidationError` carries the rule's code (e.g.
+`BR-CO-15`) and a human-readable message.
+
+The catalogue of enforced rules lives in
+[`docs/VALIDATION.md`](docs/VALIDATION.md).
+
+## Command-line tool
+
+The `carthorse[cli]` extra ships a console script that pretty-prints
+an invoice and runs the validators:
 
 ```bash
-uv sync                 # create .venv and install dev deps
-
-make tests              # pytest + 90% coverage gate (fails below)
-make check              # ruff format check + ruff lint + basedpyright
-make fmt                # auto-format and auto-fix lint
+$ carthorse path/to/factur-x.xml
+$ carthorse path/to/invoice.pdf            # reads the embedded XML
+$ carthorse --no-validate path/to/file.xml # skip BR-* checks
 ```
 
-CI runs `make check` then `make tests` on Linux/macOS/Windows (see
-`.github/workflows/CI.yml`). Tagging `v*` triggers `Publish.yml` to push to PyPI.
+Exit codes:
 
-## How the model is structured
+- `0` — parsed cleanly and passed every validator.
+- `1` — parsed but at least one validation rule fired (or the
+  document could not be parsed as a CII invoice, or no Factur-X XML
+  was found in the supplied PDF).
+- `2` — usage / IO / missing dependency error.
 
-Everything inherits from `carthorse.schema.element.Element`, a `@dataclass`
-mixin that knows three things:
+## Profiles
 
-- **`tag` / `namespace`** (`ClassVar`s) — the qualified XML tag the element
-  emits (`ram:`, `rsm:`, `udt:` …). See `carthorse.schema.types.Namespace`.
-- **`profile`** — the minimum [Factur-X profile](#profiles) at which the
-  element is allowed. Trying to render at a lower profile raises
-  `ProfileMismatch`.
-- A pair of methods, `to_xml_internal(profile)` and `from_xml(elem)`, that
-  walk the dataclass fields. Each field's `metadata` carries `tag`, optional
-  `ns`, and optional `profile` overrides.
+ZUGFeRD / Factur-X defines five conformance profiles, ordered by
+completeness:
 
-### Module map
+| Profile     | URN                                                                 | Carries line items |
+|-------------|----------------------------------------------------------------------|--------------------|
+| `MINIMUM`   | `urn:factur-x.eu:1p0:minimum`                                        | ✗ (header totals only) |
+| `BASIC_WL`  | `urn:factur-x.eu:1p0:basicwl`                                        | ✗ (basic, without lines) |
+| `BASIC`     | `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic`        | ✓ |
+| `COMFORT`   | `urn:cen.eu:en16931:2017`  *(a.k.a. EN 16931)*                       | ✓ |
+| `EXTENDED`  | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended`    | ✓ + sub-lines |
 
-| Module | What lives there |
-|---|---|
-| `schema/types.py` | Enums: `Profile`, `Namespace`, `TypeCode` (UNTDID 1001), `CategoryCode` (UNTDID 5305 / VAT), `MIME`. |
-| `schema/element.py` | `Element` base class; XML render/parse plumbing for `str`, `Decimal`, `bool`, `date`, child `Element`. Defines `ProfileMismatch` and `ValidationError`. |
-| `schema/document.py` | Top-level `Document` (CII root) and its three children: `Context` (BG-2), `Header` (BG-1) and `Trade`. |
-| `schema/trade.py` | `Trade` aggregate (`agreement` + `delivery` + `settlement` + `items`) and `TradeLineItem` (BG-25, currently a stub). |
-| `schema/agreement.py` | `TradeAgreement` (BG-4/BG-7/BG-11/BG-24 …) — seller, buyer, tax representative, references. |
-| `schema/delivery.py` | `TradeDelivery` (BG-13/BG-14) — ship-to/from, delivery date, despatch & receiving advice. |
-| `schema/settlement.py` | `TradeSettlement` (BG-16/BG-22/BG-23) — currency, payment means, taxes, totals, terms. |
-| `schema/accounting.py` | `MonetarySummation` (BG-22), `ApplicableTradeTax` (BG-23), `TradeAllowanceCharge` (BG-20/21), `TaxTotal`. |
-| `schema/party.py` | `SellerTradeParty`, `BuyerTradeParty`, `SellerTaxRepresentativeTradeParty`, ship-to/from/end-user, addresses, contacts, IBAN-style identifiers. |
-| `schema/references.py` | All `*ReferencedDocument` types (buyer order, contract, despatch advice, delivery note, prior invoice, …) plus `AdditionalReferencedDocument` with attachments. |
+The profile is set on the document via
+`Context(guideline=GuidelineDocument(id=Profile.X))`. Carthorse
+enforces it at render time: setting a field that only exists at a
+higher profile raises `ProfileMismatch`.
 
-When extending the schema, look for `# TODO` comments — they mark fields and
-business rules that have been read in the spec but not yet implemented.
+## Status and known gaps
 
-### Profiles
+Carthorse covers MINIMUM, BASIC_WL, BASIC and EN 16931 (COMFORT)
+fully for the modelled fields, with selective EXTENDED coverage
+(sub-line hierarchy, logistics service charges, advance payments,
+EXTENDED-only deviating parties). The long tail of `BT-X-*` extension
+fields is added on demand.
 
-`Profile` is `StrEnum` with comparison overridden to be ordinal (`MINIMUM <
-BASIC_WL < BASIC < COMFORT < EXTENDED`). The URN values are the actual
-Factur-X profile identifiers that go into
-`<ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>…</ram:ID></ram:GuidelineSpecifiedDocumentContextParameter>`.
-
-| Constant | Profile URN |
-|---|---|
-| `MINIMUM` | `urn:factur-x.eu:1p0:minimum` |
-| `BASIC_WL` | `urn:factur-x.eu:1p0:basicwl` |
-| `BASIC` | `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic` |
-| `COMFORT` | `urn:cen.eu:en16931:2017` (a.k.a. EN 16931) |
-| `EXTENDED` | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended` |
-
-`Document.to_xml()` picks the profile from the document's own context. Each
-field in the model can declare a `profile` in its `metadata`; rendering at a
-lower profile while a stricter field is set raises `ProfileMismatch`.
-
-## Testing
-
-```bash
-uv run pytest                       # everything
-uv run pytest tests/test_samples.py # just the sample-corpus tests
-```
-
-`tests/test_document.py` covers builder / serialiser / round-trip on a
-hand-constructed `minimum_doc` and `full_doc` plus the BR-16 validator.
-
-`tests/test_samples.py` runs the parser against real-world Factur-X / ZUGFeRD
-XML files in `tests/samples/`. Three checks per sample:
-
-1. Well-formed CII XML — must pass.
-2. Declared profile matches filename prefix and is a known `Profile` — must pass.
-3. Full `Document.from_xml(...)` round-trip — currently `xfail(strict=False)`.
-   When parser gaps close these flip to **XPASS**; remove the `xfail` on the
-   ones that pass to lock the contract in.
-
-Sample provenance, license (Apache 2.0) and download URLs are in
-[`tests/samples/SOURCES.md`](tests/samples/SOURCES.md). Sources are
-[ZUGFeRD/mustangproject](https://github.com/ZUGFeRD/mustangproject) and
-[ZUGFeRD/corpus](https://github.com/ZUGFeRD/corpus).
-
-## Reference docs
-
-Per-profile reference material lives under `docs/`:
-
-- [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — module → BG/BT field map,
-  profile applicability, and wire conventions.
-- [`docs/VALIDATION.md`](docs/VALIDATION.md) — every EN 16931 / Factur-X
-  business rule (`BR-1..65`, `BR-CO-3..26`, the per-VAT-category
-  families, and the EXTENDED `BR-FXEXT-*` overlay) with implementation
-  status.
+- [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — module → BG/BT field
+  map with profile applicability.
+- [`docs/VALIDATION.md`](docs/VALIDATION.md) — every BR-* rule with
+  enforcement status.
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — gap
-  list and ordered roadmap for the missing structures and validators.
+  list and ordered roadmap.
 
-## Known gaps
+PDF/A-3 packaging is out of scope; use `factur-x` (PyPI),
+[Mustangproject](https://github.com/ZUGFeRD/mustangproject) or a
+dedicated converter for full Factur-X PDF conformance.
 
-The full backlog (with status per item) lives in
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md). Highlights:
+## Contributing
 
-- **`TradeLineItem` is a stub.** Real BG-25 has product, agreement,
-  delivery, settlement sub-trees that are not yet modelled — see
-  `docs/IMPLEMENTATION_PLAN.md §2.BASIC` for the structure to fill in.
-- **No PDF/A-3 packaging.** carthorse only handles the embedded
-  `factur-x.xml`; embedding it into a PDF/A-3 invoice (or extracting it from
-  one) is out of scope today. See `factur-x` (PyPI) or Mustang for that piece.
-- **Validation is partial.** Existing checks: BR-16, BR-50, BR-CO-18,
-  BR-CO-21/22, currency code, UNTDID 4461 form, VAT/FC scheme id. The bulk
-  of the BR-CO computational rules (BR-CO-10..17) and the per-VAT-category
-  families are not yet enforced — see `docs/VALIDATION.md` for status.
+See [`AGENTS.md`](AGENTS.md) for the developer guide — module layout,
+how the dataclass model works, how to add a new BT field or BR
+validator, and the test / lint workflow.
 
-## ZUGFeRD references
+## References
 
-Specification:
+Specification and validators:
+
 - [FeRD net — ZUGFeRD overview](https://www.ferd-net.de/standards/zugferd)
 - [Rechnung Fans — XRechnung / EN 16931 portal](https://portal3.gefeg.com/invoice/tthome/index/617afdc4-623f-44e0-a05b-5b878840e508)
 - [e-Rechnung Bund — official documents](https://e-rechnung-bund.de/mediathek/dokumente/)
-- [Feldvorgaben xRechnung (es2000)](https://manual.es2000.de/esoffice/1300/content/esoffice/faq/xrechnung_feldvorgaben.htm?TocPath=FAQ%7C_____26)
-
-Online validators (paste an XML or upload a Factur-X PDF):
 - [Service BW e-Rechnung Validator](https://erechnungsvalidator.service-bw.de/)
 - [Rechnung.fans validator](https://portal3.gefeg.com/invoice/validation)
 - [Invoice Portal validator](https://validator.invoice-portal.de/index.php)
