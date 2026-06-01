@@ -90,7 +90,7 @@ To answer a specific question:
   rules look different.
 * **List of business rules** (last ~30 pages) — the canonical rule list.
   Contains rules that don't appear in any per-profile appendix
-  (`BR-DE-*`, etc.).
+  (`BR-FX-DE-*`, `BR-FX-EN-*`, `BR-HYBRID-*` etc.).
 
 ### 1.4 `ZF24_EN/Documentation/1_FACTUR-X 1.08 - … - VF.xlsx` — field cross-reference
 

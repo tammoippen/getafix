@@ -682,7 +682,7 @@ class LineBuyerOrderReferencedDocument(Element):
     """Per-line purchase order document ID (BT-X-21); EXTENDED only.
 
     Used when an invoice line references a different purchase order
-    than the header (BG-X-30-1 in the EXTENDED ``Sammelrechnung``
+    than the header (BT-X-21 in the EXTENDED ``Sammelrechnung``
     aggregated-invoice pattern). At COMFORT the header's
     :class:`~carthorse.schema.references.BuyerOrderReferencedDocument`
     carries the single shared order; at EXTENDED each line may

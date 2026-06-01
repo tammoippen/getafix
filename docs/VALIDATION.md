@@ -58,7 +58,7 @@ below the row's profile and whose status is ✓ (explicit
 | BASIC_WL  | 27 / 27              | 13 / 14                  | full required-party + rate + exemption-reason (`*-2/-3/-4/-5/-6/-7/-10`) | BR-CO-5 / -6 (document-level allowance / charge reason coherence) |
 | BASIC     | 36 / 36              | 16 / 18                  | full required-party + rate + exemption-reason | BR-CO-7 / -8 (line-level allowance / charge reason coherence); BR-42 / BR-44 cover the "or both" half only |
 | COMFORT   | 39 / 39              | 16 / 18                  | full required-party + rate + exemption-reason | same as BASIC plus `BR-*-8 / -9` (per-category sum identities at BG-23) |
-| EXTENDED  | 39 / 39              | 16 / 18                  | full required-party + rate + exemption-reason + BR-FXEXT-{cat}-08/09 tolerance variants | BR-FXEXT-01..05/07/10 and BR-FX-DE-04 — feature flags carthorse parses but doesn't yet check |
+| EXTENDED  | 39 / 39              | 16 / 18                  | full required-party + rate + exemption-reason + BR-FXEXT-{cat}-08/09 tolerance variants | BR-FXEXT-01..05/07/10 and BR-FX-EN-04 — feature flags carthorse parses but doesn't yet check |
 
 Notes:
 
@@ -258,11 +258,11 @@ EXTENDED-only sub-line-item structure (`BT-X-8` line subtype,
 | `BR-FXEXT-08` | New                           | If `BT-X-8` = GROUP and `BT-131` set, the `BT-131` of the group equals the sum over child DETAIL/GROUP lines' `BT-131` |
 | `BR-FXEXT-10` | New                           | `BG-X-1 IncludedReferencedProduct` content excluded from invoice math       |
 | `BR-FXEXT-11` | New                           | Each `BT-X-304` references an existing `BT-126`                             |
-| `BR-FXEXT-BR-22..27`, `BR-FXEXT-CO-04` | replaces `BR-22..27`, `BR-CO-4` | "but only when `BT-X-8` is DETAIL or unspecified" — GROUP/INFORMATION lines exempt |
+| `BR-FXEXT-22..27`, `BR-FXEXT-CO-04` | replaces `BR-22..27`, `BR-CO-4` | "but only when `BT-X-8` is DETAIL or unspecified" — GROUP/INFORMATION lines exempt. The `.sch` spells the ids with a double prefix (`BR-FXEXT-BR-22`); the XLSX rulebook (canonical) uses the single-prefix form, which is what carthorse emits. |
 | `BR-FXEXT-CO-10..13`, `BR-FXEXT-CO-15` | replaces `BR-CO-10..13` and `BR-CO-15` | Adds `≤ 0.01 × N` rounding tolerance and includes `BT-X-272` (Logistics Service fee) in charge sums |
 | `BR-FXEXT-S-08/09`, `BR-FXEXT-AE-08`, `BR-FXEXT-AF-08` (`L`/IGIC), `BR-FXEXT-AG-08` (`M`/IPSI), `BR-FXEXT-IC-08`, `BR-FXEXT-G-08`, `BR-FXEXT-O-08`, `BR-FXEXT-E-08`, `BR-FXEXT-Z-08` | replaces `BR-S-08/09`, `BR-AE-08`, `BR-IC-08`, … | Same tolerance + `BT-X-272` inclusion + DETAIL-only filter |
 | `BR-CO-17`     | **Dropped** at EXTENDED       | Per-row math is replaced by the per-category `*-09` family above             |
-| `BR-FX-DE-04`  | New (DE)                      | Non-down-payment invoice (`BT-3` ≠ `386`) must include `BT-72` or `BG-14` or `BG-26` on every line; without `BT-72`, `BT-80` (deliver-to country) must be present |
+| `BR-FX-EN-04`  | New (schematron-only — not in XLSX rulebook) | Non-down-payment invoice (`BT-3` ≠ `386`) must include `BT-72` or `BG-14` or `BG-26` on every line; without `BT-72`, `BT-80` (deliver-to country) must be present |
 | `PEPPOL-EN16931-R008` | Informational (warning) | Document MUST NOT contain empty elements                                      |
 
 **Enforcement status (EXTENDED overlay):**
@@ -279,7 +279,7 @@ EXTENDED-only sub-line-item structure (`BT-X-8` line subtype,
 * ✓ Per-category sum identities `BR-FXEXT-{S,Z,E,AE,G,IC,AF,AG,O}-08`
   and the rate-derivation check `BR-FXEXT-S-09` — implemented in
   :func:`carthorse.rules.extended.br_fxext_vat_category_sums`.
-* — `BR-FXEXT-01..05`, `BR-FXEXT-07`, `BR-FXEXT-10`, `BR-FX-DE-04`
+* — `BR-FXEXT-01..05`, `BR-FXEXT-07`, `BR-FXEXT-10`, `BR-FX-EN-04`
   and `PEPPOL-EN16931-R008` are not enforced today; their input
   fields exist in the model but the checks themselves have no
   observed sample-driven need yet.
@@ -317,7 +317,7 @@ Whenever a BG carries both a start and an end date, the end date must
 be on or after the start. The rule applies to header invoicing period
 (BG-14), line invoicing period (BG-26), and (in EXTENDED) per-line
 delivery period.
-Rules: `BR-29`, `BR-30`, `BR-CO-19`, `BR-CO-20`, `BR-FX-DE-04`.
+Rules: `BR-29`, `BR-30`, `BR-CO-19`, `BR-CO-20`, `BR-FX-EN-04`.
 
 ### 5.4 Indicator / reason coupling
 
@@ -428,7 +428,7 @@ file for the per-profile counts. The remaining gaps are narrow:
   replacements (`BR-FXEXT-{cat}-08/-09`) are implemented; the strict
   COMFORT versions are not.
 * **EXTENDED feature-flag rules** (`BR-FXEXT-01..05`, `-07`, `-10`,
-  `BR-FX-DE-04`, `PEPPOL-EN16931-R008`): the input fields exist in
+  `BR-FX-EN-04`, `PEPPOL-EN16931-R008`): the input fields exist in
   the model but the checks themselves have no sample-driven need
   yet.
 

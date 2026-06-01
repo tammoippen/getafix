@@ -11,8 +11,8 @@ can disambiguate when a term shows up multiple times (header vs line
 context, for instance).
 
 Source:
-    By default the vendored
-    ``ZF24_EN/Documentation/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx``;
+    By default the vendored workbook at
+    ``docs/spec/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx``;
     override via the positional CLI argument.
 
 Output:
@@ -38,9 +38,7 @@ import openpyxl
 
 ROOT = Path(__file__).resolve().parent.parent
 
-DEFAULT_XLSX = (
-    ROOT / "ZF24_EN/Documentation/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
-)
+DEFAULT_XLSX = ROOT / "docs/spec/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
 DEFAULT_OUT = ROOT / "tools/business_terms.json"
 
 PROFILE_SHEETS: list[str] = [

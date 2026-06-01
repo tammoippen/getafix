@@ -884,9 +884,9 @@ class ItemSellerTradeParty(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: str | None = field(default=None, metadata={"tag": "ID"})
-    """Item seller identifier (BT-X-571)."""
+    """Item seller identifier (BT-X-567)."""
     global_ids: list[GlobalID] | None = None
-    """Item seller global identifier(s) (BT-X-570)."""
+    """Item seller global identifier(s) (BT-X-568)."""
     name: str = field(metadata={"tag": "Name"})
     """Item seller name (BT-X-569)."""
     legal_organization: LegalOrganization | None = None

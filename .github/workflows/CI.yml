@@ -34,6 +34,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: make check
       - run: make synth-check
+      - run: make ids-check
       - run: make tests
 
       - uses: codecov/codecov-action@v5

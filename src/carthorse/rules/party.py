@@ -126,7 +126,7 @@ def br_62(m: _party.SellerTradeParty, _profile: Profile) -> list[ValidationError
     """BR-62: The Seller electronic address (BT-34) shall have a Scheme
     identifier.
 
-    Applies: BASIC_WL+ (BG-X-34-00 first appears there).
+    Applies: BASIC_WL+ (BT-34-00 first appears there).
     """
     addr = m.electronic_address
     if addr is None:
@@ -145,7 +145,7 @@ def br_63(m: _party.BuyerTradeParty, _profile: Profile) -> list[ValidationError]
     """BR-63: The Buyer electronic address (BT-49) shall have a Scheme
     identifier.
 
-    Applies: BASIC_WL+ (BG-X-49-00 first appears there).
+    Applies: BASIC_WL+ (BT-49-00 first appears there).
     """
     addr = m.electronic_address
     if addr is None:

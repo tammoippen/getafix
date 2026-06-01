@@ -27,3 +27,14 @@ tests:
 synth-check:
 	uv run --locked python tools/build_synth_samples.py --check
 
+# Cross-check every BT-/BG-/BR- citation in the carthorse sources,
+# docstrings and docs against the JSON sidecars
+# (``tools/business_terms.json`` and ``tools/business_rules.json``).
+# Exits non-zero on any unknown id — catches typos / hallucinated
+# spec references.
+.PHONY: ids-check
+ids-check:
+	uv run --locked python tools/extract_business_terms.py
+	uv run --locked python tools/extract_business_rules.py
+	uv run --locked python tools/check_bt_br_ids.py
+
