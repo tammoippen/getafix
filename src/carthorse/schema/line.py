@@ -26,8 +26,8 @@ product enrichments :class:`ProductCharacteristic` (BG-32),
 :class:`LineAdditionalReferencedDocument` (BT-128) and the line
 reuse of :class:`~carthorse.schema.settlement.ReceivableAccountingAccount`
 (BT-133). The EXTENDED sub-line / ``IncludedReferencedProduct`` /
-per-line deviating-party groups are tracked in
-``docs/PROFILES/COMFORT.md`` and ``docs/IMPLEMENTATION_PLAN.md``.
+per-line deviating-party groups are modelled here too; remaining
+EXTENDED line-level references are listed in ``docs/STRUCTURES.md §5.1``.
 
 Validation rules covered:
 

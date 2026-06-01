@@ -52,11 +52,9 @@ errors and 0 lint warnings beyond the pre-existing ``reportAny`` /
 This file is the operational complement to:
 
 * ``docs/STRUCTURES.md`` — field narrative and per-profile field
-  surface;
+  surface, plus the EXTENDED coverage diff;
 * ``docs/VALIDATION.md`` — rule narrative, families and current
-  status;
-* ``docs/IMPLEMENTATION_PLAN.md §EN16931`` — cross-profile roadmap
-  (line 126 onwards).
+  status.
 
 It is a checklist, not a re-derivation of the spec — every item links
 back to a concrete file path, the Factur-X 1.08 main spec spreadsheet
@@ -85,11 +83,11 @@ What "complete COMFORT" means here:
 * every ``BR-DEC-*`` decimal-precision rule (21 at COMFORT) is
   enforced by a single shared validator factory.
 
-What's explicitly **not** in scope here — kept in
-``IMPLEMENTATION_PLAN.md §EXTENDED`` and ``§5``:
+What's explicitly **not** in scope here:
 
 * the EXTENDED CIUS overlay (``BG-X-*``, ``BT-X-*``, ``BR-FXEXT-*``,
-  ``BR-FX-DE-*``);
+  ``BR-FX-DE-*``) — tracked in ``docs/STRUCTURES.md §5`` and the
+  ``BR-FXEXT-*`` section of ``docs/VALIDATION.md``;
 * PDF/A-3 packaging (delegated to ``factur-x`` on PyPI);
 * schematron-driven rule generation (own track).
 
@@ -446,12 +444,14 @@ loads every ``tests/samples/EN16931_*.xml``, round-trips through
 ## 8. Out of scope (link out)
 
 * **EXTENDED CIUS overlay** — ``BG-X-*``, ``BT-X-*``,
-  ``BR-FXEXT-*``, ``BR-FX-DE-*``. See
-  ``docs/IMPLEMENTATION_PLAN.md §EXTENDED`` and ``§5``.
+  ``BR-FXEXT-*``, ``BR-FX-DE-*``. The remaining EXTENDED gaps are
+  enumerated in ``docs/STRUCTURES.md §5``; rule-side coverage and
+  the implemented ``BR-FXEXT-*`` overlay live in
+  ``docs/VALIDATION.md §4``.
 * **PDF/A-3 packaging** — delegated to ``factur-x`` on PyPI; covered
   in ``README.md``.
-* **Schematron-driven rule generation** — covered as a future track
-  in ``docs/IMPLEMENTATION_PLAN.md §5``; would supersede the manual
-  ``rules/`` layer but is orthogonal to COMFORT parity.
+* **Schematron-driven rule generation** — would supersede the
+  manually-written ``rules/`` layer but is orthogonal to COMFORT
+  parity. See ``docs/STRUCTURES.md §6`` for out-of-scope notes.
 * **`BR-CL-26`** delivery-location scheme id — the field is only
   modelled at EXTENDED; flagged for the EXTENDED tracker.

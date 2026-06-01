@@ -173,6 +173,6 @@ narrative, fix it via one of those two markers.
 | Read rule BR-Y's full text | `ZF24_EN/Documentation/<any>.pdf` "List of Business Rules" appendix | Rule numbering is shared across profile PDFs |
 | Find which carthorse class models BG-X | `docs/STRUCTURES.md` § Field reference | Tables list every modelled field with its BT/BG id |
 | Check whether BR-Y is enforced | `docs/VALIDATION.md` rule tables | Status column tells you ✓ enforced / — not yet / ⚠ buggy |
-| See the implementation plan for missing fields | `docs/IMPLEMENTATION_PLAN.md` | Per-profile tables and ordered roadmap |
+| See which EXTENDED fields are still missing | `docs/STRUCTURES.md §5` | EXTENDED coverage diff |
 | Understand what changed in Factur-X 1.08 vs 1.07 | `ZF24_EN/Documentation/0_FACTUR-X_1.08_…_EN.pdf` change log (~p244) | Rule replacements at EXTENDED, etc. |
 | Find a sample invoice for profile P | `ZF24_EN/Examples/<n>. <P>/…_<sample>.xml` | Several per profile; PDFs alongside |

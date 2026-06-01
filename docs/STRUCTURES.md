@@ -8,7 +8,8 @@ information in tabular form so you can see profile applicability at a
 glance.
 
 For the `BR-*` business rules referenced here, see
-`docs/VALIDATION.md`. For the gaps, see `docs/IMPLEMENTATION_PLAN.md`.
+`docs/VALIDATION.md`. The remaining EXTENDED coverage gaps are
+enumerated in [§5](#5-extended-coverage-diff) of this file.
 
 ## 1. Profile primer
 
@@ -33,37 +34,18 @@ have answered `True`).
 
 ## 1a. Per-profile field-coverage summary
 
-Counts of EN 16931 fields that are *modelled* by carthorse (either as a
-dataclass attribute or as a sub-`Element`) compared to the total number
-of fields the spec lists for that profile, taken from the field tables
-in §3 of this document. EXTENDED-only fields (`BG-X-*`, `BT-X-*`) are
-counted only against the EXTENDED column. The ratios are approximate
-indicators rather than a bit-exact audit; each gap is described
-inline.
+Carthorse models **every field** that MINIMUM, BASIC_WL, BASIC and
+EN 16931 (COMFORT) permit. EXTENDED coverage is broad — every
+top-level structure is modelled — with the residual gaps
+enumerated in [§5](#5-extended-coverage-diff).
 
-| Profile   | Header + Context | Parties (BG-4/7/10/11/13) | Agreement + Delivery + Settlement | Monetary + Tax (BG-22/23) | Allowance/charge + payment | Line items (BG-25 / BG-26..30) | Total modelled / expected |
-|-----------|------------------|---------------------------|-----------------------------------|---------------------------|----------------------------|---------------------------------|---------------------------|
-| MINIMUM   | 7 / 7            | 11 / 11                   | 4 / 4                             | 5 / 5                     | n/a                        | n/a                             | 27 / 27 (100%)            |
-| BASIC_WL  | 9 / 9            | 26 / 26                   | 17 / 17                           | 12 / 12                   | 17 / 17                    | n/a                             | 81 / 81 (100%)            |
-| BASIC     | 9 / 9            | 26 / 26                   | 17 / 17                           | 12 / 12                   | 17 / 17                    | 14 / 14                         | 95 / 95 (100%)            |
-| COMFORT   | 9 / 11           | 28 / 33                   | 19 / 21                           | 13 / 13                   | 17 / 20                    | 17 / 21                         | 103 / 119 (87%)           |
-| EXTENDED  | 11 / 14          | 31 / 60                   | 21 / 30                           | 14 / 15                   | 17 / 24                    | 17 / 60                         | 111 / 203 (55%)           |
-
-Notes on the totals:
-* BT-114 ``RoundingAmount`` is now modelled (see §3.7), closing the
-  remaining BG-22 gap at BASIC_WL+ and the lone MonetarySummation hole
-  at COMFORT/EXTENDED. The "Allowance/charge + payment" gap at COMFORT
-  is BG-18 (financial card), which the EN 16931 / Factur-X mapping
-  marks optional and which carthorse intentionally leaves unmodelled.
-* COMFORT gaps are mostly `AdditionalReferencedDocument` repetition
-  edge cases and the optional payment-means information line (BT-82).
-* EXTENDED counts only top-level groups carthorse exposes
-  (`UltimateShipToTradeParty`, `ShipFromTradeParty`,
-  `ProductEndUserTradeParty`, `EffectivePeriod`, `LogisticsTransportMovement`,
-  `BillingSpecifiedPeriod`); sub-line hierarchy, IncludedReferencedProduct,
-  line-level deviating parties, advance-payment groups, and per-line
-  logistics service charges are unmodelled. See
-  `docs/IMPLEMENTATION_PLAN.md §5`.
+| Profile   | Coverage | Open gaps |
+|-----------|----------|-----------|
+| MINIMUM   | 100%     | —         |
+| BASIC_WL  | 100%     | —         |
+| BASIC     | 100%     | —         |
+| COMFORT   | 100%     | —         |
+| EXTENDED  | structurally complete | leaf attributes on shared types and line-level twins of header references (see §6) |
 
 > **Wire conformance.** Every dataclass with XML children declares its
 > fields in the same order as the corresponding XSD complexType
@@ -182,17 +164,18 @@ side).
 | Element                                         | EN 16931 id | Lowest profile | Carthorse  |
 |-------------------------------------------------|-------------|----------------|------------|
 | `SellerTaxRepresentativeTradeParty`             | BG-11       | BASIC_WL       | ✓          |
-| `PayeeTradeParty`                               | BG-10       | BASIC_WL       | ✓ (partial — no address/contact/electronic_address yet) |
-| `ShipToTradeParty`                              | BG-13       | BASIC_WL       | ✓ (now gated `BASIC_WL`) |
+| `PayeeTradeParty`                               | BG-10       | BASIC_WL       | ✓          |
+| `ShipToTradeParty`                              | BG-13       | BASIC_WL       | ✓          |
 | `UltimateShipToTradeParty`                      | BG-X-27     | EXTENDED       | ✓          |
 | `ShipFromTradeParty`                            | BG-X-30     | EXTENDED       | ✓          |
 | `ProductEndUserTradeParty`                      | BG-X-18     | EXTENDED       | ✓          |
-| `BuyerAgentTradeParty`                          | BG-X-62     | EXTENDED       | ✗          |
-| `SalesAgentTradeParty`                          | BG-X-49     | EXTENDED       | ✗          |
-| `BuyerTaxRepresentativeTradeParty`              | BG-X-54     | EXTENDED       | ✗          |
-| `InvoicerTradeParty`                            | BG-X-33     | EXTENDED       | ✗          |
-| `InvoiceeTradeParty`                            | BG-X-36     | EXTENDED       | ✗          |
-| `PayerTradeParty`                               | BG-X-73     | EXTENDED       | ✗          |
+| `BuyerAgentTradeParty`                          | BG-X-62     | EXTENDED       | ✓          |
+| `SalesAgentTradeParty`                          | BG-X-49     | EXTENDED       | ✓          |
+| `BuyerTaxRepresentativeTradeParty`              | BG-X-54     | EXTENDED       | ✓          |
+| `InvoicerTradeParty`                            | BG-X-33     | EXTENDED       | ✓          |
+| `InvoiceeTradeParty`                            | BG-X-36     | EXTENDED       | ✓          |
+| `PayerTradeParty`                               | BG-X-73     | EXTENDED       | ✓          |
+| `ItemSellerTradeParty`                          | BG-X-90     | EXTENDED       | ✓ (on line) |
 
 ### 3.4 Header trade agreement
 
@@ -223,7 +206,7 @@ TradeDelivery (BG-13-00)
   DespatchAdviceReferencedDocument BT-16-00 BASIC_WL
   ReceivingAdviceReferencedDocument BT-15-00 EN16931
   DeliveryNoteReferencedDocument   BT-X EXTENDED
-  RelatedSupplyChainConsignment    BG-X-24 EXTENDED  (carthorse models a stripped-down version)
+  RelatedSupplyChainConsignment    BG-X-24 EXTENDED  carries LogisticsTransportMovement (BT-X-152)
 ```
 
 ### 3.6 Header trade settlement
@@ -232,21 +215,24 @@ TradeDelivery (BG-13-00)
 TradeSettlement (BG-19)
   CreditorReferenceID              BT-90    BASIC_WL  optional
   PaymentReference                 BT-83    BASIC_WL  optional
-  TaxCurrencyCode                  BT-6     BASIC_WL  ✓ modelled as ``tax_currency_code``;
-                                                     drives ``BR-53`` enforcement
+  TaxCurrencyCode                  BT-6     BASIC_WL  drives ``BR-53`` enforcement
   InvoiceCurrencyCode              BT-5     MINIMUM   required
+  InvoiceIssuerReference           BT-X-204 EXTENDED  optional
+  InvoicerTradeParty               BG-X-33  EXTENDED  optional
+  InvoiceeTradeParty               BG-X-36  EXTENDED  optional
   PayeeTradeParty                  BG-10    BASIC_WL  optional
-  SpecifiedTradeSettlementPaymentMeans* BG-16 BASIC_WL list
+  PayerTradeParty                  BG-X-73  EXTENDED  optional
+  TaxApplicableTradeCurrencyExchange BG-X-41 EXTENDED  optional
+  SpecifiedTradeSettlementPaymentMeans* BG-16 BASIC_WL list (0..*)
   ApplicableTradeTax+              BG-23    BASIC_WL  list, ≥1 (enforces ``BR-CO-18``)
-  BillingSpecifiedPeriod           BG-14    BASIC_WL  ✓ modelled (``BillingSpecifiedPeriod``);
-                                                     enforces ``BR-29`` and ``BR-CO-19``
-  SpecifiedTradeAllowanceCharge*   BG-20/21 BASIC_WL  list
-  SpecifiedTradePaymentTerms       BT-20-00 BASIC_WL  carthorse: single (EXTENDED allows list of payment-term blocks)
+  BillingSpecifiedPeriod           BG-14    BASIC_WL  enforces ``BR-29`` and ``BR-CO-19``
+  SpecifiedTradeAllowanceCharge*   BG-20/21 BASIC_WL  list (0..*)
+  SpecifiedLogisticsServiceCharge* BG-X-42  EXTENDED  list (0..*)
+  SpecifiedTradePaymentTerms*      BT-20-00 BASIC_WL  list capped to 1 below EXTENDED
   SpecifiedTradeSettlementHeaderMonetarySummation BG-22 MINIMUM required
-  InvoiceReferencedDocument*       BG-3     BASIC_WL  ✓ ``list[InvoiceReferencedDocument] | None``
-  ReceivableSpecifiedTradeAccountingAccount* BT-19-00 BASIC_WL  list
-  SpecifiedAdvancePayment*         BG-X-45  EXTENDED  ✗
-  SpecifiedLogisticsServiceCharge* BG-X-42  EXTENDED  ✗
+  InvoiceReferencedDocument*       BG-3     BASIC_WL  list (0..*)
+  ReceivableSpecifiedTradeAccountingAccount* BT-19-00 BASIC_WL  list (0..*)
+  SpecifiedAdvancePayment*         BG-X-45  EXTENDED  list (0..*)
 ```
 
 ### 3.7 Monetary summation (BG-22)
@@ -284,7 +270,7 @@ ApplicableTradeTax (header BG-23, line BG-30)
 TradeAllowanceCharge
   ChargeIndicator                  BG-20-0 / BG-21-0  required (false=allowance, true=charge)
   CalculationPercent               BT-94 / BT-101    optional
-  BasisAmount                      BT-93 / BT-100    optional ⚠ wrong tag in carthorse (#4)
+  BasisAmount                      BT-93 / BT-100    optional
   ActualAmount                     BT-92 / BT-99     required
   ReasonCode                       BT-98 / BT-105    optional, paired with text via BR-CO-21/22
   Reason                           BT-97 / BT-104    optional
@@ -298,20 +284,25 @@ TradeAllowanceCharge
 
 ```
 PaymentMeans (BG-16)
-  TypeCode                         BT-81  required (UNTDID 4461)
-  Information                      BT-82  EN16931  ✗ NOT MODELLED
-  ApplicableTradeSettlementFinancialCard (BG-18) EN16931 ✗
-  PayerPartyDebtorFinancialAccount (BT-91-00) BASIC_WL ✓
+  TypeCode                         BT-81  required (UNTDID 4461; BR-49 / BT-81 code-shape guard)
+  Information                      BT-82  COMFORT+
+  ApplicableTradeSettlementFinancialCard (BG-18) COMFORT+  enforces BR-51 (4..6 digit PAN)
+    ID                             BT-87
+    CardholderName                 BT-88
+  PayerPartyDebtorFinancialAccount (BT-91-00) BASIC_WL
     IBANID                         BT-91
-  PayeePartyCreditorFinancialAccount (BG-17) BASIC_WL ✓
-    IBANID                         BT-84
-    AccountName                    BT-85  EN16931  ✗
+  PayeePartyCreditorFinancialAccount (BG-17) BASIC_WL  enforces BR-50 (IBAN or proprietary id)
+    IBANID                         BT-84  (BR-61 enforces presence for credit-transfer type codes)
+    AccountName                    BT-85  COMFORT+
     ProprietaryID                  BT-84-0
-  PayeeSpecifiedCreditorFinancialInstitution (BT-86) EN16931 ✗
+  PayeeSpecifiedCreditorFinancialInstitution (BT-86) COMFORT+
+    BICID                          BT-86  optional; renderer always emits the wrapper to keep XSD validity
 ```
 
-`PaymentTerms` (BT-20-00) is currently single. EXTENDED allows
-0..unbounded — needed only when emitting EXTENDED documents.
+`PaymentTerms` (BT-20-00) is modelled as a list. EXTENDED widens
+the XSD cardinality from 0..1 to 0..unbounded; below EXTENDED
+``list_max_cardinality_below(Profile.EXTENDED, max_count=1, ...)``
+caps the list at one entry.
 
 ### 3.11 References
 
@@ -331,45 +322,71 @@ PaymentMeans (BG-16)
 
 ### 3.12 Line items (BG-25)
 
-Carthorse models the full BASIC line shape in `schema/line.py`. EN 16931
-enrichments (product characteristics, classification, origin country,
-line-level references / accounting account) and the EXTENDED sub-line
-hierarchy (parent/child via `BT-X-304`), `IncludedReferencedProduct`,
-line-level deviating parties, and per-line logistics service charges
-are *not* modelled — see `docs/IMPLEMENTATION_PLAN.md §5`.
+Carthorse models the full line shape across BASIC, COMFORT and
+EXTENDED in `schema/line.py`: product enrichments (BG-32 / BG-33 /
+BG-34), line-level references / accounting account, and the
+EXTENDED sub-line hierarchy (parent/child via `BT-X-304`),
+`IncludedReferencedProduct` (BG-X-1), `IndividualTradeProductInstance`
+(BG-X-84), and the per-line deviating seller (BG-X-90, via
+`ItemSellerTradeParty`). EXTENDED leaves the line-level
+ship-to (BG-X-7) and ultimate-ship-to (BG-X-10) hooks in place
+too. Residual EXTENDED line-level references missing per [§5.1](#51-line-level-twins-of-header-references).
 
 ```
 TradeLineItem (BG-25)                                profile = BASIC
   AssociatedDocumentLineDocument        BT-126-00    DocumentLineDocument
     LineID                              BT-126        required
+    ParentLineID                        BT-X-304     EXTENDED only — sub-invoice-line parent
+    LineStatusCode                      BT-X-7       EXTENDED only
+    LineStatusReasonCode                BT-X-8       EXTENDED only (DETAIL / GROUP / INFORMATION)
     IncludedNote                        BT-127-00    LineIncludedNote, optional
-      Content                           BT-127        required if note present
+      Content                           BT-127       required if note present
   SpecifiedTradeProduct                 BG-31        TradeProduct
     GlobalID                            BT-157       optional (schemeID required, BR-64)
     SellerAssignedID                    BT-155       COMFORT+
     BuyerAssignedID                     BT-156       COMFORT+
+    IndustryAssignedID                  BT-X-532     EXTENDED only
+    ModelID                             BT-X-533     EXTENDED only
     Name                                BT-153       required
     Description                         BT-154       COMFORT+
+    BatchID*                            BT-X-534     EXTENDED only (list)
+    BrandName                           BT-X-535     EXTENDED only
+    ModelName                           BT-X-536     EXTENDED only
+    ApplicableProductCharacteristic*    BG-32        COMFORT+ — BR-54 implicit
+    DesignatedProductClassification*    BG-33        COMFORT+ — BR-65 implicit via required list_id
+    IndividualTradeProductInstance*     BG-X-84      EXTENDED only
+    OriginTradeCountry                  BG-34        COMFORT+
+    IncludedReferencedProduct*          BG-X-1       EXTENDED only (sub-product bundle)
   SpecifiedLineTradeAgreement           BG-29        LineTradeAgreement
+    BuyerOrderReferencedDocument        BT-132-00    COMFORT+
+    QuotationReferencedDocument         BG-X-47      EXTENDED only
     GrossPriceProductTradePrice         BT-148-00    GrossTradePrice, optional
-      ChargeAmount                      BT-148       required if gross price present
+      ChargeAmount                      BT-148       required if gross price present (BR-28: ≥ 0)
       BasisQuantity                     BT-149-1     optional
       AppliedTradeAllowanceCharge       BT-147-00    optional (allowance only)
         ChargeIndicator                 false        required
         ActualAmount                    BT-147       required
         CalculationPercent              BT-X         COMFORT+
         BasisAmount                     BT-X         COMFORT+
-    NetPriceProductTradePrice           BT-146-00    NetTradePrice, required
-      ChargeAmount                      BT-146       required (BR-27: ≥ 0 not yet enforced)
+    NetPriceProductTradePrice           BT-146-00    NetTradePrice, required (BR-27: ≥ 0)
+      ChargeAmount                      BT-146       required
       BasisQuantity                     BT-149       optional
+    ItemSellerTradeParty                BG-X-90      EXTENDED only
   SpecifiedLineTradeDelivery            BT-129-00    LineTradeDelivery
     BilledQuantity                      BT-129       required (with BT-130 unitCode)
+    ChargeFreeQuantity                  BT-X-46      EXTENDED only
+    PackageQuantity                     BT-X-47      EXTENDED only
+    PerPackageUnitQuantity              BT-X-561     EXTENDED only
+    ShipToTradeParty                    BG-X-7       EXTENDED only
+    UltimateShipToTradeParty            BG-X-10      EXTENDED only
   SpecifiedLineTradeSettlement          BG-30-00     LineTradeSettlement
     ApplicableTradeTax                  BG-30        required (TypeCode, CategoryCode, rate)
     BillingSpecifiedPeriod              BG-26        optional (BR-30 / BR-CO-20)
     SpecifiedTradeAllowanceCharge*      BG-27/28     list (BR-CO-23 / BR-CO-24)
     SpecifiedTradeSettlementLineMonetarySummation BT-131-00 required
       LineTotalAmount                   BT-131       required
+    AdditionalReferencedDocument*       BT-128-00    COMFORT+ (line invoice-object id)
+    ReceivableSpecifiedTradeAccountingAccount BT-133-00 COMFORT+
 ```
 
 ## 4. Wire conventions enforced today
@@ -405,29 +422,7 @@ TradeLineItem (BG-25)                                profile = BASIC
   them, so the parser is lenient. On render the field is simply
   omitted.
 
-## 5. Where to look next
-
-* For new field work, start from the relevant section above to confirm
-  the EN 16931 id, then update `docs/IMPLEMENTATION_PLAN.md` to record
-  the change.
-* For new validators, register the BR-* code in `docs/VALIDATION.md`
-  and prefer appending `ValidationError(code="BR-…", message=…)` to
-  the ``errors`` list returned by ``validate_internal`` (no raising in
-  child validators — the ``Document.validate`` root wraps the collected
-  list in a :class:`ValidationErrors` aggregate). The contract is::
-
-      def validate_internal(self, profile: Profile) -> list[ValidationError]:
-          errors: list[ValidationError] = []
-          if ...:
-              errors.append(ValidationError("BR-…", "…"))
-          errors.extend(super().validate_internal(profile))
-          return errors
-
-* The vendored XSDs under `tests/schemas/` are the structural source
-  of truth; any modelling change must keep
-  `tests/test_hypothesis.py::test_generated_xml_is_xsd_valid` green.
-
-## 6. EXTENDED coverage diff
+## 5. EXTENDED coverage diff
 
 Carthorse models the EXTENDED profile broadly — see the README
 "Status and known gaps" section for the headline structures that
@@ -437,7 +432,7 @@ XSD complex type that declares it. Each entry is the XSD element
 name; the BT id (often `BT-X-*`) lives in the per-profile appendix
 PDF.
 
-### 6.1 Line-level twins of header references
+### 5.1 Line-level twins of header references
 
 The EXTENDED profile allows the line sub-tree to carry per-line
 overrides of references that the header normally provides. Modelled
@@ -456,7 +451,7 @@ selectively today; full set:
 | `LineTradeDeliveryType` | `DeliveryNoteReferencedDocument`             | `TradeDelivery.delivery_note` (BT-X-202-00) |
 | `LineTradeSettlementType`| `InvoiceReferencedDocument`                 | `TradeSettlement.invoice_referenced_document` (BG-3) |
 
-### 6.2 Leaf attributes on shared complex types
+### 5.2 Leaf attributes on shared complex types
 
 EXTENDED widens several shared complex types with optional leaf
 attributes. Adding them is mechanical — declare a new `field()` in
@@ -475,7 +470,7 @@ XSD-sequence order, gated `Profile.EXTENDED`.
 | `TradePriceType` (BT-146-00 / BT-148-00) | `IncludedTradeTax`         | VAT included in the unit price. |
 | `TradeSettlementHeaderMonetarySummationType` (BG-22) | `TotalAllowanceChargeAmount` | Net of all document-level allowances and charges. |
 
-### 6.3 Cardinality widenings already modelled
+### 5.3 Cardinality widenings already modelled
 
 For reference, the EXTENDED-only cardinality widenings that *are*
 honoured by the runtime gates:
@@ -489,3 +484,31 @@ honoured by the runtime gates:
   models a singleton on `GrossTradePrice.applied_allowance_charge`;
   the multi-entry case on EXTENDED gross / net prices is not yet
   modelled.
+
+## 6. Out of scope
+
+These intentionally live outside carthorse's surface:
+
+* **PDF/A-3 packaging.** ``carthorse.pdf`` can attach the embedded
+  ``factur-x.xml`` to and extract it from any PDF (``pypdf``-based),
+  but it does **not** upgrade the host PDF to PDF/A-3 — the formal
+  compliance requirement for Factur-X. Pair with a dedicated
+  converter (``factur-x`` on PyPI, Mustangproject, …) when full
+  conformance is needed.
+* **Schematron rule generation.** The per-profile
+  ``FACTUR-X_<PROFILE>.sch`` schematron files are not vendored under
+  ``tests/schemas/`` (only the XSDs are). Carthorse's BR-* validators
+  are hand-written from the appendix narratives; auto-generating
+  them from the schematron is a separate project.
+
+## 7. Where to look next
+
+* For new field work, start from the relevant section above to confirm
+  the EN 16931 id, then add the field to the matching dataclass in
+  XSD-``<xs:sequence>`` order.
+* For new validators, register the BR-* code in ``docs/VALIDATION.md``
+  and add a function to ``carthorse.rules.<topic>`` returning
+  ``list[ValidationError]`` — see ``AGENTS.md`` for the contract.
+* The vendored XSDs under ``tests/schemas/`` are the structural source
+  of truth; any modelling change must keep
+  ``tests/test_hypothesis.py::test_generated_xml_is_xsd_valid`` green.
