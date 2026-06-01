@@ -65,7 +65,7 @@ from carthorse.rules import Validator
 from carthorse.rules._types import fields_only_at, max_decimals
 from carthorse.rules.line import br_27, br_28
 from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
-from carthorse.schema.element import Element, ETElement, coerce_enum
+from carthorse.schema.element import Element, ETElement
 from carthorse.schema.party import (
     GlobalID,
     ItemSellerTradeParty,
@@ -361,8 +361,8 @@ class ProductClassification(Element):
             raise ValueError(f"{cls.__name__}: ClassCode + listID are required")
         return cls(
             class_code=class_code,
-            list_id=coerce_enum(list_id, cls, "list_id"),
-            list_version_id=coerce_enum(list_version_id, cls, "list_version_id"),
+            list_id=list_id,
+            list_version_id=list_version_id,
             class_name=class_name,
         )
 

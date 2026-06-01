@@ -110,3 +110,10 @@ exclude = [
 # file with `# pyright: enableImplicitStringConcatenation=true` if a
 # specific module wants the check.
 reportImplicitStringConcatenation = false
+
+# Suppress reportPrivateUsage — lxml exposes its element type as
+# ``lxml.etree._Element`` (leading underscore historical, not a privacy
+# boundary). The lxml API docs and every consumer reference the type by
+# that exact name, so pyright's private-import warning is a false
+# positive in this codebase's only relevant use.
+reportPrivateUsage = false

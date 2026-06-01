@@ -49,7 +49,7 @@ def max_decimals[T: Element](
     ``max_places`` fractional digits).
     """
 
-    def _check(m: T, profile: Profile) -> list[ValidationError]:
+    def _check(m: T, _profile: Profile) -> list[ValidationError]:
         value = getattr(m, field_name, None)
         if not isinstance(value, Decimal):
             return []
@@ -125,7 +125,7 @@ def list_max_cardinality_below[T: Element](
     def _check(m: T, profile: Profile) -> list[ValidationError]:
         if profile >= profile_below:
             return []
-        value = getattr(m, field_name, None)
+        value: list[object] | None = getattr(m, field_name, None)
         if value is None or len(value) <= max_count:
             return []
         return [

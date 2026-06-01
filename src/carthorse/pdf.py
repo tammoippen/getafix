@@ -65,7 +65,7 @@ def attach_xml(
     _ = writer.add_attachment(attachment_name, xml_bytes)
     target = pdf_out if pdf_out is not None else pdf_in
     with target.open("wb") as fp:
-        writer.write(fp)
+        _ = writer.write(fp)
     return target
 
 
@@ -90,10 +90,10 @@ def extract_xml(
         original = by_lowercase.get(candidate.lower())
         if original is None:
             continue
+        # ``pypdf`` returns a list of byte payloads per attachment name
+        # (an attachment name can be re-used inside one PDF — rare in
+        # the Factur-X corpus but allowed). Return the first payload.
         payload = attachments[original]
-        if isinstance(payload, list):
-            if payload:
-                return payload[0]
-            continue
-        return payload
+        if payload:
+            return payload[0]
     return None

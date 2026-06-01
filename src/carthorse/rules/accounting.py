@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from carthorse.schema import accounting as _acc
 
 
-def br_5_currency_shape(m: _acc.TaxTotal, profile: Profile) -> list[ValidationError]:
+def br_5_currency_shape(m: _acc.TaxTotal, _profile: Profile) -> list[ValidationError]:
     """BR-5: An Invoice shall have an Invoice currency code (BT-5).
 
     Applies: MINIMUM+. Carthorse stretches the rule to also check
@@ -72,7 +72,7 @@ def br_12(m: _acc.MonetarySummation, profile: Profile) -> list[ValidationError]:
     ]
 
 
-def br_co_3(m: _acc.ApplicableTradeTax, profile: Profile) -> list[ValidationError]:
+def br_co_3(m: _acc.ApplicableTradeTax, _profile: Profile) -> list[ValidationError]:
     """BR-CO-3: Value added tax point date (BT-7) and Value added tax point
     date code (BT-8) are mutually exclusive.
 
@@ -129,30 +129,29 @@ def br_co_17(m: _acc.ApplicableTradeTax, profile: Profile) -> list[ValidationErr
 
 
 def bt_8_code_shape(
-    m: _acc.ApplicableTradeTax, profile: Profile
+    m: _acc.ApplicableTradeTax, _profile: Profile
 ) -> list[ValidationError]:
-    """BT-8 (Value added tax point date code) must be a UNTDID 2475 code
-    (digits up to 3 chars, or ``ZZZ``).
+    """BT-8 (Value added tax point date code) must be a UNTDID 2475 code.
 
     Applies: BASIC_WL+. Not a numbered EN 16931 rule — a code-shape
-    guard against malformed inputs. Raises with error code ``"BT-8"``
-    for back-compat with existing tests.
+    guard kept for back-compat with the error code ``"BT-8"``.
+    ``due_date_code: UNTDID2475TaxPointDateCode | None`` already
+    forces enum membership at construction time, so this validator
+    only fires if a caller manually side-steps the enum.
     """
     code = m.due_date_code
-    if code is None:
-        return []
-    if len(code) <= 3 and (code.isdigit() or code == "ZZZ"):
+    if code is None or (len(code) <= 3 and code.isdigit()):
         return []
     return [
         ValidationError(
             "BT-8",
             "Value added tax point date code (BT-8) must be a "
-            f"UNTDID 2475 code (digits or 'ZZZ'); got {code!r}.",
+            f"UNTDID 2475 code; got {code!r}.",
         )
     ]
 
 
-def br_48(m: _acc.ApplicableTradeTax, profile: Profile) -> list[ValidationError]:
+def br_48(m: _acc.ApplicableTradeTax, _profile: Profile) -> list[ValidationError]:
     """BR-48: Each VAT breakdown (BG-23) shall have a VAT category rate
     (BT-119), except if the Invoice is not subject to VAT.
 
@@ -220,7 +219,7 @@ def _too_many_decimals(value: Decimal | None, max_places: int = 2) -> bool:
 
 
 def br_dec_tac_amounts(
-    m: _acc.TradeAllowanceCharge, profile: Profile
+    m: _acc.TradeAllowanceCharge, _profile: Profile
 ) -> list[ValidationError]:
     """``BR-DEC-{01,02,05,06,24,25,27,28}`` on TradeAllowanceCharge.
 
