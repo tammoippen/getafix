@@ -87,8 +87,8 @@ class Element(ABC):
     Subclasses override this with a tuple of free-standing functions
     from :mod:`carthorse.rules` (one per ``BR-*`` rule). Each function
     is invoked with ``(self, profile)`` and returns a
-    ``list[ValidationError]`` (empty on success). See
-    ``docs/VALIDATOR_REFACTOR.md`` for the architecture.
+    ``list[ValidationError]`` (empty on success). See ``AGENTS.md``
+    "Validator architecture" for the design.
     """
 
     def __post_init__(self) -> None:

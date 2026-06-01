@@ -339,7 +339,82 @@ Rules: `BR-CO-10..17`, `BR-AE-8/9`, `BR-E-8/9`, `BR-G-8/9`,
 `BR-IC-8/9`, `BR-AF-8/9`, `BR-AG-8/9`, `BR-O-8/9`, `BR-S-8/9`,
 `BR-Z-8/9`, `BR-FXEXT-CO-10..13/15`, `BR-FXEXT-{S,AE,AF,AG,IC,G,O,E,Z}-08/09`.
 
-## 6. Summary
+## 6. Code-list rules (`BR-CL-*`)
+
+EN 16931's `BR-CL-*` family closes the gap between the XSD
+(``xs:token`` for code-valued fields) and the spec narrative (each
+field must come from a named code list). Carthorse vendors each
+closed list as a :class:`enum.StrEnum` in
+:mod:`carthorse.schema.types` and re-types the affected fields to the
+enum so construction and parse-time reject out-of-list values.
+Generation pipeline: ``tools/extract_codelists.py`` regenerates the
+``# AUTOGEN START <name>`` / ``# AUTOGEN END <name>`` regions from
+the ``EN16931 code lists v16`` XLSX.
+
+| Rule        | Enum                              | Field(s) re-typed                                                  |
+|-------------|-----------------------------------|--------------------------------------------------------------------|
+| `BR-CL-01`  | :class:`TypeCode`                 | ``Header.type_code`` (BT-3)                                        |
+| `BR-CL-03..05` | :class:`Currency`              | ``TradeSettlement.currency_code`` (BT-5), ``TradeSettlement.tax_currency_code`` (BT-6), ``TaxTotal.currency_id`` (BT-110-0 / BT-111-0), ``TaxCurrencyExchange.source_currency_code`` / ``.target_currency_code`` |
+| `BR-CL-06`  | :class:`UNTDID2475TaxPointDateCode` | ``ApplicableTradeTax.due_date_code`` (BT-8)                       |
+| `BR-CL-14/15` | :class:`Country`                | ``PostalTradeAddress.country_id`` (BT-40 / BT-55 / BT-69 / BT-80), ``RelevantTradeLocation.country_id`` |
+| `BR-CL-16`  | :class:`UNTDID4461PaymentMeansCode` | ``PaymentMeans.type_code`` (BT-81)                                |
+| `BR-CL-17/18` | :class:`CategoryCode`           | ``ApplicableTradeTax.category_code`` (BT-118 / BT-151), ``CategoryTradeTax.category_code`` (BT-95 / BT-102), ``AppliedTradeTax.category_code`` (BT-X-273), ``AdvancePaymentTradeTax.category_code`` |
+| `BR-CL-19`  | :class:`UNTDID5189AllowanceReasonCode` | ``TradeAllowanceCharge.reason_code`` when the entry is an allowance (BT-98 / BT-140) |
+| `BR-CL-22`  | :class:`VATEXCode`                | ``ApplicableTradeTax.exemption_reason_code`` (BT-121)              |
+| `BR-CL-24`  | :class:`MIME`                     | ``AttachmentBinaryObject.mime_code`` (BT-125-1)                    |
+| `BR-CL-25`  | :class:`EASCode`                  | ``schemeID`` on Seller / Buyer electronic-address ``URIID`` (BT-34-1 / BT-49-1) |
+| `BR-FXEXT-04` | :class:`LineStatusReasonCode`   | ``DocumentLineDocument.status_reason_code`` (BT-X-8; closed 3-member set: DETAIL / GROUP / INFORMATION) |
+| —           | :class:`Incoterms`                | ``TradeDeliveryTerms.delivery_type_code`` (BT-X-145)               |
+
+Open `BR-CL-*` slots (closed code list named in the spec but not
+yet vendored as a :class:`StrEnum`):
+
+* `BR-CL-07` UNTDID 1153 reference qualifier — 818 members; would
+  apply to ``AdditionalReferencedDocument.reference_type_code`` and
+  ``LineAdditionalReferencedDocument.reference_type_code``.
+* `BR-CL-08` UNTDID 4451 note subject — 402 members; would apply to
+  ``IncludedNote.subject_code`` (BT-21).
+* `BR-CL-10/11/21` ISO/IEC 6523 scheme ids — 239 members; would
+  apply to every ``GlobalID.scheme_id`` and ``ISO6523SchemeId``
+  subclass.
+* `BR-CL-13` UNTDID 7143 item-classification scheme id — 185
+  members; would apply to ``ProductClassification.list_id``
+  (BT-158-1).
+* `BR-CL-20` UNTDID 7161 charge reason — 178 members; would apply
+  to ``TradeAllowanceCharge.reason_code`` when the entry is a
+  charge (BT-105 / BT-145).
+* `BR-CL-23` UN/ECE Rec. 20 / 21 unit codes — 2162 members; would
+  apply to every ``Quantity.unit_code`` (BT-130 / BT-150). Bulk
+  alone makes this the most disruptive to add.
+
+## 7. Decimal-precision rules (`BR-DEC-*`)
+
+Every monetary BT in EN 16931 caps at two decimal places. Carthorse
+enforces this with a single factory
+:func:`carthorse.rules._types.max_decimals` and wires one validator
+per (rule, field) pair onto the carrying element's ``_validators``
+tuple. All 21 COMFORT `BR-DEC-*` rules are enforced.
+
+| Rule                              | Carrying element                                         | Field |
+|-----------------------------------|----------------------------------------------------------|-------|
+| `BR-DEC-01` / `BR-DEC-05`         | :class:`HeaderTradeAllowanceCharge` (allowance / charge) | ``actual_amount`` (BT-92 / BT-99) |
+| `BR-DEC-02` / `BR-DEC-06`         | :class:`HeaderTradeAllowanceCharge`                      | ``basis_amount`` (BT-93 / BT-100) |
+| `BR-DEC-09`                       | :class:`MonetarySummation`                               | ``line_total`` (BT-106) |
+| `BR-DEC-10`                       | :class:`MonetarySummation`                               | ``allowance_total`` (BT-107) |
+| `BR-DEC-11`                       | :class:`MonetarySummation`                               | ``charge_total`` (BT-108) |
+| `BR-DEC-12`                       | :class:`MonetarySummation`                               | ``tax_basis_total`` (BT-109) |
+| `BR-DEC-13` / `BR-DEC-15`         | :class:`TaxTotal`                                        | ``amount`` (BT-110 / BT-111) |
+| `BR-DEC-14`                       | :class:`MonetarySummation`                               | ``grand_total`` (BT-112) |
+| `BR-DEC-16`                       | :class:`MonetarySummation`                               | ``prepaid_total`` (BT-113) |
+| `BR-DEC-17`                       | :class:`MonetarySummation`                               | ``rounding_amount`` (BT-114) |
+| `BR-DEC-18`                       | :class:`MonetarySummation`                               | ``due_amount`` (BT-115) |
+| `BR-DEC-19`                       | :class:`ApplicableTradeTax`                              | ``basis_amount`` (BT-116) |
+| `BR-DEC-20`                       | :class:`ApplicableTradeTax`                              | ``calculated_amount`` (BT-117) |
+| `BR-DEC-23`                       | :class:`LineMonetarySummation`                           | ``line_total`` (BT-131) |
+| `BR-DEC-24` / `BR-DEC-27`         | :class:`LineTradeAllowanceCharge`                        | ``actual_amount`` (BT-136 / BT-141) |
+| `BR-DEC-25` / `BR-DEC-28`         | :class:`LineTradeAllowanceCharge`                        | ``basis_amount`` (BT-137 / BT-142) |
+
+## 8. Summary
 
 See the *Per-profile rule enforcement summary* near the top of this
 file for the per-profile counts. The remaining gaps are narrow:
@@ -357,7 +432,7 @@ file for the per-profile counts. The remaining gaps are narrow:
   the model but the checks themselves have no sample-driven need
   yet.
 
-## 7. Wire-conformance entry
+## 9. Wire-conformance entry
 
 The XSD ``<xs:sequence>`` ordering for every CII complexType is a
 *design* invariant rather than a runtime business rule, so it doesn't

@@ -37,9 +37,8 @@ src/carthorse/
 
 docs/
 ├── STRUCTURES.md          # module → BG/BT field map, profile applicability, EXTENDED gap diff
-├── VALIDATION.md          # every BR-*/BR-CO-*/BR-X-* rule + status
-├── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
-└── PROFILES/              # per-profile parity checklists (COMFORT, EXTENDED)
+├── VALIDATION.md          # every BR-*/BR-CO-*/BR-X-* rule + status, BR-CL-* / BR-DEC-* wirings
+└── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
 
 ZF24_EN/                   # vendored spec (gitignored); see docs/READING_OFFICIAL_DOCS.md
 tests/                     # pytest suite, sample corpus, hypothesis strategies
@@ -149,6 +148,43 @@ category required parties, document arithmetic, sub-line walker) live
 in `carthorse.rules.trade` and `carthorse.rules.extended` because they
 need to read across the agreement / settlement / line items in one
 pass.
+
+### Import cycle
+
+Each `schema/<topic>.py` runtime-imports the validator functions from
+`carthorse.rules.<topic>` to wire them onto `_validators`; each
+`rules/<topic>.py` imports element types from `schema.<topic>` for the
+function annotations only. The runtime graph has no cycle —
+annotations are kept inert with `from __future__ import annotations`
+and the schema imports sit under a `TYPE_CHECKING` guard. Pyright
+still walks the static cycle and reports it, so every rule module
+opens with `# pyright: reportImportCycles=false`. Use the same
+pattern when adding a new `rules/<topic>.py`.
+
+### Per-VAT-category families
+
+The eight VAT categories that demand a required-party check
+(`AE` / `E` / `G` / `IC` / `IG` / `IP` / `S` / `Z`) plus the inverted
+`O` family expand into one `br_<cat>_<n>` function per BR id —
+31 functions total in `rules/trade.py`. Shared helpers
+(`_seller_predicate_*`, `_has_vat_id`, `_iter_tax_registrations`,
+`_line_has_category`, `_alw_has_category`, `_chg_has_category`) sit
+next to the validators. The rate (`-5/-6/-7`) and exemption-reason
+(`-10`) constraints across the same nine categories collapse into
+two table-driven dispatchers
+(:func:`carthorse.rules.trade.vat_category_rates` and
+:func:`carthorse.rules.trade.vat_category_exemption_reason`).
+
+### EXTENDED short-circuits
+
+EXTENDED replaces seven EN 16931 arithmetic identities
+(`BR-CO-4 / -10 / -11 / -12 / -13 / -15` plus `BR-CO-17`) with
+tolerance-banded variants in `rules/extended.py`. The replaced rule
+in `rules/<topic>.py` short-circuits with
+`if profile >= Profile.EXTENDED: return []`; the EXTENDED variant
+guards with the inverse. Both end up on the same element's
+`_validators` tuple; profile gating in each function picks the
+right one to fire.
 
 For the full BR-* catalogue with implementation status see
 `docs/VALIDATION.md`.
@@ -266,6 +302,5 @@ The test suite includes:
 - `docs/STRUCTURES.md` — module → BG/BT field map with profile
   applicability, wire conventions and the EXTENDED gap diff.
 - `docs/VALIDATION.md` — every business rule, with enforcement status
-  and the function that implements it.
-- `docs/PROFILES/COMFORT.md` and `docs/PROFILES/EXTENDED.md` —
-  per-profile parity checklists.
+  and the function that implements it; also the `BR-CL-*` codelist
+  enum registry and the `BR-DEC-*` decimal-precision wirings.

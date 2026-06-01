@@ -11,19 +11,13 @@ Each function:
 * returns ``list[ValidationError]`` (empty on success);
 * never raises.
 
-See ``docs/VALIDATOR_REFACTOR.md`` for the rework plan.
+See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
-# Each ``rules/<topic>.py`` module annotates against the element
-# types it validates, which are defined in the matching
-# ``schema/<topic>.py`` module. That schema module in turn imports
-# the validator functions from here to wire them onto
-# ``Element._validators`` — an architecturally-required cycle.
-# Annotations are kept inert via ``from __future__ import annotations``
-# so the runtime graph has no cycle, but pyright still walks the
-# static cycle and reports it. The reportImportCycles directive
-# below silences that signal across this module; see
-# ``docs/VALIDATOR_REFACTOR.md`` for the architecture.
+# Pyright walks the static schema↔rules cycle and reports it; the
+# runtime graph has no cycle (annotations are inert under ``from
+# __future__ import annotations`` and the schema imports sit under
+# TYPE_CHECKING). Silence the report module-wide.
 # pyright: reportImportCycles=false
 
 from __future__ import annotations

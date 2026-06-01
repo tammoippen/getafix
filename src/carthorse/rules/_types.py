@@ -8,7 +8,7 @@ The corresponding :mod:`carthorse.schema.<topic>` module imports the
 functions it needs and exposes them via a
 ``_validators: ClassVar[tuple[Validator[...], ...]]`` attribute that
 ``Element.validate_internal`` iterates. See
-``docs/VALIDATOR_REFACTOR.md`` for the architecture.
+``AGENTS.md`` "Validator architecture" for the design.
 
 Also home to the :func:`max_decimals` factory used by the
 ``BR-DEC-*`` decimal-precision family — every monetary BT caps at

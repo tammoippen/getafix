@@ -1,11 +1,12 @@
 """BR-DEC-* — decimal-precision rules across every monetary BT.
 
 EN 16931 (and the Factur-X 1.08 ``Business Rules`` sheet) caps every
-monetary BT at two decimal places. The plan in
-``docs/PROFILES/COMFORT.md §4.5`` wires this as a single factory:
-each affected Decimal field on the schema dataclasses gets a small
-validator that reports a ``BR-DEC-NN`` ValidationError when the
-provided value carries more than two fractional digits.
+monetary BT at two decimal places. Carthorse wires this as a single
+factory (``rules/_types.py::max_decimals``); each affected Decimal
+field on the schema dataclasses gets a small validator that reports
+a ``BR-DEC-NN`` ValidationError when the provided value carries more
+than two fractional digits. See ``docs/VALIDATION.md §7`` for the
+field-to-rule registry.
 
 Coverage (21 rules at COMFORT):
 
