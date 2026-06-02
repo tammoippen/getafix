@@ -451,9 +451,41 @@ class Issue:
         self.message: str = message
 
 
+def _all_fields(
+    cls: ClassInfo,
+    classes_by_name: dict[str, ClassInfo],
+    parents_by_name: dict[str, list[str]],
+) -> list[FieldInfo]:
+    """``cls.fields`` plus every field inherited from a parent
+    ``Element`` subclass, walking up the chain.
+
+    Subclasses that override a parent field re-declare it; first-seen
+    wins so the subclass version is what ends up in the returned
+    list. Used to compute the modelled-tag set for the
+    missing-attribute report — a child of ``TradeAllowanceCharge``
+    inherits its fields, the audit shouldn't claim those are missing.
+    """
+    out: list[FieldInfo] = list(cls.fields)
+    seen_names: set[str] = {f.name for f in out}
+    queue = list(parents_by_name.get(cls.name, []))
+    while queue:
+        parent_name = queue.pop(0)
+        parent = classes_by_name.get(parent_name)
+        if parent is None:
+            continue
+        for f in parent.fields:
+            if f.name in seen_names:
+                continue
+            out.append(f)
+            seen_names.add(f.name)
+        queue.extend(parents_by_name.get(parent_name, []))
+    return out
+
+
 def _audit_class(
     cls: ClassInfo,
     classes_by_name: dict[str, ClassInfo],
+    parents_by_name: dict[str, list[str]],
     tree: dict[str, Any],
     terms: dict[str, Any],
 ) -> list[Issue]:
@@ -491,8 +523,19 @@ def _audit_class(
             )
         )
 
-    # Field docstrings + BT/BG citations.
-    field_tags: set[str] = set()
+    # Modelled-tag set for the missing-attribute report — include
+    # inherited fields so a subclass doesn't claim its parent's
+    # fields are missing.
+    modelled_tags: set[str] = set()
+    for f in _all_fields(cls, classes_by_name, parents_by_name):
+        if f.tag:
+            modelled_tags.add(f"/{f.ns or 'ram'}:{f.tag}")
+        elif f.inner_class and f.inner_class in classes_by_name:
+            nested = classes_by_name[f.inner_class]
+            if nested.tag:
+                modelled_tags.add(f"/{f.ns or nested.ns or 'ram'}:{nested.tag}")
+
+    # Field docstrings + BT/BG citations — declared-on-class only.
     for f in cls.fields:
         field_where = f"{where}.{f.name}"
 
@@ -511,7 +554,6 @@ def _audit_class(
         field_key: str | None = None
         if effective_tag is not None:
             field_key = f"/{effective_ns}:{effective_tag}"
-            field_tags.add(field_key)
 
         # Look the field up inside each parent-class tree position.
         field_ids: list[tuple[str, str]] = []
@@ -562,7 +604,7 @@ def _audit_class(
                     for p in child_node.get("profiles", []):
                         if p not in existing.get("profiles", []):
                             existing["profiles"].append(p)
-        missing = [k for k in union_children if k not in field_tags]
+        missing = [k for k in union_children if k not in modelled_tags]
         for child_key in missing:
             info = union_children[child_key]
             id_ = info.get("id") or "?"
@@ -588,12 +630,19 @@ def _run(only_class: str | None, show_missing: bool, only_errors: bool) -> int:
     classes = _walk_modules(parsed, subclasses)
 
     classes_by_name = {c.name: c for c in classes}
+    parents_by_name: dict[str, list[str]] = {}
+    for _path, module in parsed:
+        for node in module.body:
+            if isinstance(node, ast.ClassDef) and node.name in subclasses:
+                parents_by_name[node.name] = _base_names(node)
 
     all_issues: list[Issue] = []
     for cls in classes:
         if only_class and cls.name != only_class:
             continue
-        all_issues.extend(_audit_class(cls, classes_by_name, tree, terms))
+        all_issues.extend(
+            _audit_class(cls, classes_by_name, parents_by_name, tree, terms)
+        )
 
     errors = [i for i in all_issues if i.severity == "error"]
     info = [i for i in all_issues if i.severity == "info"]

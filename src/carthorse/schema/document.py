@@ -45,13 +45,11 @@ from carthorse.schema.types import Namespace, Profile, TypeCode
 class BusinessDocument(Element):
     """Business process context (BT-23-00).
 
-    Wrapper around BT-23; carthorse gates it on EXTENDED to match
-    the XSD ``Diverging cardinality`` override (mandatory ``1..1`` at
-    EXTENDED, optional ``0..1`` everywhere else).
+    Wrapper around BT-23. Optional ``0..1`` at every profile from
+    MINIMUM through EXTENDED.
     """
 
-    tag: ClassVar[str] = "DocumentContextParameterType"
-    profile: ClassVar[Profile] = Profile.EXTENDED
+    tag: ClassVar[str] = "BusinessProcessSpecifiedDocumentContextParameter"
 
     id: str | None = field(default=None, metadata={"tag": "ID"})
     """Business process type (BT-23).
