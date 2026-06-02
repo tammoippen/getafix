@@ -104,20 +104,36 @@ class ClassInfo:
         self.fields: list[FieldInfo] = fields
 
 
-def _is_element_subclass(node: ast.ClassDef) -> bool:
-    """``Element``, ``PostalTradeAddress(Element)`` …
+def _base_names(node: ast.ClassDef) -> list[str]:
+    return [b.id for b in node.bases if isinstance(b, ast.Name)]
 
-    We rely on the textual base names; the audit only ever runs over
-    files we own, where every base named ``Element`` is the one from
-    ``carthorse.schema.element``.
+
+def _element_subclass_names(modules: list[ast.Module]) -> set[str]:
+    """Names of every ``Element`` subclass across the given parsed
+    modules — including transitive subclasses
+    (``ISO6523SchemeId(SchemeID(Element))`` and
+    ``GlobalID(ISO6523SchemeId)``).
+
+    Computed as a fixed-point: seed with ``"Element"``, then keep
+    adding classes whose first textual base is already in the set.
     """
-    for base in node.bases:
-        if isinstance(base, ast.Name) and base.id == "Element":
-            return True
-        # Subclassed Element variants like ``PostalTradeAddressExtended``
-        # extend another Element subclass; we walk those too as long as
-        # the parent surfaces in our own audit set.
-    return False
+    subclasses: set[str] = {"Element"}
+    all_classes: list[tuple[str, list[str]]] = [
+        (node.name, _base_names(node))
+        for module in modules
+        for node in module.body
+        if isinstance(node, ast.ClassDef)
+    ]
+    changed = True
+    while changed:
+        changed = False
+        for name, bases in all_classes:
+            if name in subclasses:
+                continue
+            if any(b in subclasses for b in bases):
+                subclasses.add(name)
+                changed = True
+    return subclasses
 
 
 def _str_constant(node: ast.AST | None) -> str | None:
@@ -203,16 +219,48 @@ def _next_docstring(stmts: list[ast.stmt], index: int) -> str | None:
     return None
 
 
-def _walk_module(path: Path) -> list[ClassInfo]:
-    src = path.read_text()
-    module = ast.parse(src, filename=str(path))
+def _parse_modules() -> list[tuple[Path, ast.Module]]:
+    out: list[tuple[Path, ast.Module]] = []
+    for path in sorted(SCHEMA_DIR.glob("*.py")):
+        if path.name in SKIP_FILES:
+            continue
+        out.append((path, ast.parse(path.read_text(), filename=str(path))))
+    return out
+
+
+def _walk_modules(
+    parsed: list[tuple[Path, ast.Module]], subclasses: set[str]
+) -> list[ClassInfo]:
     classes: list[ClassInfo] = []
-    for node in module.body:
-        if not isinstance(node, ast.ClassDef):
+    for path, module in parsed:
+        for node in module.body:
+            if not isinstance(node, ast.ClassDef) or node.name not in subclasses:
+                continue
+            classes.append(_extract_class(node, path.name))
+    # Resolve inherited ClassVars (``tag`` / ``namespace`` / ``profile``)
+    # for transitive subclasses such as ``GlobalID(ISO6523SchemeId)``
+    # that don't re-declare them.
+    by_name = {c.name: c for c in classes}
+    # Build a parent map indexed by class name from the AST bases.
+    parents: dict[str, list[str]] = {}
+    for _path, module in parsed:
+        for node in module.body:
+            if not isinstance(node, ast.ClassDef) or node.name not in subclasses:
+                continue
+            parents[node.name] = _base_names(node)
+    for cls in classes:
+        if cls.tag is not None and cls.ns is not None and cls.profile is not None:
             continue
-        if not _is_element_subclass(node):
-            continue
-        classes.append(_extract_class(node, path.name))
+        for parent_name in parents.get(cls.name, []):
+            parent = by_name.get(parent_name)
+            if parent is None:
+                continue
+            if cls.tag is None and parent.tag is not None:
+                cls.tag = parent.tag
+            if cls.ns is None and parent.ns is not None:
+                cls.ns = parent.ns
+            if cls.profile is None and parent.profile is not None:
+                cls.profile = parent.profile
     return classes
 
 
@@ -535,11 +583,9 @@ def _audit_class(
 def _run(only_class: str | None, show_missing: bool, only_errors: bool) -> int:
     tree = _load_sidecar(TREE_SIDECAR)
     terms = _load_sidecar(TERMS_SIDECAR)
-    classes: list[ClassInfo] = []
-    for path in sorted(SCHEMA_DIR.glob("*.py")):
-        if path.name in SKIP_FILES:
-            continue
-        classes.extend(_walk_module(path))
+    parsed = _parse_modules()
+    subclasses = _element_subclass_names([m for _path, m in parsed])
+    classes = _walk_modules(parsed, subclasses)
 
     classes_by_name = {c.name: c for c in classes}
 
