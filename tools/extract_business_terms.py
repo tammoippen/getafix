@@ -1,4 +1,4 @@
-"""Dump every EN 16931 / Factur-X 1.08 business term into a JSON sidecar.
+"""Dump every EN 16931 / Factur-X 1.08 business term into JSON sidecars.
 
 Walks each per-profile sheet in the Factur-X workbook
 (``Factur-X CII D22B {MINIMUM,BASIC WL,BASIC,EN16931,EXTENDED}``) and
@@ -15,9 +15,16 @@ Source:
     ``docs/spec/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx``;
     override via the positional CLI argument.
 
-Output:
-    ``tools/business_terms.json`` by default; override with ``--out``.
-    The file is a JSON object keyed by BT/BG id.
+Outputs:
+    * ``tools/business_terms.json`` — flat JSON object keyed by BT/BG id.
+    * ``tools/business_terms_tree.json`` — same data, restructured as
+      a tree keyed by the xpath segment (single-step keys like
+      ``/rsm:ExchangedDocument``, ``/ram:ID``, ``/@schemeID``). Each
+      node carries its ``id`` (the BT/BG number that lives at that
+      xpath, ``null`` for pure structural containers), ``name``,
+      ``profiles`` (sheets the term appears on), and ``children``.
+
+    Both output paths can be overridden with ``--out`` / ``--out-tree``.
 
 Run:
     uv run python tools/extract_business_terms.py
@@ -40,6 +47,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_XLSX = ROOT / "docs/spec/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
 DEFAULT_OUT = ROOT / "tools/business_terms.json"
+DEFAULT_OUT_TREE = ROOT / "tools/business_terms_tree.json"
 
 PROFILE_SHEETS: list[str] = [
     "Factur-X CII D22B MINIMUM",
@@ -243,6 +251,90 @@ def extract(xlsx: Path) -> dict[str, dict[str, Any]]:
     return terms
 
 
+def _split_xpath(xpath: str) -> list[str]:
+    """Split an xpath into single-step segments, each carrying its
+    leading separator.
+
+    ``/rsm:CrossIndustryInvoice/ram:ID/@schemeID`` →
+    ``["/rsm:CrossIndustryInvoice", "/ram:ID", "/@schemeID"]``.
+
+    Element steps are separated by ``/``; attribute steps by ``/@``.
+    Both are normalised so the segment string starts with its
+    separator — keeping the keys self-describing when looked at out
+    of context.
+    """
+    if not xpath.startswith("/"):
+        return []
+    segments: list[str] = []
+    cursor = 0
+    length = len(xpath)
+    while cursor < length:
+        # Look ahead one character past the current ``/`` to decide
+        # element vs attribute step.
+        is_attr = cursor + 1 < length and xpath[cursor + 1] == "@"
+        # Find the start of the next step.
+        next_slash = xpath.find("/", cursor + 1)
+        if next_slash == -1:
+            step = xpath[cursor:]
+            cursor = length
+        else:
+            step = xpath[cursor:next_slash]
+            cursor = next_slash
+        if is_attr:
+            # Already includes the ``/@`` prefix.
+            segments.append(step)
+        else:
+            segments.append(step)
+    return segments
+
+
+def _build_tree(terms: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Re-shape the flat term registry as a tree keyed by xpath segment.
+
+    Each tree node has the shape::
+
+        {
+            "id": "BT-31" | null,
+            "name": "Seller VAT identifier" | null,
+            "profiles": ["MINIMUM", ...],
+            "children": {"/ram:ID": {...}, ...}
+        }
+
+    ``id`` is only populated for nodes that map exactly to a BT/BG
+    occurrence — pure structural containers (the ``rsm:`` /  ``ram:``
+    wrappers that the xpath traverses but which don't have their own
+    BT id) leave it ``null``. When the same id appears at multiple
+    xpaths (e.g. BT-2 occurs once per profile sheet) the tree records
+    the union of profiles on every node it touches.
+    """
+    root: dict[str, Any] = {}
+    for entry in terms.values():
+        for occ in entry.get("occurrences", []):
+            xpath = occ.get("xpath")
+            if not xpath:
+                continue
+            segments = _split_xpath(xpath)
+            if not segments:
+                continue
+            cursor = root
+            for i, step in enumerate(segments):
+                node = cursor.setdefault(
+                    step, {"id": None, "name": None, "profiles": [], "children": {}}
+                )
+                is_leaf = i == len(segments) - 1
+                if is_leaf:
+                    # Attach the BT id and name to the exact xpath leaf.
+                    node["id"] = entry["id"]
+                    node["name"] = entry.get("name")
+                # Track the profile sheets we saw this node in — both
+                # for leaves and the structural parents above them.
+                sheet = occ.get("sheet")
+                if sheet and sheet not in node["profiles"]:
+                    node["profiles"].append(sheet)
+                cursor = node["children"]
+    return root
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="extract_business_terms", description=__doc__.split("\n\n", maxsplit=1)[0]
@@ -266,13 +358,29 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         help=(f"Output JSON path. Defaults to {DEFAULT_OUT.relative_to(ROOT)}."),
     )
+    parser.add_argument(
+        "--out-tree",
+        default=DEFAULT_OUT_TREE,
+        type=Path,
+        help=(
+            "Output JSON path for the xpath-hierarchy tree. "
+            f"Defaults to {DEFAULT_OUT_TREE.relative_to(ROOT)}."
+        ),
+    )
     return parser
+
+
+def _relative(path: Path) -> Path:
+    if path.is_absolute() and path.is_relative_to(ROOT):
+        return path.relative_to(ROOT)
+    return path
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     xlsx: Path = args.xlsx
     out: Path = args.out
+    out_tree: Path = args.out_tree
 
     if not xlsx.is_file():
         print(f"error: cannot read XLSX at {xlsx}", file=sys.stderr)  # noqa: T201
@@ -282,12 +390,21 @@ def main(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(terms, indent=2, sort_keys=True) + "\n")
     occurrences = sum(len(t["occurrences"]) for t in terms.values())
-    rel = (
-        out.relative_to(ROOT) if out.is_absolute() and out.is_relative_to(ROOT) else out
-    )
     print(  # noqa: T201
         f"wrote {len(terms)} terms ({occurrences} occurrences across "
-        f"{len(PROFILE_SHEETS)} profile sheets) to {rel}"
+        f"{len(PROFILE_SHEETS)} profile sheets) to {_relative(out)}"
+    )
+
+    tree = _build_tree(terms)
+    out_tree.parent.mkdir(parents=True, exist_ok=True)
+    out_tree.write_text(json.dumps(tree, indent=2, sort_keys=True) + "\n")
+
+    def _count(node: dict[str, Any]) -> int:
+        return 1 + sum(_count(c) for c in node["children"].values())
+
+    node_count = sum(_count(n) for n in tree.values())
+    print(  # noqa: T201
+        f"wrote xpath tree with {node_count} nodes to {_relative(out_tree)}"
     )
     return 0
 

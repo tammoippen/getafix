@@ -25,4 +25,5 @@ ZF24_EN.zip
 # `uv run python tools/extract_business_terms.py`
 # `uv run python tools/extract_business_rules.py`
 tools/business_terms.json
+tools/business_terms_tree.json
 tools/business_rules.json
