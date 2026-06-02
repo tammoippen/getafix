@@ -88,19 +88,23 @@ from carthorse.schema.types import Country, Profile
 class SchemeID(Element):
     """``udt:IDType`` — value with an optional ``schemeID`` attribute.
 
-    Base class for every identifier element that carries the
-    ``schemeID`` XSD attribute. The XSD makes the attribute optional;
-    the appendix narrative flags whether it is required for each
-    specific BT. Subclasses such as :class:`TaxSchemeId` enforce
-    stricter constraints in :meth:`validate_internal`.
+    Generic shape reused by every identifier element that carries
+    the XSD ``schemeID`` attribute (BT-29 Seller, BT-46 Buyer, BT-60
+    Payee, BT-71 Ship-to, etc.). The XSD makes the attribute
+    optional; the appendix narrative flags whether it is required
+    for each specific BT. Subclasses such as :class:`TaxSchemeId`
+    enforce stricter constraints in :meth:`validate_internal`.
     """
 
     tag: ClassVar[str] = "ID"
 
     id: str
-    """The identifier value."""
+    """The identifier value (carrying BT depends on context — e.g.
+    BT-29 Seller / BT-46 Buyer / BT-60 Payee identifier value)."""
     scheme_id: str | None = None
-    """Identification scheme code (``schemeID`` attribute)."""
+    """Identification scheme code — XSD ``schemeID`` attribute
+    (carrying BT is the parent BT's ``-1`` suffix — e.g. BT-29-1
+    Seller / BT-46-1 Buyer identifier scheme)."""
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
@@ -123,9 +127,10 @@ class SchemeID(Element):
 class ISO6523SchemeId(SchemeID):
     """Identifier whose ``schemeID`` is drawn from ISO/IEC 6523.
 
-    Used for ``GlobalID`` and legal-organisation identifiers. When a
-    ``scheme_id`` is set, it must come from the ISO/IEC 6523
-    Maintenance Agency code list.
+    Used for ``GlobalID`` (BT-29-0 Seller / BT-46-0 Buyer) and the
+    legal-organisation identifier (BT-30 / BT-47) — the carrying BT
+    depends on the parent party. When ``scheme_id`` is set, it must
+    come from the ISO/IEC 6523 Maintenance Agency code list.
 
     Code list: ISO/IEC 6523. Frequently-used codes:
 
@@ -280,17 +285,21 @@ class PhoneNumber(Element):
 
 @dataclass(kw_only=True, slots=True)
 class FaxNumber(Element):
-    """Contact fax number.
+    """Contact fax number (BT-X-107-00 Seller / BT-X-115-00 Buyer / …).
 
-    Note: not part of the EN 16931 semantic model; carried as an
-    EXTENDED-only XSD extension on ``DefinedTradeContact``.
+    Not part of the EN 16931 semantic model; carried as an
+    EXTENDED-only XSD extension on every ``DefinedTradeContact``.
+    The carrying BT depends on the parent party (BT-X-107-00 Seller,
+    BT-X-115-00 Buyer, BT-X-134-00 SellerTaxRep, BT-X-189-00 ShipTo,
+    BT-X-247-00 Invoicee, etc.).
     """
 
     tag: ClassVar[str] = "FaxUniversalCommunication"
     profile: ClassVar[Profile] = Profile.COMFORT
 
     number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.COMFORT})
-    """Fax number for the contact point.
+    """Fax number value (BT-X-107 Seller / BT-X-115 Buyer / etc. —
+    BT depends on the parent party, see class docstring).
 
     Example: ``+49 (123) 456789-999``.
     """
@@ -348,7 +357,8 @@ class TradeContact(Element):
     telephone: PhoneNumber | None = None
     """Telephone number (BT-42 Seller / BT-57 Buyer)."""
     fax: FaxNumber | None = None
-    """Fax number (EXTENDED-only)."""
+    """Fax number (BT-X-107-00 Seller / BT-X-115-00 Buyer / etc.);
+    EXTENDED-only XSD extension, no EN 16931 semantic equivalent."""
     email: EmailURI | None = None
     """Email address (BT-43 Seller / BT-58 Buyer)."""
 
@@ -447,7 +457,8 @@ class SpecifiedTaxRegistration(Element):
     tag: ClassVar[str] = "SpecifiedTaxRegistration"
 
     id: TaxSchemeId
-    """Tax identifier value with ``VA`` / ``FC`` scheme."""
+    """Tax identifier value (BT-31 / BT-32 / BT-48 / BT-63) with
+    ``VA`` (VAT) or ``FC`` (local tax / Steuernummer) ``schemeID``."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -592,11 +603,11 @@ class SellerTaxRepresentativeTradeParty(Element):
     id: str | None = field(
         default=None, metadata={"tag": "ID", "profile": Profile.EXTENDED}
     )
-    """Tax representative identifier; EXTENDED-only."""
+    """Tax representative identifier (BT-X-116); EXTENDED-only."""
     global_ids: list[GlobalID] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Tax representative global identifier; EXTENDED-only."""
+    """Tax representative global identifier (BT-X-117); EXTENDED-only."""
     name: str = field(metadata={"tag": "Name"})
     """Tax representative name (BT-62).
 
@@ -605,11 +616,11 @@ class SellerTaxRepresentativeTradeParty(Element):
     legal_organization: LegalOrganization | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Tax representative legal organisation; EXTENDED-only."""
+    """Tax representative legal organisation (BG-X-16); EXTENDED-only."""
     contact: TradeContact | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Tax representative contact; EXTENDED-only."""
+    """Tax representative contact (BG-X-17); EXTENDED-only."""
     address: PostalTradeAddressExtended
     """Tax representative postal address (BG-12); required at every
     profile that carries BG-11.
@@ -620,7 +631,7 @@ class SellerTaxRepresentativeTradeParty(Element):
     electronic_address: URIUniversalCommunication | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Tax representative electronic address; EXTENDED-only."""
+    """Tax representative electronic address (BT-X-125-00); EXTENDED-only."""
     tax_registrations: SpecifiedTaxRegistration
     """Tax representative VAT identifier (BT-63-00); required.
 
@@ -733,23 +744,24 @@ class ProductEndUserTradeParty(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: str | None = field(default=None, metadata={"tag": "ID"})
-    """End-user identifier."""
+    """End-user identifier (BT-X-126)."""
     global_ids: list[GlobalID] | None = None
-    """End-user global identifier."""
+    """End-user global identifier (BT-X-127)."""
     name: str = field(metadata={"tag": "Name"})
-    """End-user name."""
+    """End-user name (BT-X-128)."""
     legal_organization: LegalOrganization | None = None
-    """End-user legal organisation."""
+    """End-user legal organisation (BG-X-19)."""
     contact: TradeContact | None = None
-    """End-user contact details."""
+    """End-user contact details (BG-X-20)."""
     address: PostalTradeAddressExtended | None = None
-    """End-user postal address."""
+    """End-user postal address (BG-X-21)."""
     electronic_address: URIUniversalCommunication | None = None
-    """End-user electronic address."""
+    """End-user electronic address (BT-X-143-00)."""
     tax_registrations: SpecifiedTaxRegistration | None = field(
         default=None, metadata={"profile": Profile.BASIC_WL}
     )
-    """End-user tax registration (VAT identifier or local tax id)."""
+    """End-user tax registration (BT-X-144-00) — VAT identifier or
+    local tax id."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -785,11 +797,11 @@ class ShipToTradeParty(Element):
     legal_organization: LegalOrganization | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Deliver-to legal organisation; EXTENDED-only."""
+    """Deliver-to legal organisation (BG-X-25); EXTENDED-only."""
     contact: TradeContact | None = field(
         default=None, metadata={"profile": Profile.COMFORT}
     )
-    """Deliver-to contact details; COMFORT+."""
+    """Deliver-to contact details (BG-X-26); COMFORT+."""
     address: PostalTradeAddressExtended | None = None
     """Deliver-to address (BG-15).
 
@@ -803,11 +815,11 @@ class ShipToTradeParty(Element):
     electronic_address: URIUniversalCommunication | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Deliver-to electronic address; EXTENDED-only."""
+    """Deliver-to electronic address (BT-X-160-00); EXTENDED-only."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Deliver-to tax registrations; EXTENDED-only."""
+    """Deliver-to tax registrations (BT-X-161-00); EXTENDED-only."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -823,21 +835,21 @@ class ShipFromTradeParty(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Ship-from party identifier."""
+    """Ship-from party identifier (BT-X-181)."""
     global_id: GlobalID | None = None
-    """Ship-from party global identifier."""
+    """Ship-from party global identifier (BT-X-182)."""
     name: str | None = field(default=None, metadata={"tag": "Name"})
-    """Ship-from party name."""
+    """Ship-from party name (BT-X-183)."""
     legal_organization: LegalOrganization | None = None
-    """Ship-from legal organisation."""
+    """Ship-from legal organisation (BT-X-184-00)."""
     contact: TradeContact | None = None
-    """Ship-from contact details."""
+    """Ship-from contact details (BG-X-31)."""
     address: PostalTradeAddressExtended | None = None
-    """Ship-from postal address."""
+    """Ship-from postal address (BG-X-32)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Ship-from electronic address."""
+    """Ship-from electronic address (BT-X-198-00)."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Ship-from tax registrations."""
+    """Ship-from tax registrations (BT-X-199-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -853,21 +865,21 @@ class UltimateShipToTradeParty(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     id: list[str] | None = field(default=None, metadata={"tag": "ID"})
-    """Ultimate ship-to party identifier."""
+    """Ultimate ship-to party identifier (BT-X-162)."""
     global_ids: list[GlobalID] | None = None
-    """Ultimate ship-to party global identifier."""
+    """Ultimate ship-to party global identifier (BT-X-163)."""
     name: str | None = field(default=None, metadata={"tag": "Name"})
-    """Ultimate ship-to party name."""
+    """Ultimate ship-to party name (BT-X-164)."""
     legal_organization: LegalOrganization | None = None
-    """Ultimate ship-to legal organisation."""
+    """Ultimate ship-to legal organisation (BT-X-165-00)."""
     contact: TradeContact | None = None
-    """Ultimate ship-to contact details."""
+    """Ultimate ship-to contact details (BG-X-28)."""
     address: PostalTradeAddressExtended | None = None
-    """Ultimate ship-to postal address."""
+    """Ultimate ship-to postal address (BG-X-29)."""
     electronic_address: URIUniversalCommunication | None = None
-    """Ultimate ship-to electronic address."""
+    """Ultimate ship-to electronic address (BT-X-179-00)."""
     tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Ultimate ship-to tax registrations."""
+    """Ultimate ship-to tax registrations (BT-X-180-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
