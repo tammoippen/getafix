@@ -133,9 +133,15 @@ class UltimateCustomerOrderReferencedDocument(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Ultimate customer order number."""
+    """Ultimate customer order number (BT-X-150).
+
+    The Ultimate Customer Order number of the final customer.
+    """
     issue_date_time: date = field(metadata={"tag": "FormattedIssueDateTime"})
-    """Ultimate customer order date."""
+    """Ultimate customer order date (BT-X-151-00).
+
+    The date when the ultimate customer order was issued.
+    """
 
 
 @dataclass(kw_only=True, slots=True)

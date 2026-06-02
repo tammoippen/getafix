@@ -193,12 +193,19 @@ class AppliedTradeAllowanceCharge(Element):
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
     )
-    """Item price discount percentage; COMFORT+."""
+    """Item price discount percentage (BT-X-300); COMFORT+.
+
+    Note: the XSD shares this node between allowance and charge — BT-X-300
+    is the charge-side id, the allowance side has no published BT.
+    """
     basis_amount: Decimal | None = field(
         default=None,
         metadata={"tag": "BasisAmount", "profile": Profile.COMFORT, "amount": True},
     )
-    """Item price discount basis amount; COMFORT+."""
+    """Item price discount basis amount (BT-X-301); COMFORT+.
+
+    Note: charge-side id; the allowance side has no published BT.
+    """
     currency: str | None = None
     """Document currency (BT-5) echoed on every amount attribute.
 
