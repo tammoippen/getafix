@@ -47,6 +47,15 @@ class BusinessDocument(Element):
 
     Wrapper around BT-23. Optional ``0..1`` at every profile from
     MINIMUM through EXTENDED.
+
+    Note: the EXTENDED technical-appendix PDF lists a ``Diverging
+    cardinality: 1..1`` annotation against this element. The
+    authoritative artefacts disagree — the XSD ``minOccurs="0"``,
+    the EXTENDED schematron (``FX-SCH-A-000024``,
+    ``count(ram:BusinessProcessSpecifiedDocumentContextParameter)<=1``)
+    and the workbook ``EXT PROFILES Cardinality`` column all stay at
+    ``0..1``. carthorse follows the schematron because that is what
+    invoices are actually validated against.
     """
 
     tag: ClassVar[str] = "BusinessProcessSpecifiedDocumentContextParameter"
