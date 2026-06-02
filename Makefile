@@ -37,4 +37,12 @@ ids-check:
 	uv run --locked python tools/extract_business_terms.py
 	uv run --locked python tools/extract_business_rules.py
 	uv run --locked python tools/check_bt_br_ids.py
+	uv run --locked python tools/check_schema_docs.py
+
+# Run the schema-docs audit with the full informational missing-attribute
+# report. Not in CI — flags XSD children that aren't modelled yet
+# (often EXTENDED-only attributes the maintainer hasn't picked up).
+.PHONY: docs-coverage
+docs-coverage:
+	uv run --locked python tools/check_schema_docs.py --show-missing
 
