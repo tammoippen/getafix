@@ -5,9 +5,8 @@ Catches three classes of regression that hand-review keeps missing:
 1. **Missing docstrings** — every ``Element`` subclass and every
    dataclass field on one must carry a docstring.
 2. **Missing BT-/BG- citation** — every such docstring must reference
-   the term it models (e.g. ``BT-31``, ``BG-X-49``). The companion
-   ``tools/check_bt_br_ids.py`` then validates each citation resolves
-   against the workbook sidecar.
+   the term it models (e.g. ``BT-31``, ``BG-X-49``), and each cited id
+   must resolve against the workbook sidecar.
 3. **Missing XSD-allowed children** — for each class, look the class's
    ``namespace`` + ``tag`` up in the xpath tree
    (``tools/business_terms_tree.json``). Any direct child node that
@@ -19,14 +18,28 @@ Catches three classes of regression that hand-review keeps missing:
 
 The first two checks fail the audit; the third is informational.
 
+``--check-citations`` adds a fourth, broader pass (formerly the
+standalone ``tools/check_bt_br_ids.py``): it scans every ``BT-``,
+``BG-`` **and** ``BR-`` citation across ``src/``, ``docs/``,
+``README.md`` and ``AGENTS.md`` prose — not just schema docstrings —
+and fails on any id that doesn't resolve against the
+``tools/business_terms.json`` / ``tools/business_rules.json``
+sidecars. This catches typos / hallucinated spec references in
+narrative text and the business-rule citations the AST audit never
+looks at. See :func:`_cross_check_citations` for the tolerated-id
+conventions (EN 16931 base groups, BR family placeholders,
+zero-padding, schematron-only artifacts).
+
 Run:
     uv run python tools/check_schema_docs.py
     uv run python tools/check_schema_docs.py --show-missing
     uv run python tools/check_schema_docs.py --class PayeeTradeParty
+    uv run python tools/check_schema_docs.py --check-citations
 
 CI:
-    Wired into ``make ids-check`` after the existing BT/BR-citation
-    audit.
+    Wired into ``make ids-check`` with ``--check-citations`` so the
+    schema-docs audit and the BT/BG/BR citation cross-check run in a
+    single invocation.
 """
 
 from __future__ import annotations
@@ -437,9 +450,9 @@ def _format_suggestion(ids: list[str], terms: dict[str, Any]) -> str:
     return f" — expected one of:{joined}"
 
 
-# Same tolerance set as ``tools/check_bt_br_ids.py``: EN 16931 base
-# groups dropped or renamed by Factur-X, kept here so existing prose
-# referencing them doesn't fail the audit.
+# EN 16931 base groups dropped or renamed by Factur-X, kept here so
+# existing prose referencing them doesn't fail the audit. Shared by
+# the per-docstring audit and the broad citation cross-check below.
 TOLERATED_MISSING_IDS: frozenset[str] = frozenset({"BG-0", "BG-33", "BG-34"})
 
 
@@ -801,7 +814,178 @@ def _audit_class(
     return issues
 
 
-def _run(only_class: str | None, show_missing: bool, only_errors: bool) -> int:
+# ---------------------------------------------------------------------------
+# Broad citation cross-check (formerly tools/check_bt_br_ids.py)
+#
+# Where the AST audit above only inspects schema docstrings and only
+# knows about BT-/BG- terms, this pass sweeps every BT-/BG-/BR-
+# citation across the whole source + docs surface and resolves it
+# against the workbook sidecars. It is what catches a typo in a
+# narrative ``docs/*.md`` passage or a hallucinated business-rule id
+# in a validator docstring. Enabled with ``--check-citations``.
+# ---------------------------------------------------------------------------
+
+RULES_SIDECAR = ROOT / "tools/business_rules.json"
+
+# Family prefixes that show up as bare strings ("the BR-CO family") in
+# narrative text. Accept without resolving to a specific rule.
+KNOWN_FAMILIES: frozenset[str] = frozenset(
+    {
+        "BR",
+        "BR-AE",
+        "BR-AF",
+        "BR-AG",
+        "BR-B",
+        "BR-CL",
+        "BR-CO",
+        "BR-DEC",
+        "BR-E",
+        "BR-FX-DE",
+        "BR-FX-EN",
+        "BR-FXEXT",
+        "BR-FXEXT-CO",
+        "BR-G",
+        "BR-HYBRID",
+        "BR-IC",
+        "BR-O",
+        "BR-S",
+        "BR-Z",
+    }
+)
+
+# Placeholder rule ids ("BR-X-5" means "BR-{cat}-5 for each VAT
+# category"). Each per-category instantiation must exist in the
+# sidecar — we accept the placeholder if at least one does.
+PLACEHOLDERS: frozenset[str] = frozenset({"BR-X", "BR-Y"})
+PLACEHOLDER_CATS: tuple[str, ...] = ("S", "Z", "E", "AE", "G", "IC", "AF", "AG", "O")
+
+# Schematron-only or known-artifact ids that don't appear in the XLSX
+# rulebook the sidecar reads from. These are intentional citations of
+# documented spec inconsistencies.
+KNOWN_RULE_EXCEPTIONS: frozenset[str] = frozenset(
+    {
+        "BR-FX-EN-04",  # in FACTUR-X_EXTENDED.sch but not the XLSX
+        "BR-FXEXT-BR-22",  # .sch double-prefix artifact (canonical: BR-FXEXT-22)
+        "BR-FXEXT-BR-23",
+        "BR-FXEXT-BR-24",
+        "BR-FXEXT-BR-26",
+        "BR-FXEXT-BR-27",
+    }
+)
+
+CITATION_BT_RE = re.compile(r"\bB[GT]-(?:X-)?[0-9]+(?:-[0-9]+)*\b")
+CITATION_BR_RE = re.compile(r"\bBR(?:-[A-Z0-9]+)+\b")
+
+
+def _rule_known(rid: str, rules: dict[str, Any]) -> bool:
+    """Does ``rid`` resolve to a business rule, tolerating the documented
+    family / placeholder / zero-padding / schematron-artifact cases?
+
+    * Direct hit, bare family name, or allow-listed exception → known.
+    * Placeholder pattern ``BR-X-5`` → known if ``BR-{cat}-5`` exists
+      for any VAT category.
+    * Zero-padding mismatch ``BR-CO-3`` ↔ ``BR-CO-03`` → known if
+      either padding exists.
+    """
+    if rid in rules or rid in KNOWN_FAMILIES or rid in KNOWN_RULE_EXCEPTIONS:
+        return True
+    parts = rid.split("-")
+    # Placeholder pattern: BR-X-5 → try BR-{cat}-5 for each VAT category.
+    if len(parts) >= 2 and parts[1] == "X":
+        for cat in PLACEHOLDER_CATS:
+            candidate = "-".join([parts[0], cat, *parts[2:]])
+            if candidate in rules:
+                return True
+    # Zero-padding mismatch: BR-CO-3 ↔ BR-CO-03.
+    *prefix, last = parts
+    if last.isdigit():
+        for variant in {f"{int(last):02d}", str(int(last))}:
+            if variant != last and "-".join([*prefix, variant]) in rules:
+                return True
+    return False
+
+
+def _collect_citation_sources(root: Path) -> list[Path]:
+    """Every file the broad cross-check scans: all carthorse ``*.py``,
+    every ``docs/*.md``, plus the top-level ``README.md`` / ``AGENTS.md``.
+    """
+    sources: list[Path] = []
+    src_root = root / "src/carthorse"
+    if src_root.exists():
+        sources.extend(src_root.rglob("*.py"))
+    docs_root = root / "docs"
+    if docs_root.exists():
+        sources.extend(docs_root.rglob("*.md"))
+    for top in ("README.md", "AGENTS.md"):
+        p = root / top
+        if p.is_file():
+            sources.append(p)
+    return sorted(sources)
+
+
+def _cross_check_citations(
+    terms: dict[str, Any], root: Path = ROOT
+) -> tuple[dict[str, list[Path]], dict[str, list[Path]]]:
+    """Resolve every BT-/BG-/BR- citation across the source + docs
+    surface against the workbook sidecars.
+
+    Returns ``(bad_bt, bad_br)`` — unresolved id → list of files it
+    appears in. Citation conventions tolerated:
+
+    * **EN 16931 base ids absent from the Factur-X xlsx** —
+      ``BG-0`` / ``BG-33`` / ``BG-34`` (see ``TOLERATED_MISSING_IDS``).
+    * **Family-name placeholders** like ``BR-CO`` / ``BR-FXEXT`` and
+      the ``BR-X`` / ``BR-Y`` per-VAT-category placeholders.
+    * **Zero-padding mismatch** (``BR-CO-3`` ↔ ``BR-CO-03``).
+    * **Schematron-only / known artifacts** (``BR-FX-EN-04`` and the
+      ``BR-FXEXT-BR-22..27`` double-prefix artifact).
+    """
+    rules = _load_sidecar(RULES_SIDECAR)
+    bad_bt: dict[str, list[Path]] = {}
+    bad_br: dict[str, list[Path]] = {}
+
+    for path in _collect_citation_sources(root):
+        text = path.read_text()
+        for bt in set(CITATION_BT_RE.findall(text)):
+            if bt in terms or bt in TOLERATED_MISSING_IDS:
+                continue
+            bad_bt.setdefault(bt, []).append(path)
+        for br in set(CITATION_BR_RE.findall(text)):
+            if br in PLACEHOLDERS:
+                continue
+            if _rule_known(br, rules):
+                continue
+            bad_br.setdefault(br, []).append(path)
+    return bad_bt, bad_br
+
+
+def _report_citations(
+    bad_bt: dict[str, list[Path]], bad_br: dict[str, list[Path]], root: Path
+) -> int:
+    """Print the cross-check result. Returns 1 on any unresolved id."""
+    if not bad_bt and not bad_br:
+        print(  # noqa: T201
+            "ok: every BT-/BG-/BR- citation resolves against the sidecars."
+        )
+        return 0
+    if bad_bt:
+        print("Unknown BT/BG citations:")  # noqa: T201
+        for bt in sorted(bad_bt):
+            files = ", ".join(sorted({str(p.relative_to(root)) for p in bad_bt[bt]}))
+            print(f"  {bt:25s}  {files}")  # noqa: T201
+        print()  # noqa: T201
+    if bad_br:
+        print("Unknown BR citations:")  # noqa: T201
+        for br in sorted(bad_br):
+            files = ", ".join(sorted({str(p.relative_to(root)) for p in bad_br[br]}))
+            print(f"  {br:25s}  {files}")  # noqa: T201
+        print()  # noqa: T201
+    return 1
+
+
+def _run(
+    only_class: str | None, show_missing: bool, only_errors: bool, check_citations: bool
+) -> int:
     tree = _load_sidecar(TREE_SIDECAR)
     terms = _load_sidecar(TERMS_SIDECAR)
     xpath_index = _xpath_index(terms)
@@ -846,7 +1030,15 @@ def _run(only_class: str | None, show_missing: bool, only_errors: bool) -> int:
         f"\naudited {len(classes)} Element classes: "
         f"{len(errors)} errors, {len(info)} missing-attribute notes"
     )
-    return 1 if errors else 0
+    status = 1 if errors else 0
+
+    if check_citations:
+        print("\nBT-/BG-/BR- citation cross-check (src, docs, README, AGENTS):")  # noqa: T201
+        bad_bt, bad_br = _cross_check_citations(terms)
+        if _report_citations(bad_bt, bad_br, ROOT):
+            status = 1
+
+    return status
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -873,6 +1065,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Suppress the informational missing-child report even when "
         "``--class`` is given.",
     )
+    parser.add_argument(
+        "--check-citations",
+        action="store_true",
+        help="Additionally cross-check every BT-/BG-/BR- citation across "
+        "src/, docs/, README.md and AGENTS.md against the workbook "
+        "sidecars (the former check_bt_br_ids.py audit). Fails on any "
+        "id that doesn't resolve.",
+    )
     return parser
 
 
@@ -882,6 +1082,7 @@ def main(argv: list[str] | None = None) -> int:
         only_class=args.only_class,
         show_missing=args.show_missing,
         only_errors=args.only_errors,
+        check_citations=args.check_citations,
     )
 
 
