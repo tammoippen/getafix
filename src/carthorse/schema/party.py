@@ -1029,16 +1029,10 @@ class PayeeTradeParty(Element):
     """Payee legal organisation (BT-61-00) — carries the legal
     registration identifier (BT-61) and its ``schemeID`` (BT-61-1)."""
     contact: TradeContact | None = None
-    """Payee contact details. XSD-allowed on every ``TradePartyType``;
-    EN 16931 does not assign a dedicated BT id for the Payee."""
+    """Payee contact details. (BG-X-39)"""
     address: PostalTradeAddressExtended | None = None
-    """Payee postal address. XSD-allowed on every ``TradePartyType``;
-    EN 16931 does not assign a dedicated BT id for the Payee."""
+    """Payee postal address. (BG-X-40)"""
     electronic_address: URIUniversalCommunication | None = None
-    """Payee electronic address. XSD-allowed on every
-    ``TradePartyType``; EN 16931 does not assign a dedicated BT id
-    for the Payee."""
-    tax_registrations: list[SpecifiedTaxRegistration] | None = None
-    """Payee tax registrations (VAT and / or local tax id). XSD-allowed
-    on every ``TradePartyType`` (max 2 entries); EN 16931 does not
-    assign a dedicated BT id for the Payee."""
+    """Payee electronic address. (BT-X-256)"""
+    tax_registrations: SpecifiedTaxRegistration | None = None
+    """Payee tax registrations. (BT-X-257)"""
