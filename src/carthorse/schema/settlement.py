@@ -293,9 +293,10 @@ class PaymentMeans(Element):
 class BasisPeriodMeasure(Element):
     """Period measure (``udt:MeasureType``) — numeric value + ``unitCode``.
 
-    XSD shape: ``<Tag unitCode="DAY">10</Tag>``. Used by the EXTENDED
-    payment-penalty / payment-discount terms (BG-X-43 / BG-X-44) to
-    express the time window the penalty / discount applies over.
+    XSD shape: ``<Tag unitCode="DAY">10</Tag>``. Generic shape reused
+    by the EXTENDED payment-penalty terms (BT-X-277, inside BG-X-43)
+    and payment-discount terms (BT-X-283, inside BG-X-44) to express
+    the time window the penalty / discount applies over.
     """
 
     tag: ClassVar[str] = "BasisPeriodMeasure"

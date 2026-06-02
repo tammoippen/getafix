@@ -179,10 +179,12 @@ class AppliedTradeAllowanceCharge(Element):
     profile: ClassVar[Profile] = Profile.BASIC
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
-    """Allowance / charge indicator (BT-147-00 ``ChargeIndicator``).
+    """Allowance / charge indicator (BT-147-01 for the allowance side;
+    BT-X-302-01 for the EXTENDED charge side).
 
-    Note: the spec only permits an *allowance* (``false``) at price
-    level — a price-level charge is not modelled by EN 16931.
+    Note: EN 16931 only permits an *allowance* (``false``) at price
+    level — a price-level charge (``true``) is an EXTENDED-only
+    Factur-X extension under BT-X-302-00.
     """
     actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
     """Item price discount (BT-147).
@@ -302,12 +304,15 @@ class ProductCharacteristic(Element):
 
 @dataclass(kw_only=True, slots=True)
 class ProductClassification(Element):
-    """Item classification (BG-33); COMFORT+.
+    """Item classification (BT-158-00); COMFORT+.
 
     A coded classification of the item according to a registered
     scheme. ``list_id`` (BT-158-1) names the scheme — required when
     ``class_code`` (BT-158) is set per ``BR-65``. Optional
     ``list_version_id`` (BT-158-2) versions the scheme.
+
+    Note: EN 16931 modelled this group as BG-33; Factur-X 1.08 folds
+    it into the BT-158-00 wrapper id.
 
     Code list for ``list_id``: UNTDID 7143 (extended Code List).
     """
@@ -376,10 +381,13 @@ class ProductClassification(Element):
 
 @dataclass(kw_only=True, slots=True)
 class OriginCountry(Element):
-    """Item country of origin (BG-34); COMFORT+.
+    """Item country of origin (BT-159-00); COMFORT+.
 
     The country from which the item originates, as an ISO 3166-1
     alpha-2 code on the single inner ``<ram:ID>`` element (BT-159).
+
+    Note: EN 16931 modelled this group as BG-34; Factur-X 1.08 folds
+    it into the BT-159-00 wrapper id.
     """
 
     tag: ClassVar[str] = "OriginTradeCountry"
@@ -576,7 +584,7 @@ class TradeProduct(Element):
     characteristics: list[ProductCharacteristic] | None = None
     """Item attributes (BG-32, 0..*); COMFORT+."""
     classifications: list[ProductClassification] | None = None
-    """Item classifications (BG-33, 0..*); COMFORT+."""
+    """Item classifications (BT-158-00, 0..*); COMFORT+."""
     individual_product_instances: list[IndividualTradeProductInstance] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
@@ -587,7 +595,7 @@ class TradeProduct(Element):
     exercises the single-serial case.
     """
     origin_country: OriginCountry | None = None
-    """Item country of origin (BG-34, 0..1); COMFORT+."""
+    """Item country of origin (BT-159-00, 0..1); COMFORT+."""
     included_referenced_products: list[IncludedReferencedProduct] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
