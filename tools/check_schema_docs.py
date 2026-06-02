@@ -437,6 +437,155 @@ def _format_suggestion(ids: list[str], terms: dict[str, Any]) -> str:
     return f" — expected one of:{joined}"
 
 
+# Same tolerance set as ``tools/check_bt_br_ids.py``: EN 16931 base
+# groups dropped or renamed by Factur-X, kept here so existing prose
+# referencing them doesn't fail the audit.
+TOLERATED_MISSING_IDS: frozenset[str] = frozenset({"BG-0", "BG-33", "BG-34"})
+
+
+def _xpath_index(terms: dict[str, Any]) -> dict[str, str]:
+    """``bt_id -> primary xpath``. Picks the first (lowest-profile)
+    occurrence to disambiguate when the same id is at multiple
+    positions; used by :func:`_audit_citations` to decide whether a
+    cited BT lives *within* the class's tree subtree (allowing the
+    BT-2 vs BT-2-00 wrapper/value pattern to validate cleanly).
+    """
+    index: dict[str, str] = {}
+    for bt_id, entry in terms.items():
+        for occ in entry.get("occurrences", []):
+            xpath = occ.get("xpath")
+            if xpath:
+                index.setdefault(bt_id, xpath)
+                break
+    return index
+
+
+def _ids_at_xpath_index(terms: dict[str, Any]) -> dict[str, list[str]]:
+    """``xpath -> [bt_id, ...]``. The xpath tree collapses multiple
+    ids at the same xpath to one (e.g. ``BT-147-00`` allowance and
+    ``BT-X-302-00`` charge live at the same
+    ``AppliedTradeAllowanceCharge`` element — only one survives in
+    the tree). Audit cross-checks should see both; build the reverse
+    index from the flat sidecar where every occurrence is preserved.
+    """
+    index: dict[str, list[str]] = {}
+    for bt_id, entry in terms.items():
+        seen_xpaths: set[str] = set()
+        for occ in entry.get("occurrences", []):
+            xpath = occ.get("xpath")
+            if xpath and xpath not in seen_xpaths:
+                seen_xpaths.add(xpath)
+                bucket = index.setdefault(xpath, [])
+                if bt_id not in bucket:
+                    bucket.append(bt_id)
+    return index
+
+
+def _xpath_of_position(path: tuple[str, ...]) -> str:
+    """Walk a tree-segment tuple back to an xpath string."""
+    return "".join(path)
+
+
+def _cited_ids(docstring: str | None) -> list[str]:
+    """Every BT-/BG- id called out in ``docstring``, in document order.
+
+    Returns the full match (``BT-X-468`` not just the ``X-`` group).
+    Duplicates collapse to first-seen.
+    """
+    if not docstring:
+        return []
+    seen: list[str] = []
+    for match in BT_BG_RE.finditer(docstring):
+        bt = match.group(0)
+        if bt not in seen:
+            seen.append(bt)
+    return seen
+
+
+def _audit_citations(
+    docstring: str | None,
+    canonical_ids: list[str],
+    position_xpaths: list[str],
+    where: str,
+    label: str,
+    terms: dict[str, Any],
+    xpath_index: dict[str, str],
+) -> list[Issue]:
+    """Three checks against the BT/BG numbers in ``docstring``:
+
+    1. *Existence* — every cited id must resolve in the flat
+       ``business_terms.json`` sidecar; a typo or invented id fails
+       the audit. A small set of EN 16931 base ids dropped by
+       Factur-X (``BG-0`` / ``BG-33`` / ``BG-34``) is tolerated.
+    2. *Primary correctness* — at least one cited id must either be
+       a canonical id for the class / field's tree position **or**
+       live at an xpath that is the position itself or a descendant
+       of it. The descendant rule lets a wrapper field cite both the
+       wrapper id (``BT-2-00``) and the inner value id (``BT-2``)
+       without false-positive failures.
+    3. *Uncited canonical ids* — every canonical id missing from the
+       docstring is reported as an info note (the maintainer decides
+       whether to add it; multi-position generic shapes legitimately
+       cite only the most representative).
+
+    ``label`` is ``"class"`` or ``"field"`` for the error message.
+    """
+    if not docstring:
+        return []
+    issues: list[Issue] = []
+    cited = _cited_ids(docstring)
+    for bt in cited:
+        if bt in TOLERATED_MISSING_IDS:
+            continue
+        if bt not in terms:
+            issues.append(
+                Issue(
+                    "error",
+                    where,
+                    f"{label} docstring cites {bt} which is not in the workbook sidecar",
+                )
+            )
+    if canonical_ids and position_xpaths:
+        canon_set = set(canonical_ids)
+
+        def _is_in_subtree(bt_id: str) -> bool:
+            cited_xpath = xpath_index.get(bt_id)
+            if cited_xpath is None:
+                return False
+            for pos_xpath in position_xpaths:
+                if cited_xpath == pos_xpath or cited_xpath.startswith(pos_xpath + "/"):
+                    return True
+            return False
+
+        matched = [
+            bt
+            for bt in cited
+            if bt not in TOLERATED_MISSING_IDS
+            and (bt in canon_set or _is_in_subtree(bt))
+        ]
+        if not matched:
+            issues.append(
+                Issue(
+                    "error",
+                    where,
+                    f"{label} docstring cites {cited!r} but none match the "
+                    f"canonical id(s) for this XSD position (or a descendant)"
+                    + _format_suggestion(canonical_ids, terms),
+                )
+            )
+        uncited = [bt for bt in canonical_ids if bt not in set(cited)]
+        for bt in uncited:
+            issues.append(
+                Issue(
+                    "info",
+                    where,
+                    f"{label} docstring does not cite canonical id "
+                    f"{_format_term(bt, terms)}",
+                )
+            )
+    return issues
+
+
 # ---------------------------------------------------------------------------
 # Audit
 # ---------------------------------------------------------------------------
@@ -488,6 +637,8 @@ def _audit_class(
     parents_by_name: dict[str, list[str]],
     tree: dict[str, Any],
     terms: dict[str, Any],
+    xpath_index: dict[str, str],
+    ids_at_xpath: dict[str, list[str]],
 ) -> list[Issue]:
     issues: list[Issue] = []
     where = f"{cls.module}:{cls.name}"
@@ -502,7 +653,14 @@ def _audit_class(
     # the same lookup for both the class-level audit message and the
     # per-field child lookup below.
     positions = _positions_for(tree, ns, cls.tag)
-    class_ids = _collect_ids(node for _path, node in positions)
+    class_xpaths = [_xpath_of_position(path) for path, _node in positions]
+    # Use the flat-sidecar reverse index so both ids at a shared
+    # xpath (allowance + charge, wrapper + value) show up.
+    class_ids: list[str] = []
+    for xp in class_xpaths:
+        for bt in ids_at_xpath.get(xp, []):
+            if bt not in class_ids:
+                class_ids.append(bt)
 
     # Class docstring + BT/BG citation.
     if not cls.docstring:
@@ -522,6 +680,11 @@ def _audit_class(
                 + _format_suggestion(class_ids, terms),
             )
         )
+    issues.extend(
+        _audit_citations(
+            cls.docstring, class_ids, class_xpaths, where, "class", terms, xpath_index
+        )
+    )
 
     # Modelled-tag set for the missing-attribute report — include
     # inherited fields so a subclass doesn't claim its parent's
@@ -556,13 +719,18 @@ def _audit_class(
             field_key = f"/{effective_ns}:{effective_tag}"
 
         # Look the field up inside each parent-class tree position.
-        field_ids: list[tuple[str, str]] = []
+        field_ids: list[str] = []
+        field_xpaths: list[str] = []
         if field_key is not None:
-            field_ids = _collect_ids(
-                node.get("children", {}).get(field_key, {})
-                for _path, node in positions
+            field_xpaths = [
+                _xpath_of_position((*path, field_key))
+                for path, node in positions
                 if node.get("children", {}).get(field_key)
-            )
+            ]
+            for xp in field_xpaths:
+                for bt in ids_at_xpath.get(xp, []):
+                    if bt not in field_ids:
+                        field_ids.append(bt)
 
         if not f.docstring:
             issues.append(
@@ -582,6 +750,17 @@ def _audit_class(
                     + _format_suggestion(field_ids, terms),
                 )
             )
+        issues.extend(
+            _audit_citations(
+                f.docstring,
+                field_ids,
+                field_xpaths,
+                field_where,
+                "field",
+                terms,
+                xpath_index,
+            )
+        )
 
     # Missing XSD children: take the union of children across every
     # tree position that matches ``/{ns}:{tag}``.
@@ -625,6 +804,8 @@ def _audit_class(
 def _run(only_class: str | None, show_missing: bool, only_errors: bool) -> int:
     tree = _load_sidecar(TREE_SIDECAR)
     terms = _load_sidecar(TERMS_SIDECAR)
+    xpath_index = _xpath_index(terms)
+    ids_at_xpath = _ids_at_xpath_index(terms)
     parsed = _parse_modules()
     subclasses = _element_subclass_names([m for _path, m in parsed])
     classes = _walk_modules(parsed, subclasses)
@@ -641,7 +822,15 @@ def _run(only_class: str | None, show_missing: bool, only_errors: bool) -> int:
         if only_class and cls.name != only_class:
             continue
         all_issues.extend(
-            _audit_class(cls, classes_by_name, parents_by_name, tree, terms)
+            _audit_class(
+                cls,
+                classes_by_name,
+                parents_by_name,
+                tree,
+                terms,
+                xpath_index,
+                ids_at_xpath,
+            )
         )
 
     errors = [i for i in all_issues if i.severity == "error"]
