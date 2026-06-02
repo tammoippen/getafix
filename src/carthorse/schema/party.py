@@ -1037,6 +1037,14 @@ class PayeeTradeParty(Element):
     The name of the Payee. Required when the Payee is not identical
     to the Seller; may be the same as the Seller name.
     """
+    role_code: str | None = field(
+        default=None, metadata={"tag": "RoleCode", "profile": Profile.EXTENDED}
+    )
+    """Payee role code (BT-X-468); EXTENDED-only.
+
+    Code naming the role the payee fulfils — drawn from the UN/CEFACT
+    ``PartyRoleCodeType`` (``qdt:PartyRoleCodeType``) code list.
+    """
     legal_organization: LegalOrganization | None = None
     """Payee legal organisation (BT-61-00) — carries the legal
     registration identifier (BT-61) and its ``schemeID`` (BT-61-1)."""
