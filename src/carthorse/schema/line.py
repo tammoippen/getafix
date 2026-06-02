@@ -391,9 +391,10 @@ class OriginCountry(Element):
 
 @dataclass(kw_only=True, slots=True)
 class UnitQuantity(Quantity):
-    """Sub-product quantity within a bundle (``UnitQuantity`` tag).
+    """Sub-product quantity within a bundle (BT-X-20); EXTENDED-only.
 
-    Same numeric+unitCode shape as :class:`Quantity` /
+    The included quantity of a bundled sub-product. Same
+    numeric+unitCode shape as :class:`Quantity` /
     :class:`BasisQuantity` — only the XML element name differs.
     Used by :class:`IncludedReferencedProduct`.
     """
