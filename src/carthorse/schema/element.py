@@ -6,7 +6,7 @@
 # that is itself a type annotation" without falling back to ``Any``.
 # Suppress the ``Any`` / ``Unknown`` categories here only; elsewhere
 # in the package they stay on.
-# pyright: reportAny=false, reportExplicitAny=false
+# pyright: reportAny=false, reportExplicitAny=false, reportPrivateUsage = false
 # pyright: reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
 
 import datetime
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     # pyright still sees the lxml branch. ``_Element`` is the
     # canonical public element type in lxml (the leading underscore is
     # historical, not a privacy boundary); ``reportPrivateUsage`` is
-    # disabled project-wide on that basis.
+    # disabled in this file on that basis.
     from lxml.etree import _Element as _LxmlElement
 
     type ETElement = _stdlib_etree.Element | _LxmlElement
