@@ -257,11 +257,30 @@ uv sync                 # create .venv and install dev deps
 make tests              # pytest + 90 % coverage gate
 make check              # ruff format check + ruff lint + basedpyright
 make fmt                # auto-format + auto-fix lint
+
+make synth-check        # rebuild EXTENDED samples and diff against committed copies
+make ids-check          # regenerate BT/BR sidecars + run BT/BR + schema-docs audits
+make docs-coverage      # same as ids-check but also prints "XSD child not modelled" notes
 ```
 
-CI runs `make check` then `make tests` on Linux / macOS / Windows
-(`.github/workflows/CI.yml`). Tagging `v*` triggers `Publish.yml` to
-push to PyPI.
+CI runs `make check` then `make synth-check`, `make ids-check`, then
+`make tests` on Linux / macOS / Windows (`.github/workflows/CI.yml`).
+Tagging `v*` triggers `Publish.yml` to push to PyPI.
+
+### Spec-conformance tooling
+
+The `tools/` directory carries four scripts that together keep the
+schema docstrings in sync with the Factur-X 1.08 workbook
+(`docs/spec/1_FACTUR-X 1.08 - … - VF.xlsx`):
+
+| Tool | Purpose |
+|------|---------|
+| `extract_business_terms.py` | Reads every per-profile sheet and emits two sidecars — flat `tools/business_terms.json` (keyed by BT/BG id) and `tools/business_terms_tree.json` (xpath-segment tree). Sidecars are gitignored; regenerated on every `make ids-check`. |
+| `extract_business_rules.py` | Emits `tools/business_rules.json` covering BR-* / BR-CO-* / BR-CL-* / BR-DEC-* / BR-FXEXT-* / BR-HYBRID-* / per-VAT-category families. |
+| `check_bt_br_ids.py` | Cross-checks every `BT-` / `BG-` / `BR-` citation in `src/`, `docs/` and `README.md` against the sidecars. Fails on a typo or hallucinated id. |
+| `check_schema_docs.py` | AST-walks every `Element` subclass and fails if a class or field is missing a docstring or BT/BG citation. With `--show-missing` also lists every XSD-allowed child not yet modelled (informational; surfaced through `make docs-coverage`). |
+
+Both audits run as part of `make ids-check` and CI.
 
 The test suite includes:
 
