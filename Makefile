@@ -27,17 +27,18 @@ tests:
 synth-check:
 	uv run --locked python tools/build_synth_samples.py --check
 
-# Cross-check every BT-/BG-/BR- citation in the carthorse sources,
+# Regenerate the BT/BG + BR sidecars, then run the schema-docs audit
+# together with the BT-/BG-/BR- citation cross-check (``--check-citations``).
+# The cross-check resolves every citation in the carthorse sources,
 # docstrings and docs against the JSON sidecars
-# (``tools/business_terms.json`` and ``tools/business_rules.json``).
-# Exits non-zero on any unknown id — catches typos / hallucinated
-# spec references.
+# (``tools/business_terms.json`` and ``tools/business_rules.json``) and
+# exits non-zero on any unknown id — catches typos / hallucinated spec
+# references.
 .PHONY: ids-check
 ids-check:
 	uv run --locked python tools/extract_business_terms.py
 	uv run --locked python tools/extract_business_rules.py
-	uv run --locked python tools/check_bt_br_ids.py
-	uv run --locked python tools/check_schema_docs.py
+	uv run --locked python tools/check_schema_docs.py --check-citations
 
 # Run the schema-docs audit with the full informational missing-attribute
 # report. Not in CI — flags XSD children that aren't modelled yet
