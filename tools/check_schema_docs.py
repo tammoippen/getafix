@@ -43,6 +43,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_DIR = ROOT / "src/carthorse/schema"
 TREE_SIDECAR = ROOT / "tools/business_terms_tree.json"
+TERMS_SIDECAR = ROOT / "tools/business_terms.json"
 
 # Files we skip entirely — the reflective core, primitives, and the
 # enum / type vendoring module hold no Element subclasses worth
@@ -60,7 +61,7 @@ BT_BG_RE = re.compile(r"\bB[GT]-(X-)?\d+(-\d+)?(-\d+)?\b")
 
 
 class FieldInfo:
-    __slots__ = ("name", "type_str", "inner_class", "tag", "ns", "profile", "docstring")
+    __slots__ = ("docstring", "inner_class", "name", "ns", "profile", "tag", "type_str")
 
     def __init__(
         self,
@@ -82,7 +83,7 @@ class FieldInfo:
 
 
 class ClassInfo:
-    __slots__ = ("name", "module", "tag", "ns", "profile", "docstring", "fields")
+    __slots__ = ("docstring", "fields", "module", "name", "ns", "profile", "tag")
 
     def __init__(
         self,
@@ -309,15 +310,15 @@ def _extract_class(node: ast.ClassDef, module_name: str) -> ClassInfo:
 # ---------------------------------------------------------------------------
 
 
-def _load_tree() -> dict[str, Any]:
-    if not TREE_SIDECAR.is_file():
+def _load_sidecar(path: Path) -> dict[str, Any]:
+    if not path.is_file():
         print(  # noqa: T201
-            f"error: missing {TREE_SIDECAR.relative_to(ROOT)} — run "
+            f"error: missing {path.relative_to(ROOT)} — run "
             "`uv run python tools/extract_business_terms.py` first.",
             file=sys.stderr,
         )
         raise SystemExit(2)
-    return json.loads(TREE_SIDECAR.read_text())
+    return json.loads(path.read_text())
 
 
 def _walk_tree(
@@ -340,13 +341,61 @@ def _positions_for(
     return [(path, node) for path, node in _walk_tree(tree) if path[-1] == target]
 
 
+def _collect_ids(nodes: Iterable[dict[str, Any]]) -> list[str]:
+    """Distinct BT/BG ids across ``nodes``, in first-seen order.
+
+    The tree carries only the short ``name``; we look the full name +
+    description back up in the flat ``business_terms.json`` sidecar.
+    De-duplicates by id so repeated occurrences of the same BT (the
+    same term appearing on every profile sheet) collapse to one.
+    """
+    seen: list[str] = []
+    for n in nodes:
+        bt_id = n.get("id")
+        if not bt_id or bt_id in seen:
+            continue
+        seen.append(bt_id)
+    return seen
+
+
+def _format_term(bt_id: str, terms: dict[str, Any]) -> str:
+    """``BT-31 'Seller VAT identifier' — The Seller's VAT id…``.
+
+    Pulls the ``name`` + ``description`` out of the flat sidecar so
+    the audit message tells the maintainer *what* the field should
+    say, not just the id. Description is clipped to a single line.
+    """
+    entry = terms.get(bt_id, {})
+    name = entry.get("name") or ""
+    description = entry.get("description") or ""
+    # Single line — collapse paragraph breaks to spaces so the audit
+    # output stays one error per line.
+    if description:
+        description = " ".join(description.split())
+    if name and description:
+        return f"{bt_id} {name!r} — {description}"
+    if name:
+        return f"{bt_id} {name!r}"
+    return bt_id
+
+
+def _format_suggestion(ids: list[str], terms: dict[str, Any]) -> str:
+    if not ids:
+        return ""
+    if len(ids) == 1:
+        return f" — expected {_format_term(ids[0], terms)}"
+    pieces = [_format_term(i, terms) for i in ids]
+    joined = "\n    " + "\n    ".join(pieces)
+    return f" — expected one of:{joined}"
+
+
 # ---------------------------------------------------------------------------
 # Audit
 # ---------------------------------------------------------------------------
 
 
 class Issue:
-    __slots__ = ("severity", "where", "message")
+    __slots__ = ("message", "severity", "where")
 
     def __init__(self, severity: str, where: str, message: str):
         self.severity: str = severity  # "error" | "info"
@@ -355,7 +404,10 @@ class Issue:
 
 
 def _audit_class(
-    cls: ClassInfo, classes_by_name: dict[str, ClassInfo], tree: dict[str, Any]
+    cls: ClassInfo,
+    classes_by_name: dict[str, ClassInfo],
+    tree: dict[str, Any],
+    terms: dict[str, Any],
 ) -> list[Issue]:
     issues: list[Issue] = []
     where = f"{cls.module}:{cls.name}"
@@ -366,12 +418,29 @@ def _audit_class(
 
     ns = cls.ns or "ram"
 
+    # Resolve the class to its tree position(s) up front — we re-use
+    # the same lookup for both the class-level audit message and the
+    # per-field child lookup below.
+    positions = _positions_for(tree, ns, cls.tag)
+    class_ids = _collect_ids(node for _path, node in positions)
+
     # Class docstring + BT/BG citation.
     if not cls.docstring:
-        issues.append(Issue("error", where, "missing class docstring"))
+        issues.append(
+            Issue(
+                "error",
+                where,
+                f"missing class docstring{_format_suggestion(class_ids, terms)}",
+            )
+        )
     elif not BT_BG_RE.search(cls.docstring):
         issues.append(
-            Issue("error", where, "class docstring lacks a BT-/BG- citation")
+            Issue(
+                "error",
+                where,
+                "class docstring lacks a BT-/BG- citation"
+                + _format_suggestion(class_ids, terms),
+            )
         )
 
     # Field docstrings + BT/BG citations.
@@ -391,18 +460,36 @@ def _audit_class(
                 effective_ns = nested.ns
         if effective_ns is None:
             effective_ns = "ram"
+        field_key: str | None = None
         if effective_tag is not None:
-            field_tags.add(f"/{effective_ns}:{effective_tag}")
+            field_key = f"/{effective_ns}:{effective_tag}"
+            field_tags.add(field_key)
+
+        # Look the field up inside each parent-class tree position.
+        field_ids: list[tuple[str, str]] = []
+        if field_key is not None:
+            field_ids = _collect_ids(
+                node.get("children", {}).get(field_key, {})
+                for _path, node in positions
+                if node.get("children", {}).get(field_key)
+            )
 
         if not f.docstring:
-            issues.append(Issue("error", field_where, "missing field docstring"))
+            issues.append(
+                Issue(
+                    "error",
+                    field_where,
+                    f"missing field docstring{_format_suggestion(field_ids, terms)}",
+                )
+            )
             continue
         if not BT_BG_RE.search(f.docstring):
             issues.append(
                 Issue(
                     "error",
                     field_where,
-                    "field docstring lacks a BT-/BG- citation",
+                    "field docstring lacks a BT-/BG- citation"
+                    + _format_suggestion(field_ids, terms),
                 )
             )
 
@@ -445,10 +532,9 @@ def _audit_class(
     return issues
 
 
-def _run(
-    only_class: str | None, show_missing: bool, only_errors: bool
-) -> int:
-    tree = _load_tree()
+def _run(only_class: str | None, show_missing: bool, only_errors: bool) -> int:
+    tree = _load_sidecar(TREE_SIDECAR)
+    terms = _load_sidecar(TERMS_SIDECAR)
     classes: list[ClassInfo] = []
     for path in sorted(SCHEMA_DIR.glob("*.py")):
         if path.name in SKIP_FILES:
@@ -461,7 +547,7 @@ def _run(
     for cls in classes:
         if only_class and cls.name != only_class:
             continue
-        all_issues.extend(_audit_class(cls, classes_by_name, tree))
+        all_issues.extend(_audit_class(cls, classes_by_name, tree, terms))
 
     errors = [i for i in all_issues if i.severity == "error"]
     info = [i for i in all_issues if i.severity == "info"]
