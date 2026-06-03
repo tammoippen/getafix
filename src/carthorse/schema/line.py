@@ -28,30 +28,6 @@ reuse of :class:`~carthorse.schema.settlement.ReceivableAccountingAccount`
 (BT-133). The EXTENDED sub-line / ``IncludedReferencedProduct`` /
 per-line deviating-party groups are modelled here too; remaining
 EXTENDED line-level references are listed in ``docs/STRUCTURES.md §5.1``.
-
-Validation rules covered:
-
-* ✓ ``BR-21`` (BT-126 line identifier) — implicit through
-  :attr:`DocumentLineDocument.line_id` being required.
-* ✓ ``BR-22`` / ``BR-23`` (BT-129 quantity / BT-130 unit code),
-  ``BR-24`` (BT-131 line net amount), ``BR-26`` (BT-146 net price)
-  and ``BR-CO-4`` (BT-151 line VAT category) — enforced in
-  :mod:`carthorse.rules.trade`. At EXTENDED the matching
-  ``BR-FXEXT-2x`` / ``BR-FXEXT-CO-04`` in :mod:`carthorse.rules.extended`
-  re-apply the check with a DETAIL / unset filter so GROUP and
-  INFORMATION lines may omit the field.
-* ✓ ``BR-25`` (BT-146 required) — implicit at MINIMUM..COMFORT
-  via :attr:`LineTradeAgreement.net_price`; explicit at EXTENDED
-  through the same DETAIL filter as above.
-* ✓ ``BR-27`` (BT-146 ≥ 0) — :func:`carthorse.rules.line.br_27`.
-* ✓ ``BR-28`` (BT-148 ≥ 0) — :func:`carthorse.rules.line.br_28`.
-* ✓ ``BR-29`` / ``BR-CO-19`` (period start ≤ end / at least one
-  endpoint) inherited from :class:`BillingSpecifiedPeriod`.
-* ✓ ``BR-CO-21..24`` allowance/charge reason coupling — header-
-  side via :func:`carthorse.rules.trade.br_co_21..22`, line-side
-  via :func:`carthorse.rules.trade.br_co_23..24`.
-* ✓ ``BR-CO-10`` / ``BR-CO-13`` — cross-line sum identities live
-  in :mod:`carthorse.rules.trade`.
 """
 
 from dataclasses import dataclass, field

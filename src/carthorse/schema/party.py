@@ -38,30 +38,6 @@ representative, BT-75 on ship-to. The class docstring lists the
 Seller-side BT; consult the appendix for buyer / tax-rep / ship-to
 counterparts.
 
-Validation rules enforced here:
-
-* ✓ ``BR-10`` — :meth:`BuyerTradeParty.validate_internal` requires
-  ``address`` (BG-8) from BASIC_WL upwards; MINIMUM may omit it per
-  the XSD.
-* ✓ ``BR-CO-9`` — :meth:`TaxSchemeId.validate_internal` requires
-  VAT identifiers (``schemeID == "VA"``) to carry an ISO 3166-1
-  alpha-2 country prefix (Greece may use ``EL``). Local tax
-  identifiers (``FC``, BT-32) are exempt.
-* ✓ ``BR-CO-26`` — :meth:`SellerTradeParty.validate_internal`
-  requires at least one of BT-29 (Seller identifier), BT-30 (legal
-  registration identifier) or BT-31 (VAT identifier).
-* ✓ ``BT-31-0 / BT-32-0`` — :meth:`TaxSchemeId.validate_internal`
-  restricts ``schemeID`` to ``VA`` or ``FC``.
-* ◯ ``BR-6`` / ``BR-7`` (Seller / Buyer name) and ``BR-8`` / ``BR-9``
-  (Seller postal address / country) are implicit through required
-  dataclass fields.
-* ◯ ``BR-18`` / ``BR-19`` / ``BR-20`` / ``BR-56`` (tax representative
-  needs name / address / country / VAT id) — implicit through
-  required fields on :class:`SellerTaxRepresentativeTradeParty`.
-* ✓ ``BR-62`` / ``BR-63`` — :meth:`SellerTradeParty.validate_internal`
-  and :meth:`BuyerTradeParty.validate_internal` require a
-  ``schemeID`` on the electronic-address ``URIID`` when present.
-
 All ``SchemeID`` / ``SchemeId`` / ``scheme_id`` names follow the XSD
 ``schemeID`` attribute spelling.
 """

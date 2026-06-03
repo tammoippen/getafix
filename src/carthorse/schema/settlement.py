@@ -27,35 +27,6 @@
 * zero-or-more EXTENDED advance payments (BG-X-45) with their
   included VAT (BG-X-46) and an optional prepayment-invoice
   reference (BG-X-85).
-
-Validation rules enforced here:
-
-* △ ``BR-5`` — :meth:`TradeSettlement.validate_internal` checks the
-  alpha-3 uppercase shape of ``currency_code`` (BT-5); the ISO 4217
-  registry is not consulted.
-* ✓ ``BR-50`` — :meth:`PayeePartyCreditorFinancialAccount.validate_internal`
-  requires IBAN-ID or proprietary id.
-* ✓ ``BR-53`` — BT-6 set ⇒ a ``TaxTotal`` row with ``currency_id ==
-  BT-6`` must be present.
-* △ ``BR-49`` — :meth:`PaymentMeans.validate_internal` checks
-  the UNTDID 4461 code shape of ``type_code``; the BG-16 presence
-  rule itself is not enforced.
-* ✓ ``BR-CO-18`` — at least one ``trade_taxes`` row at BASIC_WL+.
-* ✓ ``BR-CO-19`` / ``BR-29`` —
-  :meth:`BillingSpecifiedPeriod.validate_internal`: BG-14 needs at
-  least one endpoint, and ``end >= start`` when both are present.
-  The same validator runs on BG-26 (line invoicing period).
-* ✓ ``BR-CO-14`` — ``BT-110 = sum(BT-117)`` across BG-23 rows.
-* ✓ ``BR-CO-15`` — ``BT-112 = BT-109 + BT-110``.
-* ✓ ``BR-CO-16`` — ``BT-115 = BT-112 - BT-113 + BT-114``.
-* ✓ ``BR-CO-25`` — positive ``DuePayableAmount`` (BT-115) requires
-  BT-9 or BT-20 (gated on BASIC_WL+ since BT-9 / BT-20 live in
-  ``SpecifiedTradePaymentTerms`` which MINIMUM omits).
-* ✓ ``BR-51`` — :meth:`FinancialCard.validate_internal` requires
-  BT-87 to be 4..6 digits.
-* ✓ ``BR-61`` — :meth:`PaymentMeans.validate_internal` requires
-  ``BT-84`` (IBAN) when ``type_code`` (BT-81) is in the
-  credit-transfer family (UNTDID 4461 ``30`` / ``42`` / ``58``).
 """
 
 from dataclasses import dataclass, field
