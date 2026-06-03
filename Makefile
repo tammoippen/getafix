@@ -36,8 +36,8 @@ synth-check:
 # references.
 .PHONY: ids-check
 ids-check:
-	uv run --locked python tools/extract_business_terms.py
-	uv run --locked python tools/extract_business_rules.py
+	uv run --locked python tools/extract_business_terms.py "ZF24_EN/Documentation/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
+	uv run --locked python tools/extract_business_rules.py "ZF24_EN/Documentation/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
 	uv run --locked python tools/check_schema_docs.py --check-citations
 
 # Run the schema-docs audit with the full informational missing-attribute

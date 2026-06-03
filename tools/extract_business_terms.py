@@ -45,7 +45,6 @@ import openpyxl
 
 ROOT = Path(__file__).resolve().parent.parent
 
-DEFAULT_XLSX = ROOT / "docs/spec/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
 DEFAULT_OUT = ROOT / "tools/business_terms.json"
 DEFAULT_OUT_TREE = ROOT / "tools/business_terms_tree.json"
 
@@ -336,20 +335,15 @@ def _build_tree(terms: dict[str, dict[str, Any]]) -> dict[str, Any]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    assert __doc__
     parser = argparse.ArgumentParser(
         prog="extract_business_terms", description=__doc__.split("\n\n", maxsplit=1)[0]
     )
     parser.add_argument(
         "xlsx",
         nargs="?",
-        default=DEFAULT_XLSX,
         type=Path,
-        help=(
-            "Path to the Factur-X workbook "
-            "(``1_FACTUR-X 1.08 - ... - VF.xlsx``). "
-            f"Defaults to {DEFAULT_XLSX.relative_to(ROOT)} when run "
-            "from the repository root."
-        ),
+        help="Path to the Factur-X workbook (``1_FACTUR-X 1.08 - ... - VF.xlsx``). ",
     )
     parser.add_argument(
         "-o",
@@ -378,9 +372,13 @@ def _relative(path: Path) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
-    xlsx: Path = args.xlsx
+    xlsx: Path | None = args.xlsx
     out: Path = args.out
     out_tree: Path = args.out_tree
+
+    if xlsx is None:
+        print("error: you have to provide a XLSX file as input", file=sys.stderr)  # noqa: T201
+        return 2
 
     if not xlsx.is_file():
         print(f"error: cannot read XLSX at {xlsx}", file=sys.stderr)  # noqa: T201
@@ -388,7 +386,7 @@ def main(argv: list[str] | None = None) -> int:
 
     terms = extract(xlsx)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(terms, indent=2, sort_keys=True) + "\n")
+    _ = out.write_text(json.dumps(terms, indent=2, sort_keys=True) + "\n")
     occurrences = sum(len(t["occurrences"]) for t in terms.values())
     print(  # noqa: T201
         f"wrote {len(terms)} terms ({occurrences} occurrences across "
