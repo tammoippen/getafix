@@ -408,6 +408,7 @@ class UnitQuantity(Quantity):
     """
 
     tag: ClassVar[str] = "UnitQuantity"
+    profile: ClassVar[Profile] = Profile.EXTENDED
 
 
 @dataclass(kw_only=True, slots=True)
