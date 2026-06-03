@@ -295,9 +295,9 @@ class FaxNumber(Element):
     """
 
     tag: ClassVar[str] = "FaxUniversalCommunication"
-    profile: ClassVar[Profile] = Profile.COMFORT
+    profile: ClassVar[Profile] = Profile.EXTENDED
 
-    number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.COMFORT})
+    number: str = field(metadata={"tag": "CompleteNumber", "profile": Profile.EXTENDED})
     """Fax number value (BT-X-107 Seller / BT-X-115 Buyer / etc. —
     BT depends on the parent party, see class docstring).
 
@@ -799,9 +799,13 @@ class ShipToTradeParty(Element):
     )
     """Deliver-to legal organisation (BG-X-25); EXTENDED-only."""
     contact: TradeContact | None = field(
-        default=None, metadata={"profile": Profile.COMFORT}
+        default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Deliver-to contact details (BG-X-26); COMFORT+."""
+    """Deliver-to contact details (BG-X-26); EXTENDED-only.
+
+    A Factur-X extension term; the workbook lists ``DefinedTradeContact``
+    on the ship-to party only from EXTENDED upwards.
+    """
     address: PostalTradeAddressExtended | None = None
     """Deliver-to address (BG-15).
 
