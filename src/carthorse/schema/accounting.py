@@ -21,36 +21,6 @@ invoice:
   header from line.
 * :class:`CategoryTradeTax` — the embedded VAT category block
   (BT-95-00 at allowance level, BT-102-00 at charge level).
-
-Validation rules enforced here:
-
-* △ ``BR-5`` — :meth:`TaxTotal.validate_internal` checks the alpha-3
-  uppercase shape of the currency code, not the ISO 4217 registry.
-* ✓ ``BR-12`` — :meth:`MonetarySummation.validate_internal` raises
-  when ``line_total`` (BT-106) is missing at BASIC_WL+.
-* ✓ ``BR-CO-3`` — :meth:`ApplicableTradeTax.validate_internal` —
-  BT-7 (TaxPointDate) and BT-8 (DueDateTypeCode) are mutually
-  exclusive.
-* ✓ ``BR-CO-17`` — :meth:`ApplicableTradeTax.validate_internal` —
-  ``BT-117 = round(BT-116 * BT-119 / 100, 2)`` per row, half-away-
-  from-zero (Factur-X §7.1.8). Dropped at EXTENDED; the per-VAT-
-  category ``BR-FXEXT-*-09`` family supersedes it.
-
-Validation rules that live elsewhere:
-
-* ``BR-CO-10..13`` (cross-line / cross-allowance sum identities)
-  and ``BR-CO-21..24`` (allowance/charge reason coupling) need
-  cross-sibling access — implemented in
-  :meth:`carthorse.schema.trade.Trade._validate_document_arithmetic`.
-* ``BR-CO-18`` (≥ 1 BG-23 row at BASIC_WL+) — in
-  :meth:`carthorse.schema.settlement.TradeSettlement.validate_internal`.
-* ``BR-53`` (BT-6 ⇒ second BT-111 TaxTotal) — same place.
-* ``BR-48`` (rate required unless not-subject-to-VAT) — enforced in
-  :func:`carthorse.rules.accounting.br_48`.
-
-For the per-VAT-category ``BR-AE/E/G/IC/IG/IP/O/S/Z`` rule families
-and the EXTENDED ``BR-FXEXT-*`` rounding-tolerance variants, see
-``docs/VALIDATION.md``.
 """
 
 from dataclasses import dataclass, field

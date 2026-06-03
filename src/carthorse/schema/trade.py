@@ -13,26 +13,6 @@ rules that need to read across line items, header allowances/charges
 and the monetary summation in one pass. The validator functions
 themselves live in :mod:`carthorse.rules.trade`.
 
-Validation rules enforced here:
-
-* ✓ ``BR-16`` — at BASIC+ an invoice must contain at least one line
-  item.
-* ✓ ``BR-CO-10`` — ``BT-106 = sum(BT-131)`` across line totals.
-* ✓ ``BR-CO-11`` — ``BT-107 = sum(BT-92)`` across header allowances.
-* ✓ ``BR-CO-12`` — ``BT-108 = sum(BT-99)`` across header charges.
-* ✓ ``BR-CO-13`` — ``BT-109 = sum(BT-131) - sum(BT-92) + sum(BT-99)``.
-* ✓ ``BR-CO-21`` / ``BR-CO-22`` — header allowance / charge needs
-  reason text or reason code.
-* ✓ ``BR-CO-23`` / ``BR-CO-24`` — same coupling at line level.
-* ✓ ``BR-AE/E/G/IC/IG/IP/S/Z-{2,3,4}`` — per-VAT-category
-  required-party matrix (see ``docs/VALIDATION.md §3.2``).
-* ✓ ``BR-O-2 / BR-O-3 / BR-O-4`` — "Not subject to VAT" forbidden-id
-  matrix (inverted predicate of the above).
-* ✓ ``BR-IC-11`` / ``BR-IC-12`` — intra-community supply needs
-  delivery date or period (BT-72 / BG-14) and a deliver-to country
-  code (BT-80).
-* ✓ ``BR-O-11..14`` — "Not subject to VAT" is single-rate.
-
 See ``docs/VALIDATION.md`` for the full BR-* catalogue.
 """
 
