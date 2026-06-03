@@ -3,8 +3,8 @@ BT-29 (id), BT-30 (legal organisation id) or BT-31 (VAT registration)."""
 
 from __future__ import annotations
 
-from carthorse.schema import Profile
-from carthorse.schema.party import (
+from getafix.schema import Profile
+from getafix.schema.party import (
     ISO6523SchemeId,
     LegalOrganization,
     PostalTradeAddressExtended,
@@ -12,7 +12,7 @@ from carthorse.schema.party import (
     SpecifiedTaxRegistration,
     TaxSchemeId,
 )
-from carthorse.schema.types import Country
+from getafix.schema.types import Country
 
 
 def test_br_co_26_seller_must_be_identifiable():

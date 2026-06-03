@@ -2,7 +2,7 @@
 
 Reads the ``EN16931_code_lists_values_v16__used_from_20251115__Fx_1.08.xlsx``
 spreadsheet that ships with Factur-X 1.08 and prints Python source
-that can be pasted into ``src/carthorse/schema/types.py``. Each enum
+that can be pasted into ``src/getafix/schema/types.py``. Each enum
 is bracketed by ``# AUTOGEN START <Name>`` / ``# AUTOGEN END <Name>``
 markers so CI can re-run the script and diff the output to detect
 drift.

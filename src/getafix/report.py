@@ -2,14 +2,14 @@
 
 Importing this module requires the optional ``rich`` dependency::
 
-    pip install 'carthorse[cli]'
+    pip install 'getafix[cli]'
 
 Two entry points:
 
 * :func:`render_invoice` — pretty-print the document (header, parties,
   lines, VAT breakdown, totals, payment block).
 * :func:`render_validation_errors` — pretty-print a list of
-  :class:`carthorse.schema.element.ValidationError` from
+  :class:`getafix.schema.element.ValidationError` from
   ``Document.validate_internal``.
 """
 
@@ -22,13 +22,13 @@ from rich.console import Console, RenderableType
 from rich.panel import Panel
 from rich.table import Table
 
-from carthorse.schema.party import PostalTradeAddressExtended
+from getafix.schema.party import PostalTradeAddressExtended
 
 if TYPE_CHECKING:
-    from carthorse.schema import Document
-    from carthorse.schema.element import ValidationError
-    from carthorse.schema.line import TradeProduct
-    from carthorse.schema.party import (
+    from getafix.schema import Document
+    from getafix.schema.element import ValidationError
+    from getafix.schema.line import TradeProduct
+    from getafix.schema.party import (
         BuyerTradeParty,
         PostalTradeAddress,
         SellerTradeParty,

@@ -23,10 +23,10 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import ApplicableTradeTax
-from carthorse.schema.element import ProfileMismatch
-from carthorse.schema.line import (
+from getafix.schema import Profile
+from getafix.schema.accounting import ApplicableTradeTax
+from getafix.schema.element import ProfileMismatch
+from getafix.schema.line import (
     LineAdditionalReferencedDocument,
     LineBuyerOrderReferencedDocument,
     LineMonetarySummation,
@@ -34,8 +34,8 @@ from carthorse.schema.line import (
     LineTradeSettlement,
     NetTradePrice,
 )
-from carthorse.schema.settlement import ReceivableAccountingAccount
-from carthorse.schema.types import CategoryCode, UNTDID2475TaxPointDateCode
+from getafix.schema.settlement import ReceivableAccountingAccount
+from getafix.schema.types import CategoryCode, UNTDID2475TaxPointDateCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 

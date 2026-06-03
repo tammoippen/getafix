@@ -1,5 +1,5 @@
 [project]
-name = "carthorse"
+name = "getafix"
 version = "0.1.0"
 description = "Parse and create ZUGFerD files."
 readme = "README.md"
@@ -18,7 +18,7 @@ cli = ["lxml>=6.0.2", "rich>=13.0", "pypdf>=6.11.0"]
 pdf = ["pypdf>=6.11.0"]
 
 [project.scripts]
-carthorse = "carthorse.cli:main"
+getafix = "getafix.cli:main"
 
 [build-system]
 requires = ["flit_core >=3.2,<4"]
@@ -81,7 +81,7 @@ ignore = [
 "tests/*" = ["DTZ", "S105", "S314"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["carthorse"]
+known-first-party = ["getafix"]
 split-on-trailing-comma = false
 
 [tool.ruff.format]

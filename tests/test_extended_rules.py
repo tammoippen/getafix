@@ -20,10 +20,10 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import ApplicableTradeTax
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.line import (
+from getafix.schema import Profile
+from getafix.schema.accounting import ApplicableTradeTax
+from getafix.schema.element import ValidationErrors
+from getafix.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,
     LineTradeAgreement,
@@ -33,9 +33,9 @@ from carthorse.schema.line import (
     Quantity,
     TradeProduct,
 )
-from carthorse.schema.settlement import AppliedTradeTax, LogisticsServiceCharge
-from carthorse.schema.trade import TradeLineItem
-from carthorse.schema.types import (
+from getafix.schema.settlement import AppliedTradeTax, LogisticsServiceCharge
+from getafix.schema.trade import TradeLineItem
+from getafix.schema.types import (
     CategoryCode,
     LineStatusReasonCode,
     UNTDID2475TaxPointDateCode,
@@ -369,7 +369,7 @@ class TestFXExtSubInvoiceLineSampleClean:
 
         from lxml import etree
 
-        from carthorse.schema import Document
+        from getafix.schema import Document
 
         xml = Path(
             "tests/samples/EXTENDED_zf24_SubInvoiceLines_Hardware.xml"
@@ -518,18 +518,18 @@ class TestEN16931LineFieldChecks:
 
 
 class TestFXExtProfileGating:
-    """Carthorse-emitted profile gates on EXTENDED-only fields —
-    ``CARTHORSE-FIELD-PROFILE`` and ``CARTHORSE-FIELD-CARDINALITY``."""
+    """Getafix-emitted profile gates on EXTENDED-only fields —
+    ``GETAFIX-FIELD-PROFILE`` and ``GETAFIX-FIELD-CARDINALITY``."""
 
     def test_partial_payment_amount_on_basic_wl_fires(self) -> None:
-        # Default doc is BASIC. Set an EXTENDED-only field; carthorse
+        # Default doc is BASIC. Set an EXTENDED-only field; getafix
         # would silently drop it at render — but the new validator
-        # surfaces it as CARTHORSE-FIELD-PROFILE.
+        # surfaces it as GETAFIX-FIELD-PROFILE.
         doc = make_vat_doc()
         doc.trade.settlement.terms[0].partial_payment_amount = Decimal("50.00")
         with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert "CARTHORSE-FIELD-PROFILE" in _codes(e.value)
+        assert "GETAFIX-FIELD-PROFILE" in _codes(e.value)
 
     def test_partial_payment_amount_on_extended_passes(self) -> None:
         doc = _ext(make_vat_doc())
@@ -544,7 +544,7 @@ class TestFXExtProfileGating:
         ]
         with pt.raises(ValidationErrors) as e:
             doc.validate()
-        assert "CARTHORSE-FIELD-CARDINALITY" in _codes(e.value)
+        assert "GETAFIX-FIELD-CARDINALITY" in _codes(e.value)
 
     def test_terms_list_unbounded_at_extended(self) -> None:
         doc = _ext(make_vat_doc())
@@ -560,4 +560,4 @@ class TestFXExtProfileGating:
             codes: set[str] = set()
         except ValidationErrors as e:
             codes = _codes(e)
-        assert "CARTHORSE-FIELD-CARDINALITY" not in codes
+        assert "GETAFIX-FIELD-CARDINALITY" not in codes

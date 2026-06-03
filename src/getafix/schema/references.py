@@ -27,8 +27,8 @@ being a required field.
 Line-level twins of the despatch advice, receiving advice and
 delivery note references live on ``LineTradeDelivery`` (EXTENDED) and
 are tracked in ``docs/STRUCTURES.md §5.1``.
-:class:`~carthorse.schema.line.LineBuyerOrderReferencedDocument` (BT-132-00)
-and :class:`~carthorse.schema.line.LineAdditionalReferencedDocument`
+:class:`~getafix.schema.line.LineBuyerOrderReferencedDocument` (BT-132-00)
+and :class:`~getafix.schema.line.LineAdditionalReferencedDocument`
 (BT-128-00) cover the COMFORT line-level references.
 """
 
@@ -38,8 +38,8 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import MIME, Profile, UNTDID1001TypeCode
+from getafix.schema.element import Element, ETElement
+from getafix.schema.types import MIME, Profile, UNTDID1001TypeCode
 
 
 @dataclass(kw_only=True, slots=True)
@@ -105,7 +105,7 @@ class QuotationReferencedDocument(Element):
 
     Reference to the quotation that this invoice as a whole responds
     to. Distinct from the per-line
-    :class:`~carthorse.schema.line.LineQuotationReferencedDocument`
+    :class:`~getafix.schema.line.LineQuotationReferencedDocument`
     (BG-X-47). XSD position: between ``BuyerOrderReferencedDocument``
     and ``ContractReferencedDocument``.
     """
@@ -321,7 +321,7 @@ class DespatchAdviceReferencedDocument(Element):
 
     Note: a Factur-X CIUS extension; the XSD permits it from BASIC_WL
     upwards even though the appendix narrative restricts it to
-    EXTENDED. Carthorse follows the XSD here.
+    EXTENDED. Getafix follows the XSD here.
     """
 
 
@@ -346,7 +346,7 @@ class ReceivingAdviceReferencedDocument(Element):
     )
     """Goods receipt date (BT-X-201-00).
 
-    Note: a Factur-X CIUS extension; gated at COMFORT in carthorse to
+    Note: a Factur-X CIUS extension; gated at COMFORT in getafix to
     match the XSD even though the appendix narrative restricts it to
     EXTENDED.
     """

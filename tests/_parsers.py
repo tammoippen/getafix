@@ -4,7 +4,7 @@ stdlib ``xml.etree.ElementTree``.
 lxml is an optional runtime dependency; tests parametrised on ``parser``
 or ``parse_file`` skip the lxml leg automatically when lxml is not
 importable. Both parsers produce objects that satisfy the
-``carthorse.schema.element.ETElement`` alias (stdlib ``Element`` |
+``getafix.schema.element.ETElement`` alias (stdlib ``Element`` |
 lxml ``_Element``), so the same call sites accept either output.
 """
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest as pt
 
-from carthorse.schema.element import ETElement
+from getafix.schema.element import ETElement
 
 # Bytes-or-str → element callable. Tests use this signature so they don't
 # care which library backs the parser.

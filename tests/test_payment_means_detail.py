@@ -20,15 +20,15 @@ from __future__ import annotations
 
 import pytest as pt
 
-from carthorse.schema import Profile
-from carthorse.schema.element import ProfileMismatch
-from carthorse.schema.settlement import (
+from getafix.schema import Profile
+from getafix.schema.element import ProfileMismatch
+from getafix.schema.settlement import (
     CreditorFinancialInstitution,
     FinancialCard,
     PayeePartyCreditorFinancialAccount,
     PaymentMeans,
 )
-from carthorse.schema.types import UNTDID4461PaymentMeansCode
+from getafix.schema.types import UNTDID4461PaymentMeansCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 

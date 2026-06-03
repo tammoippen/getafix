@@ -16,8 +16,8 @@ invoice:
   allowances (BG-20), header charges (BG-21), line allowances
   (BG-27) and line charges (BG-28). ``ChargeIndicator`` (``false`` /
   ``true``) discriminates allowance from charge; placement on
-  :class:`~carthorse.schema.settlement.TradeSettlement` vs
-  :class:`~carthorse.schema.line.LineTradeSettlement` discriminates
+  :class:`~getafix.schema.settlement.TradeSettlement` vs
+  :class:`~getafix.schema.line.LineTradeSettlement` discriminates
   header from line.
 * :class:`CategoryTradeTax` — the embedded VAT category block
   (BT-95-00 at allowance level, BT-102-00 at charge level).
@@ -30,9 +30,9 @@ from typing import ClassVar, Literal, Self, override
 
 from tagic.xml import XML
 
-from carthorse.rules import Validator
-from carthorse.rules._types import max_decimals
-from carthorse.rules.accounting import (
+from getafix.rules import Validator
+from getafix.rules._types import max_decimals
+from getafix.rules.accounting import (
     br_5_currency_shape,
     br_12,
     br_48,
@@ -43,8 +43,8 @@ from carthorse.rules.accounting import (
     bt_95_0_102_0_vat_only,
     bt_118_0_vat_only,
 )
-from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import (
+from getafix.schema.element import Element, ETElement
+from getafix.schema.types import (
     CategoryCode,
     Currency,
     Profile,
@@ -152,7 +152,7 @@ class MonetarySummation(Element):
     """Sum of invoice line net amounts (BT-106).
 
     Note: the MINIMUM profile XSD does not include
-    ``LineTotalAmount`` at all — carthorse keeps it optional. From
+    ``LineTotalAmount`` at all — getafix keeps it optional. From
     BASIC_WL onwards ``BR-12`` requires it; the validator raises
     when the field is missing at that profile.
     """
@@ -496,8 +496,8 @@ class TradeAllowanceCharge(Element):
     * ``ChargeIndicator = true`` ⇒ charge (BG-21 header / BG-28
       line).
 
-    Placement on :class:`~carthorse.schema.settlement.TradeSettlement`
-    vs :class:`~carthorse.schema.line.LineTradeSettlement` selects
+    Placement on :class:`~getafix.schema.settlement.TradeSettlement`
+    vs :class:`~getafix.schema.line.LineTradeSettlement` selects
     header vs line. The header form may also represent deductions
     such as withheld taxes; the line form (BG-28) covers charges and
     taxes other than VAT applicable to the individual invoice line.
@@ -572,7 +572,7 @@ class TradeAllowanceCharge(Element):
     """VAT category for this allowance / charge (BT-95-00 / BT-102-00).
 
     Note: required at BASIC_WL per the appendix narrative; the XSD
-    relaxes it to optional from BASIC onwards. Carthorse keeps it
+    relaxes it to optional from BASIC onwards. Getafix keeps it
     ``Optional`` so the same dataclass works at every profile.
     """
     currency: str | None = None

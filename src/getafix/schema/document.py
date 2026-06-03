@@ -36,9 +36,9 @@ from typing import ClassVar, override
 
 from tagic.xml import XML
 
-from carthorse.schema.element import Element
-from carthorse.schema.trade import Trade
-from carthorse.schema.types import Namespace, Profile, TypeCode
+from getafix.schema.element import Element
+from getafix.schema.trade import Trade
+from getafix.schema.types import Namespace, Profile, TypeCode
 
 
 @dataclass(kw_only=True, slots=True)
@@ -54,7 +54,7 @@ class BusinessDocument(Element):
     the EXTENDED schematron (``FX-SCH-A-000024``,
     ``count(ram:BusinessProcessSpecifiedDocumentContextParameter)<=1``)
     and the workbook ``EXT PROFILES Cardinality`` column all stay at
-    ``0..1``. carthorse follows the schematron because that is what
+    ``0..1``. getafix follows the schematron because that is what
     invoices are actually validated against.
     """
 
@@ -317,7 +317,7 @@ class Document(Element):
         one pass, rather than fixing one error only to discover the
         next on the following run.
         """
-        from carthorse.schema.element import ValidationErrors
+        from getafix.schema.element import ValidationErrors
 
         profile = self.context.guideline.id
         errors = self.validate_internal(profile)

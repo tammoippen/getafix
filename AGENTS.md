@@ -1,14 +1,14 @@
 # AGENTS.md
 
 Internal notes for contributors and coding agents working on
-**carthorse**. End-user material lives in `README.md`; everything below
+**getafix**. End-user material lives in `README.md`; everything below
 assumes you have a checkout and want to extend the model, fix a bug,
 or add a business-rule validator.
 
 ## Repository layout
 
 ```
-src/carthorse/
+src/getafix/
 ├── __init__.py
 ├── cli.py                 # console script entry point
 ├── pdf.py                 # PDF/A-3 attachment helpers (pypdf)
@@ -47,7 +47,7 @@ tools/                     # one-shot scripts (codelist regen, sample fetch)
 
 ## How the model is structured
 
-Every schema class inherits from `carthorse.schema.element.Element`, a
+Every schema class inherits from `getafix.schema.element.Element`, a
 `@dataclass(kw_only=True, slots=True)` mixin that knows three things:
 
 - **`tag` / `namespace`** (`ClassVar`) — the qualified XML tag the
@@ -142,17 +142,17 @@ dataclass fields, returning the merged error list. The public entry
 point is `Document.validate()`, which collects every violation in one
 pass and raises a single `ValidationErrors` aggregate.
 
-Validator modules live in `carthorse.rules.<topic>` mirroring the
+Validator modules live in `getafix.rules.<topic>` mirroring the
 schema modules they validate against. Cross-sibling rules (per-VAT-
 category required parties, document arithmetic, sub-line walker) live
-in `carthorse.rules.trade` and `carthorse.rules.extended` because they
+in `getafix.rules.trade` and `getafix.rules.extended` because they
 need to read across the agreement / settlement / line items in one
 pass.
 
 ### Import cycle
 
 Each `schema/<topic>.py` runtime-imports the validator functions from
-`carthorse.rules.<topic>` to wire them onto `_validators`; each
+`getafix.rules.<topic>` to wire them onto `_validators`; each
 `rules/<topic>.py` imports element types from `schema.<topic>` for the
 function annotations only. The runtime graph has no cycle —
 annotations are kept inert with `from __future__ import annotations`
@@ -172,8 +172,8 @@ The eight VAT categories that demand a required-party check
 next to the validators. The rate (`-5/-6/-7`) and exemption-reason
 (`-10`) constraints across the same nine categories collapse into
 two table-driven dispatchers
-(:func:`carthorse.rules.trade.vat_category_rates` and
-:func:`carthorse.rules.trade.vat_category_exemption_reason`).
+(:func:`getafix.rules.trade.vat_category_rates` and
+:func:`getafix.rules.trade.vat_category_exemption_reason`).
 
 ### EXTENDED short-circuits
 
@@ -193,7 +193,7 @@ For the full BR-* catalogue with implementation status see
 
 1. Find the spec entry — `docs/READING_OFFICIAL_DOCS.md` is the
    cheat sheet for navigating `ZF24_EN/`.
-2. Locate the right dataclass under `src/carthorse/schema/`.
+2. Locate the right dataclass under `src/getafix/schema/`.
 3. Add the `field()` declaration, in XSD `<xs:sequence>` order:
    ```python
    new_field: str | None = field(
@@ -300,7 +300,7 @@ The test suite includes:
 
 ## Out of scope (today)
 
-- **PDF/A-3 conformance.** `carthorse.pdf` attaches XML to an existing
+- **PDF/A-3 conformance.** `getafix.pdf` attaches XML to an existing
   PDF using pypdf, but does not upgrade the host PDF to PDF/A-3 — the
   formal compliance requirement for Factur-X. Pair with a dedicated
   converter when full conformance is needed.

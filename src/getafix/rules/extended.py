@@ -14,7 +14,7 @@ Two families live here:
 
 Every rule guards with ``if profile < Profile.EXTENDED: return []``
 to stay silent below EXTENDED. The matching EN 16931 versions in
-:mod:`carthorse.rules.trade` and :mod:`carthorse.rules.settlement`
+:mod:`getafix.rules.trade` and :mod:`getafix.rules.settlement`
 guard with the inverse so the rule set is correct at every profile.
 
 Sub-invoice-line filtering uses :func:`_is_detail_line`, which
@@ -30,11 +30,11 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from carthorse.schema.element import ValidationError
-from carthorse.schema.types import CategoryCode, LineStatusReasonCode, Profile
+from getafix.schema.element import ValidationError
+from getafix.schema.types import CategoryCode, LineStatusReasonCode, Profile
 
 if TYPE_CHECKING:
-    from carthorse.schema import trade as _trade
+    from getafix.schema import trade as _trade
 
 
 def _is_detail_line(item: _trade.TradeLineItem) -> bool:
@@ -335,7 +335,7 @@ def br_fxext_co_04(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     omit it.
 
     Replaces EN 16931 ``BR-CO-4``
-    (:func:`carthorse.rules.trade.br_co_4`) which fires
+    (:func:`getafix.rules.trade.br_co_4`) which fires
     unconditionally for any missing BT-151 below EXTENDED. At
     EXTENDED the relaxation kicks in only on non-DETAIL lines —
     GROUP subtotal headers and INFORMATION lines naturally drop

@@ -1,12 +1,12 @@
-"""Generate carthorse-authored canonical EXTENDED sample invoices.
+"""Generate getafix-authored canonical EXTENDED sample invoices.
 
 The vendored ZF24 / mustangproject corpus (see
 ``tests/samples/SOURCES.md``) does not exercise every EXTENDED-only
-field carthorse models. This script synthesises small, coherent
+field getafix models. This script synthesises small, coherent
 canonical invoices that *do* — one per thematic field group — by
 taking the known-good mustangproject base
 (``EXTENDED_factur-x-extended.xml``, Apache-2.0), attaching the
-relevant structures via the carthorse object model, and rendering.
+relevant structures via the getafix object model, and rendering.
 
 Each generated file is:
 
@@ -17,7 +17,7 @@ Each generated file is:
   ``tests/test_schematron_roundtrip.py``) — modulo the two known
   elementpath false positives ``BR-FXEXT-CO-15`` / ``BR-FXEXT-11``.
 
-Serialization note: carthorse's ``render(indent=True)`` injects
+Serialization note: getafix's ``render(indent=True)`` injects
 whitespace that the pure-Python elementpath ``xs:decimal`` evaluator
 trips over (it is fine for ``lxml``'s XSD validator). We therefore
 render flat and pretty-print via ``lxml`` with
@@ -44,15 +44,15 @@ from pathlib import Path
 
 from lxml import etree
 
-from carthorse.schema import Document
-from carthorse.schema.agreement import RelevantTradeLocation, TradeDeliveryTerms
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.line import (
+from getafix.schema import Document
+from getafix.schema.agreement import RelevantTradeLocation, TradeDeliveryTerms
+from getafix.schema.element import ValidationErrors
+from getafix.schema.line import (
     ChargeFreeQuantity,
     PackageQuantity,
     PerPackageUnitQuantity,
 )
-from carthorse.schema.party import (
+from getafix.schema.party import (
     BuyerAgentTradeParty,
     BuyerTaxRepresentativeTradeParty,
     InvoiceeTradeParty,
@@ -67,13 +67,13 @@ from carthorse.schema.party import (
     TaxSchemeId,
     UltimateShipToTradeParty,
 )
-from carthorse.schema.references import QuotationReferencedDocument
-from carthorse.schema.settlement import (
+from getafix.schema.references import QuotationReferencedDocument
+from getafix.schema.settlement import (
     AdvancePayment,
     AdvancePaymentReferencedDocument,
     AdvancePaymentTradeTax,
 )
-from carthorse.schema.types import CategoryCode, Country, Incoterms, TypeCode
+from getafix.schema.types import CategoryCode, Country, Incoterms, TypeCode
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SAMPLES = _ROOT / "tests" / "samples"
@@ -107,15 +107,15 @@ def _validate(xml: bytes, name: str) -> None:
     sch = evaluate_schematron(_SCHEMA_DIR / "FACTUR-X_EXTENDED.sch", root)
     try:
         Document.from_xml(root).validate()
-        carthorse_codes: set[str] = set()
+        getafix_codes: set[str] = set()
     except ValidationErrors as exc:
-        carthorse_codes = {v.code for v in exc.errors}
+        getafix_codes = {v.code for v in exc.errors}
 
-    false_positives = carthorse_codes - sch.violations - sch.indeterminate
-    gaps = sch.violations - carthorse_codes - _KNOWN_FP
+    false_positives = getafix_codes - sch.violations - sch.indeterminate
+    gaps = sch.violations - getafix_codes - _KNOWN_FP
     if false_positives or gaps:
         raise AssertionError(
-            f"{name}: oracle drift — carthorse-only {sorted(false_positives)}, "
+            f"{name}: oracle drift — getafix-only {sorted(false_positives)}, "
             f"schematron-only {sorted(gaps)}"
         )
 

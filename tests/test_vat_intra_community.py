@@ -8,12 +8,12 @@ from datetime import date
 
 import pytest as pt
 
-from carthorse.schema import Document
-from carthorse.schema.delivery import SupplyChainEvent
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.party import PostalTradeAddressExtended, ShipToTradeParty
-from carthorse.schema.settlement import BillingSpecifiedPeriod
-from carthorse.schema.types import CategoryCode, Country
+from getafix.schema import Document
+from getafix.schema.delivery import SupplyChainEvent
+from getafix.schema.element import ValidationErrors
+from getafix.schema.party import PostalTradeAddressExtended, ShipToTradeParty
+from getafix.schema.settlement import BillingSpecifiedPeriod
+from getafix.schema.types import CategoryCode, Country
 from tests._fixtures import make_vat_doc
 
 

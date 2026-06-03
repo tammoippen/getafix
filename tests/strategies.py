@@ -14,7 +14,7 @@ schema-conformant for that profile:
   an optional ``currencyID`` attribute, and ``udt:DateTimeType`` wraps the
   required ``udt:DateTimeString format="102"``.
 
-The strategies are intentionally **independent of the carthorse model** — they
+The strategies are intentionally **independent of the getafix model** — they
 talk straight to the schema. The companion test
 (``tests/test_hypothesis.py``) feeds the bytes into ``Document.from_xml`` and
 then re-serialises via ``Document.to_xml`` to surface parser/serialiser gaps.
@@ -28,7 +28,7 @@ from datetime import date
 import hypothesis.strategies as st
 import lxml.etree as etree
 
-from carthorse.schema.types import (
+from getafix.schema.types import (
     CategoryCode,
     Country,
     Currency,
@@ -67,7 +67,7 @@ _token_alphabet = string.ascii_letters + string.digits + "._-/"
 _token = st.text(alphabet=_token_alphabet, min_size=1, max_size=20)
 
 # Free text content (TextType): we still avoid leading/trailing whitespace
-# because the carthorse parser strips text on the way in — so text that
+# because the getafix parser strips text on the way in — so text that
 # starts or ends with whitespace would fail the round-trip leg of the test.
 _text_alphabet = _token_alphabet + " "
 _text = st.text(alphabet=_text_alphabet, min_size=1, max_size=40).filter(
@@ -79,7 +79,7 @@ _currency_code = st.sampled_from([c.value for c in Currency])
 # ISO 3166-1 alpha-2 country code, drawn from the modelled registry.
 _country_code = st.sampled_from([c.value for c in Country])
 
-# UNTDID 1001 document type codes (subset that carthorse models).
+# UNTDID 1001 document type codes (subset that getafix models).
 _doc_type_codes = st.sampled_from([t.value for t in TypeCode])
 # UNTDID 5305 VAT category codes.
 _vat_categories = st.sampled_from([c.value for c in CategoryCode])
@@ -224,7 +224,7 @@ def _put_universal_communication(
     ``CompleteNumber``; ``EmailURIUniversalCommunication`` and the
     party-level ``URIUniversalCommunication`` carry ``URIID``. The
     party-level one additionally requires a ``schemeID`` on the
-    URIID (BR-62 / BR-63). The carthorse model declares the
+    URIID (BR-62 / BR-63). The getafix model declares the
     appropriate child as required for each role, so always emit it.
     """
     comm = _sub(parent, "ram", local)
@@ -284,7 +284,7 @@ def _put_trade_party(
             _put_id(party, "ram", "GlobalID", draw(_token), scheme=draw(_token))
 
     # Name: required at MINIMUM; optional everywhere else (per XSD), but
-    # carthorse declares it required, so we always emit it.
+    # getafix declares it required, so we always emit it.
     if name_required or draw(st.booleans()):
         _put_text(party, "ram", "Name", draw(_text))
 
@@ -312,7 +312,7 @@ def _put_trade_party(
         _put_trade_contact(draw, party)
 
     # PostalTradeAddress: optional everywhere per XSD, but at MINIMUM
-    # carthorse requires it on Seller/Buyer; we always emit on those.
+    # getafix requires it on Seller/Buyer; we always emit on those.
     _put_address(draw, party, profile)
 
     if rich_allowed and profile != Profile.MINIMUM and draw(st.booleans()):
@@ -348,7 +348,7 @@ def _put_referenced_document(
     ref = _sub(parent, "ram", local)
     if rich and profile in (Profile.COMFORT, Profile.EXTENDED):
         # The XSD makes IssuerAssignedID optional in the rich form, but
-        # carthorse declares it required and every real-world BG-24
+        # getafix declares it required and every real-world BG-24
         # instance carries one. Always emit.
         _put_id(ref, "ram", "IssuerAssignedID", draw(_token))
         if draw(st.booleans()):

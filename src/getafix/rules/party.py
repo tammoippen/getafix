@@ -1,8 +1,8 @@
-"""Validators for :mod:`carthorse.schema.party`.
+"""Validators for :mod:`getafix.schema.party`.
 
 One function per ``BR-*`` rule (or per BT shape-check) that today
 lives inside an ``Element.validate_internal`` body in ``party.py``.
-The signatures match :data:`carthorse.rules.Validator`.
+The signatures match :data:`getafix.rules.Validator`.
 
 Each function:
 
@@ -19,11 +19,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from carthorse.schema.element import ValidationError
-from carthorse.schema.types import Profile
+from getafix.schema.element import ValidationError
+from getafix.schema.types import Profile
 
 if TYPE_CHECKING:
-    from carthorse.schema import party as _party
+    from getafix.schema import party as _party
 
 
 def bt_31_0_scheme_id(

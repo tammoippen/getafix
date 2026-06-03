@@ -4,7 +4,7 @@ EN 16931 §G.1 — "The last 4 to 6 digits of the Payment card primary
 account number (BT-87) shall be present if Payment card information
 (BG-18) is provided in the Invoice."
 
-The :class:`carthorse.schema.settlement.FinancialCard` dataclass
+The :class:`getafix.schema.settlement.FinancialCard` dataclass
 enforces presence by declaring ``id`` non-Optional; this validator
 adds the format check (regex ``\\d{4,6}``).
 """
@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import pytest as pt
 
-from carthorse.schema import Profile
-from carthorse.schema.element import ValidationError
-from carthorse.schema.settlement import FinancialCard
+from getafix.schema import Profile
+from getafix.schema.element import ValidationError
+from getafix.schema.settlement import FinancialCard
 
 
 @pt.mark.parametrize("value", ["1234", "12345", "123456"])

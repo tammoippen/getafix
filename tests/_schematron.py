@@ -8,7 +8,7 @@ it parses the ``.sch`` directly and evaluates each ``<sch:assert>``
 against an XML tree with ``elementpath``'s XPath-2 engine.
 
 Used by ``tests/test_schematron_roundtrip.py`` to cross-check
-carthorse's emitted rule codes against the schematron's verdict on
+getafix's emitted rule codes against the schematron's verdict on
 the same document.
 """
 

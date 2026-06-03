@@ -1,13 +1,13 @@
 """Property-based parser tests against XSD-conformant Factur-X XML.
 
 Each generated XML payload comes from a strategy in :mod:`tests.strategies`
-that is independent of the carthorse model and known XSD-valid against the
+that is independent of the getafix model and known XSD-valid against the
 vendored Factur-X 1.08 / ZUGFeRD 2.4 schemas under ``tests/schemas/``.
 
 Two checks per profile:
 
 1. ``test_generated_xml_is_xsd_valid`` — sanity for the strategy itself
-   (decoupled from carthorse). If this regresses we have a strategy bug, not
+   (decoupled from getafix). If this regresses we have a strategy bug, not
    a parser bug.
 2. ``test_parse_and_regenerate`` — feed the bytes into ``Document.from_xml``
    and then ``Document.to_xml`` again. Locked in as a strict pass: a new
@@ -21,8 +21,8 @@ from pathlib import Path
 import pytest as pt
 from hypothesis import HealthCheck, given, settings
 
-from carthorse.schema import Document
-from carthorse.schema.types import Profile
+from getafix.schema import Document
+from getafix.schema.types import Profile
 
 # Strategy + XSD validation both require lxml — gate the whole module.
 pt.importorskip("lxml", reason="hypothesis strategies and XSD validation require lxml")

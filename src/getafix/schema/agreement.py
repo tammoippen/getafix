@@ -34,8 +34,8 @@ required ``seller`` / ``buyer`` fields. Field order follows the XSD
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-from carthorse.schema.element import Element
-from carthorse.schema.party import (
+from getafix.schema.element import Element
+from getafix.schema.party import (
     BuyerAgentTradeParty,
     BuyerTaxRepresentativeTradeParty,
     BuyerTradeParty,
@@ -44,7 +44,7 @@ from carthorse.schema.party import (
     SellerTaxRepresentativeTradeParty,
     SellerTradeParty,
 )
-from carthorse.schema.references import (
+from getafix.schema.references import (
     AdditionalReferencedDocument,
     BuyerOrderReferencedDocument,
     ContractReferencedDocument,
@@ -53,7 +53,7 @@ from carthorse.schema.references import (
     SellerOrderReferencedDocument,
     UltimateCustomerOrderReferencedDocument,
 )
-from carthorse.schema.types import Country, Incoterms, Profile
+from getafix.schema.types import Country, Incoterms, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -89,7 +89,7 @@ class TradeDeliveryTerms(Element):
 
     The XSD type ``qdt:DeliveryTermsCodeType`` is an unrestricted
     token; the EXTENDED schematron validates it against
-    :class:`~carthorse.schema.types.Incoterms` (the 11 Incoterms
+    :class:`~getafix.schema.types.Incoterms` (the 11 Incoterms
     2020 codes).
     """
     relevant_location: RelevantTradeLocation | None = None
@@ -106,7 +106,7 @@ class TradeAgreement(Element):
     (:class:`SalesAgentTradeParty` BG-X-49,
     :class:`BuyerTaxRepresentativeTradeParty` BG-X-54,
     :class:`BuyerAgentTradeParty` BG-X-62), the header
-    :class:`~carthorse.schema.references.QuotationReferencedDocument`
+    :class:`~getafix.schema.references.QuotationReferencedDocument`
     (BG-X-61) and :class:`TradeDeliveryTerms` (BG-X-22).
     """
 

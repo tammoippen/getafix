@@ -1,9 +1,9 @@
-# carthorse
+# getafix
 
-[![CI](https://github.com/tammoippen/carthorse/actions/workflows/CI.yml/badge.svg)](https://github.com/tammoippen/carthorse/actions/workflows/CI.yml)
-[![PyPi version](https://img.shields.io/pypi/v/carthorse.svg)](https://pypi.python.org/pypi/carthorse)
-![Downloads](https://pepy.tech/badge/carthorse/month)](https://pepy.tech/project/carthorse)
-[![PyPi license](https://img.shields.io/pypi/l/carthorse.svg)](https://pypi.python.org/pypi/carthorse)
+[![CI](https://github.com/tammoippen/getafix/actions/workflows/CI.yml/badge.svg)](https://github.com/tammoippen/getafix/actions/workflows/CI.yml)
+[![PyPi version](https://img.shields.io/pypi/v/getafix.svg)](https://pypi.python.org/pypi/getafix)
+![Downloads](https://pepy.tech/badge/getafix/month)](https://pepy.tech/project/getafix)
+[![PyPi license](https://img.shields.io/pypi/l/getafix.svg)](https://pypi.python.org/pypi/getafix)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
@@ -14,15 +14,28 @@ traceable to the EN 16931 business terms (`BT-…`) and groups
 (`BG-…`), so every field on every class maps back to a line in the
 spec.
 
+## Why "getafix"?
+
+Getafix is the village druid in *Asterix* — the one who brews the
+magic potion from an exact recipe, drop by drop, so it comes out
+right every time. That is what this library does for **Factur-X**:
+it follows the EN 16931 recipe term by term (`BT-…`/`BG-…`) and
+mixes a valid invoice. The Gaulish `-ix` ending even echoes the
+`-X` in Factur-**X**, and since Factur-X is the French half of the
+standard, a French druid felt right. As a bonus, the name reads as
+"get a fix" — *get a valid Factur-X*. It succeeds the project's
+former name, `carthorse`; both are about doing the heavy lifting so
+you don't have to.
+
 > **Status: pre-1.0.** Solid for the fields that are modelled across
 > MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); selective EXTENDED
 > coverage. PDF/A-3 conformance for the host PDF is **out of scope** —
-> `carthorse` attaches the embedded `factur-x.xml` but does not
+> `getafix` attaches the embedded `factur-x.xml` but does not
 > upgrade the surrounding PDF to PDF/A-3.
 
 ## License and attribution
 
-`carthorse` is distributed under the **Apache License 2.0** — see
+`getafix` is distributed under the **Apache License 2.0** — see
 [`LICENSE`](LICENSE).
 
 This project is an application of the **ZUGFeRD / Factur-X**
@@ -51,9 +64,9 @@ per-file provenance is tracked in
 [`tests/samples/SOURCES.md`](tests/samples/SOURCES.md).
 
 > **Important:** It is the user's responsibility to ensure that
-> invoices generated or parsed with `carthorse` meet all legal and
+> invoices generated or parsed with `getafix` meet all legal and
 > regulatory requirements applicable in their jurisdiction.
-> `carthorse` does not guarantee compliance with any specific
+> `getafix` does not guarantee compliance with any specific
 > national or sector-specific e-invoicing mandate.
 
 ## Installation
@@ -62,7 +75,7 @@ Requires **Python 3.12+**. We recommend
 [`uv`](https://docs.astral.sh/uv/) for dependency management.
 
 ```bash
-pip install carthorse
+pip install getafix
 ```
 
 The base install lets you build / serialise / validate documents with
@@ -70,14 +83,14 @@ the Python stdlib XML parser. The optional extras unlock more:
 
 | Extra            | Pulls in                  | Enables |
 |------------------|---------------------------|---------|
-| `carthorse[lxml]` | `lxml`                    | Round-tripping XML produced by other tools (the stdlib parser is fine for most documents; `lxml` is faster and more tolerant of large / namespaced inputs). |
-| `carthorse[pdf]`  | `pypdf`                   | Embedding / extracting `factur-x.xml` in a PDF (`carthorse.pdf.attach_xml` and `extract_xml`). |
-| `carthorse[cli]`  | `lxml`, `rich`, `pypdf`   | The `carthorse` console script — pretty-print an invoice and run the BR-* validators against it. |
+| `getafix[lxml]` | `lxml`                    | Round-tripping XML produced by other tools (the stdlib parser is fine for most documents; `lxml` is faster and more tolerant of large / namespaced inputs). |
+| `getafix[pdf]`  | `pypdf`                   | Embedding / extracting `factur-x.xml` in a PDF (`getafix.pdf.attach_xml` and `extract_xml`). |
+| `getafix[cli]`  | `lxml`, `rich`, `pypdf`   | The `getafix` console script — pretty-print an invoice and run the BR-* validators against it. |
 
 Install several at once:
 
 ```bash
-pip install 'carthorse[lxml,pdf]'
+pip install 'getafix[lxml,pdf]'
 ```
 
 ## Quickstart — build an invoice
@@ -86,19 +99,19 @@ pip install 'carthorse[lxml,pdf]'
 from datetime import date
 from decimal import Decimal
 
-from carthorse.schema import (
+from getafix.schema import (
     Context, Document, GuidelineDocument, Header, Profile, TypeCode,
 )
-from carthorse.schema.accounting import MonetarySummation, TaxTotal
-from carthorse.schema.agreement import TradeAgreement
-from carthorse.schema.delivery import TradeDelivery
-from carthorse.schema.party import (
+from getafix.schema.accounting import MonetarySummation, TaxTotal
+from getafix.schema.agreement import TradeAgreement
+from getafix.schema.delivery import TradeDelivery
+from getafix.schema.party import (
     BuyerTradeParty, PostalTradeAddressExtended, SellerTradeParty,
     SpecifiedTaxRegistration, TaxSchemeId,
 )
-from carthorse.schema.settlement import TradeSettlement
-from carthorse.schema.trade import Trade
-from carthorse.schema.types import Country, Currency
+from getafix.schema.settlement import TradeSettlement
+from getafix.schema.trade import Trade
+from getafix.schema.types import Country, Currency
 
 doc = Document(
     context=Context(guideline=GuidelineDocument(id=Profile.MINIMUM)),
@@ -151,7 +164,7 @@ From XML bytes or a file:
 
 ```python
 import xml.etree.ElementTree as ET
-from carthorse.schema import Document
+from getafix.schema import Document
 
 tree = ET.parse("factur-x.xml")
 doc = Document.from_xml(tree.getroot())
@@ -165,12 +178,12 @@ doc.validate()   # raises ValidationErrors with every violation
 `lxml.etree` works the same way — pass the root element to
 `Document.from_xml`.
 
-From a Factur-X / ZUGFeRD PDF (`carthorse[pdf]` extra):
+From a Factur-X / ZUGFeRD PDF (`getafix[pdf]` extra):
 
 ```python
 import xml.etree.ElementTree as ET
-from carthorse.pdf import extract_xml
-from carthorse.schema import Document
+from getafix.pdf import extract_xml
+from getafix.schema import Document
 
 payload = extract_xml(Path("invoice.pdf"))   # bytes or None
 if payload is None:
@@ -182,7 +195,7 @@ To embed an XML into an existing PDF:
 
 ```python
 from pathlib import Path
-from carthorse.pdf import attach_xml
+from getafix.pdf import attach_xml
 
 attach_xml(Path("invoice.pdf"), Path("factur-x.xml"))   # in-place
 attach_xml(Path("invoice.pdf"), Path("factur-x.xml"),
@@ -197,7 +210,7 @@ converter for full conformance.
 ## Validation
 
 ```python
-from carthorse.schema.element import ValidationErrors
+from getafix.schema.element import ValidationErrors
 
 try:
     doc.validate()
@@ -216,13 +229,13 @@ The catalogue of enforced rules lives in
 
 ## Command-line tool
 
-The `carthorse[cli]` extra ships a console script that pretty-prints
+The `getafix[cli]` extra ships a console script that pretty-prints
 an invoice and runs the validators:
 
 ```bash
-$ carthorse path/to/factur-x.xml
-$ carthorse path/to/invoice.pdf            # reads the embedded XML
-$ carthorse --no-validate path/to/file.xml # skip BR-* checks
+$ getafix path/to/factur-x.xml
+$ getafix path/to/invoice.pdf            # reads the embedded XML
+$ getafix --no-validate path/to/file.xml # skip BR-* checks
 ```
 
 Exit codes:
@@ -247,13 +260,13 @@ completeness:
 | `EXTENDED`  | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended`    | ✓ + sub-lines |
 
 The profile is set on the document via
-`Context(guideline=GuidelineDocument(id=Profile.X))`. Carthorse
+`Context(guideline=GuidelineDocument(id=Profile.X))`. Getafix
 enforces it at render time: setting a field that only exists at a
 higher profile raises `ProfileMismatch`.
 
 ## Status and known gaps
 
-Carthorse models every field that the MINIMUM, BASIC_WL, BASIC and
+Getafix models every field that the MINIMUM, BASIC_WL, BASIC and
 EN 16931 (COMFORT) profiles permit. EXTENDED coverage is broad —
 sub-line hierarchy (`BT-X-7` / `BT-X-8` / `BT-X-304`), bundle
 composition (`BG-X-1` `IncludedReferencedProduct`), per-instance
@@ -267,7 +280,7 @@ tax-currency exchange (`BG-X-41`), delivery terms (`BG-X-22`),
 quotation / ultimate-customer-order references, and the
 `PEPPOL`-flavoured rule overlay (`BR-FXEXT-*`) are all modelled.
 
-The remaining EXTENDED gaps — mostly leaf attributes the carthorse
+The remaining EXTENDED gaps — mostly leaf attributes the getafix
 samples don't exercise — are enumerated in
 [`docs/STRUCTURES.md §6`](docs/STRUCTURES.md). The headline ones:
 
@@ -283,7 +296,7 @@ samples don't exercise — are enumerated in
   / `basis_quantity`, `MonetarySummation.total_allowance_charge_amount`,
   `TradePrice.included_trade_tax`.
 
-These are mechanical add-ons against the EXTENDED XSD; carthorse
+These are mechanical add-ons against the EXTENDED XSD; getafix
 will accept a PR (or wait for a sample that needs them).
 
 - [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — module → BG/BT field

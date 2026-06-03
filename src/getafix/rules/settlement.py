@@ -1,8 +1,8 @@
-"""Validators for :mod:`carthorse.schema.settlement`.
+"""Validators for :mod:`getafix.schema.settlement`.
 
 One function per ``BR-*`` rule (or per BT shape-check) that today
 lives inside an ``Element.validate_internal`` body in
-``settlement.py``. The signatures match :data:`carthorse.rules.Validator`.
+``settlement.py``. The signatures match :data:`getafix.rules.Validator`.
 
 Each function:
 
@@ -22,13 +22,13 @@ import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from carthorse.schema.element import ValidationError
-from carthorse.schema.types import Profile
+from getafix.schema.element import ValidationError
+from getafix.schema.types import Profile
 
 _PAN_RE = re.compile(r"^\d{4,6}$")
 
 if TYPE_CHECKING:
-    from carthorse.schema import settlement as _set
+    from getafix.schema import settlement as _set
 
 
 def br_50(
@@ -167,10 +167,10 @@ def br_5_currency_shape(
 ) -> list[ValidationError]:
     """BR-5: An Invoice shall have an Invoice currency code (BT-5).
 
-    Applies: MINIMUM+. Carthorse stretches the rule to also check
+    Applies: MINIMUM+. Getafix stretches the rule to also check
     that the value has the ISO 4217 alpha-3 uppercase shape; the
     presence check itself is implicit through the required dataclass
-    field on :class:`~carthorse.schema.settlement.TradeSettlement`.
+    field on :class:`~getafix.schema.settlement.TradeSettlement`.
     """
     cc = m.currency_code
     if len(cc) == 3 and cc.isalpha() and cc.upper() == cc:

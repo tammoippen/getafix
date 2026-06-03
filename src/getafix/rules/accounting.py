@@ -1,8 +1,8 @@
-"""Validators for :mod:`carthorse.schema.accounting`.
+"""Validators for :mod:`getafix.schema.accounting`.
 
 One function per ``BR-*`` rule (or per BT shape-check) that today
 lives inside an ``Element.validate_internal`` body in
-``accounting.py``. The signatures match :data:`carthorse.rules.Validator`.
+``accounting.py``. The signatures match :data:`getafix.rules.Validator`.
 
 Each function:
 
@@ -25,18 +25,18 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from carthorse.schema._numeric import round_half_away_from_zero
-from carthorse.schema.element import ValidationError
-from carthorse.schema.types import Profile
+from getafix.schema._numeric import round_half_away_from_zero
+from getafix.schema.element import ValidationError
+from getafix.schema.types import Profile
 
 if TYPE_CHECKING:
-    from carthorse.schema import accounting as _acc
+    from getafix.schema import accounting as _acc
 
 
 def br_5_currency_shape(m: _acc.TaxTotal, _profile: Profile) -> list[ValidationError]:
     """BR-5: An Invoice shall have an Invoice currency code (BT-5).
 
-    Applies: MINIMUM+. Carthorse stretches the rule to also check
+    Applies: MINIMUM+. Getafix stretches the rule to also check
     that the value has the ISO 4217 alpha-3 uppercase shape; the
     presence check itself is implicit through the required dataclass
     field.
@@ -76,7 +76,7 @@ def br_co_3(m: _acc.ApplicableTradeTax, _profile: Profile) -> list[ValidationErr
     """BR-CO-3: Value added tax point date (BT-7) and Value added tax point
     date code (BT-8) are mutually exclusive.
 
-    Applies: COMFORT+ (BT-7 is gated on COMFORT in carthorse — the
+    Applies: COMFORT+ (BT-7 is gated on COMFORT in getafix — the
     rule is only triggerable from there upwards).
     """
     if m.tax_point_date is None or m.due_date_code is None:

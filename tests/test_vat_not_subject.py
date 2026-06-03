@@ -13,16 +13,16 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Document
-from carthorse.schema.accounting import ApplicableTradeTax
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.party import (
+from getafix.schema import Document
+from getafix.schema.accounting import ApplicableTradeTax
+from getafix.schema.element import ValidationErrors
+from getafix.schema.party import (
     PostalTradeAddressExtended,
     SellerTaxRepresentativeTradeParty,
     SpecifiedTaxRegistration,
     TaxSchemeId,
 )
-from carthorse.schema.types import CategoryCode, Country, UNTDID2475TaxPointDateCode
+from getafix.schema.types import CategoryCode, Country, UNTDID2475TaxPointDateCode
 from tests._fixtures import make_vat_doc
 
 
@@ -189,7 +189,7 @@ class TestBrOSingleRate:
             doc.validate()
         # Note: BR-S-3 *also* fires (allowance with S has no seller VAT)
         # but BR-O-13 is the more specific rule given a BG-23 O row.
-        # carthorse runs BR-O single-rate after the family loop, so the
+        # getafix runs BR-O single-rate after the family loop, so the
         # category-required-party check raises first.
         assert any(v.code in {"BR-O-13", "BR-S-3"} for v in e.value.errors)
 

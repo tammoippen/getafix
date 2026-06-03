@@ -1,4 +1,4 @@
-"""Tests for :mod:`carthorse.report` — rich rendering of a parsed Document.
+"""Tests for :mod:`getafix.report` — rich rendering of a parsed Document.
 
 Drives the renderer with a doc built from :func:`tests._fixtures.make_vat_doc`
 plus a couple of stripped-down cases. The Console is created with
@@ -13,8 +13,8 @@ from decimal import Decimal
 
 from rich.console import Console
 
-from carthorse.report import render_invoice, render_validation_errors
-from carthorse.schema import (
+from getafix.report import render_invoice, render_validation_errors
+from getafix.schema import (
     Context,
     Document,
     GuidelineDocument,
@@ -22,11 +22,11 @@ from carthorse.schema import (
     Profile,
     TypeCode,
 )
-from carthorse.schema.accounting import MonetarySummation
-from carthorse.schema.agreement import TradeAgreement
-from carthorse.schema.delivery import TradeDelivery
-from carthorse.schema.element import ValidationError
-from carthorse.schema.party import (
+from getafix.schema.accounting import MonetarySummation
+from getafix.schema.agreement import TradeAgreement
+from getafix.schema.delivery import TradeDelivery
+from getafix.schema.element import ValidationError
+from getafix.schema.party import (
     URIID,
     BuyerTradeParty,
     EmailURI,
@@ -36,13 +36,13 @@ from carthorse.schema.party import (
     TradeContact,
     URIUniversalCommunication,
 )
-from carthorse.schema.settlement import (
+from getafix.schema.settlement import (
     PayeePartyCreditorFinancialAccount,
     PaymentMeans,
     TradeSettlement,
 )
-from carthorse.schema.trade import Trade
-from carthorse.schema.types import Country, Currency, UNTDID4461PaymentMeansCode
+from getafix.schema.trade import Trade
+from getafix.schema.types import Country, Currency, UNTDID4461PaymentMeansCode
 from tests._fixtures import make_vat_doc
 
 

@@ -1,10 +1,10 @@
-"""Regression tests for ``carthorse.schema.types``."""
+"""Regression tests for ``getafix.schema.types``."""
 
 from __future__ import annotations
 
 import pytest as pt
 
-from carthorse.schema.types import Profile
+from getafix.schema.types import Profile
 
 _ORDERED = [
     Profile.MINIMUM,

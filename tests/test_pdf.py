@@ -1,4 +1,4 @@
-"""Tests for :mod:`carthorse.pdf` — embed and extract XML in a PDF.
+"""Tests for :mod:`getafix.pdf` — embed and extract XML in a PDF.
 
 The fixtures synthesise a one-page blank PDF with pypdf so the tests
 don't depend on shipping a binary sample file. Round-trip the
@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest as pt
 from pypdf import PdfReader, PdfWriter
 
-from carthorse.pdf import (
+from getafix.pdf import (
     DEFAULT_ATTACHMENT_NAME,
     STANDARD_LOCATIONS,
     attach_xml,

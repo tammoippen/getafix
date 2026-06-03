@@ -2,7 +2,7 @@
 
 Importing this module requires the optional ``pypdf`` dependency::
 
-    pip install 'carthorse[pdf]'
+    pip install 'getafix[pdf]'
 
 Two operations:
 
@@ -35,7 +35,7 @@ STANDARD_LOCATIONS: tuple[str, ...] = (
     "xrechnung.xml",  # XRechnung
     "order-x.xml",  # Order-X
 )
-"""Conventional filenames carthorse will search for, in priority order."""
+"""Conventional filenames getafix will search for, in priority order."""
 
 DEFAULT_ATTACHMENT_NAME: str = STANDARD_LOCATIONS[0]
 """Name used by :func:`attach_xml` when the caller doesn't override it."""
