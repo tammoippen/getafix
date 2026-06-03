@@ -29,8 +29,7 @@ Catches four classes of regression that hand-review keeps missing:
 
 Checks 1–3 fail the audit; the fourth is informational.
 
-``--check-citations`` adds a fourth, broader pass (formerly the
-standalone ``tools/check_bt_br_ids.py``): it scans every ``BT-``,
+``--check-citations`` adds a fourth, broader pass: it scans every ``BT-``,
 ``BG-`` **and** ``BR-`` citation across ``src/``, ``docs/``,
 ``README.md`` and ``AGENTS.md`` prose — not just schema docstrings —
 and fails on any id that doesn't resolve against the
