@@ -13,6 +13,42 @@ spec.
 > `carthorse` attaches the embedded `factur-x.xml` but does not
 > upgrade the surrounding PDF to PDF/A-3.
 
+## License and attribution
+
+`carthorse` is distributed under the **Apache License 2.0** — see
+[`LICENSE`](LICENSE).
+
+This project is an application of the **ZUGFeRD / Factur-X**
+publication issued by the *Forum elektronische Rechnung Deutschland*
+(FeRD) at AWV e.V. The format incorporates **EN 16931**, reproduced
+by FeRD with the permission of **CEN** and **DIN**. *ZUGFeRD* and
+*Factur-X* are trademarks of FeRD / AWV e.V., used here only to
+identify the standard this library implements.
+
+The vendored test fixtures under
+[`tests/schemas/`](tests/schemas/) and
+[`tests/samples/`](tests/samples/) come from third parties and are
+redistributed under the Apache License 2.0:
+
+- **FeRD / AWV e.V.** — XML schemas, Schematron, and the `*_zf24_*`
+  example invoices from the official ZUGFeRD 2.4 / Factur-X 1.08
+  distribution.
+- **[ZUGFeRD/mustangproject](https://github.com/ZUGFeRD/mustangproject)**
+  — additional reference CII invoices from the Java implementation's
+  test resources.
+- **[ZUGFeRD/corpus](https://github.com/ZUGFeRD/corpus)** —
+  community-curated `XML-Rechnung/CII/` reference invoices.
+
+Original copyright remains with the respective upstream holders;
+per-file provenance is tracked in
+[`tests/samples/SOURCES.md`](tests/samples/SOURCES.md).
+
+> **Important:** It is the user's responsibility to ensure that
+> invoices generated or parsed with `carthorse` meet all legal and
+> regulatory requirements applicable in their jurisdiction.
+> `carthorse` does not guarantee compliance with any specific
+> national or sector-specific e-invoicing mandate.
+
 ## Installation
 
 Requires **Python 3.12+**. We recommend
