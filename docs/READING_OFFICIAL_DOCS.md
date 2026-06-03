@@ -115,7 +115,7 @@ string.
 20+ real Factur-X 1.08 invoice XMLs (BASIC, BASIC WL, MINIMUM,
 EN16931, EXTENDED) as PDFs and as raw XML. Use them as conformance
 oracles: feed an XML through `Document.from_xml()` and round-trip it
-to see whether carthorse's parser preserves the meaningful content.
+to see whether getafix's parser preserves the meaningful content.
 
 `tests/samples/` already vendors a smaller selection of these for the
 test suite; the full set on `origin/docs` is broader (line items,
@@ -151,7 +151,7 @@ That tells you: at the profile under that column the cardinality is
 overridden (e.g. `BusinessProcessSpecifiedDocumentContextParameter`
 becomes mandatory at EXTENDED).
 
-In carthorse this is encoded two ways:
+In getafix this is encoded two ways:
 
 1. The **class-level `profile: ClassVar[Profile]`** on each `Element`
    subclass — the lowest profile at which the *element* may appear.
@@ -171,7 +171,7 @@ narrative, fix it via one of those two markers.
 | Find BT-X's data type | profile XSD `…ReusableAggregate…` | Search for `name="X-name"` |
 | Check BT-X's cardinality at profile P | `ZF24_EN/Documentation/<P>.pdf` p1-3 (tree) or detailed section | Tree shows `min..max`; per-element matrix shows profile applicability |
 | Read rule BR-Y's full text | `ZF24_EN/Documentation/<any>.pdf` "List of Business Rules" appendix | Rule numbering is shared across profile PDFs |
-| Find which carthorse class models BG-X | `docs/STRUCTURES.md` § Field reference | Tables list every modelled field with its BT/BG id |
+| Find which getafix class models BG-X | `docs/STRUCTURES.md` § Field reference | Tables list every modelled field with its BT/BG id |
 | Check whether BR-Y is enforced | `docs/VALIDATION.md` rule tables | Status column tells you ✓ enforced / — not yet / ⚠ buggy |
 | See which EXTENDED fields are still missing | `docs/STRUCTURES.md §5` | EXTENDED coverage diff |
 | Understand what changed in Factur-X 1.08 vs 1.07 | `ZF24_EN/Documentation/0_FACTUR-X_1.08_…_EN.pdf` change log (~p244) | Rule replacements at EXTENDED, etc. |

@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pytest as pt
 
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.types import CategoryCode
+from getafix.schema.element import ValidationErrors
+from getafix.schema.types import CategoryCode
 from tests._fixtures import make_vat_doc
 
 

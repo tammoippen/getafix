@@ -2,16 +2,16 @@
 
 :class:`Trade` is the second sibling of :class:`Document` and
 stitches together the three header groups
-(:class:`~carthorse.schema.agreement.TradeAgreement` (BT-10-00),
-:class:`~carthorse.schema.delivery.TradeDelivery` (BG-13-00),
-:class:`~carthorse.schema.settlement.TradeSettlement` (BG-19)) with a
+(:class:`~getafix.schema.agreement.TradeAgreement` (BT-10-00),
+:class:`~getafix.schema.delivery.TradeDelivery` (BG-13-00),
+:class:`~getafix.schema.settlement.TradeSettlement` (BG-19)) with a
 list of :class:`TradeLineItem` (BG-25, BASIC+). The line sub-tree
-content lives in :mod:`carthorse.schema.line`.
+content lives in :mod:`getafix.schema.line`.
 
 This module is also where every *cross-sibling* validator wires in —
 rules that need to read across line items, header allowances/charges
 and the monetary summation in one pass. The validator functions
-themselves live in :mod:`carthorse.rules.trade`.
+themselves live in :mod:`getafix.rules.trade`.
 
 See ``docs/VALIDATION.md`` for the full BR-* catalogue.
 """
@@ -19,8 +19,8 @@ See ``docs/VALIDATION.md`` for the full BR-* catalogue.
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-from carthorse.rules import Validator
-from carthorse.rules.extended import (
+from getafix.rules import Validator
+from getafix.rules.extended import (
     br_fxext_06,
     br_fxext_08,
     br_fxext_11,
@@ -37,7 +37,7 @@ from carthorse.rules.extended import (
     br_fxext_co_15,
     br_fxext_vat_category_sums,
 )
-from carthorse.rules.trade import (
+from getafix.rules.trade import (
     br_16,
     br_22,
     br_23,
@@ -88,18 +88,18 @@ from carthorse.rules.trade import (
     vat_category_exemption_reason,
     vat_category_rates,
 )
-from carthorse.schema.agreement import TradeAgreement
-from carthorse.schema.delivery import TradeDelivery
-from carthorse.schema.element import Element
-from carthorse.schema.line import (
+from getafix.schema.agreement import TradeAgreement
+from getafix.schema.delivery import TradeDelivery
+from getafix.schema.element import Element
+from getafix.schema.line import (
     DocumentLineDocument,
     LineTradeAgreement,
     LineTradeDelivery,
     LineTradeSettlement,
     TradeProduct,
 )
-from carthorse.schema.settlement import TradeSettlement
-from carthorse.schema.types import Namespace, Profile
+from getafix.schema.settlement import TradeSettlement
+from getafix.schema.types import Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -221,7 +221,7 @@ class Trade(Element):
         # Replace the EN 16931 BR-22..27 / BR-CO-4 with DETAIL-or-unset
         # filters so GROUP / INFORMATION lines may legitimately omit
         # BT-129 / BT-130 / BT-131 / BT-146 / BT-151. The corresponding
-        # ``br_*`` in :mod:`carthorse.rules.trade` short-circuit at
+        # ``br_*`` in :mod:`getafix.rules.trade` short-circuit at
         # EXTENDED so only these fire.
         br_fxext_22,
         br_fxext_23,

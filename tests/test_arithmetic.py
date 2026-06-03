@@ -9,10 +9,10 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.line import (
+from getafix.schema import Profile
+from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
+from getafix.schema.element import ValidationErrors
+from getafix.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,
     LineTradeAgreement,
@@ -22,9 +22,9 @@ from carthorse.schema.line import (
     Quantity,
     TradeProduct,
 )
-from carthorse.schema.settlement import PaymentTerms, TradeSettlement
-from carthorse.schema.trade import TradeLineItem
-from carthorse.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema.settlement import PaymentTerms, TradeSettlement
+from getafix.schema.trade import TradeLineItem
+from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
 from tests._fixtures import make_vat_doc
 
 
@@ -136,7 +136,7 @@ def test_br_co_15_uses_only_invoice_currency_tax_total():
 def test_br_co_16_due_amount_equals_grand_total_minus_prepaid():
     """BR-CO-16: DuePayableAmount (BT-115) = GrandTotal (BT-112)
     - PrepaidTotal (BT-113) + RoundingAmount (BT-114). BT-114 isn't
-    yet modelled in carthorse; treat it as 0."""
+    yet modelled in getafix; treat it as 0."""
     summation = MonetarySummation(
         line_total=Decimal("100"),
         tax_basis_total=Decimal("100"),

@@ -24,7 +24,7 @@ product enrichments :class:`ProductCharacteristic` (BG-32),
 (BG-34) and the line-level reference fields
 :class:`LineBuyerOrderReferencedDocument` (BT-132),
 :class:`LineAdditionalReferencedDocument` (BT-128) and the line
-reuse of :class:`~carthorse.schema.settlement.ReceivableAccountingAccount`
+reuse of :class:`~getafix.schema.settlement.ReceivableAccountingAccount`
 (BT-133). The EXTENDED sub-line / ``IncludedReferencedProduct`` /
 per-line deviating-party groups are modelled here too; remaining
 EXTENDED line-level references are listed in ``docs/STRUCTURES.md §5.1``.
@@ -37,22 +37,22 @@ from typing import ClassVar, Literal, Self, override
 
 from tagic.xml import XML
 
-from carthorse.rules import Validator
-from carthorse.rules._types import fields_only_at, max_decimals
-from carthorse.rules.line import br_27, br_28
-from carthorse.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
-from carthorse.schema.element import Element, ETElement
-from carthorse.schema.party import (
+from getafix.rules import Validator
+from getafix.rules._types import fields_only_at, max_decimals
+from getafix.rules.line import br_27, br_28
+from getafix.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
+from getafix.schema.element import Element, ETElement
+from getafix.schema.party import (
     GlobalID,
     ItemSellerTradeParty,
     ShipToTradeParty,
     UltimateShipToTradeParty,
 )
-from carthorse.schema.settlement import (
+from getafix.schema.settlement import (
     BillingSpecifiedPeriod,
     ReceivableAccountingAccount,
 )
-from carthorse.schema.types import LineStatusReasonCode, Namespace, Profile
+from getafix.schema.types import LineStatusReasonCode, Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -61,7 +61,7 @@ class LineIncludedNote(Element):
 
     Detailed information about the free text of the line item.
 
-    Note: distinct from :class:`carthorse.schema.document.IncludedNote`
+    Note: distinct from :class:`getafix.schema.document.IncludedNote`
     (header-level BG-1) because at BASIC the line note carries only
     ``Content``; ``SubjectCode`` is reserved for header notes.
     """
@@ -143,11 +143,11 @@ class AppliedTradeAllowanceCharge(Element):
     at the net price. Only applies when the discount is provided per
     unit and is not already baked into the gross price.
 
-    Note: distinct from :class:`carthorse.schema.accounting.TradeAllowanceCharge`
+    Note: distinct from :class:`getafix.schema.accounting.TradeAllowanceCharge`
     (document- and line-level BG-20/21/27/28) because at BASIC the
     price-level only has ``ChargeIndicator`` and ``ActualAmount`` —
     no reason, category or VAT code. EN 16931 widens it with
-    calculation percent and basis amount; carthorse keeps both
+    calculation percent and basis amount; getafix keeps both
     optional so the same class works at either profile.
     """
 
@@ -628,7 +628,7 @@ class DocumentLineDocument(Element):
     Per the XSD this is ``qdt:LineStatusCodeType`` (UNTDID 1229,
     "action request" — ADD / DELETE / CHANGE / NO_ACTION / …).
     Modelled as a plain ``str`` — the UNTDID 1229 codelist is not
-    enumerated by carthorse.
+    enumerated by getafix.
     """
     status_reason_code: LineStatusReasonCode | None = field(
         default=None,
@@ -651,7 +651,7 @@ class LineBuyerOrderReferencedDocument(Element):
     """Line-level purchase-order line reference (BT-132-00); COMFORT+.
 
     Distinct from the header
-    :class:`~carthorse.schema.references.BuyerOrderReferencedDocument`:
+    :class:`~getafix.schema.references.BuyerOrderReferencedDocument`:
     at COMFORT this variant carries only ``LineID`` (BT-132 — the
     referenced purchase-order line position). EXTENDED widens it to
     additionally carry ``IssuerAssignedID`` (per-line purchase order
@@ -677,7 +677,7 @@ class LineBuyerOrderReferencedDocument(Element):
     Used when an invoice line references a different purchase order
     than the header (BT-X-21 in the EXTENDED ``Sammelrechnung``
     aggregated-invoice pattern). At COMFORT the header's
-    :class:`~carthorse.schema.references.BuyerOrderReferencedDocument`
+    :class:`~getafix.schema.references.BuyerOrderReferencedDocument`
     carries the single shared order; at EXTENDED each line may
     override.
     """
@@ -731,7 +731,7 @@ class LineQuotationReferencedDocument(Element):
 class LineAdditionalReferencedDocument(Element):
     """Line-level invoice-line object identifier (BT-128-00); COMFORT+.
 
-    Distinct from the header :class:`~carthorse.schema.references.AdditionalReferencedDocument`:
+    Distinct from the header :class:`~getafix.schema.references.AdditionalReferencedDocument`:
     the line variant only carries ``IssuerAssignedID`` (BT-128), a
     fixed ``TypeCode`` of ``"130"`` (Invoicing data sheet, BT-128-0)
     and an optional ``ReferenceTypeCode`` (BT-128-1, UNTDID 1153
@@ -767,7 +767,7 @@ class LineTradeAgreement(Element):
     ``GrossPriceProductTradePrice`` (optional) which precedes
     ``NetPriceProductTradePrice`` (required).
 
-    :class:`~carthorse.schema.party.ItemSellerTradeParty` (BG-X-90)
+    :class:`~getafix.schema.party.ItemSellerTradeParty` (BG-X-90)
     is modelled here (field :attr:`item_seller`).
 
     Deferred EXTENDED slots (per-line twins of structures already
@@ -945,7 +945,7 @@ class LineTradeSettlement(Element):
     )
     """Line-level Buyer accounting reference (BT-133-00); COMFORT+.
 
-    Reuses the header :class:`~carthorse.schema.settlement.ReceivableAccountingAccount`
+    Reuses the header :class:`~getafix.schema.settlement.ReceivableAccountingAccount`
     class; the field-level profile override pins line-level rendering
     to COMFORT (BT-133) instead of the class's native BASIC_WL (BT-19).
     """

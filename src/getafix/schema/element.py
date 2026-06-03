@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, get_args, get_or
 
 from tagic.xml import XML
 
-from carthorse.schema.types import Namespace, Profile
+from getafix.schema.types import Namespace, Profile
 
 if TYPE_CHECKING:
     # lxml is an optional runtime dependency; the ``ETElement`` alias
@@ -87,7 +87,7 @@ class Element(ABC):
     """Business-rule validators that apply to *this* element.
 
     Subclasses override this with a tuple of free-standing functions
-    from :mod:`carthorse.rules` (one per ``BR-*`` rule). Each function
+    from :mod:`getafix.rules` (one per ``BR-*`` rule). Each function
     is invoked with ``(self, profile)`` and returns a
     ``list[ValidationError]`` (empty on success). See ``AGENTS.md``
     "Validator architecture" for the design.
@@ -153,7 +153,7 @@ class Element(ABC):
         Returns ``None`` by default so the per-field ``metadata['profile']``
         is consulted unchanged. Override on subclasses that need the
         gate to depend on instance state — see
-        :class:`~carthorse.schema.accounting.TradeAllowanceCharge`,
+        :class:`~getafix.schema.accounting.TradeAllowanceCharge`,
         whose ``calculation_percent`` (BT-94 / BT-101 / BT-138 / BT-142)
         and ``basis_amount`` (BT-93 / BT-100 / BT-137 / BT-141) ship at
         BASIC_WL when the allowance/charge is on the document header

@@ -1,9 +1,9 @@
-"""Validators for :mod:`carthorse.schema.trade`.
+"""Validators for :mod:`getafix.schema.trade`.
 
 Cross-sibling rules: every check that needs to read across line items,
 header allowances/charges, the monetary summation and the agreement
 parties in one pass. The signatures match
-:data:`carthorse.rules.Validator`.
+:data:`getafix.rules.Validator`.
 
 Each function:
 
@@ -27,12 +27,12 @@ from collections.abc import Callable, Iterator
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from carthorse.schema.element import ValidationError
-from carthorse.schema.types import CategoryCode, Profile
+from getafix.schema.element import ValidationError
+from getafix.schema.types import CategoryCode, Profile
 
 if TYPE_CHECKING:
-    from carthorse.schema import trade as _trade
-    from carthorse.schema.party import BuyerTradeParty, SpecifiedTaxRegistration
+    from getafix.schema import trade as _trade
+    from getafix.schema.party import BuyerTradeParty, SpecifiedTaxRegistration
 
 
 # ---------------------------------------------------------------------------
@@ -95,10 +95,10 @@ def _has_buyer_legal_id(buyer: BuyerTradeParty) -> bool:
 
 # EN 16931 per-line "field shall be present" rules. The line-level
 # fields they gate (BT-129 / BT-130 / BT-131 / BT-146 / BT-151) are
-# ``Optional`` on the carthorse dataclasses so EXTENDED GROUP /
+# ``Optional`` on the getafix dataclasses so EXTENDED GROUP /
 # INFORMATION lines can legitimately omit them. Each rule
 # short-circuits at EXTENDED; the matching ``BR-FXEXT-2x`` /
-# ``BR-FXEXT-CO-04`` in :mod:`carthorse.rules.extended` enforce the
+# ``BR-FXEXT-CO-04`` in :mod:`getafix.rules.extended` enforce the
 # same constraint with the DETAIL / unset filter applied.
 
 
@@ -844,7 +844,7 @@ def br_co_10(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     Applies: BASIC+ except EXTENDED. At EXTENDED ``BR-FXEXT-CO-10``
     replaces this with a tolerance-banded variant that also excludes
     ``GROUP`` / ``INFORMATION`` lines from the sum. ``BT-106`` is
-    carthorse-optional (MINIMUM doesn't have it) — the check is
+    getafix-optional (MINIMUM doesn't have it) — the check is
     skipped when it's absent or when there are no line items
     (``BR-16`` covers that case).
     """

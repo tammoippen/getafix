@@ -1,7 +1,7 @@
 """BR-DEC-* — decimal-precision rules across every monetary BT.
 
 EN 16931 (and the Factur-X 1.08 ``Business Rules`` sheet) caps every
-monetary BT at two decimal places. Carthorse wires this as a single
+monetary BT at two decimal places. Getafix wires this as a single
 factory (``rules/_types.py::max_decimals``); each affected Decimal
 field on the schema dataclasses gets a small validator that reports
 a ``BR-DEC-NN`` ValidationError when the provided value carries more
@@ -25,16 +25,16 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import (
+from getafix.schema import Profile
+from getafix.schema.accounting import (
     ApplicableTradeTax,
     HeaderTradeAllowanceCharge,
     LineTradeAllowanceCharge,
     MonetarySummation,
     TaxTotal,
 )
-from carthorse.schema.line import LineMonetarySummation
-from carthorse.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema.line import LineMonetarySummation
+from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
 
 
 def _run(elem, profile=Profile.BASIC_WL):

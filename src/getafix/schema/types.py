@@ -153,7 +153,7 @@ class UNTDID1001TypeCode(enum.StrEnum):
 @enum.unique
 class Incoterms(enum.StrEnum):
     """ICC Incoterms 2020 — delivery condition code (BT-X-145) on
-    :class:`~carthorse.schema.agreement.TradeDeliveryTerms`.
+    :class:`~getafix.schema.agreement.TradeDeliveryTerms`.
 
     The XSD type ``qdt:DeliveryTermsCodeType`` is an unrestricted
     token; the EXTENDED schematron validates the value against the
@@ -1085,7 +1085,7 @@ class LineStatusReasonCode(enum.StrEnum):
     ``INFORMATION`` lines (free-text only, no monetary contribution
     to the invoice totals).
 
-    Carthorse hard-codes the three spec values rather than pulling
+    Getafix hard-codes the three spec values rather than pulling
     from the broader UNTDID 1229 codelist — this is the closed set
     the EXTENDED CIUS recognises and the only one the per-category
     sum rules (§5.3 of EXTENDED.md) and the BR-FXEXT-2x line-level

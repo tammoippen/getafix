@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest as pt
 
-from carthorse.schema import Document
-from carthorse.schema.types import Namespace, Profile
+from getafix.schema import Document
+from getafix.schema.types import Namespace, Profile
 from tests._parsers import ParseFromFile
 
 SAMPLES_DIR = Path(__file__).parent / "samples"

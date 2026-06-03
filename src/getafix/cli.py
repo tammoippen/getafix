@@ -1,15 +1,15 @@
-"""Command-line entry point for the ``carthorse`` console script.
+"""Command-line entry point for the ``getafix`` console script.
 
 Reads a Cross-Industry-Invoice XML file — or a Factur-X / ZUGFeRD PDF
 that has one embedded — parses it into a
-:class:`carthorse.schema.Document`, runs the business-rule validators
+:class:`getafix.schema.Document`, runs the business-rule validators
 and prints both the invoice and the validation result as a rich
 console report.
 
 Requires the optional ``cli`` extra (pulls in ``lxml`` and ``rich``).
 PDF input additionally needs the ``pdf`` extra (pypdf)::
 
-    pip install 'carthorse[cli,pdf]'
+    pip install 'getafix[cli,pdf]'
 
 Exit codes:
 
@@ -30,7 +30,7 @@ from typing import cast
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="carthorse",
+        prog="getafix",
         description=(
             "Pretty-print a ZUGFeRD / Factur-X Cross-Industry-Invoice "
             "XML file and report business-rule violations."
@@ -70,13 +70,13 @@ def main(argv: list[str] | None = None) -> int:
         from rich.console import Console
     except ImportError as exc:
         _ = sys.stderr.write(
-            f"carthorse CLI needs the optional 'cli' extra ({exc.name}): "
-            f"{exc.msg}.\nInstall with: pip install 'carthorse[cli]'\n"
+            f"getafix CLI needs the optional 'cli' extra ({exc.name}): "
+            f"{exc.msg}.\nInstall with: pip install 'getafix[cli]'\n"
         )
         return 2
 
-    from carthorse.report import render_invoice, render_validation_errors
-    from carthorse.schema import Document
+    from getafix.report import render_invoice, render_validation_errors
+    from getafix.schema import Document
 
     out = Console()
     err = Console(stderr=True)
@@ -89,11 +89,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if source.suffix.lower() == ".pdf" or _looks_like_pdf(source):
         try:
-            from carthorse.pdf import extract_xml
+            from getafix.pdf import extract_xml
         except ImportError:
             err.print(
                 "[red]PDF input needs the optional 'pdf' dependency.[/red]\n"
-                "[red]Install with: pip install 'carthorse[pdf]'[/red]"
+                "[red]Install with: pip install 'getafix[pdf]'[/red]"
             )
             return 2
         try:

@@ -11,9 +11,9 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Document
-from carthorse.schema.accounting import LineTradeAllowanceCharge
-from carthorse.schema.element import ValidationErrors
+from getafix.schema import Document
+from getafix.schema.accounting import LineTradeAllowanceCharge
+from getafix.schema.element import ValidationErrors
 from tests._fixtures import make_vat_doc
 
 

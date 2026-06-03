@@ -1,6 +1,6 @@
-"""Tests for :mod:`carthorse.cli` — the ``carthorse`` console script.
+"""Tests for :mod:`getafix.cli` — the ``getafix`` console script.
 
-Exercises every exit-code branch by driving :func:`carthorse.cli.main`
+Exercises every exit-code branch by driving :func:`getafix.cli.main`
 with samples shipped under ``tests/samples`` plus a few synthesised
 inputs (malformed XML, non-CII XML, PDFs with and without embedded
 factur-x.xml).
@@ -13,8 +13,8 @@ from pathlib import Path
 import pytest as pt
 from pypdf import PdfWriter
 
-from carthorse.cli import main
-from carthorse.pdf import attach_xml
+from getafix.cli import main
+from getafix.pdf import attach_xml
 
 SAMPLES = Path(__file__).parent / "samples"
 CLEAN_SAMPLE = SAMPLES / "EN16931_Einfach.cii.xml"

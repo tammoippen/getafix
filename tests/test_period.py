@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from carthorse.schema import Profile
-from carthorse.schema.settlement import BillingSpecifiedPeriod
+from getafix.schema import Profile
+from getafix.schema.settlement import BillingSpecifiedPeriod
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 

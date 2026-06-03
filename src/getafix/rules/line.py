@@ -1,8 +1,8 @@
-"""Validators for :mod:`carthorse.schema.line`.
+"""Validators for :mod:`getafix.schema.line`.
 
 One function per ``BR-*`` rule that today lives inside an
 ``Element.validate_internal`` body in ``line.py``. The signatures
-match :data:`carthorse.rules.Validator`.
+match :data:`getafix.rules.Validator`.
 
 Each function:
 
@@ -19,11 +19,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from carthorse.schema.element import ValidationError
-from carthorse.schema.types import Profile
+from getafix.schema.element import ValidationError
+from getafix.schema.types import Profile
 
 if TYPE_CHECKING:
-    from carthorse.schema import line as _line
+    from getafix.schema import line as _line
 
 
 def br_27(m: _line.NetTradePrice, profile: Profile) -> list[ValidationError]:
@@ -31,7 +31,7 @@ def br_27(m: _line.NetTradePrice, profile: Profile) -> list[ValidationError]:
 
     Applies: BASIC+ (line items first appear at BASIC). Short-circuits
     at EXTENDED — there the replacement
-    :func:`carthorse.rules.extended.br_fxext_27` re-evaluates the
+    :func:`getafix.rules.extended.br_fxext_27` re-evaluates the
     same identity with the DETAIL / unset line-subtype qualifier so
     GROUP / INFORMATION lines (which may legitimately carry a
     negative reference price) escape.

@@ -1,6 +1,6 @@
 """BR-CL-* — code-list membership enforcement via vendored StrEnums.
 
-Carthorse enforces every BR-CL-* rule by re-typing the affected
+Getafix enforces every BR-CL-* rule by re-typing the affected
 schema fields to a vendored ``StrEnum``. The :py:class:`StrEnum`
 constructor rejects any value outside the enum, so construction- and
 parse-time both raise on out-of-list inputs — that's the
@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest as pt
 
-from carthorse.schema.types import (
+from getafix.schema.types import (
     Country,
     Currency,
     EASCode,

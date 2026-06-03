@@ -6,11 +6,11 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
-from carthorse.schema.party import TaxSchemeId
-from carthorse.schema.settlement import PaymentTerms, TradeSettlement
-from carthorse.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema import Profile
+from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
+from getafix.schema.party import TaxSchemeId
+from getafix.schema.settlement import PaymentTerms, TradeSettlement
+from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 
@@ -41,7 +41,7 @@ def test_monetary_summation_two_tax_totals(parser: ParseFromBytes):
 
 def test_amount_currency_id_round_trips(parser: ParseFromBytes):
     """``currencyID`` attributes on udt:AmountType elements survive a
-    parse → render round-trip even though carthorse does not expose
+    parse → render round-trip even though getafix does not expose
     them as dataclass fields. Bug sweep #7."""
     src = (
         "<ram:SpecifiedTradeSettlementHeaderMonetarySummation "

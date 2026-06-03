@@ -6,7 +6,7 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema._numeric import round_half_away_from_zero
+from getafix.schema._numeric import round_half_away_from_zero
 
 
 class TestFacturXRounding:

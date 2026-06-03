@@ -7,13 +7,13 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import (
+from getafix.schema import Profile
+from getafix.schema.accounting import (
     ApplicableTradeTax,
     CategoryTradeTax,
     HeaderTradeAllowanceCharge,
 )
-from carthorse.schema.types import CategoryCode, UNTDID2475TaxPointDateCode, VATEXCode
+from getafix.schema.types import CategoryCode, UNTDID2475TaxPointDateCode, VATEXCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 

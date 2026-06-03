@@ -6,10 +6,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
-from carthorse.schema.settlement import PaymentTerms, TradeSettlement
-from carthorse.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema import Profile
+from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
+from getafix.schema.settlement import PaymentTerms, TradeSettlement
+from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
 
 
 def test_br_co_25_payment_terms_required_when_due():

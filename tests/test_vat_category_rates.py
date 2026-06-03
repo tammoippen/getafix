@@ -24,10 +24,10 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Document
-from carthorse.schema.accounting import CategoryTradeTax, HeaderTradeAllowanceCharge
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.types import CategoryCode, Currency
+from getafix.schema import Document
+from getafix.schema.accounting import CategoryTradeTax, HeaderTradeAllowanceCharge
+from getafix.schema.element import ValidationErrors
+from getafix.schema.types import CategoryCode, Currency
 from tests._fixtures import make_vat_doc
 
 

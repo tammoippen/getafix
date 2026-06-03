@@ -1,6 +1,6 @@
 # Structures and fields
 
-A walk through the carthorse dataclass tree alongside the EN 16931 /
+A walk through the getafix dataclass tree alongside the EN 16931 /
 Factur-X 1.08 / ZUGFeRD 2.4 spec. Every dataclass attribute is annotated
 with its EN 16931 business term (`BT-…`) or business group (`BG-…`)
 identifier in the source docstrings; this document collects the same
@@ -34,7 +34,7 @@ have answered `True`).
 
 ## 1a. Per-profile field-coverage summary
 
-Carthorse models **every field** that MINIMUM, BASIC_WL, BASIC and
+Getafix models **every field** that MINIMUM, BASIC_WL, BASIC and
 EN 16931 (COMFORT) permit. EXTENDED coverage is broad — every
 top-level structure is modelled — with the residual gaps
 enumerated in [§5](#5-extended-coverage-diff).
@@ -81,24 +81,24 @@ Module map:
 | `schema/settlement.py`         | `TradeSettlement` (BG-19), `PaymentMeans`, `PaymentTerms`, financial accounts, `ReceivableAccountingAccount` |
 | `schema/accounting.py`         | `MonetarySummation`, `TaxTotal`, `ApplicableTradeTax`, `CategoryTradeTax`, `TradeAllowanceCharge` |
 | `schema/references.py`         | every `*ReferencedDocument`, `AdditionalReferencedDocument`, `AttachmentBinaryObject`, `ProcuringProject` |
-| `schema/trade.py`              | `Trade` (top-level transaction wrapper) and `TradeLineItem` (BG-25); cross-sibling validators live in :mod:`carthorse.rules.trade` |
+| `schema/trade.py`              | `Trade` (top-level transaction wrapper) and `TradeLineItem` (BG-25); cross-sibling validators live in :mod:`getafix.rules.trade` |
 | `schema/line.py`               | line-level sub-tree: `DocumentLineDocument`, `TradeProduct`, `LineTradeAgreement` (with `GrossTradePrice`, `NetTradePrice`, `AppliedTradeAllowanceCharge`, `Quantity`, `BasisQuantity`), `LineTradeDelivery`, `LineTradeSettlement`, `LineMonetarySummation`, `LineIncludedNote` |
 
 ## 3. Field reference
 
 Each table lists the modelled fields of a dataclass, the `BT-`/`BG-` id,
 the lowest profile that allows the field per the appendix, and the
-carthorse-side gating (declared via `metadata={"profile": Profile.…}`
+getafix-side gating (declared via `metadata={"profile": Profile.…}`
 on the field, or via the field's element class `ClassVar`).
 
 ### 3.1 `Document`, `Context`, `Header`
 
-| Field                                  | EN 16931 id   | XSD min profile | carthorse min profile | Notes |
+| Field                                  | EN 16931 id   | XSD min profile | getafix min profile | Notes |
 |----------------------------------------|---------------|-----------------|-----------------------|-------|
 | `Document.context`                     | BG-2          | MINIMUM         | required              | |
 | `Document.header`                      | BT-1-00       | MINIMUM         | required              | |
 | `Document.trade`                       | BG-25-00      | MINIMUM         | required              | |
-| `Context.test_indicator`               | BT-X-1        | EXTENDED        | EXTENDED              | Carthorse leaf metadata `profile=EXTENDED` |
+| `Context.test_indicator`               | BT-X-1        | EXTENDED        | EXTENDED              | Getafix leaf metadata `profile=EXTENDED` |
 | `Context.guideline.id`                 | BT-24         | MINIMUM         | required              | |
 | `Context.business.id`                  | BT-23         | MINIMUM         | EXTENDED              | Required `1..1` only at EXTENDED — see appendix `BT-23-00 Diverging cardinality` |
 | `Header.id`                            | BT-1          | MINIMUM         | required              | |
@@ -129,7 +129,7 @@ SellerTradeParty (BG-4)
     PersonName                        BT-41
     DepartmentName                    BT-41-0
     TelephoneUniversalCommunication   BT-42
-    EmailURIUniversalCommunication    BT-43   EXTENDED  (carthorse: EmailURI gated EXTENDED)
+    EmailURIUniversalCommunication    BT-43   EXTENDED  (getafix: EmailURI gated EXTENDED)
   PostalTradeAddress                  BG-5    MINIMUM   required
     PostcodeCode                      BT-38   BASIC_WL
     LineOne                           BT-35   BASIC_WL
@@ -161,7 +161,7 @@ side).
 
 ### 3.3 Tax representative, payee, ship-to
 
-| Element                                         | EN 16931 id | Lowest profile | Carthorse  |
+| Element                                         | EN 16931 id | Lowest profile | Getafix  |
 |-------------------------------------------------|-------------|----------------|------------|
 | `SellerTaxRepresentativeTradeParty`             | BG-11       | BASIC_WL       | ✓          |
 | `PayeeTradeParty`                               | BG-10       | BASIC_WL       | ✓          |
@@ -181,7 +181,7 @@ side).
 
 ```
 TradeAgreement (BT-10-00)
-  BuyerReference                   BT-10  MINIMUM   carthorse: MINIMUM ✓
+  BuyerReference                   BT-10  MINIMUM   getafix: MINIMUM ✓
   SellerTradeParty                 BG-4   MINIMUM   required
   BuyerTradeParty                  BG-7   MINIMUM   required
   SellerTaxRepresentativeTradeParty BG-11 BASIC_WL  optional
@@ -237,7 +237,7 @@ TradeSettlement (BG-19)
 
 ### 3.7 Monetary summation (BG-22)
 
-| Field                  | BT id  | XSD min profile | Carthorse           |
+| Field                  | BT id  | XSD min profile | Getafix           |
 |------------------------|--------|-----------------|---------------------|
 | `line_total`           | BT-106 | BASIC_WL        | optional `BASIC_WL`; BR-12 raises when missing at BASIC_WL+ |
 | `charge_total`         | BT-108 | BASIC_WL        | optional `BASIC_WL` |
@@ -306,7 +306,7 @@ caps the list at one entry.
 
 ### 3.11 References
 
-| Class                                   | EN 16931 id | Lowest profile | Carthorse |
+| Class                                   | EN 16931 id | Lowest profile | Getafix |
 |-----------------------------------------|-------------|----------------|-----------|
 | `BuyerOrderReferencedDocument`          | BT-13       | MINIMUM        | ✓         |
 | `SellerOrderReferencedDocument`         | BT-14       | EN16931        | ✓         |
@@ -322,7 +322,7 @@ caps the list at one entry.
 
 ### 3.12 Line items (BG-25)
 
-Carthorse models the full line shape across BASIC, COMFORT and
+Getafix models the full line shape across BASIC, COMFORT and
 EXTENDED in `schema/line.py`: product enrichments (BG-32 / BG-33 /
 BG-34), line-level references / accounting account, and the
 EXTENDED sub-line hierarchy (parent/child via `BT-X-304`),
@@ -424,10 +424,10 @@ TradeLineItem (BG-25)                                profile = BASIC
 
 ## 5. EXTENDED coverage diff
 
-Carthorse models the EXTENDED profile broadly — see the README
+Getafix models the EXTENDED profile broadly — see the README
 "Status and known gaps" section for the headline structures that
 are present. This section enumerates every EXTENDED-permitted
-field that is **not** yet on a carthorse dataclass, grouped by the
+field that is **not** yet on a getafix dataclass, grouped by the
 XSD complex type that declares it. Each entry is the XSD element
 name; the BT id (often `BT-X-*`) lives in the per-profile appendix
 PDF.
@@ -480,16 +480,16 @@ honoured by the runtime gates:
   `list_max_cardinality_below(Profile.EXTENDED, max_count=1, ...)`
   on `TradeSettlement.terms`.
 * `AppliedTradeAllowanceCharge` on `TradePriceType` — 0..1 at
-  BASIC..COMFORT, 0..unbounded at EXTENDED. Carthorse currently
+  BASIC..COMFORT, 0..unbounded at EXTENDED. Getafix currently
   models a singleton on `GrossTradePrice.applied_allowance_charge`;
   the multi-entry case on EXTENDED gross / net prices is not yet
   modelled.
 
 ## 6. Out of scope
 
-These intentionally live outside carthorse's surface:
+These intentionally live outside getafix's surface:
 
-* **PDF/A-3 packaging.** ``carthorse.pdf`` can attach the embedded
+* **PDF/A-3 packaging.** ``getafix.pdf`` can attach the embedded
   ``factur-x.xml`` to and extract it from any PDF (``pypdf``-based),
   but it does **not** upgrade the host PDF to PDF/A-3 — the formal
   compliance requirement for Factur-X. Pair with a dedicated
@@ -497,7 +497,7 @@ These intentionally live outside carthorse's surface:
   conformance is needed.
 * **Schematron rule generation.** The per-profile
   ``FACTUR-X_<PROFILE>.sch`` schematron files are not vendored under
-  ``tests/schemas/`` (only the XSDs are). Carthorse's BR-* validators
+  ``tests/schemas/`` (only the XSDs are). Getafix's BR-* validators
   are hand-written from the appendix narratives; auto-generating
   them from the schematron is a separate project.
 
@@ -507,7 +507,7 @@ These intentionally live outside carthorse's surface:
   the EN 16931 id, then add the field to the matching dataclass in
   XSD-``<xs:sequence>`` order.
 * For new validators, register the BR-* code in ``docs/VALIDATION.md``
-  and add a function to ``carthorse.rules.<topic>`` returning
+  and add a function to ``getafix.rules.<topic>`` returning
   ``list[ValidationError]`` — see ``AGENTS.md`` for the contract.
 * The vendored XSDs under ``tests/schemas/`` are the structural source
   of truth; any modelling change must keep

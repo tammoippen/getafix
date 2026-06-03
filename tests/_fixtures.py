@@ -16,7 +16,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from carthorse.schema import (
+from getafix.schema import (
     Context,
     Document,
     GuidelineDocument,
@@ -24,16 +24,16 @@ from carthorse.schema import (
     Profile,
     TypeCode,
 )
-from carthorse.schema.accounting import (
+from getafix.schema.accounting import (
     ApplicableTradeTax,
     CategoryTradeTax,
     HeaderTradeAllowanceCharge,
     MonetarySummation,
     TaxTotal,
 )
-from carthorse.schema.agreement import TradeAgreement
-from carthorse.schema.delivery import TradeDelivery
-from carthorse.schema.line import (
+from getafix.schema.agreement import TradeAgreement
+from getafix.schema.delivery import TradeDelivery
+from getafix.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,
     LineTradeAgreement,
@@ -43,7 +43,7 @@ from carthorse.schema.line import (
     Quantity,
     TradeProduct,
 )
-from carthorse.schema.party import (
+from getafix.schema.party import (
     BuyerTradeParty,
     ISO6523SchemeId,
     LegalOrganization,
@@ -52,9 +52,9 @@ from carthorse.schema.party import (
     SpecifiedTaxRegistration,
     TaxSchemeId,
 )
-from carthorse.schema.settlement import PaymentTerms, TradeSettlement
-from carthorse.schema.trade import Trade, TradeLineItem
-from carthorse.schema.types import (
+from getafix.schema.settlement import PaymentTerms, TradeSettlement
+from getafix.schema.trade import Trade, TradeLineItem
+from getafix.schema.types import (
     CategoryCode,
     Country,
     Currency,

@@ -7,7 +7,7 @@ The same XSD element backs four BG groups:
 * BG-27 / BG-28 line allowance / charge — BT-137 / BT-141 basis amount
   and BT-138 / BT-142 calculation percent ship at COMFORT+.
 
-Carthorse models this via two thin sentinel subclasses
+Getafix models this via two thin sentinel subclasses
 ``HeaderTradeAllowanceCharge`` and ``LineTradeAllowanceCharge`` that
 override a class-level ``context`` flag on the abstract base
 ``TradeAllowanceCharge``.
@@ -26,12 +26,12 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Profile
-from carthorse.schema.accounting import (
+from getafix.schema import Profile
+from getafix.schema.accounting import (
     HeaderTradeAllowanceCharge,
     LineTradeAllowanceCharge,
 )
-from carthorse.schema.element import ProfileMismatch
+from getafix.schema.element import ProfileMismatch
 
 
 class TestLineContextGating:
@@ -118,7 +118,7 @@ class TestAbstractBase:
         assert LineTradeAllowanceCharge.context == "line"
 
     def test_bare_class_is_abstract(self) -> None:
-        from carthorse.schema.accounting import TradeAllowanceCharge
+        from getafix.schema.accounting import TradeAllowanceCharge
 
         with pt.raises(TypeError, match="abstract"):
             TradeAllowanceCharge(indicator=False, actual_amount=Decimal("5.00"))

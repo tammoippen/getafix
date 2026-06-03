@@ -28,8 +28,8 @@ from pathlib import Path
 
 import pytest as pt
 
-from carthorse.schema import Document
-from carthorse.schema.types import Profile
+from getafix.schema import Document
+from getafix.schema.types import Profile
 
 # XSD validation has no stdlib analogue — gate the whole module on lxml.
 pt.importorskip("lxml", reason="XSD validation requires lxml")

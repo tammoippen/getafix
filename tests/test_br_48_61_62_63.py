@@ -21,12 +21,12 @@ from decimal import Decimal
 
 import pytest as pt
 
-from carthorse.schema import Document, Profile
-from carthorse.schema.accounting import ApplicableTradeTax
-from carthorse.schema.element import ValidationErrors
-from carthorse.schema.party import URIID, URIUniversalCommunication
-from carthorse.schema.settlement import PayeePartyCreditorFinancialAccount, PaymentMeans
-from carthorse.schema.types import (
+from getafix.schema import Document, Profile
+from getafix.schema.accounting import ApplicableTradeTax
+from getafix.schema.element import ValidationErrors
+from getafix.schema.party import URIID, URIUniversalCommunication
+from getafix.schema.settlement import PayeePartyCreditorFinancialAccount, PaymentMeans
+from getafix.schema.types import (
     CategoryCode,
     UNTDID2475TaxPointDateCode,
     UNTDID4461PaymentMeansCode,

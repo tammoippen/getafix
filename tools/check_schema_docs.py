@@ -1,5 +1,5 @@
 """Statically audit (via griffe) every ``Element`` subclass in
-``src/carthorse/schema``.
+``src/getafix/schema``.
 
 Catches four classes of regression that hand-review keeps missing:
 
@@ -333,14 +333,14 @@ def _inherit_classvars(
 
 
 def _load_schema() -> tuple[list[ClassInfo], dict[str, list[str]]]:
-    """Load every ``Element`` subclass in ``carthorse.schema`` via griffe.
+    """Load every ``Element`` subclass in ``getafix.schema`` via griffe.
 
     Returns the extracted :class:`ClassInfo` list and a
     ``name -> base-names`` map (used downstream to walk inherited
     fields). Modules in :data:`SKIP_FILES` and imported (aliased)
     classes are excluded.
     """
-    package = griffe.load("carthorse", search_paths=[str(SRC_ROOT)])
+    package = griffe.load("getafix", search_paths=[str(SRC_ROOT)])
     schema = package["schema"]
     # Sort modules by filename so the audit order is deterministic and
     # stable across griffe's internal module ordering.
@@ -690,7 +690,7 @@ KNOWN_PROFILE_EXCEPTIONS: frozenset[str] = frozenset(
         "line.py:AppliedTradeAllowanceCharge.calculation_percent",
         "line.py:AppliedTradeAllowanceCharge.basis_amount",
         # Factur-X CIUS extension dates the XSD admits earlier than the
-        # appendix narrative; carthorse follows the XSD (see field docs).
+        # appendix narrative; getafix follows the XSD (see field docs).
         "references.py:DespatchAdviceReferencedDocument.issue_date_time",
         "references.py:ReceivingAdviceReferencedDocument.issue_date_time",
     }
@@ -1067,11 +1067,11 @@ def _rule_known(rid: str, rules: dict[str, Any]) -> bool:
 
 
 def _collect_citation_sources(root: Path) -> list[Path]:
-    """Every file the broad cross-check scans: all carthorse ``*.py``,
+    """Every file the broad cross-check scans: all getafix ``*.py``,
     every ``docs/*.md``, plus the top-level ``README.md`` / ``AGENTS.md``.
     """
     sources: list[Path] = []
-    src_root = root / "src/carthorse"
+    src_root = root / "src/getafix"
     if src_root.exists():
         sources.extend(src_root.rglob("*.py"))
     docs_root = root / "docs"

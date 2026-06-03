@@ -36,9 +36,9 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from carthorse.rules import Validator
-from carthorse.rules._types import fields_only_at, list_max_cardinality_below
-from carthorse.rules.settlement import (
+from getafix.rules import Validator
+from getafix.rules._types import fields_only_at, list_max_cardinality_below
+from getafix.rules.settlement import (
     br_5_currency_shape,
     br_29,
     br_50,
@@ -53,20 +53,20 @@ from carthorse.rules.settlement import (
     br_co_25,
     bt_81_code_shape,
 )
-from carthorse.schema.accounting import (
+from getafix.schema.accounting import (
     ApplicableTradeTax,
     HeaderTradeAllowanceCharge,
     MonetarySummation,
 )
-from carthorse.schema.element import Element, ETElement
-from carthorse.schema.party import (
+from getafix.schema.element import Element, ETElement
+from getafix.schema.party import (
     InvoiceeTradeParty,
     InvoicerTradeParty,
     PayeeTradeParty,
     PayerTradeParty,
 )
-from carthorse.schema.references import InvoiceReferencedDocument
-from carthorse.schema.types import (
+from getafix.schema.references import InvoiceReferencedDocument
+from getafix.schema.types import (
     CategoryCode,
     Currency,
     Namespace,
@@ -383,7 +383,7 @@ class PaymentTerms(Element):
     COMFORT) to 0..* at EXTENDED (multiple payment-term schedules),
     so :attr:`TradeSettlement.terms` is modelled as a list and
     capped to one entry below EXTENDED by
-    :func:`carthorse.rules._types.list_max_cardinality_below`.
+    :func:`getafix.rules._types.list_max_cardinality_below`.
     """
 
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
@@ -643,7 +643,7 @@ class AdvancePaymentTradeTax(Element):
     """VAT rate (BT-X-298)."""
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on
-    ``CalculatedAmount`` (BT-X-293). Carthorse helper — not a BT
+    ``CalculatedAmount`` (BT-X-293). Getafix helper — not a BT
     field itself (the XSD encodes it as an attribute, not an
     element)."""
 
@@ -664,9 +664,9 @@ class AdvancePaymentReferencedDocument(Element):
     """Prepayment invoice identifier (BT-X-558)."""
     type_code: TypeCode | None = field(default=None, metadata={"tag": "TypeCode"})
     """Document type code (BT-X-559); UNTDID 1001 — typically
-    :attr:`~carthorse.schema.types.TypeCode.T_ProformaInvoice`
+    :attr:`~getafix.schema.types.TypeCode.T_ProformaInvoice`
     (``"325"``) or
-    :attr:`~carthorse.schema.types.TypeCode.T_PrepaymentInvoice`
+    :attr:`~getafix.schema.types.TypeCode.T_PrepaymentInvoice`
     (``"386"``)."""
     issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}
@@ -702,7 +702,7 @@ class AdvancePayment(Element):
     """Reference to the prepayment invoice (BG-X-85, 0..1)."""
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on
-    ``PaidAmount`` (BT-X-291). Carthorse helper — not a BT field
+    ``PaidAmount`` (BT-X-291). Getafix helper — not a BT field
     itself (the XSD encodes it as an attribute, not an element)."""
 
     def __post_init__(self) -> None:
@@ -740,7 +740,7 @@ class TradeSettlement(Element):
             "advance_payments",
         ),
         # SpecifiedTradePaymentTerms widens from 0..1 (BASIC_WL..COMFORT)
-        # to 0..* at EXTENDED — cap the carthorse list to 1 entry below
+        # to 0..* at EXTENDED — cap the getafix list to 1 entry below
         # EXTENDED so an over-populated list fails loud rather than
         # tripping XSD validation.
         list_max_cardinality_below(Profile.EXTENDED, max_count=1, field_name="terms"),

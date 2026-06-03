@@ -23,18 +23,18 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import ClassVar
 
-from carthorse.schema.element import Element
-from carthorse.schema.party import (
+from getafix.schema.element import Element
+from getafix.schema.party import (
     ShipFromTradeParty,
     ShipToTradeParty,
     UltimateShipToTradeParty,
 )
-from carthorse.schema.references import (
+from getafix.schema.references import (
     DeliveryNoteReferencedDocument,
     DespatchAdviceReferencedDocument,
     ReceivingAdviceReferencedDocument,
 )
-from carthorse.schema.types import Profile
+from getafix.schema.types import Profile
 
 
 @dataclass(kw_only=True, slots=True)

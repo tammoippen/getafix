@@ -47,8 +47,8 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from carthorse.rules import Validator
-from carthorse.rules.party import (
+from getafix.rules import Validator
+from getafix.rules.party import (
     br_10,
     br_62,
     br_63,
@@ -56,8 +56,8 @@ from carthorse.rules.party import (
     br_co_26,
     bt_31_0_scheme_id,
 )
-from carthorse.schema.element import Element, ETElement
-from carthorse.schema.types import Country, Profile
+from getafix.schema.element import Element, ETElement
+from getafix.schema.types import Country, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -140,7 +140,7 @@ class URIID(SchemeID):
     Wraps the URI-based electronic address (e.g. an email or a PEPPOL
     participant id). The ``scheme_id`` attribute names the address
     scheme — required per ``BR-62`` (Seller) and ``BR-63`` (Buyer),
-    enforced in :mod:`carthorse.rules.party`.
+    enforced in :mod:`getafix.rules.party`.
     """
 
     tag: ClassVar[str] = "URIID"

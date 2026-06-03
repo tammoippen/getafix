@@ -1,10 +1,10 @@
-"""Validator type alias used across :mod:`carthorse.rules`.
+"""Validator type alias used across :mod:`getafix.rules`.
 
 Each rule submodule defines free-standing functions of the shape::
 
     def br_co_25(m: TradeSettlement, profile: Profile) -> list[ValidationError]: ...
 
-The corresponding :mod:`carthorse.schema.<topic>` module imports the
+The corresponding :mod:`getafix.schema.<topic>` module imports the
 functions it needs and exposes them via a
 ``_validators: ClassVar[tuple[Validator[...], ...]]`` attribute that
 ``Element.validate_internal`` iterates. See
@@ -19,13 +19,13 @@ the schema.
 from collections.abc import Callable
 from decimal import Decimal
 
-from carthorse.schema.element import Element, ValidationError
-from carthorse.schema.types import Profile
+from getafix.schema.element import Element, ValidationError
+from getafix.schema.types import Profile
 
 type Validator[T: Element] = Callable[[T, Profile], list[ValidationError]]
 """Signature of a business-rule validator function.
 
-``T`` is the concrete :class:`~carthorse.schema.element.Element`
+``T`` is the concrete :class:`~getafix.schema.element.Element`
 subclass the rule reads from (e.g. ``TradeSettlement``,
 ``ApplicableTradeTax``, ``Trade``). The function decides for itself
 whether the rule applies at the given profile and which guards are
@@ -84,8 +84,8 @@ def fields_only_at[T: Element](
     ``_field_profile`` machinery skips it) — the validator catches
     it loudly instead.
 
-    Emits ``CARTHORSE-FIELD-PROFILE`` for each populated-but-out-of-
-    profile field. (Synthetic code: this is a carthorse runtime
+    Emits ``GETAFIX-FIELD-PROFILE`` for each populated-but-out-of-
+    profile field. (Synthetic code: this is a getafix runtime
     check, not a BR-* rule from the schematron — the schematron
     relies on the XSD to enforce the profile gate.)
     """
@@ -95,7 +95,7 @@ def fields_only_at[T: Element](
             return []
         return [
             ValidationError(
-                "CARTHORSE-FIELD-PROFILE",
+                "GETAFIX-FIELD-PROFILE",
                 f"{type(m).__name__}.{name}: only allowed at "
                 f"{profile_required.name}+ profiles "
                 f"(current profile: {profile.name}).",
@@ -119,7 +119,7 @@ def list_max_cardinality_below[T: Element](
     lower profile would render fine but trip XSD validation against
     the lower-profile schema; the validator catches it earlier.
 
-    Emits ``CARTHORSE-FIELD-CARDINALITY`` on violation.
+    Emits ``GETAFIX-FIELD-CARDINALITY`` on violation.
     """
 
     def _check(m: T, profile: Profile) -> list[ValidationError]:
@@ -130,7 +130,7 @@ def list_max_cardinality_below[T: Element](
             return []
         return [
             ValidationError(
-                "CARTHORSE-FIELD-CARDINALITY",
+                "GETAFIX-FIELD-CARDINALITY",
                 f"{type(m).__name__}.{field_name}: at most {max_count} "
                 f"entry permitted below {profile_below.name} "
                 f"(current profile: {profile.name}, got {len(value)}).",
