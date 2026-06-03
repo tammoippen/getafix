@@ -11,7 +11,7 @@ check:
 
 .PHONY: tests
 tests:
-	uv run pytest -s -vvv \
+	uv run pytest -s -vvv -n auto \
 		--cov=carthorse \
 		--cov-branch \
 		--cov-report=term-missing:skip-covered \
