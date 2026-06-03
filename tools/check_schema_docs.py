@@ -1,14 +1,24 @@
 """Statically audit (via griffe) every ``Element`` subclass in
 ``src/carthorse/schema``.
 
-Catches three classes of regression that hand-review keeps missing:
+Catches four classes of regression that hand-review keeps missing:
 
 1. **Missing docstrings** — every ``Element`` subclass and every
    dataclass field on one must carry a docstring.
 2. **Missing BT-/BG- citation** — every such docstring must reference
    the term it models (e.g. ``BT-31``, ``BG-X-49``), and each cited id
    must resolve against the workbook sidecar.
-3. **Missing XSD-allowed children** — for each class, look the class's
+3. **Profile gate below the workbook minimum** — a class / field's
+   effective ``profile`` gate (its own metadata, the inner Element's
+   class profile, or the enclosing element's gate) must not render the
+   term *below* the earliest profile the sidecar admits it on. A gate
+   stricter than the minimum is fine (the schema may defer an optional
+   element to a higher profile). Because the schema's gate tracks XSD
+   structural permissibility while the sidecar tracks the EN 16931
+   semantic appendix, the two legitimately diverge for a handful of
+   elements; those are allow-listed in :data:`KNOWN_PROFILE_EXCEPTIONS`,
+   each documented at the field itself.
+4. **Missing XSD-allowed children** — for each class, look the class's
    ``namespace`` + ``tag`` up in the xpath tree
    (``tools/business_terms_tree.json``). Any direct child node that
    isn't backed by a declared field is reported, with its BT/BG id
@@ -17,7 +27,7 @@ Catches three classes of regression that hand-review keeps missing:
    (EXTENDED-only attributes are valid omissions until needed) — but
    the report makes the gap visible.
 
-The first two checks fail the audit; the third is informational.
+Checks 1–3 fail the audit; the fourth is informational.
 
 ``--check-citations`` adds a fourth, broader pass (formerly the
 standalone ``tools/check_bt_br_ids.py``): it scans every ``BT-``,
@@ -632,6 +642,124 @@ def _all_fields(
     return out
 
 
+# Canonical profile ranking. A schema ``profile`` gate names the
+# earliest profile at which an element / field appears; the workbook
+# sidecar records the same as a per-node profile matrix. Declared gates
+# use the ``Profile`` enum member names (``COMFORT``) while the sidecar
+# uses the workbook sheet tag (``EN16931``) for that same rung — both
+# fold onto one ordinal scale.
+_PROFILE_RANK: dict[str, int] = {
+    "MINIMUM": 0,
+    "BASIC_WL": 1,
+    "BASIC": 2,
+    "COMFORT": 3,
+    "EN16931": 3,
+    "EXTENDED": 4,
+}
+_RANK_NAME: dict[int, str] = {
+    0: "MINIMUM",
+    1: "BASIC_WL",
+    2: "BASIC",
+    3: "COMFORT",
+    4: "EXTENDED",
+}
+
+# Profile gates that intentionally sit *below* the workbook's semantic
+# minimum, keyed by ``module:Class.field``. The schema's gate tracks XSD
+# structural permissibility, the sidecar matrix tracks the EN 16931
+# semantic appendix — and for these the two legitimately diverge. Each
+# is documented at the field itself; they are allow-listed here the same
+# way the citation audit allow-lists ``KNOWN_BG_ALIASES`` /
+# ``KNOWN_RULE_EXCEPTIONS``.
+KNOWN_PROFILE_EXCEPTIONS: frozenset[str] = frozenset(
+    {
+        # XSD permits the party address / tax registration at MINIMUM;
+        # the EN BASIC_WL requirement is enforced by BR-10 validation.
+        "party.py:BuyerTradeParty.address",
+        "party.py:BuyerTradeParty.tax_registrations",
+        # Payee sub-elements: the XSD admits them at the party's own
+        # profile (BASIC_WL+, contact COMFORT+) even though the EN
+        # appendix lists the BG-X-/BT-X- ids at EXTENDED. The vendored
+        # per-profile XSDs (see tests/strategies.py) are the authority.
+        "party.py:PayeeTradeParty.contact",
+        "party.py:PayeeTradeParty.address",
+        "party.py:PayeeTradeParty.electronic_address",
+        "party.py:PayeeTradeParty.tax_registrations",
+        # One XSD node shared by an EN allowance (COMFORT) and a Factur-X
+        # charge extension; the sidecar collapses it to the EXTENDED
+        # charge-side id BT-X-300.
+        "line.py:AppliedTradeAllowanceCharge.calculation_percent",
+        "line.py:AppliedTradeAllowanceCharge.basis_amount",
+        # Factur-X CIUS extension dates the XSD admits earlier than the
+        # appendix narrative; carthorse follows the XSD (see field docs).
+        "references.py:DespatchAdviceReferencedDocument.issue_date_time",
+        "references.py:ReceivingAdviceReferencedDocument.issue_date_time",
+    }
+)
+
+
+def _profile_rank(name: str | None) -> int:
+    """Declared / assumed profile gate → ordinal. ``None`` (no gate)
+    assumes MINIMUM, matching the runtime fallback in
+    ``Element._children_xml``.
+    """
+    if name is None:
+        return 0
+    return _PROFILE_RANK.get(name, 0)
+
+
+def _sidecar_min_rank(profiles: list[str]) -> int | None:
+    """Ordinal of the earliest profile a sidecar node is present on, or
+    ``None`` when the node lists no recognised profile.
+    """
+    ranks = [_PROFILE_RANK[p] for p in profiles if p in _PROFILE_RANK]
+    return min(ranks) if ranks else None
+
+
+def _positions_min_rank(profile_lists: list[list[str]]) -> int | None:
+    """Earliest profile (ordinal) across every XSD position a class /
+    field resolves to — i.e. the most permissive profile the workbook
+    admits the term on. ``None`` when no position carries a profile.
+
+    Taking the minimum across positions is the lenient choice: a shape
+    reused at several positions is judged against the easiest one, so a
+    generic ``SchemeID`` gated at MINIMUM isn't faulted for also
+    appearing at a higher-profile position.
+    """
+    mins = [r for ps in profile_lists if (r := _sidecar_min_rank(ps)) is not None]
+    return min(mins) if mins else None
+
+
+def _audit_profile(
+    gate_rank: int,
+    gate_display: str,
+    profile_lists: list[list[str]],
+    where: str,
+    label: str,
+) -> Issue | None:
+    """Flag a ``profile`` gate that would render an element / field
+    *below* the profile the workbook first admits it on.
+
+    ``gate_rank`` is the effective render gate (the field's own
+    ``profile`` metadata, the inner Element's class profile, or — for an
+    ungated leaf field — the enclosing element's gate, matching
+    ``Element._children_xml``). Rendering at or above the workbook
+    minimum is correct; rendering below it emits a non-conformant
+    element, which is the bug this catches. Over-strict gates (above the
+    minimum) are left alone — the schema may legitimately defer an
+    optional element to a higher profile.
+    """
+    workbook_min = _positions_min_rank(profile_lists)
+    if workbook_min is None or gate_rank >= workbook_min:
+        return None
+    return Issue(
+        "error",
+        where,
+        f"{label} profile {gate_display} renders below the workbook "
+        f"minimum {_RANK_NAME[workbook_min]} — the term first appears there",
+    )
+
+
 def _audit_class(
     cls: ClassInfo,
     classes_by_name: dict[str, ClassInfo],
@@ -687,6 +815,17 @@ def _audit_class(
         )
     )
 
+    # Class profile gate vs. the workbook profile matrix.
+    class_issue = _audit_profile(
+        _profile_rank(cls.profile),
+        cls.profile or "MINIMUM (assumed)",
+        [node.get("profiles", []) for _path, node in positions],
+        where,
+        "class",
+    )
+    if class_issue is not None:
+        issues.append(class_issue)
+
     # Modelled-tag set for the missing-attribute report — include
     # inherited fields so a subclass doesn't claim its parent's
     # fields are missing.
@@ -722,16 +861,53 @@ def _audit_class(
         # Look the field up inside each parent-class tree position.
         field_ids: list[str] = []
         field_xpaths: list[str] = []
+        field_nodes: list[dict[str, Any]] = []
         if field_key is not None:
-            field_xpaths = [
-                _xpath_of_position((*path, field_key))
-                for path, node in positions
-                if node.get("children", {}).get(field_key)
-            ]
+            for path, node in positions:
+                child = node.get("children", {}).get(field_key)
+                if not child:
+                    continue
+                field_xpaths.append(_xpath_of_position((*path, field_key)))
+                field_nodes.append(child)
             for xp in field_xpaths:
                 for bt in ids_at_xpath.get(xp, []):
                     if bt not in field_ids:
                         field_ids.append(bt)
+
+        # Field profile gate vs. the workbook. The field's *own* gate is
+        # its ``profile`` metadata, else the inner Element's class profile
+        # (mirroring ``Element._children_xml``), else nothing (MINIMUM).
+        if f.profile is not None:
+            own_gate, own_display = _profile_rank(f.profile), f.profile
+        elif (
+            f.inner_class in classes_by_name
+            and classes_by_name[f.inner_class].profile is not None
+        ):
+            inner_profile = classes_by_name[f.inner_class].profile
+            own_gate = _profile_rank(inner_profile)
+            own_display = f"{inner_profile} (via {f.inner_class})"
+        else:
+            own_gate, own_display = 0, "MINIMUM"
+        # A field can never render before its enclosing element does, so
+        # the effective gate is the stricter of the field's own gate and
+        # the enclosing class's gate. (The enclosing class's own gate is
+        # validated by the class-level check above.)
+        enclosing_rank = _profile_rank(cls.profile)
+        if enclosing_rank > own_gate:
+            field_gate = enclosing_rank
+            field_gate_display = f"{cls.profile or 'MINIMUM'} (gated by {cls.name})"
+        else:
+            field_gate, field_gate_display = own_gate, own_display
+        if field_where not in KNOWN_PROFILE_EXCEPTIONS:
+            field_profile_issue = _audit_profile(
+                field_gate,
+                field_gate_display,
+                [n.get("profiles", []) for n in field_nodes],
+                field_where,
+                "field",
+            )
+            if field_profile_issue is not None:
+                issues.append(field_profile_issue)
 
         if not f.docstring:
             issues.append(
