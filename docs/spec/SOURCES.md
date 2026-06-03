@@ -24,9 +24,7 @@ distributed free of charge under the conditions documented on the
 [FeRD download page](https://www.ferd-net.de/publikationen-produkte/publikationen/detailseite/zugferd-24-english).
 The XML schemas (XSD), schematron (.sch), per-profile technical-
 appendix PDFs and the example invoices that accompany the
-workbook tree are NOT vendored here — they live on the gitignored
-``ZF24_EN/`` worktree (see ``docs/READING_OFFICIAL_DOCS.md`` for the
-full kit layout and how to fetch it locally).
+workbook tree are NOT vendored here.
 
 When the upstream kit is updated, refresh both files in place and
 regenerate the sidecars (``make ids-check`` covers it).
