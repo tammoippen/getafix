@@ -1,4 +1,5 @@
-"""AST-audit every ``Element`` subclass in ``src/carthorse/schema``.
+"""Statically audit (via griffe) every ``Element`` subclass in
+``src/carthorse/schema``.
 
 Catches three classes of regression that hand-review keeps missing:
 
@@ -50,320 +51,307 @@ import json
 import re
 import sys
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import griffe
+from griffe import ExprBinOp, ExprCall, ExprDict, ExprKeyword, ExprName, ExprSubscript
+
 ROOT = Path(__file__).resolve().parent.parent
-SCHEMA_DIR = ROOT / "src/carthorse/schema"
+SRC_ROOT = ROOT / "src"
 TREE_SIDECAR = ROOT / "tools/business_terms_tree.json"
 TERMS_SIDECAR = ROOT / "tools/business_terms.json"
 
-# Files we skip entirely — the reflective core, primitives, and the
-# enum / type vendoring module hold no Element subclasses worth
+# Submodules we skip entirely — the reflective core, primitives, and
+# the enum / type vendoring module hold no Element subclasses worth
 # auditing for BT/BG coverage.
 SKIP_FILES: frozenset[str] = frozenset(
     {"__init__.py", "_numeric.py", "element.py", "types.py"}
 )
 
-BT_BG_RE = re.compile(r"\bB[GT]-(X-)?\d+(-\d+)?(-\d+)?\b")
+# One pattern for every BT-/BG- citation, shared by the schema-docstring
+# audit and the broad citation cross-check so the two can't drift.
+BT_BG_RE = re.compile(r"\bB[GT]-(?:X-)?[0-9]+(?:-[0-9]+)*\b")
 
 
 # ---------------------------------------------------------------------------
-# AST extraction
+# Schema extraction (griffe)
+#
+# griffe statically loads the package — no import, no runtime side
+# effects — and hands back Class / Attribute objects that already carry
+# what hand-rolled AST walking had to reconstruct: class *and* attribute
+# docstrings, resolved bases, and ClassVar / field values as navigable
+# expression trees. We distil each Element subclass into the small
+# ClassInfo / FieldInfo carriers the audit below consumes.
+#
+# The audit reads source rather than importing the package because the
+# field docstrings it checks — the bare string after each field — are
+# discarded by the interpreter at runtime and only ever exist in source.
 # ---------------------------------------------------------------------------
 
 
+@dataclass(slots=True)
 class FieldInfo:
-    __slots__ = ("docstring", "inner_class", "name", "ns", "profile", "tag", "type_str")
-
-    def __init__(
-        self,
-        name: str,
-        type_str: str,
-        inner_class: str | None,
-        tag: str | None,
-        ns: str | None,
-        profile: str | None,
-        docstring: str | None,
-    ):
-        self.name: str = name
-        self.type_str: str = type_str
-        self.inner_class: str | None = inner_class
-        self.tag: str | None = tag
-        self.ns: str | None = ns
-        self.profile: str | None = profile
-        self.docstring: str | None = docstring
+    name: str
+    type_str: str
+    inner_class: str | None
+    tag: str | None
+    ns: str | None
+    profile: str | None
+    docstring: str | None
 
 
+@dataclass(slots=True)
 class ClassInfo:
-    __slots__ = ("docstring", "fields", "module", "name", "ns", "profile", "tag")
-
-    def __init__(
-        self,
-        name: str,
-        module: str,
-        tag: str | None,
-        ns: str | None,
-        profile: str | None,
-        docstring: str | None,
-        fields: list[FieldInfo],
-    ):
-        self.name: str = name
-        self.module: str = module
-        self.tag: str | None = tag
-        self.ns: str | None = ns
-        self.profile: str | None = profile
-        self.docstring: str | None = docstring
-        self.fields: list[FieldInfo] = fields
+    name: str
+    module: str
+    tag: str | None
+    ns: str | None
+    profile: str | None
+    docstring: str | None
+    fields: list[FieldInfo]
 
 
-def _base_names(node: ast.ClassDef) -> list[str]:
-    return [b.id for b in node.bases if isinstance(b, ast.Name)]
+# Annotation leaves that can't name an Element subclass — keep
+# ``inner_class`` only when it could be one.
+_BUILTIN_TYPES: frozenset[str] = frozenset(
+    {
+        "str",
+        "int",
+        "bool",
+        "float",
+        "bytes",
+        "Decimal",
+        "date",
+        "datetime",
+        "None",
+        "Any",
+    }
+)
 
 
-def _element_subclass_names(modules: list[ast.Module]) -> set[str]:
-    """Names of every ``Element`` subclass across the given parsed
-    modules — including transitive subclasses
-    (``ISO6523SchemeId(SchemeID(Element))`` and
-    ``GlobalID(ISO6523SchemeId)``).
+def _base_simple_names(cls: griffe.Class) -> list[str]:
+    """Unqualified names of ``cls``'s bases — ``mod.Element`` → ``Element``."""
+    return [str(base).rsplit(".", maxsplit=1)[-1] for base in cls.bases]
 
-    Computed as a fixed-point: seed with ``"Element"``, then keep
-    adding classes whose first textual base is already in the set.
+
+def _element_subclass_names(candidates: list[griffe.Class]) -> set[str]:
+    """Names of every ``Element`` subclass among ``candidates``, including
+    transitive ones (``GlobalID(ISO6523SchemeId(SchemeID(Element)))``).
+
+    Fixed-point: seed with ``"Element"`` (defined in the skipped
+    reflective core) and keep adding any class with a base already in
+    the set.
     """
     subclasses: set[str] = {"Element"}
-    all_classes: list[tuple[str, list[str]]] = [
-        (node.name, _base_names(node))
-        for module in modules
-        for node in module.body
-        if isinstance(node, ast.ClassDef)
-    ]
+    bases_by_name = [(c.name, _base_simple_names(c)) for c in candidates]
     changed = True
     while changed:
         changed = False
-        for name, bases in all_classes:
-            if name in subclasses:
-                continue
-            if any(b in subclasses for b in bases):
+        for name, bases in bases_by_name:
+            if name not in subclasses and any(b in subclasses for b in bases):
                 subclasses.add(name)
                 changed = True
     return subclasses
 
 
-def _str_constant(node: ast.AST | None) -> str | None:
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    return None
-
-
-def _attr_terminal(node: ast.AST | None) -> str | None:
+def _terminal_name(value: object) -> str | None:
     """``Profile.EXTENDED`` → ``"EXTENDED"``; ``Namespace.ram`` → ``"ram"``.
 
-    Used to read enum-typed ClassVar / metadata values out of the AST
-    without importing the project.
+    griffe stringifies an attribute-access expression back to source, so
+    the enum member is the segment after the last dot.
     """
-    if isinstance(node, ast.Attribute):
-        return node.attr
-    return None
-
-
-def _type_annotation_text(node: ast.AST) -> str:
-    return ast.unparse(node)
-
-
-def _inner_class_name(node: ast.AST) -> str | None:
-    """Pull the (likely Element) class name out of a type annotation.
-
-    Strips ``| None`` and ``list[...]`` wrappers, returns the bare
-    ``Name`` if any survives. Returns ``None`` for builtins, unions
-    of multiple classes, or anything more exotic.
-    """
-    # Strip ``X | None`` / ``None | X``
-    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
-        left = _inner_class_name(node.left)
-        right = _inner_class_name(node.right)
-        # ``None`` becomes ``NoneType`` here — discard it.
-        candidates = [c for c in (left, right) if c and c != "None"]
-        if len(candidates) == 1:
-            return candidates[0]
+    if value is None:
         return None
-    # ``list[X]`` / ``Sequence[X]`` …
-    if isinstance(node, ast.Subscript):
-        # ``Subscript.slice`` is the inner type expr in 3.9+.
-        return _inner_class_name(node.slice)
-    if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Constant) and node.value is None:
-        return "None"
+    return str(value).rsplit(".", maxsplit=1)[-1]
+
+
+def _string_literal(value: object) -> str | None:
+    """A griffe string constant arrives as its source repr (``"'ID'"``);
+    evaluate it back to the bare ``ID``. Non-string / non-literal
+    expressions yield ``None``.
+    """
+    if not isinstance(value, str):
+        return None
+    try:
+        literal = ast.literal_eval(value)
+    except (ValueError, SyntaxError):
+        return None
+    return literal if isinstance(literal, str) else None
+
+
+def _inner_class_name(annotation: object) -> str | None:
+    """The (likely Element) class named by ``annotation``, stripping
+    ``X | None`` unions and ``list[...]`` / ``Sequence[...]`` wrappers.
+
+    Returns ``None`` for builtins, multi-class unions, or anything more
+    exotic. Operates on griffe's expression tree.
+    """
+    if isinstance(annotation, ExprBinOp) and annotation.operator == "|":
+        candidates = [
+            name
+            for name in (
+                _inner_class_name(annotation.left),
+                _inner_class_name(annotation.right),
+            )
+            if name and name != "None"
+        ]
+        return candidates[0] if len(candidates) == 1 else None
+    if isinstance(annotation, ExprSubscript):
+        return _inner_class_name(annotation.slice)
+    if isinstance(annotation, ExprName):
+        return annotation.name
+    # The ``None`` arm of an optional union arrives as a bare string.
+    if isinstance(annotation, str):
+        return annotation if annotation == "None" else None
     return None
 
 
-def _extract_metadata(call: ast.Call) -> tuple[str | None, str | None, str | None]:
-    """Pull ``metadata={"tag": ..., "ns": ..., "profile": ...}`` from a
-    ``field(...)`` call. Returns ``(tag, ns, profile)``.
-
-    Misses the keys silently when the literal dict isn't there — the
-    caller treats ``None`` as "no metadata supplied".
+def _field_metadata(value: object) -> tuple[str | None, str | None, str | None]:
+    """Pull ``(tag, ns, profile)`` out of a ``field(metadata={...})``
+    expression. Returns all-``None`` for a plain default value.
     """
+    if not isinstance(value, ExprCall) or str(value.function) != "field":
+        return None, None, None
     tag: str | None = None
     ns: str | None = None
     profile: str | None = None
-    for kw in call.keywords:
-        if kw.arg != "metadata" or not isinstance(kw.value, ast.Dict):
+    for arg in value.arguments:
+        if not isinstance(arg, ExprKeyword) or arg.name != "metadata":
             continue
-        for key_node, value_node in zip(kw.value.keys, kw.value.values, strict=False):
-            key = _str_constant(key_node)
+        meta = arg.value
+        if not isinstance(meta, ExprDict):
+            continue
+        for key_node, val_node in zip(meta.keys, meta.values, strict=False):
+            key = _string_literal(key_node)
             if key == "tag":
-                tag = _str_constant(value_node)
+                tag = _string_literal(val_node)
             elif key == "ns":
-                ns = _attr_terminal(value_node)
+                ns = _terminal_name(val_node)
             elif key == "profile":
-                profile = _attr_terminal(value_node)
+                profile = _terminal_name(val_node)
     return tag, ns, profile
 
 
-def _next_docstring(stmts: list[ast.stmt], index: int) -> str | None:
-    """A field's docstring is the bare string expression immediately
-    after its ``AnnAssign``."""
-    if index + 1 >= len(stmts):
-        return None
-    nxt = stmts[index + 1]
-    if isinstance(nxt, ast.Expr):
-        return _str_constant(nxt.value)
-    return None
+def _is_classvar(attr: griffe.Attribute) -> bool:
+    """A ClassVar lives at class level only — griffe never tags it as an
+    instance attribute, whereas a dataclass field always is.
+    """
+    return "class-attribute" in attr.labels and "instance-attribute" not in attr.labels
 
 
-def _parse_modules() -> list[tuple[Path, ast.Module]]:
-    out: list[tuple[Path, ast.Module]] = []
-    for path in sorted(SCHEMA_DIR.glob("*.py")):
-        if path.name in SKIP_FILES:
-            continue
-        out.append((path, ast.parse(path.read_text(), filename=str(path))))
-    return out
-
-
-def _walk_modules(
-    parsed: list[tuple[Path, ast.Module]], subclasses: set[str]
-) -> list[ClassInfo]:
-    classes: list[ClassInfo] = []
-    for path, module in parsed:
-        for node in module.body:
-            if not isinstance(node, ast.ClassDef) or node.name not in subclasses:
-                continue
-            classes.append(_extract_class(node, path.name))
-    # Resolve inherited ClassVars (``tag`` / ``namespace`` / ``profile``)
-    # for transitive subclasses such as ``GlobalID(ISO6523SchemeId)``
-    # that don't re-declare them.
-    by_name = {c.name: c for c in classes}
-    # Build a parent map indexed by class name from the AST bases.
-    parents: dict[str, list[str]] = {}
-    for _path, module in parsed:
-        for node in module.body:
-            if not isinstance(node, ast.ClassDef) or node.name not in subclasses:
-                continue
-            parents[node.name] = _base_names(node)
-    for cls in classes:
-        if cls.tag is not None and cls.ns is not None and cls.profile is not None:
-            continue
-        for parent_name in parents.get(cls.name, []):
-            parent = by_name.get(parent_name)
-            if parent is None:
-                continue
-            if cls.tag is None and parent.tag is not None:
-                cls.tag = parent.tag
-            if cls.ns is None and parent.ns is not None:
-                cls.ns = parent.ns
-            if cls.profile is None and parent.profile is not None:
-                cls.profile = parent.profile
-    return classes
-
-
-def _extract_class(node: ast.ClassDef, module_name: str) -> ClassInfo:
+def _extract_class(cls: griffe.Class) -> ClassInfo:
     tag: str | None = None
     ns: str | None = None
     profile: str | None = None
     fields: list[FieldInfo] = []
 
-    body = node.body
-    docstring = ast.get_docstring(node)
-
-    for i, stmt in enumerate(body):
-        if not isinstance(stmt, ast.AnnAssign) or not isinstance(stmt.target, ast.Name):
-            continue
-        name = stmt.target.id
-        annotation_text = _type_annotation_text(stmt.annotation)
-
-        # ClassVar values: ``tag: ClassVar[str] = "Foo"``,
-        # ``namespace: ClassVar[Namespace] = Namespace.ram``,
-        # ``profile: ClassVar[Profile] = Profile.EXTENDED``.
-        if annotation_text.startswith("ClassVar"):
+    # Own attributes only — griffe's ``.attributes`` view folds in
+    # inherited fields, but the audit treats each class by what it
+    # declares (inherited ClassVars are resolved separately in
+    # :func:`_inherit_classvars`; inherited fields in :func:`_all_fields`).
+    own_attributes = (m for m in cls.members.values() if m.is_attribute)
+    for attr in own_attributes:
+        name = attr.name
+        # ``tag``/``namespace``/``profile`` ClassVars carry the XML
+        # binding; griffe strips the ``ClassVar[...]`` wrapper, so read
+        # the value expression directly.
+        if _is_classvar(attr):
             if name == "tag":
-                tag = _str_constant(stmt.value)
+                tag = _string_literal(attr.value)
             elif name == "namespace":
-                ns = _attr_terminal(stmt.value)
+                ns = _terminal_name(attr.value)
             elif name == "profile":
-                profile = _attr_terminal(stmt.value)
+                profile = _terminal_name(attr.value)
             continue
 
         # Skip private bookkeeping fields and the internal ``currency``
-        # context-carrier (an out-of-band parameter the framework uses
-        # to thread the document currency through amount fields — it's
-        # not rendered as its own XML element, see
-        # ``Element._children_xml``).
+        # context-carrier (threads the document currency through amount
+        # fields; not its own XML element, see ``Element._children_xml``).
         if name.startswith("_") or name == "currency":
             continue
 
-        field_tag: str | None = None
-        field_ns: str | None = None
-        field_profile: str | None = None
-        if (
-            isinstance(stmt.value, ast.Call)
-            and isinstance(stmt.value.func, ast.Name)
-            and stmt.value.func.id == "field"
-        ):
-            field_tag, field_ns, field_profile = _extract_metadata(stmt.value)
-
-        inner_class = _inner_class_name(stmt.annotation)
-        # ``str`` / ``int`` / ``Decimal`` / ``datetime`` etc. aren't
-        # Element subclasses — keep ``inner_class`` only when it could
-        # be one (capitalised, not a builtin).
-        BUILTINS = frozenset(
-            {
-                "str",
-                "int",
-                "bool",
-                "float",
-                "bytes",
-                "Decimal",
-                "date",
-                "datetime",
-                "None",
-                "Any",
-            }
-        )
-        if inner_class in BUILTINS:
+        field_tag, field_ns, field_profile = _field_metadata(attr.value)
+        inner_class = _inner_class_name(attr.annotation)
+        if inner_class in _BUILTIN_TYPES:
             inner_class = None
 
         fields.append(
             FieldInfo(
                 name=name,
-                type_str=annotation_text,
+                type_str=str(attr.annotation) if attr.annotation is not None else "",
                 inner_class=inner_class,
                 tag=field_tag,
                 ns=field_ns,
                 profile=field_profile,
-                docstring=_next_docstring(body, i),
+                docstring=attr.docstring.value if attr.docstring else None,
             )
         )
 
     return ClassInfo(
-        name=node.name,
-        module=module_name,
+        name=cls.name,
+        module=cls.module.filepath.name,
         tag=tag,
         ns=ns,
         profile=profile,
-        docstring=docstring,
+        docstring=cls.docstring.value if cls.docstring else None,
         fields=fields,
     )
+
+
+def _inherit_classvars(
+    classes: list[ClassInfo], parents_by_name: dict[str, list[str]]
+) -> None:
+    """Resolve inherited ``tag`` / ``namespace`` / ``profile`` ClassVars
+    for transitive subclasses (``GlobalID(ISO6523SchemeId)``) that don't
+    re-declare them.
+    """
+    by_name = {c.name: c for c in classes}
+    for cls in classes:
+        if cls.tag is not None and cls.ns is not None and cls.profile is not None:
+            continue
+        for parent_name in parents_by_name.get(cls.name, []):
+            parent = by_name.get(parent_name)
+            if parent is None:
+                continue
+            if cls.tag is None:
+                cls.tag = parent.tag
+            if cls.ns is None:
+                cls.ns = parent.ns
+            if cls.profile is None:
+                cls.profile = parent.profile
+
+
+def _load_schema() -> tuple[list[ClassInfo], dict[str, list[str]]]:
+    """Load every ``Element`` subclass in ``carthorse.schema`` via griffe.
+
+    Returns the extracted :class:`ClassInfo` list and a
+    ``name -> base-names`` map (used downstream to walk inherited
+    fields). Modules in :data:`SKIP_FILES` and imported (aliased)
+    classes are excluded.
+    """
+    package = griffe.load("carthorse", search_paths=[str(SRC_ROOT)])
+    schema = package["schema"]
+    # Sort modules by filename so the audit order is deterministic and
+    # stable across griffe's internal module ordering.
+    modules = sorted(
+        (m for m in schema.modules.values() if m.filepath.name not in SKIP_FILES),
+        key=lambda m: m.filepath.name,
+    )
+    candidates: list[griffe.Class] = [
+        cls for module in modules for cls in module.classes.values() if not cls.is_alias
+    ]
+    subclasses = _element_subclass_names(candidates)
+    classes: list[ClassInfo] = []
+    parents_by_name: dict[str, list[str]] = {}
+    for cls in candidates:
+        if cls.name not in subclasses:
+            continue
+        parents_by_name[cls.name] = _base_simple_names(cls)
+        classes.append(_extract_class(cls))
+    _inherit_classvars(classes, parents_by_name)
+    return classes, parents_by_name
 
 
 # ---------------------------------------------------------------------------
@@ -776,8 +764,7 @@ def _audit_class(
         )
 
     # Missing XSD children: take the union of children across every
-    # tree position that matches ``/{ns}:{tag}``.
-    positions = _positions_for(tree, ns, cls.tag)
+    # tree position that matches ``/{ns}:{tag}`` (resolved once above).
     if positions:
         union_children: dict[str, dict[str, Any]] = {}
         for _path, node in positions:
@@ -873,7 +860,6 @@ KNOWN_RULE_EXCEPTIONS: frozenset[str] = frozenset(
     }
 )
 
-CITATION_BT_RE = re.compile(r"\bB[GT]-(?:X-)?[0-9]+(?:-[0-9]+)*\b")
 CITATION_BR_RE = re.compile(r"\bBR(?:-[A-Z0-9]+)+\b")
 
 
@@ -946,7 +932,7 @@ def _cross_check_citations(
 
     for path in _collect_citation_sources(root):
         text = path.read_text()
-        for bt in set(CITATION_BT_RE.findall(text)):
+        for bt in set(BT_BG_RE.findall(text)):
             if bt in terms or bt in TOLERATED_MISSING_IDS:
                 continue
             bad_bt.setdefault(bt, []).append(path)
@@ -990,16 +976,8 @@ def _run(
     terms = _load_sidecar(TERMS_SIDECAR)
     xpath_index = _xpath_index(terms)
     ids_at_xpath = _ids_at_xpath_index(terms)
-    parsed = _parse_modules()
-    subclasses = _element_subclass_names([m for _path, m in parsed])
-    classes = _walk_modules(parsed, subclasses)
-
+    classes, parents_by_name = _load_schema()
     classes_by_name = {c.name: c for c in classes}
-    parents_by_name: dict[str, list[str]] = {}
-    for _path, module in parsed:
-        for node in module.body:
-            if isinstance(node, ast.ClassDef) and node.name in subclasses:
-                parents_by_name[node.name] = _base_names(node)
 
     all_issues: list[Issue] = []
     for cls in classes:
