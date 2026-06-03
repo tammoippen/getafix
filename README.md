@@ -1,5 +1,12 @@
 # carthorse
 
+[![CI](https://github.com/tammoippen/carthorse/actions/workflows/CI.yml/badge.svg)](https://github.com/tammoippen/carthorse/actions/workflows/CI.yml)
+[![PyPi version](https://img.shields.io/pypi/v/carthorse.svg)](https://pypi.python.org/pypi/carthorse)
+![Downloads](https://pepy.tech/badge/carthorse/month)](https://pepy.tech/project/carthorse)
+[![PyPi license](https://img.shields.io/pypi/l/carthorse.svg)](https://pypi.python.org/pypi/carthorse)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+
 Build, parse and validate
 [**ZUGFeRD 2.x / Factur-X**](https://www.ferd-net.de/standards/zugferd)
 Cross-Industry-Invoice (CII) XML in Python. The dataclass model is
