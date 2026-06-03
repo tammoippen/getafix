@@ -27,7 +27,7 @@ Catches four classes of regression that hand-review keeps missing:
    (EXTENDED-only attributes are valid omissions until needed) — but
    the report makes the gap visible.
 
-Checks 1–3 fail the audit; the fourth is informational.
+Checks 1-3 fail the audit; the fourth is informational.
 
 ``--check-citations`` adds a fourth, broader pass: it scans every ``BT-``,
 ``BG-`` **and** ``BR-`` citation across ``src/``, ``docs/``,
