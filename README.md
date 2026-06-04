@@ -23,9 +23,7 @@ it follows the EN 16931 recipe term by term (`BT-…`/`BG-…`) and
 mixes a valid invoice. The Gaulish `-ix` ending even echoes the
 `-X` in Factur-**X**, and since Factur-X is the French half of the
 standard, a French druid felt right. As a bonus, the name reads as
-"get a fix" — *get a valid Factur-X*. It succeeds the project's
-former name, `carthorse`; both are about doing the heavy lifting so
-you don't have to.
+"get a fix" — *get a valid Factur-X*.
 
 > **Status: pre-1.0.** Solid for the fields that are modelled across
 > MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); selective EXTENDED
