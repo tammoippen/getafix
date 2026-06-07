@@ -193,6 +193,13 @@ renders every populated field.
 - `make check` (ruff + basedpyright) and `make tests` (≥90 % coverage)
   gate every phase.
 
+To eyeball a change, render any sample to an image with the dev helper::
+
+    uv run python tools/render_report.py tests/samples/EN16931_zf24_Rabatte.xml -o /tmp/report.png
+
+It accepts any CII XML and writes a PNG (default, via the ``cairosvg``
+dev dependency) or an SVG (`-o foo.svg`, no extra dependency).
+
 ## 7. Definition of done
 
 For each COMFORT-profile BT/BG in `docs/STRUCTURES.md`, either:
