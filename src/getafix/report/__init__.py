@@ -36,7 +36,7 @@ from getafix.report.accounting import allowance_charge_panel, tax_table, totals_
 from getafix.report.delivery import delivery_panel
 from getafix.report.document import header_panel
 from getafix.report.element import render_validation_errors as render_validation_errors
-from getafix.report.party import party_panel
+from getafix.report.party import party_panel, tax_representative_panel
 from getafix.report.settlement import (
     advance_payments_panel,
     logistics_charges_panel,
@@ -76,6 +76,11 @@ def render_invoice(doc: Document, console: Console | None = None) -> None:
         party_panel("Buyer", doc.trade.agreement.buyer),
     )
     console.print(parties)
+    tax_representative = tax_representative_panel(
+        doc.trade.agreement.seller_tax_representative_party
+    )
+    if tax_representative is not None:
+        console.print(tax_representative)
     delivery = delivery_panel(doc.trade.delivery)
     if delivery is not None:
         console.print(delivery)

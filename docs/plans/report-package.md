@@ -1,6 +1,6 @@
 # Plan — the `report` package
 
-Status: **Phase 1 landed** (skeleton + rewrite of the existing renderer).
+Status: **Phases 1–2 landed** (skeleton + rewrite; party identification).
 Remaining phases below take it from "renders the subset the old
 `report.py` did" to "renders **every COMFORT-profile element**".
 
@@ -64,22 +64,24 @@ These hold for every section renderer; new code must preserve them.
 - **No business logic.** Renderers read already-validated data; any
   arithmetic or rule lives in `rules/`, never here.
 
-## 3. What Phase 1 renders today
+## 3. What's rendered today
 
-The rewrite preserves the old renderer's coverage exactly (same panels,
-same order, same strings — the existing `tests/test_report.py` passes
-unchanged) and adds the section descriptions.
+Phase 1 preserved the old renderer's coverage exactly (same panels,
+order and strings — the original `tests/test_report.py` still passes) and
+added the section descriptions; Phase 2 added the party-identification
+rows and the tax-representative panel.
 
 | Section | Elements rendered today |
 | --- | --- |
 | Invoice (header) | BT-1, BT-2, BT-3, BT-24, BT-X-2 name, BT-X-4 language, BG-14 period, BT-10/13/14/12/11 refs, BT-25 preceding, BG-1 notes |
-| Seller / Buyer | BT-27/44 name, BT-28/45 trade name, BG-5/8 address, BG-6/9 contact (name/email/phone), BT-34/49 e-address, BT-31/32/48 tax ids |
+| Seller / Buyer | BT-27/44 name, BT-28/45 trade name, BT-29/46 id, BT-29-0/46-0 global ids, BT-30/47 legal reg, BT-33 legal info, BG-5/8 address, BG-6/9 contact (name/dept/email/phone), BT-34/49 e-address, BT-31/32/48 tax ids |
+| Tax representative | BG-11 BT-62 name, BG-12 address, BT-63 VAT id |
 | Delivery | BT-72 date, BG-13 ship-to **name**, BT-16 despatch, BT-15 receiving |
 | Line items | BT-153 name, BT-154 desc, BT-155/156 ids, BG-32 chars, BG-34 origin, BT-129/130 qty, BT-146 net, BT-131 total, BG-30 line VAT |
 | VAT breakdown | BG-23 category, rate, BT-116 basis, BT-117 tax, BT-120/121 exemption |
 | Allowances & charges | BG-20/21 indicator, reason, BT-92/99 amount, % · basis, BT-95/102 VAT |
 | Totals | BG-22 BT-106…BT-115 |
-| Payment | BG-10 payee, BT-20/9/89 terms, BG-16 means, BT-84/85/86 account, BG-18 card, BT-91 debit, BT-83/90 refs |
+| Payment | BG-10 payee (BT-59 name, BT-60/60-0 ids), BT-20/9/89 terms, BG-16 means, BT-84/85/86 account, BG-18 card, BT-91 debit, BT-83/90 refs |
 | Logistics / Prepayments | BG-X-42 / BG-X-45 (EXTENDED — pre-existing) |
 | Validation | rule code + message table |
 
@@ -93,13 +95,13 @@ kept, but completing EXTENDED is a separate effort).
 ### `document.py`
 - [ ] BT-23 business process (`Context.business`) — MINIMUM+
 
-### `party.py`
-- [ ] BT-29 / BT-46 party id, BT-29-0 / BT-46-0 global ids — BASIC_WL
-- [ ] BT-30 / BT-47 legal registration id (+ scheme) — `legal_organization.id`
-- [ ] BT-33 Seller additional legal info (`description`) — COMFORT
-- [ ] BT-41-0 / BT-56-0 contact department name — COMFORT
-- [ ] BG-11 Seller tax representative (BT-62 name, BG-12 address, BT-63 VAT id) — BASIC_WL
-- [ ] BT-60 / BT-60-0 Payee id / global id (Payee panel beyond name) — BASIC_WL
+### `party.py` — done in Phase 2
+- [x] BT-29 / BT-46 party id, BT-29-0 / BT-46-0 global ids — BASIC_WL
+- [x] BT-30 / BT-47 legal registration id (+ scheme) — `legal_organization.id`
+- [x] BT-33 Seller additional legal info (`description`) — COMFORT
+- [x] BT-41-0 / BT-56-0 contact department name — COMFORT
+- [x] BG-11 Seller tax representative (BT-62 name, BG-12 address, BT-63 VAT id) — BASIC_WL
+- [x] BT-60 / BT-60-0 Payee id / global id (Payee rows beyond name) — BASIC_WL
 
 ### `agreement.py`
 - [ ] BG-24 additional supporting documents — COMFORT
@@ -138,15 +140,20 @@ Order chosen so each phase is independently shippable and testable, and
 so the highest-value gaps (party identification, line pricing detail)
 land first.
 
-**Phase 1 — skeleton + rewrite (this PR).**
+**Phase 1 — skeleton + rewrite (done).**
 Package created, existing logic moved in, section descriptions added.
 `tests/test_report.py` passes unchanged.
 
-**Phase 2 — party identification.**
+**Phase 2 — party identification (done).**
 `party.py`: party id + global ids, legal registration id, additional
-legal info, contact department; BG-11 tax representative as a small
-panel beside Seller/Buyer; richer Payee. Decision to make: tax
-representative as its own panel vs. extra rows in the Seller panel.
+legal info, contact department added to `party_panel` (BT-labelled rows);
+BG-11 tax representative rendered by `tax_representative_panel` as its
+own green panel after the Seller/Buyer row (chosen over inline Seller
+rows — it has its own address + VAT id, so a panel reads cleaner and
+reuses `format_address` / the tax-id formatter). Payee id / global id
+added to the Payment panel. A `scheme_suffix` formatter in
+`report/types.py` now renders the dim `(scheme XXX)` hint shared by
+global id, legal registration id and electronic address.
 
 **Phase 3 — line detail.**
 `line.py` + `trade.py`: item standard id and classification in the item

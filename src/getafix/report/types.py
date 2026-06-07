@@ -34,3 +34,13 @@ def format_vat(category: CategoryCode, rate: Decimal | None) -> str:
     bare category code in that case.
     """
     return f"{rate}% {category.value}" if rate is not None else category.value
+
+
+def scheme_suffix(scheme_id: str | None) -> str:
+    """Dim `` (scheme XXX)`` suffix for an identifier, or empty when unset.
+
+    Appended after an identifier value (global id, legal registration id,
+    electronic address) to show which registration scheme issued it
+    without crowding the primary value.
+    """
+    return f" [dim](scheme {scheme_id})[/dim]" if scheme_id else ""
