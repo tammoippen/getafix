@@ -12,7 +12,20 @@ src/getafix/
 ├── __init__.py
 ├── cli.py                 # console script entry point
 ├── pdf.py                 # PDF/A-3 attachment helpers (pypdf)
-├── report.py              # rich console pretty-printer
+├── report/                # rich console pretty-printer (one module per schema topic)
+│   ├── __init__.py        # render_invoice orchestrator + public re-exports
+│   ├── _types.py          # SectionRenderer alias + described_panel / describe_table
+│   ├── element.py         # render_validation_errors
+│   ├── types.py           # code formatters (format_type_code, format_vat)
+│   ├── document.py        # Invoice overview panel
+│   ├── party.py           # Seller / Buyer panels, address, tax ids
+│   ├── agreement.py       # order / contract / project rows
+│   ├── delivery.py        # Delivery panel
+│   ├── accounting.py      # VAT breakdown, allowances/charges, totals
+│   ├── settlement.py      # payment, prepayments, period rows
+│   ├── line.py            # item cell + line VAT cell
+│   ├── trade.py           # line-items table
+│   └── references.py      # format_reference
 ├── schema/                # the CII data model (dataclasses)
 │   ├── element.py         # Element base, ProfileMismatch, ValidationError(s)
 │   ├── types.py           # enums: Profile, Namespace, TypeCode, …
@@ -38,7 +51,8 @@ src/getafix/
 docs/
 ├── STRUCTURES.md          # module → BG/BT field map, profile applicability, EXTENDED gap diff
 ├── VALIDATION.md          # every BR-*/BR-CO-*/BR-X-* rule + status, BR-CL-* / BR-DEC-* wirings
-└── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
+├── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
+└── plans/                 # design / implementation plans (e.g. report-package.md)
 
 ZF24_EN/                   # vendored spec (gitignored); see docs/READING_OFFICIAL_DOCS.md
 tests/                     # pytest suite, sample corpus, hypothesis strategies
@@ -188,6 +202,20 @@ right one to fire.
 
 For the full BR-* catalogue with implementation status see
 `docs/VALIDATION.md`.
+
+## Report architecture
+
+`getafix.report` mirrors the schema the same way `getafix.rules` does:
+one `report/<topic>.py` per `schema/<topic>.py`, each holding the
+free-standing functions that render the elements defined there. A
+section renderer reads its element and returns a Rich renderable (or
+`None` to skip an empty section); `render_invoice` in `report/__init__.py`
+composes them top-to-bottom. Shared framing (`described_panel`,
+`describe_table`, the `SectionRenderer` alias) lives in
+`report/_types.py`; code→string formatters in `report/types.py`. Every
+section carries a short dim description of what it means, and rows are
+labelled with their BT/BG id. The roadmap to rendering every
+COMFORT-profile element is in `docs/plans/report-package.md`.
 
 ## Adding a new BT / BG field
 
