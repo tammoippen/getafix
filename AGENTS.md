@@ -56,7 +56,8 @@ docs/
 
 ZF24_EN/                   # vendored spec (gitignored); see docs/READING_OFFICIAL_DOCS.md
 tests/                     # pytest suite, sample corpus, hypothesis strategies
-tools/                     # one-shot scripts (codelist regen, sample fetch)
+tools/                     # one-shot scripts (codelist regen, sample fetch,
+                           #   render_report.py: XML → PNG/SVG of the report)
 ```
 
 ## How the model is structured
