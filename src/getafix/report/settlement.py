@@ -21,7 +21,7 @@ from rich.table import Table
 
 from getafix.report._types import describe_table, described_panel
 from getafix.report.references import format_reference
-from getafix.report.types import format_vat
+from getafix.report.types import format_vat, scheme_suffix
 
 if TYPE_CHECKING:
     from getafix.schema.settlement import TradeSettlement
@@ -60,8 +60,16 @@ def payment_panel(settlement: TradeSettlement) -> RenderableType | None:
     grid = Table.grid(padding=(0, 2))
     grid.add_column(style="bold", no_wrap=True)
     grid.add_column()
-    if settlement.payee is not None:
-        grid.add_row("Payee (BG-10):", settlement.payee.name)
+    payee = settlement.payee
+    if payee is not None:
+        grid.add_row("Payee (BG-10):", payee.name)
+        for pid in payee.id or []:
+            grid.add_row("Payee id (BT-60):", pid)
+        if payee.global_id is not None:
+            grid.add_row(
+                "Payee id (BT-60-0):",
+                f"{payee.global_id.id}{scheme_suffix(payee.global_id.scheme_id)}",
+            )
     for t in settlement.terms or []:
         if t.description:
             grid.add_row("Terms:", t.description)

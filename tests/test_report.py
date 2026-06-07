@@ -30,6 +30,9 @@ from getafix.schema.party import (
     URIID,
     BuyerTradeParty,
     EmailURI,
+    GlobalID,
+    ISO6523SchemeId,
+    LegalOrganization,
     PhoneNumber,
     PostalTradeAddressExtended,
     SellerTradeParty,
@@ -257,3 +260,85 @@ def test_render_invoice_no_advance_payments_panel_for_basic_doc() -> None:
     console = _record()
     render_invoice(doc, console=console)
     assert "Advance payments" not in console.export_text()
+
+
+def _innergem_doc() -> Document:
+    """COMFORT sample carrying a Seller/Buyer id, a tax representative
+    (BG-11) and a Payee with a global id (BT-60-0)."""
+    from pathlib import Path
+
+    from lxml import etree
+
+    return Document.from_xml(
+        etree.fromstring(
+            Path("tests/samples/EN16931_zf24_Innergemeinschaftliche.xml").read_bytes()
+        )
+    )
+
+
+def test_render_invoice_renders_seller_buyer_party_ids() -> None:
+    """The Seller (BT-29) and Buyer (BT-46) identifiers render as their
+    own rows with the BT id in the label."""
+    console = _record()
+    render_invoice(_innergem_doc(), console=console)
+    text = console.export_text()
+    assert "ID (BT-29):" in text
+    assert "12345676" in text  # Seller id
+    assert "ID (BT-46):" in text
+    assert "75969813" in text  # Buyer id
+
+
+def test_render_invoice_renders_tax_representative_panel() -> None:
+    """The Seller tax representative (BG-11) renders as its own panel with
+    name (BT-62), address (BG-12) and VAT id (BT-63)."""
+    console = _record()
+    render_invoice(_innergem_doc(), console=console)
+    text = console.export_text()
+    assert "Tax representative" in text
+    assert "(BG-11)" in text
+    assert "Friedrichstraße 165" in text  # tax-rep address line
+    assert "DE987654321" in text  # tax-rep VAT id (BT-63)
+
+
+def test_render_invoice_no_tax_representative_panel_when_absent() -> None:
+    """Documents without a tax representative print no such panel."""
+    console = _record()
+    render_invoice(make_vat_doc(), console=console)
+    assert "Tax representative" not in console.export_text()
+
+
+def test_render_invoice_renders_payee_global_id() -> None:
+    """The Payee global id (BT-60-0) renders with its scheme hint."""
+    console = _record()
+    render_invoice(_innergem_doc(), console=console)
+    text = console.export_text()
+    assert "Payee id (BT-60-0):" in text
+    assert "432156789" in text
+    assert "0060" in text  # ISO 6523 scheme of the payee global id
+
+
+def test_render_invoice_renders_seller_legal_org_and_contact_detail() -> None:
+    """Global id (BT-29-0), legal registration id (BT-30), additional
+    legal info (BT-33) and the contact department (BT-41-0) all render."""
+    doc = make_vat_doc()
+    seller = doc.trade.agreement.seller
+    seller.global_ids = [GlobalID(id="4012345000009", scheme_id="0088")]
+    seller.legal_organization = LegalOrganization(
+        id=ISO6523SchemeId(id="HRB12345", scheme_id="0198"), trade_name="Acme Trading"
+    )
+    seller.description = "Geschäftsführer: Max Muster"
+    seller.contact = TradeContact(person_name="Jane Doe", department_name="Billing")
+    console = _record()
+    render_invoice(doc, console=console)
+    text = console.export_text()
+    assert "Global ID (BT-29-0):" in text
+    assert "4012345000009" in text
+    assert "0088" in text  # scheme hint on the global id
+    assert "Legal reg. (BT-30):" in text
+    assert "HRB12345" in text
+    assert "Trading as:" in text
+    assert "Acme Trading" in text
+    assert "Legal info (BT-33):" in text
+    assert "Geschäftsführer: Max Muster" in text
+    assert "Department (BT-41-0):" in text
+    assert "Billing" in text
