@@ -23,7 +23,8 @@ module only handles the file-attachment step.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from io import BytesIO
 from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
@@ -42,28 +43,47 @@ DEFAULT_ATTACHMENT_NAME: str = STANDARD_LOCATIONS[0]
 
 
 def attach_xml(
-    pdf_in: Path,
+    pdf_in: Path | bytes,
     xml: Path | bytes,
     *,
     pdf_out: Path | None = None,
     attachment_name: str = DEFAULT_ATTACHMENT_NAME,
-) -> Path:
+    metadata: Mapping[str, str] | None = None,
+) -> Path | bytes:
     """Embed ``xml`` in ``pdf_in`` as an embedded file and write the result.
 
-    ``xml`` may be a :class:`~pathlib.Path` to read from, or raw bytes
-    to embed verbatim. ``pdf_out`` defaults to ``pdf_in`` (in-place
-    rewrite); pass an explicit target to write to a different file.
+    ``pdf_in`` may be a :class:`~pathlib.Path` to read from, or the raw
+    bytes of a PDF. ``xml`` may likewise be a :class:`~pathlib.Path` to
+    read from, or raw bytes to embed verbatim.
+
+    ``pdf_out`` selects where the result goes. When given, the PDF is
+    written there and that :class:`~pathlib.Path` is returned. When
+    omitted, a :class:`~pathlib.Path` ``pdf_in`` is rewritten in place
+    (and returned); a bytes ``pdf_in`` causes the result to be returned
+    as bytes.
 
     The attachment is stored under ``attachment_name`` in the PDF's
     embedded-files name tree. The default matches the Factur-X 1.x /
     ZUGFeRD 2.x convention; override for ZUGFeRD 1.0 or XRechnung.
 
-    Returns the path the PDF was written to.
+    ``metadata``, when given, extends the PDF's document information
+    dictionary (e.g. ``{"/Title": "Invoice 42"}``); existing entries are
+    kept unless a given key overrides them.
+
+    Returns the path the PDF was written to, or the result bytes when
+    ``pdf_in`` is bytes and no ``pdf_out`` is given.
     """
     xml_bytes = xml.read_bytes() if isinstance(xml, Path) else xml
-    writer = PdfWriter(clone_from=str(pdf_in))
+    clone_from = BytesIO(pdf_in) if isinstance(pdf_in, bytes) else str(pdf_in)
+    writer = PdfWriter(clone_from=clone_from)
     _ = writer.add_attachment(attachment_name, xml_bytes)
+    if metadata:
+        writer.add_metadata(dict(metadata))
     target = pdf_out if pdf_out is not None else pdf_in
+    if isinstance(target, bytes):
+        buffer = BytesIO()
+        _ = writer.write(buffer)
+        return buffer.getvalue()
     with target.open("wb") as fp:
         _ = writer.write(fp)
     return target

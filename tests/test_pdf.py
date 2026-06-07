@@ -9,6 +9,7 @@ caller-specified candidates matches.
 
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 
 import pytest as pt
@@ -67,6 +68,53 @@ def test_attach_xml_reads_xml_from_path(blank_pdf: Path, tmp_path: Path):
 def test_attach_xml_in_place_rewrites_input_pdf(blank_pdf: Path):
     attach_xml(blank_pdf, XML_PAYLOAD)
     assert extract_xml(blank_pdf) == XML_PAYLOAD
+
+
+def test_attach_xml_accepts_pdf_bytes_and_returns_bytes(blank_pdf: Path):
+    pdf_bytes = blank_pdf.read_bytes()
+    result = attach_xml(pdf_bytes, XML_PAYLOAD)
+    assert isinstance(result, bytes)
+    reader = PdfReader(BytesIO(result))
+    assert DEFAULT_ATTACHMENT_NAME in reader.attachments
+    assert reader.attachments[DEFAULT_ATTACHMENT_NAME][0] == XML_PAYLOAD
+
+
+def test_attach_xml_pdf_bytes_writes_to_pdf_out(blank_pdf: Path, tmp_path: Path):
+    pdf_bytes = blank_pdf.read_bytes()
+    out = tmp_path / "from-bytes.pdf"
+    written = attach_xml(pdf_bytes, XML_PAYLOAD, pdf_out=out)
+    assert written == out
+    assert extract_xml(out) == XML_PAYLOAD
+
+
+def test_attach_xml_metadata_extends_document_info(blank_pdf: Path):
+    pdf_bytes = blank_pdf.read_bytes()
+    result = attach_xml(
+        pdf_bytes, XML_PAYLOAD, metadata={"/Title": "Invoice 42", "/Author": "getafix"}
+    )
+    assert isinstance(result, bytes)
+    meta = PdfReader(BytesIO(result)).metadata
+    assert meta is not None
+    assert meta["/Title"] == "Invoice 42"
+    assert meta["/Author"] == "getafix"
+
+
+def test_attach_xml_metadata_preserves_existing_entries(tmp_path: Path):
+    # Start from a PDF that already carries a /Producer entry.
+    src = tmp_path / "with-meta.pdf"
+    writer = PdfWriter()
+    _ = writer.add_blank_page(width=200, height=200)
+    writer.add_metadata({"/Producer": "upstream-tool", "/Title": "old"})
+    with src.open("wb") as fp:
+        writer.write(fp)
+
+    out = tmp_path / "extended.pdf"
+    attach_xml(src, XML_PAYLOAD, pdf_out=out, metadata={"/Title": "new"})
+
+    meta = PdfReader(str(out)).metadata
+    assert meta is not None
+    assert meta["/Producer"] == "upstream-tool"  # untouched
+    assert meta["/Title"] == "new"  # overridden
 
 
 def test_extract_xml_returns_none_for_pdf_without_attachments(blank_pdf: Path):
