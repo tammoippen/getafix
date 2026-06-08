@@ -4,7 +4,8 @@
 its report counterpart owns :func:`lines_table`, which arranges those
 items into the line-items table. The per-line cell content comes from
 :mod:`getafix.report.line`; this module handles the table framing and
-the EXTENDED sub-invoice-line indentation.
+the EXTENDED sub-invoice-line hierarchy (children ordered and indented
+under their parent).
 """
 
 from __future__ import annotations
@@ -14,10 +15,50 @@ from typing import TYPE_CHECKING
 from rich.table import Table
 
 from getafix.report._types import describe_table
-from getafix.report.line import item_cell, line_vat_cell
+from getafix.report.line import item_cell, line_vat_cell, net_price_cell
 
 if TYPE_CHECKING:
-    from getafix.schema.trade import Trade
+    from getafix.schema.trade import Trade, TradeLineItem
+
+
+def _ordered_lines(items: list[TradeLineItem]) -> list[tuple[int, TradeLineItem]]:
+    """Return ``(depth, item)`` in sub-invoice-line tree order.
+
+    EXTENDED sub-invoice-lines link to a parent via BT-X-304; children
+    render directly under their parent, one level deeper, regardless of
+    document order (the Hardware sample lists children *before* their
+    GROUP parent). A missing / dangling parent makes a root; a cycle
+    survivor falls back to depth 0 so every line is shown exactly once.
+    """
+    by_id = {item.associated_document.line_id: item for item in items}
+    children: dict[str, list[str]] = {}
+    roots: list[str] = []
+    for item in items:
+        ad = item.associated_document
+        parent = ad.parent_line_id
+        if parent is not None and parent in by_id and parent != ad.line_id:
+            children.setdefault(parent, []).append(ad.line_id)
+        else:
+            roots.append(ad.line_id)
+
+    ordered: list[tuple[int, TradeLineItem]] = []
+    seen: set[str] = set()
+
+    def _walk(line_id: str, depth: int) -> None:
+        if line_id in seen:
+            return  # cycle guard
+        seen.add(line_id)
+        ordered.append((depth, by_id[line_id]))
+        for child in children.get(line_id, []):
+            _walk(child, depth + 1)
+
+    for root in roots:
+        _walk(root, 0)
+    # Any line not reached above (part of a cycle) still gets shown once.
+    for item in items:
+        if item.associated_document.line_id not in seen:
+            _walk(item.associated_document.line_id, 0)
+    return ordered
 
 
 def lines_table(trade: Trade, currency: str) -> Table:
@@ -30,7 +71,9 @@ def lines_table(trade: Trade, currency: str) -> Table:
         show_lines=False,
         expand=True,
     )
-    table.add_column("#", justify="right", style="dim", no_wrap=True)
+    # The line-id column is left-justified so the sub-line indentation is
+    # visible (a right-justified column would swallow the leading spaces).
+    table.add_column("#", style="dim", no_wrap=True)
     table.add_column("Item")
     table.add_column("Qty", justify="right")
     table.add_column("Unit", no_wrap=True)
@@ -38,53 +81,30 @@ def lines_table(trade: Trade, currency: str) -> Table:
     table.add_column(f"Line total [{currency}]", justify="right")
     table.add_column("VAT", justify="right", no_wrap=True)
 
-    # Build a parent-line -> depth map so EXTENDED sub-invoice-line
-    # trees render indented (Hardware-style: GROUP "01" with DETAIL
-    # children "0101" / "0102" — children render two spaces deeper).
-    # Compute depth via the parent chain so the order in which lines
-    # appear in the document doesn't matter (the Hardware sample
-    # actually lists children BEFORE their parent).
-    parent_of: dict[str, str] = {
-        item.associated_document.line_id: item.associated_document.parent_line_id
-        for item in trade.items
-        if item.associated_document.parent_line_id is not None
-    }
-
-    _EMPTY: frozenset[str] = frozenset()
-
-    def _depth(line_id: str, _seen: frozenset[str] = _EMPTY) -> int:
-        parent = parent_of.get(line_id)
-        if parent is None or parent in _seen:
-            return 0  # root, dangling ref, or cycle guard
-        return _depth(parent, _seen | {line_id}) + 1
-
-    depth_by_id = {
-        item.associated_document.line_id: _depth(item.associated_document.line_id)
-        for item in trade.items
-    }
-
-    for item in trade.items:
+    for depth, item in _ordered_lines(trade.items):
         ad = item.associated_document
         qty = item.delivery.billed_quantity
-        net = item.agreement.net_price
         line_total = item.settlement.monetary_summation.line_total
-        # EXTENDED sub-invoice-line subtype (BT-X-8) — show as a tag
-        # next to the line id; indent children of GROUP lines.
-        indent = "  " * depth_by_id[ad.line_id]
+        # Indent children under their parent; tag the EXTENDED
+        # sub-invoice-line subtype (BT-X-8) next to the line id.
+        indent = "  " * depth
         subtype_tag = (
             f" [dim]({ad.status_reason_code.value})[/dim]"
             if ad.status_reason_code is not None
             else ""
         )
-        # All four can be ``None`` on EXTENDED GROUP / INFORMATION lines;
-        # render an em-dash placeholder in those cells.
+        # Qty / unit / line total can be ``None`` on EXTENDED GROUP /
+        # INFORMATION lines; render an em-dash placeholder there.
         table.add_row(
             f"{indent}{ad.line_id}{subtype_tag}",
-            item_cell(item.product),
+            item_cell(item),
             f"{qty.value}" if qty is not None else "—",
             qty.unit_code if qty is not None else "—",
-            f"{net.charge_amount}" if net is not None else "—",
+            net_price_cell(item.agreement),
             f"{line_total}" if line_total is not None else "—",
             line_vat_cell(item.settlement.applicable_trade_tax),
         )
-    return describe_table(table, "One row per invoiced position (BG-25).")
+    return describe_table(
+        table,
+        "One row per invoiced position (BG-25); sub-lines indent under their parent.",
+    )

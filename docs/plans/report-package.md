@@ -1,6 +1,7 @@
 # Plan — the `report` package
 
-Status: **Phases 1–2 landed** (skeleton + rewrite; party identification).
+Status: **Phases 1–3 landed** (skeleton + rewrite; party identification;
+line detail + sub-line hierarchy).
 Remaining phases below take it from "renders the subset the old
 `report.py` did" to "renders **every COMFORT-profile element**".
 
@@ -69,7 +70,8 @@ These hold for every section renderer; new code must preserve them.
 Phase 1 preserved the old renderer's coverage exactly (same panels,
 order and strings — the original `tests/test_report.py` still passes) and
 added the section descriptions; Phase 2 added the party-identification
-rows and the tax-representative panel.
+rows and the tax-representative panel; Phase 3 filled in the line detail
+and the sub-line hierarchy.
 
 | Section | Elements rendered today |
 | --- | --- |
@@ -77,7 +79,7 @@ rows and the tax-representative panel.
 | Seller / Buyer | BT-27/44 name, BT-28/45 trade name, BT-29/46 id, BT-29-0/46-0 global ids, BT-30/47 legal reg, BT-33 legal info, BG-5/8 address, BG-6/9 contact (name/dept/email/phone), BT-34/49 e-address, BT-31/32/48 tax ids |
 | Tax representative | BG-11 BT-62 name, BG-12 address, BT-63 VAT id |
 | Delivery | BT-72 date, BG-13 ship-to **name**, BT-16 despatch, BT-15 receiving |
-| Line items | BT-153 name, BT-154 desc, BT-155/156 ids, BG-32 chars, BG-34 origin, BT-129/130 qty, BT-146 net, BT-131 total, BG-30 line VAT |
+| Line items | BT-153 name, BT-154 desc, BT-157/155/156 ids, BG-33 class, BG-32 chars, BG-34 origin, BT-127 note, BG-26 period, BG-27/28 alw/chg, BT-132/128/133 refs, BT-129/130 qty, BT-146 net (+BT-148/147/149 gross), BT-131 total, BG-30 line VAT; sub-lines nested |
 | VAT breakdown | BG-23 category, rate, BT-116 basis, BT-117 tax, BT-120/121 exemption |
 | Allowances & charges | BG-20/21 indicator, reason, BT-92/99 amount, % · basis, BT-95/102 VAT |
 | Totals | BG-22 BT-106…BT-115 |
@@ -120,16 +122,16 @@ kept, but completing EXTENDED is a separate effort).
 ### `accounting.py`
 - [ ] BT-7 tax point date / BT-8 due-date code on BG-23 rows — COMFORT
 
-### `line.py`
-- [ ] BT-157 item standard id (`product.global_id`) — BASIC
-- [ ] BG-33 item classification (BT-158) — COMFORT
-- [ ] BT-148 gross price + BT-149/150 basis quantity, BT-147 price
+### `line.py` — done in Phase 3
+- [x] BT-157 item standard id (`product.global_id`) — BASIC
+- [x] BG-33 item classification (BT-158) — COMFORT
+- [x] BT-148 gross price + BT-149/150 basis quantity, BT-147 price
       discount (`gross_price` / `applied_allowance_charge`) — BASIC
-- [ ] BG-27 / BG-28 line allowances & charges — BASIC / COMFORT
-- [ ] BG-26 line invoicing period (BT-134/135) — BASIC_WL
-- [ ] BT-127 line note — BASIC
-- [ ] BT-132 line buyer-order ref, BT-128 line object id — COMFORT
-- [ ] BT-133 line Buyer accounting reference — COMFORT
+- [x] BG-27 / BG-28 line allowances & charges — BASIC / COMFORT
+- [x] BG-26 line invoicing period (BT-134/135) — BASIC_WL
+- [x] BT-127 line note — BASIC
+- [x] BT-132 line buyer-order ref, BT-128 line object id — COMFORT
+- [x] BT-133 line Buyer accounting reference — COMFORT
 
 ### `references.py`
 - [ ] BT-125 attachment summary (filename + MIME) for BG-24 — COMFORT
@@ -155,13 +157,18 @@ added to the Payment panel. A `scheme_suffix` formatter in
 `report/types.py` now renders the dim `(scheme XXX)` hint shared by
 global id, legal registration id and electronic address.
 
-**Phase 3 — line detail.**
-`line.py` + `trade.py`: item standard id and classification in the item
-cell; gross price / basis quantity / price discount as dim derivation
-under the net price; line note as a dim follow-up line. Line-level
-allowances/charges (BG-27/28) and the line period (BG-26): render as dim
-follow-up lines in the item cell (keeps the flat table) — a nested
-per-line sub-table is a non-goal.
+**Phase 3 — line detail (done).**
+`line.py`: item standard id and classification in the item cell; gross
+price / basis quantity / price discount as a dim derivation under the
+net price (`net_price_cell`); line note, invoicing period, line
+allowances/charges and line references (BT-132 / BT-128 / BT-133) as dim
+follow-up lines in the item cell (flat table kept — a nested per-line
+sub-table remains a non-goal). `trade.py`: sub-invoice-lines are now
+ordered into a depth-first tree so each child renders directly under its
+parent, and the line-id column is left-justified so the indentation is
+actually visible (a right-justified column swallowed the leading spaces,
+so the previous indentation never showed and children could appear above
+their parent in document order).
 
 **Phase 4 — settlement & accounting.**
 `settlement.py`: BT-6 accounting currency and BT-82 means info into the
