@@ -16,6 +16,7 @@ from rich.table import Table
 
 from getafix.report._types import describe_table
 from getafix.report.line import item_cell, line_vat_cell, net_price_cell
+from getafix.report.types import dim_paren
 
 if TYPE_CHECKING:
     from getafix.schema.trade import Trade, TradeLineItem
@@ -89,7 +90,7 @@ def lines_table(trade: Trade, currency: str) -> Table:
         # sub-invoice-line subtype (BT-X-8) next to the line id.
         indent = "  " * depth
         subtype_tag = (
-            f" [dim]({ad.status_reason_code.value})[/dim]"
+            f" {dim_paren(ad.status_reason_code.value)}"
             if ad.status_reason_code is not None
             else ""
         )

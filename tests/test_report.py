@@ -10,7 +10,9 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
+import pytest
 from rich.console import Console
 
 from getafix.report import render_invoice, render_validation_errors
@@ -530,3 +532,22 @@ def test_render_invoice_renders_ship_to_global_id() -> None:
     assert "Ship-to id (BT-71-0):" in text
     assert "GLN400000000S" in text
     assert "0088" in text  # scheme of the ship-to global id
+
+
+# Every COMFORT-or-lower sample (MINIMUM / BASIC_WL / BASIC / EN16931),
+# discovered at collection time, as a smoke-test corpus.
+_COMFORT_SAMPLES = sorted(
+    p.name
+    for p in Path("tests/samples").glob("*.xml")
+    if p.name.startswith(("MINIMUM", "BASIC", "EN16931"))
+)
+
+
+@pytest.mark.parametrize("sample", _COMFORT_SAMPLES)
+def test_render_invoice_smoke_renders_every_comfort_sample(sample: str) -> None:
+    """Every shipped COMFORT-or-lower invoice renders without raising and
+    produces non-empty output — a broad guard that no populated field
+    trips the renderer."""
+    console = _record()
+    render_invoice(_doc_from_sample(sample), console=console)
+    assert console.export_text().strip()

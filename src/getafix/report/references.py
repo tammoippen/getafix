@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from getafix.report.types import dim_paren
+
 if TYPE_CHECKING:
     from datetime import date
 
@@ -33,7 +35,7 @@ def format_reference(ref: ReferencedDocument) -> str:
     """Issuer-assigned id, with the issue date in dim parentheses when set."""
     value = ref.issuer_assigned_id
     if ref.issue_date_time is not None:
-        value += f" [dim]({ref.issue_date_time.isoformat()})[/dim]"
+        value += f" {dim_paren(ref.issue_date_time.isoformat())}"
     return value
 
 
@@ -43,4 +45,4 @@ def format_attachment(attachment: AttachmentBinaryObject) -> str:
     Summarises the binary payload by its file name (BT-125-2) and MIME
     type (BT-125-1) rather than dumping the base64 content.
     """
-    return f"{attachment.filename} [dim]({attachment.mime_code.value})[/dim]"
+    return f"{attachment.filename} {dim_paren(attachment.mime_code.value)}"

@@ -1,10 +1,13 @@
-"""Formatting helpers for the coded enums in :mod:`getafix.schema.types`.
+"""Value formatters for the report.
 
-Small, pure functions that turn a code (``TypeCode``, ``CategoryCode`` +
-rate) into the short human string the report shows. Kept separate from
-the panel/table builders so the same formatting is reused everywhere a
-code appears — the line VAT cell, the allowance/charge VAT cell, the
-logistics-charge VAT cell all funnel through :func:`format_vat`.
+Small, pure ``value -> str`` helpers shared across the section builders so
+the same formatting (and the same Rich markup) is written once:
+
+* code formatters — :func:`format_type_code`, :func:`format_vat`;
+* value formatters — :func:`format_amount`, :func:`format_period`,
+  :func:`scheme_suffix`;
+* markup helpers — :func:`dim`, :func:`dim_paren` centralise the muted
+  ``[dim]…[/dim]`` styling used for secondary detail.
 """
 
 from __future__ import annotations
@@ -12,9 +15,25 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from datetime import date
     from decimal import Decimal
 
     from getafix.schema.types import CategoryCode, TypeCode
+
+
+def dim(text: str) -> str:
+    """Wrap ``text`` in Rich's muted ``[dim]`` style."""
+    return f"[dim]{text}[/dim]"
+
+
+def dim_paren(text: str) -> str:
+    """Dim, parenthesised hint — ``[dim](text)[/dim]``.
+
+    The house style for a secondary qualifier shown next to a value: a
+    reason code beside its text, a scheme beside an id, a date beside a
+    reference.
+    """
+    return dim(f"({text})")
 
 
 def format_type_code(type_code: TypeCode) -> str:
@@ -36,6 +55,23 @@ def format_vat(category: CategoryCode, rate: Decimal | None) -> str:
     return f"{rate}% {category.value}" if rate is not None else category.value
 
 
+def format_amount(value: object, currency: str) -> str:
+    """Monetary value with its currency code — ``<value> <currency>``."""
+    return f"{value} {currency}"
+
+
+def format_period(start: date | None, end: date | None) -> str:
+    """Date range ``<start> → <end>`` with ``…`` for an open endpoint.
+
+    Used for both the header invoicing period (BG-14) and the line
+    invoicing period (BG-26); the caller checks at least one endpoint is
+    set before rendering.
+    """
+    start_text = start.isoformat() if start else "…"
+    end_text = end.isoformat() if end else "…"
+    return f"{start_text} → {end_text}"
+
+
 def scheme_suffix(scheme_id: str | None) -> str:
     """Dim `` (scheme XXX)`` suffix for an identifier, or empty when unset.
 
@@ -43,4 +79,4 @@ def scheme_suffix(scheme_id: str | None) -> str:
     electronic address) to show which registration scheme issued it
     without crowding the primary value.
     """
-    return f" [dim](scheme {scheme_id})[/dim]" if scheme_id else ""
+    return f" {dim_paren(f'scheme {scheme_id}')}" if scheme_id else ""

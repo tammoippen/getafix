@@ -23,7 +23,7 @@ from getafix.report.settlement import (
     billing_period_row,
     preceding_invoice_rows,
 )
-from getafix.report.types import format_type_code
+from getafix.report.types import dim_paren, format_type_code
 
 if TYPE_CHECKING:
     from getafix.schema import Document
@@ -79,7 +79,7 @@ def notes_text(header: Header) -> str | None:
     if not header.notes:
         return None
     return "\n".join(
-        f"[dim]({n.subject_code})[/dim] {n.content or ''}"
+        f"{dim_paren(n.subject_code)} {n.content or ''}"
         if n.subject_code
         else (n.content or "")
         for n in header.notes

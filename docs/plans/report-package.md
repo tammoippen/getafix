@@ -1,9 +1,10 @@
 # Plan — the `report` package
 
-Status: **Phases 1–5 landed — the COMFORT surface is complete.** Every
-COMFORT-or-lower BT/BG in `docs/STRUCTURES.md` is now rendered. What
-remains is EXTENDED-only coverage (some of which already renders) and
-ongoing polish.
+Status: **Phases 1–6 landed — the COMFORT surface is complete and
+polished.** Every COMFORT-or-lower BT/BG in `docs/STRUCTURES.md` is
+rendered, the shared formatting is factored, and a smoke test covers the
+whole COMFORT sample corpus. What remains is EXTENDED-only coverage (some
+of which already renders).
 Remaining phases below take it from "renders the subset the old
 `report.py` did" to "renders **every COMFORT-profile element**".
 
@@ -191,11 +192,16 @@ VAT-breakdown column, added only when a row carries it. `agreement.py` +
 global id (BT-71-0) plus the full ship-to address (BG-15), reusing
 `party.format_address` rather than duplicating it.
 
-**Phase 6 — polish.**
-Factor shared `format_amount(value, currency)` / `format_date` helpers
-into `types.py` if duplication has crept in; sweep every section for the
-BT/BG-labelling and description conventions; confirm a COMFORT sample
-renders every populated field.
+**Phase 6 — polish (done).**
+Factored the duplicated formatting into `types.py`: `format_amount`
+(totals), `format_period` (header BG-14 + line BG-26, previously copied),
+and `dim` / `dim_paren` to centralise the muted `[dim]…[/dim]` markup
+that had spread across seven sites (reason codes, scheme hints, note
+subjects, the sub-line subtype tag, reference dates, attachment MIME).
+Output is byte-identical — the existing assertions still pass. Added a
+parametrised smoke test that renders every shipped COMFORT-or-lower
+sample (35 invoices) and asserts non-empty output, guarding against any
+populated field tripping the renderer.
 
 ## 6. Testing
 

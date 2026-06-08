@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from getafix.report.types import format_vat
+from getafix.report.types import dim, format_period, format_vat
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -28,10 +28,6 @@ if TYPE_CHECKING:
     from getafix.schema.accounting import ApplicableTradeTax
     from getafix.schema.line import LineTradeAgreement, ProductClassification
     from getafix.schema.trade import TradeLineItem
-
-
-def _dim(text: str) -> str:
-    return f"[dim]{text}[/dim]"
 
 
 def item_cell(item: TradeLineItem) -> str:
@@ -47,7 +43,7 @@ def item_cell(item: TradeLineItem) -> str:
     product = item.product
     lines: list[str] = [product.name or ""]
     if product.description:
-        lines.append(_dim(product.description))
+        lines.append(dim(product.description))
     id_bits: list[str] = []
     if product.global_id is not None and product.global_id.id:
         id_bits.append(f"Std#: {product.global_id.id}")
@@ -56,35 +52,33 @@ def item_cell(item: TradeLineItem) -> str:
     if product.buyer_assigned_id:
         id_bits.append(f"Buyer#: {product.buyer_assigned_id}")
     if id_bits:
-        lines.append(_dim(" · ".join(id_bits)))
+        lines.append(dim(" · ".join(id_bits)))
     classes = product.classifications or []
     if classes:
         rendered = " · ".join(_classification(c) for c in classes[:3])
         if len(classes) > 3:
             rendered += f" · (+{len(classes) - 3})"
-        lines.append(_dim(f"Class: {rendered}"))
+        lines.append(dim(f"Class: {rendered}"))
     chars = product.characteristics or []
     if chars:
         rendered = " · ".join(f"{c.description}: {c.value}" for c in chars[:3])
         if len(chars) > 3:
             rendered += f" · (+{len(chars) - 3})"
-        lines.append(_dim(rendered))
+        lines.append(dim(rendered))
     if product.origin_country is not None:
-        lines.append(_dim(f"Origin: {product.origin_country.id}"))
+        lines.append(dim(f"Origin: {product.origin_country.id}"))
     note = item.associated_document.note
     if note is not None and note.content:
-        lines.append(_dim(f"Note: {note.content}"))
+        lines.append(dim(f"Note: {note.content}"))
     period = item.settlement.billing_period
     if period is not None and (period.start or period.end):
-        start = period.start.isoformat() if period.start else "…"
-        end = period.end.isoformat() if period.end else "…"
-        lines.append(_dim(f"Period: {start} → {end}"))
+        lines.append(dim(f"Period: {format_period(period.start, period.end)}"))
     for ac in item.settlement.allowance_charge or []:
         kind = "Charge" if ac.indicator else "Allowance"
         sign = "+" if ac.indicator else "-"
         reason = f" {ac.reason}" if ac.reason else ""
-        lines.append(_dim(f"{sign} {kind}:{reason} {ac.actual_amount}"))
-    lines.extend(_dim(bit) for bit in _line_reference_bits(item))
+        lines.append(dim(f"{sign} {kind}:{reason} {ac.actual_amount}"))
+    lines.extend(dim(bit) for bit in _line_reference_bits(item))
     return "\n".join(lines)
 
 
@@ -108,10 +102,10 @@ def net_price_cell(agreement: LineTradeAgreement) -> str:
         if discount is not None:
             sign = "+" if discount.indicator else "-"
             bits.append(f"{sign}{discount.actual_amount}")
-        lines.append(_dim(" ".join(bits)))
+        lines.append(dim(" ".join(bits)))
     basis = net.basis_quantity
     if basis is not None and basis.value != 1:
-        lines.append(_dim(f"per {basis.value} {basis.unit_code}"))
+        lines.append(dim(f"per {basis.value} {basis.unit_code}"))
     return "\n".join(lines)
 
 
