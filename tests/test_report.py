@@ -22,10 +22,15 @@ from getafix.schema import (
     Profile,
     TypeCode,
 )
-from getafix.schema.accounting import MonetarySummation
+from getafix.schema.accounting import LineTradeAllowanceCharge, MonetarySummation
 from getafix.schema.agreement import TradeAgreement
 from getafix.schema.delivery import TradeDelivery
 from getafix.schema.element import ValidationError
+from getafix.schema.line import (
+    LineAdditionalReferencedDocument,
+    LineBuyerOrderReferencedDocument,
+    LineIncludedNote,
+)
 from getafix.schema.party import (
     URIID,
     BuyerTradeParty,
@@ -40,8 +45,10 @@ from getafix.schema.party import (
     URIUniversalCommunication,
 )
 from getafix.schema.settlement import (
+    BillingSpecifiedPeriod,
     PayeePartyCreditorFinancialAccount,
     PaymentMeans,
+    ReceivableAccountingAccount,
     TradeSettlement,
 )
 from getafix.schema.trade import Trade
@@ -342,3 +349,84 @@ def test_render_invoice_renders_seller_legal_org_and_contact_detail() -> None:
     assert "Geschäftsführer: Max Muster" in text
     assert "Department (BT-41-0):" in text
     assert "Billing" in text
+
+
+def _doc_from_sample(name: str) -> Document:
+    from pathlib import Path
+
+    from lxml import etree
+
+    return Document.from_xml(
+        etree.fromstring(Path(f"tests/samples/{name}").read_bytes())
+    )
+
+
+def test_render_invoice_orders_sub_lines_under_parent() -> None:
+    """EXTENDED sub-invoice-lines render in tree order: each GROUP parent
+    directly above its DETAIL children, even though the sample lists the
+    children first in document order."""
+    console = _record()
+    render_invoice(
+        _doc_from_sample("EXTENDED_zf24_SubInvoiceLines_Hardware.xml"), console=console
+    )
+    text = console.export_text()
+    # Parent "01" appears before its children "0101"/"0102", which appear
+    # before the next group "02".
+    assert (
+        text.index("01 (GROUP)")
+        < text.index("0101")
+        < text.index("0102")
+        < text.index("02 (GROUP)")
+    )
+
+
+def test_render_invoice_renders_item_standard_id_and_gross_price() -> None:
+    """Item standard id (BT-157) and the gross-price derivation (BT-148)
+    render in the line — driven off a COMFORT sample with gross prices."""
+    console = _record()
+    render_invoice(_doc_from_sample("EN16931_Einfach.cii.xml"), console=console)
+    text = console.export_text()
+    assert "Std#: 4012345001235" in text  # BT-157 global id
+    assert "gross 9.9000" in text  # BT-148 gross price under the net price
+
+
+def test_render_invoice_renders_product_classification() -> None:
+    """Item classification (BG-33) renders as ``Class: <code> (<scheme>)``."""
+    console = _record()
+    render_invoice(_doc_from_sample("EXTENDED_zf24_Herkunftsland.xml"), console=console)
+    text = console.export_text()
+    assert "Class:" in text
+    assert "(HS)" in text  # ClassCode listID
+
+
+def test_render_invoice_renders_line_detail_followups() -> None:
+    """Line note (BT-127), invoicing period (BG-26), line allowance
+    (BG-27) and line references (BT-132 / BT-128 / BT-133) render as dim
+    follow-up lines in the Item cell."""
+    doc = make_vat_doc()
+    item = doc.trade.items[0]
+    item.associated_document.note = LineIncludedNote(
+        content="Fragile — handle with care"
+    )
+    item.settlement.billing_period = BillingSpecifiedPeriod(
+        start=date(2025, 1, 1), end=date(2025, 1, 31)
+    )
+    item.settlement.allowance_charge = [
+        LineTradeAllowanceCharge(
+            indicator=False, actual_amount=Decimal("2.00"), reason="Mengenrabatt"
+        )
+    ]
+    item.agreement.buyer_order_ref = LineBuyerOrderReferencedDocument(line_id="5")
+    item.settlement.additional_references = [
+        LineAdditionalReferencedDocument(issuer_assigned_id="OBJ-1")
+    ]
+    item.settlement.accounting_account = ReceivableAccountingAccount(id="ACCT-9")
+    console = _record()
+    render_invoice(doc, console=console)
+    text = console.export_text()
+    assert "Note: Fragile — handle with care" in text
+    assert "Period: 2025-01-01 → 2025-01-31" in text
+    assert "Allowance: Mengenrabatt 2.00" in text
+    assert "Order line: 5" in text  # BT-132
+    assert "Obj id: OBJ-1" in text  # BT-128
+    assert "Acct: ACCT-9" in text  # BT-133
