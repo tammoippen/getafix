@@ -1,9 +1,9 @@
 # Plan — the `report` package
 
-Status: **Phases 1–4 landed** (skeleton + rewrite; party identification;
-line detail + sub-line hierarchy; settlement & accounting). Only Phase 5
-(delivery ship-to address) remains before the COMFORT surface is
-complete.
+Status: **Phases 1–5 landed — the COMFORT surface is complete.** Every
+COMFORT-or-lower BT/BG in `docs/STRUCTURES.md` is now rendered. What
+remains is EXTENDED-only coverage (some of which already renders) and
+ongoing polish.
 Remaining phases below take it from "renders the subset the old
 `report.py` did" to "renders **every COMFORT-profile element**".
 
@@ -74,14 +74,15 @@ order and strings — the original `tests/test_report.py` still passes) and
 added the section descriptions; Phase 2 added the party-identification
 rows and the tax-representative panel; Phase 3 filled in the line detail
 and the sub-line hierarchy; Phase 4 added the settlement / accounting
-metadata and the supporting-documents table.
+metadata and the supporting-documents table; Phase 5 completed the
+ship-to party. This now covers every COMFORT-profile element.
 
 | Section | Elements rendered today |
 | --- | --- |
 | Invoice (header) | BT-1, BT-2, BT-3, BT-24, BT-23 process, BT-X-2 name, BT-X-4 language, BT-6 VAT acct currency, BG-14 period, BT-10/13/14/12/11 refs, BT-19 booking ref, BT-25 preceding, BG-1 notes |
 | Seller / Buyer | BT-27/44 name, BT-28/45 trade name, BT-29/46 id, BT-29-0/46-0 global ids, BT-30/47 legal reg, BT-33 legal info, BG-5/8 address, BG-6/9 contact (name/dept/email/phone), BT-34/49 e-address, BT-31/32/48 tax ids |
 | Tax representative | BG-11 BT-62 name, BG-12 address, BT-63 VAT id |
-| Delivery | BT-72 date, BG-13 ship-to **name**, BT-16 despatch, BT-15 receiving |
+| Delivery | BT-72 date, BG-13 ship-to (BT-70 name, BT-71/71-0 id, BG-15 address), BT-16 despatch, BT-15 receiving |
 | Supporting documents | BG-24 BT-122/17/18 ref, BT-123 name, type code, BT-124 URL / BT-125 attachment |
 | Line items | BT-153 name, BT-154 desc, BT-157/155/156 ids, BG-33 class, BG-32 chars, BG-34 origin, BT-127 note, BG-26 period, BG-27/28 alw/chg, BT-132/128/133 refs, BT-129/130 qty, BT-146 net (+BT-148/147/149 gross), BT-131 total, BG-30 line VAT; sub-lines nested |
 | VAT breakdown | BG-23 category, rate, BT-116 basis, BT-117 tax, BT-120/121 exemption, BT-7/8 tax point |
@@ -114,9 +115,9 @@ kept, but completing EXTENDED is a separate effort).
       (BT-122 id, BT-123 name, BT-124 URI, BT-125 attachment;
       BT-17 tender/lot, BT-18 invoiced-object, selected by type code)
 
-### `delivery.py`
-- [ ] BG-15 ship-to **address** + BT-71 ship-to location id (only the
-      name shows today) — BASIC_WL
+### `delivery.py` — done in Phase 5
+- [x] BG-15 ship-to **address** + BT-71 / BT-71-0 ship-to location id
+      (only the name showed before) — BASIC_WL
 
 ### `settlement.py` — done in Phase 4
 - [x] BT-6 VAT accounting currency (`tax_currency_code`) — BASIC_WL
@@ -185,9 +186,10 @@ VAT-breakdown column, added only when a row carries it. `agreement.py` +
 (`supporting_documents_panel`), with BT-125 attachments summarised by
 `format_attachment` as filename / MIME.
 
-**Phase 5 — delivery.**
-`delivery.py`: full ship-to address + location id via
-`party.format_address` (reuse, don't duplicate).
+**Phase 5 — delivery (done).**
+`delivery.py`: the ship-to party now renders its location id (BT-71) and
+global id (BT-71-0) plus the full ship-to address (BG-15), reusing
+`party.format_address` rather than duplicating it.
 
 **Phase 6 — polish.**
 Factor shared `format_amount(value, currency)` / `format_date` helpers
