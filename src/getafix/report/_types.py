@@ -7,8 +7,8 @@ plus the two helpers that give every section its consistent look —
 
 * :func:`described_panel` — wrap a panel body under a one-line, dim
   description of *what the section means*;
-* :func:`describe_table` — attach the same kind of description to a
-  table as a dim caption.
+* :func:`describe_table` — fold the same kind of description into the
+  table's title block as a dim subtitle line.
 
 Keeping these in one place is what lets each ``report/<topic>.py``
 focus purely on turning its schema elements into rows / cells while the
@@ -65,11 +65,16 @@ def described_panel(
 
 
 def describe_table(table: Table, description: str) -> Table:
-    """Attach a dim ``description`` caption to ``table`` and return it.
+    """Fold ``description`` into the table title as a dim subtitle line.
 
-    Tables carry their explanation as a caption (rendered under the
-    table) rather than an inline row so the column layout stays clean.
+    The description sits directly under the title (above the header row),
+    so it reads as the table's own subtitle. A bottom caption was
+    avoided because, between two stacked sections, it reads like the
+    heading of the *next* table.
     """
-    table.caption = description
-    table.caption_style = _DESCRIPTION_STYLE
+    name = "" if table.title is None else str(table.title)
+    table.title = Text.assemble((name, "bold"), "\n", (description, _DESCRIPTION_STYLE))
+    # Styles now live on the Text spans; drop the base title style so it
+    # doesn't bleed bold onto the dim subtitle line.
+    table.title_style = None
     return table

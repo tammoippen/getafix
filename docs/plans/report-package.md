@@ -54,9 +54,9 @@ These hold for every section renderer; new code must preserve them.
   renderers additionally take the document `currency`.
 - **Every section is self-describing.** Panels get a one-line, dim
   description on top via `described_panel`; tables get the same as a
-  dim caption via `describe_table`. The description says *what the
-  section means* in plain language — a reader skimming the report should
-  not need the spec open.
+  dim subtitle line under the title via `describe_table`. The
+  description says *what the section means* in plain language — a reader
+  skimming the report should not need the spec open.
 - **Label data with its BT/BG id.** Row labels read `Human name (BT-xx):`
   so the report doubles as a cross-reference back to the standard.
 - **Dim the secondary, em-dash the absent.** Enrichments (descriptions,
