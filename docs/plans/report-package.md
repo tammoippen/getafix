@@ -1,7 +1,9 @@
 # Plan — the `report` package
 
-Status: **Phases 1–3 landed** (skeleton + rewrite; party identification;
-line detail + sub-line hierarchy).
+Status: **Phases 1–4 landed** (skeleton + rewrite; party identification;
+line detail + sub-line hierarchy; settlement & accounting). Only Phase 5
+(delivery ship-to address) remains before the COMFORT surface is
+complete.
 Remaining phases below take it from "renders the subset the old
 `report.py` did" to "renders **every COMFORT-profile element**".
 
@@ -71,19 +73,21 @@ Phase 1 preserved the old renderer's coverage exactly (same panels,
 order and strings — the original `tests/test_report.py` still passes) and
 added the section descriptions; Phase 2 added the party-identification
 rows and the tax-representative panel; Phase 3 filled in the line detail
-and the sub-line hierarchy.
+and the sub-line hierarchy; Phase 4 added the settlement / accounting
+metadata and the supporting-documents table.
 
 | Section | Elements rendered today |
 | --- | --- |
-| Invoice (header) | BT-1, BT-2, BT-3, BT-24, BT-X-2 name, BT-X-4 language, BG-14 period, BT-10/13/14/12/11 refs, BT-25 preceding, BG-1 notes |
+| Invoice (header) | BT-1, BT-2, BT-3, BT-24, BT-23 process, BT-X-2 name, BT-X-4 language, BT-6 VAT acct currency, BG-14 period, BT-10/13/14/12/11 refs, BT-19 booking ref, BT-25 preceding, BG-1 notes |
 | Seller / Buyer | BT-27/44 name, BT-28/45 trade name, BT-29/46 id, BT-29-0/46-0 global ids, BT-30/47 legal reg, BT-33 legal info, BG-5/8 address, BG-6/9 contact (name/dept/email/phone), BT-34/49 e-address, BT-31/32/48 tax ids |
 | Tax representative | BG-11 BT-62 name, BG-12 address, BT-63 VAT id |
 | Delivery | BT-72 date, BG-13 ship-to **name**, BT-16 despatch, BT-15 receiving |
+| Supporting documents | BG-24 BT-122/17/18 ref, BT-123 name, type code, BT-124 URL / BT-125 attachment |
 | Line items | BT-153 name, BT-154 desc, BT-157/155/156 ids, BG-33 class, BG-32 chars, BG-34 origin, BT-127 note, BG-26 period, BG-27/28 alw/chg, BT-132/128/133 refs, BT-129/130 qty, BT-146 net (+BT-148/147/149 gross), BT-131 total, BG-30 line VAT; sub-lines nested |
-| VAT breakdown | BG-23 category, rate, BT-116 basis, BT-117 tax, BT-120/121 exemption |
+| VAT breakdown | BG-23 category, rate, BT-116 basis, BT-117 tax, BT-120/121 exemption, BT-7/8 tax point |
 | Allowances & charges | BG-20/21 indicator, reason, BT-92/99 amount, % · basis, BT-95/102 VAT |
 | Totals | BG-22 BT-106…BT-115 |
-| Payment | BG-10 payee (BT-59 name, BT-60/60-0 ids), BT-20/9/89 terms, BG-16 means, BT-84/85/86 account, BG-18 card, BT-91 debit, BT-83/90 refs |
+| Payment | BG-10 payee (BT-59 name, BT-60/60-0 ids), BT-20/9/89 terms, BG-16 means (+BT-82 info), BT-84/85/86 account, BG-18 card, BT-91 debit, BT-83/90 refs |
 | Logistics / Prepayments | BG-X-42 / BG-X-45 (EXTENDED — pre-existing) |
 | Validation | rule code + message table |
 
@@ -94,8 +98,8 @@ exists in the model but is not yet rendered. EXTENDED-only additions are
 out of scope for this plan (some EXTENDED sections already exist and are
 kept, but completing EXTENDED is a separate effort).
 
-### `document.py`
-- [ ] BT-23 business process (`Context.business`) — MINIMUM+
+### `document.py` — done in Phase 4
+- [x] BT-23 business process (`Context.business`) — MINIMUM+
 
 ### `party.py` — done in Phase 2
 - [x] BT-29 / BT-46 party id, BT-29-0 / BT-46-0 global ids — BASIC_WL
@@ -105,8 +109,8 @@ kept, but completing EXTENDED is a separate effort).
 - [x] BG-11 Seller tax representative (BT-62 name, BG-12 address, BT-63 VAT id) — BASIC_WL
 - [x] BT-60 / BT-60-0 Payee id / global id (Payee rows beyond name) — BASIC_WL
 
-### `agreement.py`
-- [ ] BG-24 additional supporting documents — COMFORT
+### `agreement.py` — done in Phase 4
+- [x] BG-24 additional supporting documents — COMFORT
       (BT-122 id, BT-123 name, BT-124 URI, BT-125 attachment;
       BT-17 tender/lot, BT-18 invoiced-object, selected by type code)
 
@@ -114,13 +118,13 @@ kept, but completing EXTENDED is a separate effort).
 - [ ] BG-15 ship-to **address** + BT-71 ship-to location id (only the
       name shows today) — BASIC_WL
 
-### `settlement.py`
-- [ ] BT-6 VAT accounting currency (`tax_currency_code`) — BASIC_WL
-- [ ] BT-82 payment-means free-text information — COMFORT
-- [ ] BT-19 Buyer accounting reference (`accounting_account`) — BASIC_WL
+### `settlement.py` — done in Phase 4
+- [x] BT-6 VAT accounting currency (`tax_currency_code`) — BASIC_WL
+- [x] BT-82 payment-means free-text information — COMFORT
+- [x] BT-19 Buyer accounting reference (`accounting_account`) — BASIC_WL
 
-### `accounting.py`
-- [ ] BT-7 tax point date / BT-8 due-date code on BG-23 rows — COMFORT
+### `accounting.py` — done in Phase 4
+- [x] BT-7 tax point date / BT-8 due-date code on BG-23 rows — COMFORT
 
 ### `line.py` — done in Phase 3
 - [x] BT-157 item standard id (`product.global_id`) — BASIC
@@ -133,8 +137,8 @@ kept, but completing EXTENDED is a separate effort).
 - [x] BT-132 line buyer-order ref, BT-128 line object id — COMFORT
 - [x] BT-133 line Buyer accounting reference — COMFORT
 
-### `references.py`
-- [ ] BT-125 attachment summary (filename + MIME) for BG-24 — COMFORT
+### `references.py` — done in Phase 4
+- [x] BT-125 attachment summary (filename + MIME) for BG-24 — COMFORT
 
 ## 5. Phased implementation
 
@@ -170,13 +174,16 @@ actually visible (a right-justified column swallowed the leading spaces,
 so the previous indentation never showed and children could appear above
 their parent in document order).
 
-**Phase 4 — settlement & accounting.**
-`settlement.py`: BT-6 accounting currency and BT-82 means info into the
-existing panels; BT-19 accounting reference (likely a row in Payment or
-a small "Accounting" panel). `accounting.py`: BT-7/BT-8 tax point as an
-extra VAT-breakdown column or dim row. `agreement.py` + `references.py`:
-BG-24 supporting documents (a "References & attachments" panel) with
-BT-125 attachments summarised by filename/MIME. `document.py`: BT-23.
+**Phase 4 — settlement & accounting (done).**
+`document.py`: BT-23 business process row in the Invoice panel.
+`settlement.py`: BT-6 VAT accounting currency and BT-19 Buyer accounting
+reference folded into the Invoice panel (`accounting_currency_row` /
+`accounting_reference_rows`); BT-82 payment-means free text into the
+Payment panel. `accounting.py`: BT-7 / BT-8 tax point as an extra
+VAT-breakdown column, added only when a row carries it. `agreement.py` +
+`references.py`: BG-24 supporting documents as their own table
+(`supporting_documents_panel`), with BT-125 attachments summarised by
+`format_attachment` as filename / MIME.
 
 **Phase 5 — delivery.**
 `delivery.py`: full ship-to address + location id via
