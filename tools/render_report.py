@@ -58,7 +58,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--width",
         type=int,
         default=120,
-        help="Console width in columns (default: 100).",
+        help="Console width in columns (default: 120).",
     )
     return parser
 
