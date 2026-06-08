@@ -504,3 +504,29 @@ def test_render_invoice_tax_point_column_appears_only_when_set() -> None:
     text = console.export_text()
     assert "Tax point (BT-7/8)" in text
     assert "2025-03-15" in text  # BT-7
+
+
+def test_render_invoice_renders_ship_to_address_and_id() -> None:
+    """The Delivery panel shows the ship-to location id (BT-71) and the
+    full ship-to address (BG-15), not just the name."""
+    console = _record()
+    render_invoice(
+        _doc_from_sample("EN16931_zf24_Innergemeinschaftliche.xml"), console=console
+    )
+    text = console.export_text()
+    assert "Ship to (BG-13):" in text
+    assert "Ship-to id (BT-71):" in text
+    assert "75969815" in text  # BT-71 location id
+    assert "Ship-to addr (BG-15):" in text
+    assert "Eichenpromenade 37" in text  # ship-to address line
+    assert "12347 Metallstadt" in text  # ship-to postcode + city
+
+
+def test_render_invoice_renders_ship_to_global_id() -> None:
+    """The ship-to global location id (BT-71-0) renders with its scheme."""
+    console = _record()
+    render_invoice(_doc_from_sample("EXTENDED_zf24_Herkunftsland.xml"), console=console)
+    text = console.export_text()
+    assert "Ship-to id (BT-71-0):" in text
+    assert "GLN400000000S" in text
+    assert "0088" in text  # scheme of the ship-to global id
