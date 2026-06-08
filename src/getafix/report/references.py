@@ -5,7 +5,8 @@ for display purposes — an issuer-assigned identifier and an optional
 issue date. :func:`format_reference` renders that shape once and is
 reused by the Invoice panel (preceding invoices, BT-25), the Delivery
 panel (despatch / receiving advice, BT-16 / BT-15) and anywhere else a
-reference needs to show its date inline.
+reference needs to show its date inline. :func:`format_attachment`
+summarises an embedded supporting document (BT-125).
 """
 
 from __future__ import annotations
@@ -14,6 +15,8 @@ from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from datetime import date
+
+    from getafix.schema.references import AttachmentBinaryObject
 
 
 class ReferencedDocument(Protocol):
@@ -32,3 +35,12 @@ def format_reference(ref: ReferencedDocument) -> str:
     if ref.issue_date_time is not None:
         value += f" [dim]({ref.issue_date_time.isoformat()})[/dim]"
     return value
+
+
+def format_attachment(attachment: AttachmentBinaryObject) -> str:
+    """Embedded supporting document (BT-125) as ``<filename> (<mime>)``.
+
+    Summarises the binary payload by its file name (BT-125-2) and MIME
+    type (BT-125-1) rather than dumping the base64 content.
+    """
+    return f"{attachment.filename} [dim]({attachment.mime_code.value})[/dim]"

@@ -17,7 +17,12 @@ from rich.table import Table
 
 from getafix.report._types import described_panel
 from getafix.report.agreement import reference_rows
-from getafix.report.settlement import billing_period_row, preceding_invoice_rows
+from getafix.report.settlement import (
+    accounting_currency_row,
+    accounting_reference_rows,
+    billing_period_row,
+    preceding_invoice_rows,
+)
 from getafix.report.types import format_type_code
 
 if TYPE_CHECKING:
@@ -36,14 +41,22 @@ def header_panel(doc: Document) -> Panel:
     grid.add_row("Issue date (BT-2):", header.issue_date.isoformat())
     grid.add_row("Type code (BT-3):", format_type_code(header.type_code))
     grid.add_row("Profile (BT-24):", profile.name)
+    business = doc.context.business
+    if business is not None and business.id:
+        grid.add_row("Process (BT-23):", business.id)
     if header.name:
         grid.add_row("Document name:", header.name)
     if header.language_id:
         grid.add_row("Language:", header.language_id)
+    currency = accounting_currency_row(doc.trade.settlement)
+    if currency is not None:
+        grid.add_row(*currency)
     period = billing_period_row(doc.trade.settlement)
     if period is not None:
         grid.add_row(*period)
     for label, value in reference_rows(doc.trade.agreement):
+        grid.add_row(label, value)
+    for label, value in accounting_reference_rows(doc.trade.settlement):
         grid.add_row(label, value)
     for label, value in preceding_invoice_rows(doc.trade.settlement):
         grid.add_row(label, value)

@@ -52,7 +52,12 @@ from getafix.schema.settlement import (
     TradeSettlement,
 )
 from getafix.schema.trade import Trade
-from getafix.schema.types import Country, Currency, UNTDID4461PaymentMeansCode
+from getafix.schema.types import (
+    Country,
+    Currency,
+    UNTDID2475TaxPointDateCode,
+    UNTDID4461PaymentMeansCode,
+)
 from tests._fixtures import make_vat_doc
 
 
@@ -430,3 +435,72 @@ def test_render_invoice_renders_line_detail_followups() -> None:
     assert "Order line: 5" in text  # BT-132
     assert "Obj id: OBJ-1" in text  # BT-128
     assert "Acct: ACCT-9" in text  # BT-133
+
+
+def test_render_invoice_renders_business_process_accounting_and_attachment() -> None:
+    """Business process (BT-23), Buyer accounting reference (BT-19) and the
+    BG-24 supporting-documents table (with a BT-125 attachment) all render."""
+    console = _record()
+    render_invoice(_doc_from_sample("EN16931_zf24_Elektron.xml"), console=console)
+    text = console.export_text()
+    assert "Process (BT-23):" in text
+    assert "Baurechnung" in text  # BT-23 value
+    assert "Booking ref (BT-19):" in text
+    assert "420" in text  # BT-19 value
+    assert "Supporting documents (BG-24)" in text
+    assert "13130162" in text  # BT-122 reference id
+    assert "Aufmass" in text  # BT-123 description
+    assert "Aufmass.pdf (application/pdf)" in text  # BT-125 attachment summary
+
+
+def test_render_invoice_renders_payment_means_info() -> None:
+    """Payment-means free text (BT-82) renders in the Payment panel."""
+    console = _record()
+    render_invoice(_doc_from_sample("EN16931_factur-x.xml"), console=console)
+    text = console.export_text()
+    assert "Means info (BT-82):" in text
+    assert "Bank transfer" in text
+
+
+def test_render_invoice_renders_vat_accounting_currency() -> None:
+    """VAT accounting currency (BT-6) renders when it differs from BT-5."""
+    console = _record()
+    render_invoice(_doc_from_sample("EXTENDED_fremdwaehrung.xml"), console=console)
+    text = console.export_text()
+    assert "VAT acct currency (BT-6):" in text
+    assert "EUR" in text  # BT-6 (the invoice currency BT-5 is GBP)
+
+
+def test_render_invoice_tax_point_column_appears_only_when_set() -> None:
+    """The BT-7 / BT-8 tax-point column is added to the VAT breakdown only
+    when a row carries it, showing the date (BT-7) or the code (BT-8)."""
+    # make_vat_doc defaults carry a BT-8 due-date code, so the column shows.
+    coded = make_vat_doc()
+    assert coded.trade.settlement.trade_taxes is not None
+    coded.trade.settlement.trade_taxes[
+        0
+    ].due_date_code = UNTDID2475TaxPointDateCode.CODE_5
+    console = _record()
+    render_invoice(coded, console=console)
+    text = console.export_text()
+    assert "Tax point (BT-7/8)" in text
+    assert "code 5" in text  # BT-8
+
+    # With neither BT-7 nor BT-8 set, the column is dropped entirely.
+    plain = make_vat_doc()
+    assert plain.trade.settlement.trade_taxes is not None
+    plain.trade.settlement.trade_taxes[0].due_date_code = None
+    console = _record()
+    render_invoice(plain, console=console)
+    assert "Tax point (BT-7/8)" not in console.export_text()
+
+    # A tax point date (BT-7) takes priority and renders in the column.
+    dated = make_vat_doc()
+    assert dated.trade.settlement.trade_taxes is not None
+    dated.trade.settlement.trade_taxes[0].due_date_code = None
+    dated.trade.settlement.trade_taxes[0].tax_point_date = date(2025, 3, 15)
+    console = _record()
+    render_invoice(dated, console=console)
+    text = console.export_text()
+    assert "Tax point (BT-7/8)" in text
+    assert "2025-03-15" in text  # BT-7

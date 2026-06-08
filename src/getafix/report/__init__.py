@@ -33,6 +33,7 @@ from rich.table import Table
 
 from getafix.report._types import SectionRenderer as SectionRenderer
 from getafix.report.accounting import allowance_charge_panel, tax_table, totals_panel
+from getafix.report.agreement import supporting_documents_panel
 from getafix.report.delivery import delivery_panel
 from getafix.report.document import header_panel
 from getafix.report.element import render_validation_errors as render_validation_errors
@@ -84,6 +85,9 @@ def render_invoice(doc: Document, console: Console | None = None) -> None:
     delivery = delivery_panel(doc.trade.delivery)
     if delivery is not None:
         console.print(delivery)
+    supporting = supporting_documents_panel(doc.trade.agreement)
+    if supporting is not None:
+        console.print(supporting)
     if doc.trade.items:
         console.print(lines_table(doc.trade, currency))
     if settlement.trade_taxes:

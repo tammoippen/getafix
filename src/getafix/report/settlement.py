@@ -43,6 +43,23 @@ def preceding_invoice_rows(settlement: TradeSettlement):
         yield "Preceding invoice (BT-25):", format_reference(ref)
 
 
+def accounting_currency_row(settlement: TradeSettlement) -> tuple[str, str] | None:
+    """VAT accounting currency (BT-6) row, or ``None`` when not set.
+
+    Present only when VAT is accounted in a currency other than the
+    invoice currency (BT-5); the matching total is BT-111.
+    """
+    if settlement.tax_currency_code is None:
+        return None
+    return "VAT acct currency (BT-6):", settlement.tax_currency_code
+
+
+def accounting_reference_rows(settlement: TradeSettlement):
+    """Yield a ``(label, value)`` row per Buyer accounting reference (BT-19)."""
+    for account in settlement.accounting_account or []:
+        yield "Booking ref (BT-19):", account.id
+
+
 def payment_panel(settlement: TradeSettlement) -> RenderableType | None:
     """Payment instructions: payee, terms, means, bank account, references.
 
@@ -79,6 +96,8 @@ def payment_panel(settlement: TradeSettlement) -> RenderableType | None:
             grid.add_row("SEPA mandate:", t.debit_mandate_id)
     for pm in settlement.payment_means or []:
         grid.add_row("Means (BT-81):", pm.type_code)
+        if pm.information:
+            grid.add_row("Means info (BT-82):", pm.information)
         if pm.payee is not None:
             if pm.payee.iban_id:
                 grid.add_row("IBAN (BT-84):", pm.payee.iban_id)
