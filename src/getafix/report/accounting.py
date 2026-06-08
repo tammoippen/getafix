@@ -18,7 +18,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from getafix.report._types import describe_table, described_panel
-from getafix.report.types import format_vat
+from getafix.report.types import dim_paren, format_amount, format_vat
 
 if TYPE_CHECKING:
     from getafix.schema.accounting import ApplicableTradeTax
@@ -52,7 +52,7 @@ def tax_table(settlement: TradeSettlement) -> Table:
         rate = tax.rate_applicable_percent
         reason = tax.exemption_reason or ""
         if tax.exemption_reason_code:
-            reason = f"[dim]({tax.exemption_reason_code})[/dim] {reason}".strip()
+            reason = f"{dim_paren(tax.exemption_reason_code)} {reason}".strip()
         cells = [
             tax.category_code.value,
             f"{rate}%" if rate is not None else "-",
@@ -104,7 +104,7 @@ def allowance_charge_panel(settlement: TradeSettlement) -> Table | None:
         kind = "[red]Charge[/red]" if ac.indicator else "[green]Allowance[/green]"
         reason_bits = [ac.reason or ""]
         if ac.reason_code:
-            reason_bits.append(f"[dim]({ac.reason_code})[/dim]")
+            reason_bits.append(dim_paren(ac.reason_code))
         if ac.calculation_percent is not None and ac.basis_amount is not None:
             calc = f"{ac.calculation_percent}% of {ac.basis_amount}"
         elif ac.calculation_percent is not None:
@@ -143,10 +143,10 @@ def totals_panel(settlement: TradeSettlement) -> Panel:
     for label, value in rows:
         if value is None:
             continue
-        grid.add_row(label, f"{value} {currency}")
+        grid.add_row(label, format_amount(value, currency))
     for tax in summ.tax_total or []:
         grid.add_row(
-            f"Tax total ({tax.currency_id})", f"{tax.amount} {tax.currency_id}"
+            f"Tax total ({tax.currency_id})", format_amount(tax.amount, tax.currency_id)
         )
     tail: list[tuple[str, object | None]] = [
         ("Rounding (BT-114)", summ.rounding_amount),
@@ -156,10 +156,10 @@ def totals_panel(settlement: TradeSettlement) -> Panel:
     for label, value in tail:
         if value is None:
             continue
-        grid.add_row(label, f"{value} {currency}")
+        grid.add_row(label, format_amount(value, currency))
     grid.add_row(
         "[bold yellow]Amount due (BT-115)[/bold yellow]",
-        f"[bold yellow]{summ.due_amount} {currency}[/bold yellow]",
+        f"[bold yellow]{format_amount(summ.due_amount, currency)}[/bold yellow]",
     )
     return described_panel(
         grid,

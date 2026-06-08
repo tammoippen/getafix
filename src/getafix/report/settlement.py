@@ -21,7 +21,7 @@ from rich.table import Table
 
 from getafix.report._types import describe_table, described_panel
 from getafix.report.references import format_reference
-from getafix.report.types import format_vat, scheme_suffix
+from getafix.report.types import format_period, format_vat, scheme_suffix
 
 if TYPE_CHECKING:
     from getafix.schema.settlement import TradeSettlement
@@ -32,9 +32,7 @@ def billing_period_row(settlement: TradeSettlement) -> tuple[str, str] | None:
     period = settlement.billing_period
     if period is None or not (period.start or period.end):
         return None
-    start = period.start.isoformat() if period.start else "…"
-    end = period.end.isoformat() if period.end else "…"
-    return "Period (BG-14):", f"{start} → {end}"
+    return "Period (BG-14):", format_period(period.start, period.end)
 
 
 def preceding_invoice_rows(settlement: TradeSettlement):
