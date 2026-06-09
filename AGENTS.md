@@ -51,8 +51,7 @@ src/getafix/
 docs/
 ├── STRUCTURES.md          # module → BG/BT field map, profile applicability, EXTENDED gap diff
 ├── VALIDATION.md          # every BR-*/BR-CO-*/BR-X-* rule + status, BR-CL-* / BR-DEC-* wirings
-├── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
-└── plans/                 # design / implementation plans (e.g. report-package.md)
+└── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
 
 ZF24_EN/                   # vendored spec (gitignored); see docs/READING_OFFICIAL_DOCS.md
 tests/                     # pytest suite, sample corpus, hypothesis strategies
@@ -215,8 +214,7 @@ composes them top-to-bottom. Shared framing (`described_panel`,
 `describe_table`, the `SectionRenderer` alias) lives in
 `report/_types.py`; code→string formatters in `report/types.py`. Every
 section carries a short dim description of what it means, and rows are
-labelled with their BT/BG id. The roadmap to rendering every
-COMFORT-profile element is in `docs/plans/report-package.md`.
+labelled with their BT/BG id.
 
 ## Adding a new BT / BG field
 

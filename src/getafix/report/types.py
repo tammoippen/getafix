@@ -55,7 +55,7 @@ def format_vat(category: CategoryCode, rate: Decimal | None) -> str:
     return f"{rate}% {category.value}" if rate is not None else category.value
 
 
-def format_amount(value: object, currency: str) -> str:
+def format_amount(value: Decimal, currency: str) -> str:
     """Monetary value with its currency code — ``<value> <currency>``."""
     return f"{value} {currency}"
 
