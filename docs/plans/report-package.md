@@ -203,6 +203,27 @@ parametrised smoke test that renders every shipped COMFORT-or-lower
 sample (35 invoices) and asserts non-empty output, guarding against any
 populated field tripping the renderer.
 
+### EXTENDED slice — item price allowances / charges (BT-147-00 / BT-X-302-00)
+
+Pulled in ahead of the broader EXTENDED pass because the model was
+silently dropping data on COMFORT/EXTENDED invoices. The gross price's
+``AppliedTradeAllowanceCharge`` is now a **list** (was a single field, so
+only the last of several survived parsing) and gained the EXTENDED
+``reason`` / ``reason_code`` (BT-X-36 / BT-X-313 allowance, BT-X-303 /
+BT-X-314 charge) alongside the existing percent / basis, all re-gated to
+their correct EXTENDED profile and ordered per the XSD sequence. Three
+internal validators encode the profile matrix from the appendix / xlsx:
+
+* a price **charge** (``ChargeIndicator`` true, BT-X-302-00) is
+  EXTENDED-only (`applied_price_charge_extended_only`);
+* below EXTENDED the list is capped at one entry
+  (`list_max_cardinality_below`);
+* the percent / basis / reason / reason-code fields are EXTENDED-only
+  (`fields_only_at`).
+
+`net_price_cell` now renders one term per allowance / charge with its
+reason, e.g. ``gross 1.50 -0.03 (Artikelrabatt 1) -0.02 (Artikelrabatt 2)``.
+
 ## 6. Testing
 
 - Extend `tests/test_report.py` with one positive assertion per newly

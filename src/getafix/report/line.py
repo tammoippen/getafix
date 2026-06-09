@@ -86,10 +86,12 @@ def net_price_cell(agreement: LineTradeAgreement) -> str:
     """Net price (BT-146) with its gross-price derivation underneath.
 
     Shows the net unit price on top; when a gross price (BT-148) is
-    given, a dim ``gross … -discount`` line (BT-147) follows, and a dim
-    ``per N unit`` line when the price applies to a base quantity
-    (BT-149) other than one. Returns ``—`` on EXTENDED GROUP /
-    INFORMATION lines, which carry no net price.
+    given, a dim ``gross … -allowance +charge`` line follows — one term
+    per price allowance (BT-147) / charge (BT-X-302), each with its
+    reason in parentheses when set (EXTENDED) — and a dim ``per N unit``
+    line when the price applies to a base quantity (BT-149) other than
+    one. Returns ``—`` on EXTENDED GROUP / INFORMATION lines, which
+    carry no net price.
     """
     net = agreement.net_price
     if net is None:
@@ -98,10 +100,10 @@ def net_price_cell(agreement: LineTradeAgreement) -> str:
     gross = agreement.gross_price
     if gross is not None:
         bits = [f"gross {gross.charge_amount}"]
-        discount = gross.applied_allowance_charge
-        if discount is not None:
-            sign = "+" if discount.indicator else "-"
-            bits.append(f"{sign}{discount.actual_amount}")
+        for ac in gross.applied_allowance_charge or []:
+            sign = "+" if ac.indicator else "-"
+            label = f" ({ac.reason})" if ac.reason else ""
+            bits.append(f"{sign}{ac.actual_amount}{label}")
         lines.append(dim(" ".join(bits)))
     basis = net.basis_quantity
     if basis is not None and basis.value != 1:

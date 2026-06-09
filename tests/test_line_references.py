@@ -27,6 +27,8 @@ from getafix.schema import Profile
 from getafix.schema.accounting import ApplicableTradeTax
 from getafix.schema.element import ProfileMismatch
 from getafix.schema.line import (
+    AppliedTradeAllowanceCharge,
+    GrossTradePrice,
     LineAdditionalReferencedDocument,
     LineBuyerOrderReferencedDocument,
     LineMonetarySummation,
@@ -150,3 +152,87 @@ class TestLineAccountingAccount:
         # native BASIC_WL profile (which applies to the header BT-19).
         with pt.raises(ProfileMismatch):
             settle.to_xml_internal(Profile.BASIC).render(indent=True)
+
+
+class TestPriceAllowanceCharge:
+    """Item price allowance (BT-147-00) / charge (BT-X-302-00) on the gross
+    price. At most one allowance below EXTENDED; multiple entries, price
+    charges and the reason / percent / basis fields are EXTENDED-only."""
+
+    def test_two_allowances_render_and_round_trip_at_extended(
+        self, parser: ParseFromBytes
+    ) -> None:
+        gross = GrossTradePrice(
+            charge_amount=Decimal("1.50"),
+            applied_allowance_charge=[
+                AppliedTradeAllowanceCharge(
+                    indicator=False,
+                    actual_amount=Decimal("0.03"),
+                    reason="Artikelrabatt 1",
+                ),
+                AppliedTradeAllowanceCharge(
+                    indicator=False,
+                    actual_amount=Decimal("0.02"),
+                    reason="Artikelrabatt 2",
+                ),
+            ],
+        )
+        assert gross.validate_internal(Profile.EXTENDED) == []
+        xml = gross.to_xml_internal(Profile.EXTENDED).render(indent=True)
+        assert xml.count("<ram:AppliedTradeAllowanceCharge>") == 2
+        assert "Artikelrabatt 1" in xml
+        assert "Artikelrabatt 2" in xml
+        parsed = GrossTradePrice.from_xml(
+            parser(wrap_subtree(xml, "GrossPriceProductTradePrice"))
+        )
+        assert [a.reason for a in parsed.applied_allowance_charge or []] == [
+            "Artikelrabatt 1",
+            "Artikelrabatt 2",
+        ]
+
+    def test_price_charge_is_extended_only(self) -> None:
+        charge = AppliedTradeAllowanceCharge(
+            indicator=True, actual_amount=Decimal("0.05")
+        )
+        # A price charge (ChargeIndicator true) is not allowed below EXTENDED.
+        below = [e.code for e in charge.validate_internal(Profile.COMFORT)]
+        assert "GETAFIX-FIELD-PROFILE" in below
+        # At EXTENDED it is fine.
+        assert charge.validate_internal(Profile.EXTENDED) == []
+
+    def test_multiple_allowances_capped_below_extended(self) -> None:
+        two = GrossTradePrice(
+            charge_amount=Decimal("1.50"),
+            applied_allowance_charge=[
+                AppliedTradeAllowanceCharge(
+                    indicator=False, actual_amount=Decimal("0.03")
+                ),
+                AppliedTradeAllowanceCharge(
+                    indicator=False, actual_amount=Decimal("0.02")
+                ),
+            ],
+        )
+        capped = [e.code for e in two.validate_internal(Profile.COMFORT)]
+        assert "GETAFIX-FIELD-CARDINALITY" in capped
+        # A single allowance is fine below EXTENDED.
+        one = GrossTradePrice(
+            charge_amount=Decimal("1.50"),
+            applied_allowance_charge=[
+                AppliedTradeAllowanceCharge(
+                    indicator=False, actual_amount=Decimal("0.03")
+                )
+            ],
+        )
+        assert one.validate_internal(Profile.COMFORT) == []
+
+    def test_reason_is_extended_only(self) -> None:
+        ac = AppliedTradeAllowanceCharge(
+            indicator=False, actual_amount=Decimal("0.03"), reason="Rabatt"
+        )
+        # Validation flags the EXTENDED-only reason below EXTENDED …
+        assert "GETAFIX-FIELD-PROFILE" in [
+            e.code for e in ac.validate_internal(Profile.COMFORT)
+        ]
+        # … and rendering it below EXTENDED raises.
+        with pt.raises(ProfileMismatch):
+            ac.to_xml_internal(Profile.COMFORT).render(indent=True)

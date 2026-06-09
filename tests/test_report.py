@@ -16,6 +16,7 @@ import pytest
 from rich.console import Console
 
 from getafix.report import render_invoice, render_validation_errors
+from getafix.report.line import net_price_cell
 from getafix.schema import (
     Context,
     Document,
@@ -437,6 +438,18 @@ def test_render_invoice_renders_line_detail_followups() -> None:
     assert "Order line: 5" in text  # BT-132
     assert "Obj id: OBJ-1" in text  # BT-128
     assert "Acct: ACCT-9" in text  # BT-133
+
+
+def test_net_price_cell_renders_multiple_price_allowances() -> None:
+    """Both item price discounts (BT-147) on a gross price render under the
+    net price, each with its reason (EXTENDED). Tested on the cell builder
+    directly to avoid the line-items table wrapping the long derivation."""
+    doc = _doc_from_sample("EXTENDED_zf24_Warenrechnung.xml")
+    # Line 2 carries two price allowances: Artikelrabatt 1 / 2.
+    cell = net_price_cell(doc.trade.items[1].agreement)
+    assert "gross 1.5000" in cell
+    assert "-0.0300 (Artikelrabatt 1)" in cell
+    assert "-0.0200 (Artikelrabatt 2)" in cell
 
 
 def test_render_invoice_renders_business_process_accounting_and_attachment() -> None:
