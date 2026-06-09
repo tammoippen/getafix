@@ -160,6 +160,7 @@ GLN 4304171000002</ram:Content>
               <udt:Indicator>false</udt:Indicator>
             </ram:ChargeIndicator>
             <ram:ActualAmount>4.50</ram:ActualAmount>
+            <ram:Reason>Artikelrabatt 1</ram:Reason>
           </ram:AppliedTradeAllowanceCharge>
         </ram:GrossPriceProductTradePrice>
         <ram:NetPriceProductTradePrice>

@@ -55,3 +55,27 @@ def br_28(m: _line.GrossTradePrice, _profile: Profile) -> list[ValidationError]:
     return [
         ValidationError("BR-28", "The Item gross price (BT-148) shall NOT be negative.")
     ]
+
+
+def applied_price_charge_extended_only(
+    m: _line.AppliedTradeAllowanceCharge, profile: Profile
+) -> list[ValidationError]:
+    """A price-level *charge* (ChargeIndicator true, BT-X-302-00) is only
+    permitted at EXTENDED.
+
+    Below EXTENDED the gross-price ``AppliedTradeAllowanceCharge`` may
+    only be a price *allowance* (ChargeIndicator false, BT-147-00); the
+    charge variant is a Factur-X EXTENDED extension. Applies BASIC+
+    (the gross price is line-level). Emits the synthetic
+    ``GETAFIX-FIELD-PROFILE`` code shared by the other profile gates.
+    """
+    if not m.indicator or profile >= Profile.EXTENDED:
+        return []
+    return [
+        ValidationError(
+            "GETAFIX-FIELD-PROFILE",
+            "A price charge (BT-X-302-00, ChargeIndicator true) is only "
+            "allowed at EXTENDED; below EXTENDED only a price allowance "
+            f"(BT-147-00) may appear (current profile: {profile.name}).",
+        )
+    ]

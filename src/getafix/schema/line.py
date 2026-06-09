@@ -38,8 +38,12 @@ from typing import ClassVar, Literal, Self, override
 from tagic.xml import XML
 
 from getafix.rules import Validator
-from getafix.rules._types import fields_only_at, max_decimals
-from getafix.rules.line import br_27, br_28
+from getafix.rules._types import (
+    fields_only_at,
+    list_max_cardinality_below,
+    max_decimals,
+)
+from getafix.rules.line import applied_price_charge_extended_only, br_27, br_28
 from getafix.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from getafix.schema.element import Element, ETElement
 from getafix.schema.party import (
@@ -137,53 +141,80 @@ class BasisQuantity(Quantity):
 
 @dataclass(kw_only=True, slots=True)
 class AppliedTradeAllowanceCharge(Element):
-    """Item price discount (BT-147-00).
+    """Item price allowance (BT-147-00) or charge (BT-X-302-00).
 
-    The price-level allowance applied to the gross price to arrive
-    at the net price. Only applies when the discount is provided per
-    unit and is not already baked into the gross price.
+    The price-level allowance / charge applied to the gross price to
+    arrive at the net price. ``ChargeIndicator`` discriminates the two:
+
+    * ``false`` — price *allowance* (BT-147-00); available from BASIC.
+    * ``true`` — price *charge* (BT-X-302-00); a Factur-X EXTENDED
+      extension, valid only at EXTENDED.
+
+    EN 16931 carries only ``ChargeIndicator`` (BT-147-01/02) and
+    ``ActualAmount`` (BT-147); EXTENDED adds the percentage (BT-X-34 /
+    BT-X-300), basis amount (BT-X-35 / BT-X-301), reason code (BT-X-313 /
+    BT-X-314) and reason text (BT-X-36 / BT-X-303) — all four gated
+    EXTENDED per-field and via ``fields_only_at``. The element is
+    ``0..1`` below EXTENDED (a single allowance) and ``0..*`` at
+    EXTENDED; the cardinality / charge gates live on the enclosing
+    :class:`GrossTradePrice` and in
+    :func:`getafix.rules.line.applied_price_charge_extended_only`.
 
     Note: distinct from :class:`getafix.schema.accounting.TradeAllowanceCharge`
-    (document- and line-level BG-20/21/27/28) because at BASIC the
-    price-level only has ``ChargeIndicator`` and ``ActualAmount`` —
-    no reason, category or VAT code. EN 16931 widens it with
-    calculation percent and basis amount; getafix keeps both
-    optional so the same class works at either profile.
+    (document- / line-level BG-20/21/27/28). Field order follows the XSD
+    ``TradeAllowanceChargeType`` sequence: ``ChargeIndicator`` →
+    ``CalculationPercent`` → ``BasisAmount`` → ``ActualAmount`` →
+    ``ReasonCode`` → ``Reason``.
     """
 
     tag: ClassVar[str] = "AppliedTradeAllowanceCharge"
     profile: ClassVar[Profile] = Profile.BASIC
 
+    _validators: ClassVar[tuple[Validator["AppliedTradeAllowanceCharge"], ...]] = (
+        applied_price_charge_extended_only,
+        fields_only_at(
+            Profile.EXTENDED,
+            "calculation_percent",
+            "basis_amount",
+            "reason_code",
+            "reason",
+        ),
+    )
+
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
-    """Allowance / charge indicator (BT-147-01 for the allowance side;
-    BT-X-302-01 for the EXTENDED charge side).
+    """Allowance / charge indicator (BT-147-01 allowance / BT-X-302-01 charge).
 
-    Note: EN 16931 only permits an *allowance* (``false``) at price
-    level — a price-level charge (``true``) is an EXTENDED-only
-    Factur-X extension under BT-X-302-00.
-    """
-    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
-    """Item price discount (BT-147).
-
-    The total discount subtracted from the item gross price to
-    calculate the item net price.
+    ``false`` marks a price allowance (BT-147-00); ``true`` a price
+    charge (BT-X-302-00), which is an EXTENDED-only Factur-X extension.
     """
     calculation_percent: Decimal | None = field(
-        default=None, metadata={"tag": "CalculationPercent", "profile": Profile.COMFORT}
+        default=None,
+        metadata={"tag": "CalculationPercent", "profile": Profile.EXTENDED},
     )
-    """Item price discount percentage (BT-X-300); COMFORT+.
-
-    Note: the XSD shares this node between allowance and charge — BT-X-300
-    is the charge-side id, the allowance side has no published BT.
-    """
+    """Item price discount / charge percentage (BT-X-34 allowance /
+    BT-X-300 charge); EXTENDED only."""
     basis_amount: Decimal | None = field(
         default=None,
-        metadata={"tag": "BasisAmount", "profile": Profile.COMFORT, "amount": True},
+        metadata={"tag": "BasisAmount", "profile": Profile.EXTENDED, "amount": True},
     )
-    """Item price discount basis amount (BT-X-301); COMFORT+.
+    """Item price discount / charge basis amount (BT-X-35 allowance /
+    BT-X-301 charge); EXTENDED only."""
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
+    """Item price discount (BT-147) or charge (BT-X-302).
 
-    Note: charge-side id; the allowance side has no published BT.
+    The total discount subtracted from (or charge added to) the item
+    gross price to calculate the item net price.
     """
+    reason_code: str | None = field(
+        default=None, metadata={"tag": "ReasonCode", "profile": Profile.EXTENDED}
+    )
+    """Reason code for the discount (BT-X-313) / charge (BT-X-314);
+    EXTENDED only. Code list: UNTDID 5189 (allowance) / 7161 (charge)."""
+    reason: str | None = field(
+        default=None, metadata={"tag": "Reason", "profile": Profile.EXTENDED}
+    )
+    """Reason, free text, for the discount (BT-X-36) / charge (BT-X-303);
+    EXTENDED only."""
     currency: str | None = None
     """Document currency (BT-5) echoed on every amount attribute.
 
@@ -203,7 +234,15 @@ class GrossTradePrice(Element):
     tag: ClassVar[str] = "GrossPriceProductTradePrice"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    _validators: ClassVar[tuple[Validator["GrossTradePrice"], ...]] = (br_28,)
+    _validators: ClassVar[tuple[Validator["GrossTradePrice"], ...]] = (
+        br_28,
+        # Price allowance is 0..1 below EXTENDED (single discount); the
+        # list widens to 0..* only at EXTENDED. Price charges are gated
+        # separately on the element (applied_price_charge_extended_only).
+        list_max_cardinality_below(
+            Profile.EXTENDED, max_count=1, field_name="applied_allowance_charge"
+        ),
+    )
 
     charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
     """Item gross price (BT-148).
@@ -215,8 +254,15 @@ class GrossTradePrice(Element):
     """
     basis_quantity: BasisQuantity | None = None
     """Item price base quantity (BT-149-1) for the gross price."""
-    applied_allowance_charge: AppliedTradeAllowanceCharge | None = None
-    """Item price discount (BT-147-00) applied to the gross price."""
+    applied_allowance_charge: list[AppliedTradeAllowanceCharge] | None = None
+    """Item price allowances / charges applied to the gross price
+    (BT-147-00 allowance / BT-X-302-00 charge).
+
+    A single allowance (0..1) below EXTENDED; multiple entries and
+    price charges (``ChargeIndicator`` true) are EXTENDED-only — see
+    :func:`getafix.rules._types.list_max_cardinality_below` and
+    :func:`getafix.rules.line.applied_price_charge_extended_only`.
+    """
     currency: str | None = None
     """Document currency (BT-5) echoed on the gross-price amount.
 
