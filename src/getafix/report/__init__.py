@@ -20,9 +20,6 @@ Two public entry points:
 * :func:`render_validation_errors` — pretty-print a list of
   :class:`getafix.schema.element.ValidationError` from
   ``Document.validate_internal``.
-
-See ``docs/plans/report-package.md`` for the roadmap towards rendering
-every COMFORT-profile element.
 """
 
 from __future__ import annotations

@@ -21,6 +21,8 @@ from getafix.report._types import describe_table, described_panel
 from getafix.report.types import dim_paren, format_amount, format_vat
 
 if TYPE_CHECKING:
+    from decimal import Decimal
+
     from getafix.schema.accounting import ApplicableTradeTax
     from getafix.schema.settlement import TradeSettlement
 
@@ -134,7 +136,7 @@ def totals_panel(settlement: TradeSettlement) -> Panel:
     grid = Table.grid(padding=(0, 2))
     grid.add_column(style="bold")
     grid.add_column(justify="right")
-    rows: list[tuple[str, object | None]] = [
+    rows: list[tuple[str, Decimal | None]] = [
         ("Line total (BT-106)", summ.line_total),
         ("Allowances (BT-107)", summ.allowance_total),
         ("Charges (BT-108)", summ.charge_total),
@@ -148,7 +150,7 @@ def totals_panel(settlement: TradeSettlement) -> Panel:
         grid.add_row(
             f"Tax total ({tax.currency_id})", format_amount(tax.amount, tax.currency_id)
         )
-    tail: list[tuple[str, object | None]] = [
+    tail: list[tuple[str, Decimal | None]] = [
         ("Rounding (BT-114)", summ.rounding_amount),
         ("Grand total (BT-112)", summ.grand_total),
         ("Prepaid (BT-113)", summ.prepaid_total),
