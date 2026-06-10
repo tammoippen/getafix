@@ -222,8 +222,9 @@ business-rule violation, raising a single `ValidationErrors`
 aggregate. Each `ValidationError` carries the rule's code (e.g.
 `BR-CO-15`) and a human-readable message.
 
-The catalogue of enforced rules lives in
-[`docs/VALIDATION.md`](docs/VALIDATION.md).
+Every rule getafix enforces lives in `getafix.rules` — one module per
+schema topic (`accounting`, `line`, `party`, `settlement`, `trade`,
+`extended`), each wired onto the relevant element's `_validators`.
 
 ## Command-line tool
 
@@ -278,29 +279,41 @@ tax-currency exchange (`BG-X-41`), delivery terms (`BG-X-22`),
 quotation / ultimate-customer-order references, and the
 `PEPPOL`-flavoured rule overlay (`BR-FXEXT-*`) are all modelled.
 
-The remaining EXTENDED gaps — mostly leaf attributes the getafix
-samples don't exercise — are enumerated in
-[`docs/STRUCTURES.md §6`](docs/STRUCTURES.md). The headline ones:
+Every shipped sample re-renders **1:1** with its source XML
+(`tests/test_roundtrip_fidelity.py`) — getafix never silently drops a
+field it claims to model.
 
-* Line-level twins of header references on `LineTradeAgreement` /
-  `LineTradeDelivery` / `LineTradeSettlement`: per-line
-  delivery-terms / seller-order / contract / additional /
-  ultimate-customer-order references; line-level
-  ActualDeliverySupplyChainEvent and despatch / receiving /
-  delivery-note references; line-level preceding-invoice reference.
-* Leaf attributes on shared types: `TradeParty.role_code` /
-  `description`, `TradeContact.type_code`, `ProductCharacteristic.type_code`
-  / `value_measure`, `TradeProduct.id`, `TradeAllowanceCharge.sequence_numeric`
-  / `basis_quantity`, `MonetarySummation.total_allowance_charge_amount`,
-  `TradePrice.included_trade_tax`.
+The remaining EXTENDED gaps are optional leaf attributes and line-level
+twins the shipped samples don't exercise. Each is a mechanical add-on
+against the EXTENDED XSD (declare a `field()` gated `Profile.EXTENDED`,
+in XSD-sequence order); getafix will accept a PR, or pick one up when a
+sample needs it:
 
-These are mechanical add-ons against the EXTENDED XSD; getafix
-will accept a PR (or wait for a sample that needs them).
-
-- [`docs/STRUCTURES.md`](docs/STRUCTURES.md) — module → BG/BT field
-  map with profile applicability and the EXTENDED coverage diff.
-- [`docs/VALIDATION.md`](docs/VALIDATION.md) — every BR-* rule with
-  enforcement status.
+* **Party extras** — `RoleCode` (`BT-X-483`…`BT-X-575`) on every trade
+  party; additional legal info (`Description`) on the Buyer (`BT-X-334`)
+  and the line-level item seller (`BT-X-571`); contact `TypeCode`
+  (`BT-X-315`…`BT-X-575`) on every `DefinedTradeContact` (BG-6 / BG-9).
+* **Line-level twins of header references** — on `LineTradeAgreement`:
+  delivery terms (`BG-X-87`), contract (`BG-X-2`), seller order
+  (`BG-X-81`), ultimate-customer order (`BG-X-5`); on
+  `LineTradeDelivery`: the actual delivery event / date (`BT-X-85-000`),
+  despatch (`BG-X-13`) and receiving (`BG-X-82`) advice; on
+  `LineTradeSettlement`: the preceding-invoice reference (`BG-X-48`);
+  line-note codes (`BT-X-9` / `BT-X-10`).
+  *(The line-level delivery-note `BG-X-83` and additional-document
+  `BG-X-3` twins **are** modelled.)*
+* **Line monetary totals** — `AllowanceTotalAmount` / `ChargeTotalAmount`
+  / `TaxTotalAmount` / `GrandTotalAmount` (`BT-X-327`…`BT-X-330`); the
+  line total and total-allowance-charge are modelled.
+* **Referenced-document leaves** — `FormattedIssueDateTime` on the header
+  additional / contract references (`BT-X-33-00` / `BT-X-148-00` /
+  `BT-X-149-00`); preceding-invoice `TypeCode` (`BT-X-555`); accounting
+  reference `TypeCode` (`BT-X-99` / `BT-X-290`).
+* **Other shared leaves** — item characteristic `TypeCode` / `ValueMeasure`
+  (`BT-X-11` / `BT-X-12`), invoicing-period `Description` (`BT-X-264`),
+  allowance/charge `SequenceNumeric` / `BasisQuantity` (`BT-X-265` /
+  `BT-X-266`), per-line product local `ID` (`BT-X-305`), net-price
+  `IncludedTradeTax` (`BG-X-4`, B2C VAT in the unit price).
 
 PDF/A-3 packaging is out of scope; use `factur-x` (PyPI),
 [Mustangproject](https://github.com/ZUGFeRD/mustangproject) or a

@@ -26,8 +26,9 @@ product enrichments :class:`ProductCharacteristic` (BG-32),
 :class:`LineAdditionalReferencedDocument` (BT-128) and the line
 reuse of :class:`~getafix.schema.settlement.ReceivableAccountingAccount`
 (BT-133). The EXTENDED sub-line / ``IncludedReferencedProduct`` /
-per-line deviating-party groups are modelled here too; remaining
-EXTENDED line-level references are listed in ``docs/STRUCTURES.md §5.1``.
+per-line deviating-party groups are modelled here too; the residual
+EXTENDED line-level references are listed in the README "Status and
+known gaps".
 """
 
 from dataclasses import dataclass, field

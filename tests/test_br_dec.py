@@ -5,8 +5,7 @@ monetary BT at two decimal places. Getafix wires this as a single
 factory (``rules/_types.py::max_decimals``); each affected Decimal
 field on the schema dataclasses gets a small validator that reports
 a ``BR-DEC-NN`` ValidationError when the provided value carries more
-than two fractional digits. See ``docs/VALIDATION.md §7`` for the
-field-to-rule registry.
+than two fractional digits.
 
 Coverage (21 rules at COMFORT):
 

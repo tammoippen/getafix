@@ -1,6 +1,6 @@
 """EXTENDED-only business rules — ``BR-FXEXT-*``.
 
-Two themes (see ``docs/VALIDATION.md §4`` for the full table):
+Two themes:
 
 * Tolerance-banded replacements for the strict EN 16931
   ``BR-CO-{10,11,12,13,15}`` identities. The matching EN 16931

@@ -16,7 +16,7 @@ No business rules are enforced in this module. ``BT-72`` participates
 in ``BR-IC-11`` (intra-community supply must carry a delivery date or
 an invoicing period) which lives in :mod:`trade`. The XSD
 ``<xs:sequence>`` of ``HeaderTradeDeliveryType`` dictates the field
-order; see ``docs/STRUCTURES.md §3.5``.
+order.
 """
 
 from dataclasses import dataclass, field
