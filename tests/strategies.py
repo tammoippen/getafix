@@ -364,8 +364,16 @@ def _put_referenced_document(
     else:
         _put_id(ref, "ram", "IssuerAssignedID", draw(_token))
         # MINIMUM's ReferencedDocumentType has only IssuerAssignedID;
-        # FormattedIssueDateTime appears from BASIC_WL onwards.
-        if profile != Profile.MINIMUM and draw(st.booleans()):
+        # FormattedIssueDateTime appears from BASIC_WL onwards — except on
+        # the order refs (BT-13 / BT-14), whose issue date is an EXTENDED-only
+        # Factur-X extension (getafix gates it accordingly).
+        date_from = (
+            Profile.EXTENDED
+            if local
+            in ("SellerOrderReferencedDocument", "BuyerOrderReferencedDocument")
+            else Profile.BASIC_WL
+        )
+        if profile >= date_from and draw(st.booleans()):
             _put_formatted_date_time(ref, "ram", "FormattedIssueDateTime", draw(_dates))
 
 
