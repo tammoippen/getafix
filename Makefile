@@ -11,7 +11,7 @@ check:
 
 .PHONY: tests
 tests:
-	uv run pytest -s -vvv -n auto \
+	uv run --locked pytest -s -vvv -n auto \
 		--cov=getafix \
 		--cov-branch \
 		--cov-report=term-missing:skip-covered \

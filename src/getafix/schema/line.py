@@ -56,7 +56,7 @@ from getafix.schema.settlement import (
     BillingSpecifiedPeriod,
     ReceivableAccountingAccount,
 )
-from getafix.schema.types import LineStatusReasonCode, Namespace, Profile
+from getafix.schema.types import Currency, LineStatusReasonCode, Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -263,12 +263,8 @@ class GrossTradePrice(Element):
     :func:`getafix.rules._types.list_max_cardinality_below` and
     :func:`getafix.rules.line.applied_price_charge_extended_only`.
     """
-    currency: str | None = None
-    """Document currency (BT-5) echoed on the gross-price amount.
-
-    Populated on parse from the ``currencyID`` attribute; set
-    explicitly when building programmatically.
-    """
+    currency: Currency | None = None
+    """Document currency (BT-5) echoed on the gross-price amount."""
 
 
 @dataclass(kw_only=True, slots=True)
