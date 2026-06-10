@@ -13,9 +13,7 @@ Anything else — a dropped, added, reordered or altered element / attribute
 / text — is a faithfulness regression. This complements
 ``test_xsd_validity`` (which only checks the re-render is *valid*, not that
 it is *the same*) and ``test_zf24_examples`` (which round-trips
-model→XML→model, blind to what the parser silently ignores). It is the
-test that would have caught the dropped item-price-discount ``Reason``
-(BT-X-36) and the second ``AppliedTradeAllowanceCharge``.
+model→XML→model, blind to what the parser silently ignores).
 """
 
 from __future__ import annotations
