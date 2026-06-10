@@ -52,6 +52,7 @@ from getafix.schema.party import (
     ShipToTradeParty,
     UltimateShipToTradeParty,
 )
+from getafix.schema.references import DeliveryNoteReferencedDocument
 from getafix.schema.settlement import (
     BillingSpecifiedPeriod,
     ReceivableAccountingAccount,
@@ -771,22 +772,43 @@ class LineQuotationReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class LineAdditionalReferencedDocument(Element):
-    """Line-level invoice-line object identifier (BT-128-00); COMFORT+.
+    """Line-level additional referenced document (BT-128-00); COMFORT+.
 
-    Distinct from the header :class:`~getafix.schema.references.AdditionalReferencedDocument`:
-    the line variant only carries ``IssuerAssignedID`` (BT-128), a
-    fixed ``TypeCode`` of ``"130"`` (Invoicing data sheet, BT-128-0)
-    and an optional ``ReferenceTypeCode`` (BT-128-1, UNTDID 1153
-    scheme id). It never carries BT-122 supporting-document fields.
+    Carries the invoice-line object identifier (``IssuerAssignedID``
+    BT-128), a fixed ``TypeCode`` of ``"130"`` (Invoicing data sheet,
+    BT-128-0) and an optional ``ReferenceTypeCode`` (BT-128-1, UNTDID
+    1153 scheme id) when placed on
+    :attr:`~getafix.schema.line.LineTradeSettlement.additional_references`.
+
+    The same element backs the EXTENDED per-line supporting-document
+    reference on
+    :attr:`~getafix.schema.line.LineTradeAgreement.additional_references`
+    (the line twin of the header BG-24); there it additionally carries a
+    ``LineID`` (referenced document line position) and a ``Name`` (BT-123
+    document description), both EXTENDED-only. Field order follows the
+    XSD ``ReferencedDocumentType`` sequence.
     """
 
     tag: ClassVar[str] = "AdditionalReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
+    _validators: ClassVar[tuple[Validator["LineAdditionalReferencedDocument"], ...]] = (
+        fields_only_at(Profile.EXTENDED, "line_id", "name"),
+    )
+
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Invoice line object identifier (BT-128)."""
+    """Invoice line object identifier (BT-128) / supporting-document id."""
+    line_id: str | None = field(
+        default=None, metadata={"tag": "LineID", "profile": Profile.EXTENDED}
+    )
+    """Referenced document line position (BT-128-00 ``LineID``);
+    EXTENDED-only — used on the line-agreement supporting document."""
     type_code: Literal["130"] = field(default="130", metadata={"tag": "TypeCode"})
     """Document type code (BT-128-0); fixed to ``"130"``."""
+    name: str | None = field(
+        default=None, metadata={"tag": "Name", "profile": Profile.EXTENDED}
+    )
+    """Supporting-document description (BT-123); EXTENDED-only."""
     reference_type_code: str | None = field(
         default=None, metadata={"tag": "ReferenceTypeCode"}
     )
@@ -819,7 +841,6 @@ class LineTradeAgreement(Element):
     * ``ApplicableTradeDeliveryTerms`` — line-level Incoterms.
     * ``SellerOrderReferencedDocument`` — per-line seller's order ref.
     * ``ContractReferencedDocument`` — per-line contract reference.
-    * ``AdditionalReferencedDocument`` (0..*) — extra per-line refs.
     * ``UltimateCustomerOrderReferencedDocument`` (0..*) — per-line
       ultimate-customer order ref.
     """
@@ -828,7 +849,9 @@ class LineTradeAgreement(Element):
     profile: ClassVar[Profile] = Profile.BASIC
 
     _validators: ClassVar[tuple[Validator["LineTradeAgreement"], ...]] = (
-        fields_only_at(Profile.EXTENDED, "quotation_ref", "item_seller"),
+        fields_only_at(
+            Profile.EXTENDED, "quotation_ref", "additional_references", "item_seller"
+        ),
     )
 
     buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
@@ -837,6 +860,14 @@ class LineTradeAgreement(Element):
         default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Referenced quotation line (BG-X-47, 0..1); EXTENDED only."""
+    additional_references: list[LineAdditionalReferencedDocument] | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Per-line supporting documents (BT-128-00, 0..*); EXTENDED-only.
+
+    The line twin of the header BG-24 additional referenced documents —
+    e.g. a per-line bill-of-quantities (``Leistungsverzeichnis``)
+    position."""
     gross_price: GrossTradePrice | None = None
     """Item gross price (BT-148-00)."""
     net_price: NetTradePrice | None = None
@@ -876,6 +907,7 @@ class LineTradeDelivery(Element):
             "per_package_unit_quantity",
             "ship_to",
             "ultimate_ship_to",
+            "delivery_note",
         ),
     )
 
@@ -903,15 +935,21 @@ class LineTradeDelivery(Element):
         default=None, metadata={"profile": Profile.EXTENDED}
     )
     """Line-level ultimate ship-to party (BG-X-10); EXTENDED-only."""
+    delivery_note: DeliveryNoteReferencedDocument | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Line-level delivery note reference (BT-X-202-00); EXTENDED-only —
+    the per-line twin of
+    :attr:`~getafix.schema.delivery.TradeDelivery.delivery_note`."""
 
 
 @dataclass(kw_only=True, slots=True)
 class LineMonetarySummation(Element):
     """Invoice line totals (BT-131-00).
 
-    Detailed information about the line totals. Only
-    ``LineTotalAmount`` (BT-131) is modelled at BASIC; EN 16931 does
-    not add fields here.
+    Detailed information about the line totals. ``LineTotalAmount``
+    (BT-131) is modelled at BASIC; EXTENDED adds the optional
+    ``TotalAllowanceChargeAmount``.
     """
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementLineMonetarySummation"
@@ -919,6 +957,7 @@ class LineMonetarySummation(Element):
 
     _validators: ClassVar[tuple[Validator["LineMonetarySummation"], ...]] = (
         max_decimals("BR-DEC-23", field_name="line_total"),
+        fields_only_at(Profile.EXTENDED, "total_allowance_charge"),
     )
 
     line_total: Decimal | None = field(
@@ -931,6 +970,19 @@ class LineMonetarySummation(Element):
     (computed as ``net_price * billed_quantity +/- line allowances /
     charges``).
     """
+    total_allowance_charge: Decimal | None = field(
+        default=None,
+        metadata={
+            "tag": "TotalAllowanceChargeAmount",
+            "profile": Profile.EXTENDED,
+            "amount": True,
+        },
+    )
+    """Sum of the line's allowances and charges (BT-131-00
+    ``TotalAllowanceChargeAmount``); EXTENDED-only.
+
+    The net of all BG-27 allowances and BG-28 charges on this invoice
+    line; informational, already folded into :attr:`line_total`."""
     currency: str | None = None
     """Document currency (BT-5) echoed on the line-total amount.
 
