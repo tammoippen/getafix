@@ -783,10 +783,10 @@ class LineAdditionalReferencedDocument(Element):
     The same element backs the EXTENDED per-line supporting-document
     reference on
     :attr:`~getafix.schema.line.LineTradeAgreement.additional_references`
-    (the line twin of the header BG-24); there it additionally carries a
-    ``LineID`` (referenced document line position) and a ``Name`` (BT-123
-    document description), both EXTENDED-only. Field order follows the
-    XSD ``ReferencedDocumentType`` sequence.
+    (BG-X-3, the line twin of the header BG-24); there it additionally
+    carries a ``LineID`` (BT-X-29, referenced document line position) and a
+    ``Name`` (BT-X-299, document description), both EXTENDED-only. Field
+    order follows the XSD ``ReferencedDocumentType`` sequence.
     """
 
     tag: ClassVar[str] = "AdditionalReferencedDocument"
@@ -797,22 +797,25 @@ class LineAdditionalReferencedDocument(Element):
     )
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
-    """Invoice line object identifier (BT-128) / supporting-document id."""
+    """Invoice line object identifier (BT-128, line settlement) or
+    supporting-document number (BT-X-27, BG-X-3 line agreement)."""
     line_id: str | None = field(
         default=None, metadata={"tag": "LineID", "profile": Profile.EXTENDED}
     )
-    """Referenced document line position (BT-128-00 ``LineID``);
-    EXTENDED-only — used on the line-agreement supporting document."""
+    """Referenced document line position (BT-X-29); EXTENDED-only — on the
+    BG-X-3 line-agreement supporting document."""
     type_code: Literal["130"] = field(default="130", metadata={"tag": "TypeCode"})
-    """Document type code (BT-128-0); fixed to ``"130"``."""
+    """Document type code (BT-128-0 / BT-X-30); fixed to ``"130"``."""
     name: str | None = field(
         default=None, metadata={"tag": "Name", "profile": Profile.EXTENDED}
     )
-    """Supporting-document description (BT-123); EXTENDED-only."""
+    """Supporting-document description (BT-X-299); EXTENDED-only — on the
+    BG-X-3 line-agreement supporting document."""
     reference_type_code: str | None = field(
         default=None, metadata={"tag": "ReferenceTypeCode"}
     )
-    """Scheme identifier (BT-128-1).
+    """Scheme identifier (BT-128-1, line settlement / BT-X-32, BG-X-3
+    line agreement).
 
     Code list: UNTDID 1153 (reference qualifier).
     """
@@ -863,7 +866,8 @@ class LineTradeAgreement(Element):
     additional_references: list[LineAdditionalReferencedDocument] | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Per-line supporting documents (BT-128-00, 0..*); EXTENDED-only.
+    """Per-line additional referenced documents (BG-X-3, 0..*);
+    EXTENDED-only.
 
     The line twin of the header BG-24 additional referenced documents —
     e.g. a per-line bill-of-quantities (``Leistungsverzeichnis``)
@@ -938,9 +942,10 @@ class LineTradeDelivery(Element):
     delivery_note: DeliveryNoteReferencedDocument | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Line-level delivery note reference (BT-X-202-00); EXTENDED-only —
-    the per-line twin of
-    :attr:`~getafix.schema.delivery.TradeDelivery.delivery_note`."""
+    """Line-level delivery note reference (BG-X-83); EXTENDED-only — the
+    per-line twin of
+    :attr:`~getafix.schema.delivery.TradeDelivery.delivery_note`
+    (BT-X-202-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -978,8 +983,8 @@ class LineMonetarySummation(Element):
             "amount": True,
         },
     )
-    """Sum of the line's allowances and charges (BT-131-00
-    ``TotalAllowanceChargeAmount``); EXTENDED-only.
+    """Total allowance and charge amount for the line (BT-X-98);
+    EXTENDED-only.
 
     The net of all BG-27 allowances and BG-28 charges on this invoice
     line; informational, already folded into :attr:`line_total`."""
