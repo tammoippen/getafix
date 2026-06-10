@@ -65,7 +65,7 @@ from getafix.schema.types import Currency, LineStatusReasonCode, Namespace, Prof
 class LineIncludedNote(Element):
     """Invoice line note (BT-127-00).
 
-    Detailed information about the free text of the line item.
+    Wrapper for the line item's free-text note.
 
     Note: distinct from :class:`getafix.schema.document.IncludedNote`
     (header-level BG-1) because at BASIC the line note carries only
@@ -78,8 +78,8 @@ class LineIncludedNote(Element):
     content: str = field(metadata={"tag": "Content"})
     """Invoice line note (BT-127).
 
-    A textual note that gives unstructured information that is
-    relevant to the invoice line.
+    Unstructured free text carrying information that concerns this
+    particular invoice line.
     """
 
 
@@ -107,8 +107,8 @@ class Quantity(Element):
     ``BilledQuantity``, BT-150 / BT-150-1 on ``BasisQuantity``.
     Rendered as the ``unitCode`` attribute.
 
-    Code list: UN/ECE Recommendation 20 (and 21 for passengers, types
-    of cargo, packages and packaging materials) — e.g. ``C62`` for
+    Code list: UN/ECE Recommendation 20 (Recommendation 21 covers
+    the passenger / cargo-type / package codes) — e.g. ``C62`` for
     "one", ``H87`` for "piece", ``KGM`` for kilogram.
     """
 
@@ -133,7 +133,7 @@ class Quantity(Element):
 class BasisQuantity(Quantity):
     """Item price base quantity (BT-149 / BT-149-1).
 
-    The number of item units to which the price applies. Carries the
+    How many item units the quoted price buys. Carries the
     unit-of-measure code (BT-150 / BT-150-1) which must match the
     invoiced-quantity unit (BT-130).
     """
@@ -201,8 +201,8 @@ class AppliedTradeAllowanceCharge(Element):
     actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
     """Item price discount (BT-147) or charge (BT-X-302).
 
-    The total discount subtracted from (or charge added to) the item
-    gross price to calculate the item net price.
+    Total discount taken off — or charge added onto — the gross
+    unit price (BT-148) on the way to the net unit price (BT-146).
     """
     reason_code: str | None = field(
         default=None, metadata={"tag": "ReasonCode", "profile": Profile.EXTENDED}
@@ -226,8 +226,8 @@ class AppliedTradeAllowanceCharge(Element):
 class GrossTradePrice(Element):
     """Item gross price (BT-148-00).
 
-    Detailed information on the gross price of the item — the unit
-    price before subtracting the item price discount.
+    The item's gross unit price — what it costs before the item
+    price discount comes off.
     """
 
     tag: ClassVar[str] = "GrossPriceProductTradePrice"
@@ -246,8 +246,8 @@ class GrossTradePrice(Element):
     charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
     """Item gross price (BT-148).
 
-    The unit price, exclusive of VAT, before subtracting the item
-    price discount.
+    VAT-exclusive unit price before the item price discount comes
+    off.
 
     Note: must not be negative — enforced by ``BR-28``.
     """
@@ -282,8 +282,8 @@ class NetTradePrice(Element):
     charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
     """Item net price (BT-146).
 
-    The price of an item, exclusive of VAT, after subtracting the
-    item price discount.
+    VAT-exclusive unit price once the item price discount has been
+    taken off.
 
     Note: the net price must equal the gross price (BT-148) less the
     item price discount (BT-147), and must not be negative —
@@ -400,8 +400,8 @@ class ProductClassification(Element):
 class OriginCountry(Element):
     """Item country of origin (BT-159-00); COMFORT+.
 
-    The country from which the item originates, as an ISO 3166-1
-    alpha-2 code on the single inner ``<ram:ID>`` element (BT-159).
+    Where the item comes from, as an ISO 3166-1 alpha-2 code on the
+    single inner ``<ram:ID>`` element (BT-159).
 
     Note: EN 16931 modelled this group as BG-34; Factur-X 1.08 folds
     it into the BT-159-00 wrapper id.
@@ -516,8 +516,8 @@ class IncludedReferencedProduct(Element):
 class TradeProduct(Element):
     """Item information (BG-31).
 
-    A group of business terms providing information about the goods
-    and services invoiced. EN 16931 enriches the BASIC shape with
+    Describes what is being invoiced — the goods or services
+    themselves. EN 16931 enriches the BASIC shape with
     the three product groups :class:`ProductCharacteristic` (BG-32),
     :class:`ProductClassification` (BG-33), and :class:`OriginCountry`
     (BG-34). EXTENDED layers on six per-item identifier / naming
@@ -547,8 +547,8 @@ class TradeProduct(Element):
     global_id: GlobalID | None = None
     """Item standard identifier (BT-157).
 
-    An item identifier based on a registered scheme — the
-    ``schemeID`` attribute is required when the value is set
+    Identifies the item under a registered scheme (GTIN, EAN, …) —
+    the ``schemeID`` attribute is required when the value is set
     (``BR-64``).
     """
     seller_assigned_id: str | None = field(
@@ -641,7 +641,7 @@ class DocumentLineDocument(Element):
     line_id: str = field(metadata={"tag": "LineID"})
     """Invoice line identifier (BT-126).
 
-    A unique identifier for the individual line within the invoice.
+    Identifies this line unambiguously within the invoice.
     """
     parent_line_id: str | None = field(
         default=None, metadata={"tag": "ParentLineID", "profile": Profile.EXTENDED}
@@ -817,8 +817,8 @@ class LineAdditionalReferencedDocument(Element):
 class LineTradeAgreement(Element):
     """Line trade agreement / price details (BG-29).
 
-    A group of business terms providing information about the price
-    applied for the goods and services invoiced on the invoice line.
+    The pricing side of the invoice line: what unit price the
+    invoiced goods or services are billed at, gross and net.
 
     :class:`~getafix.schema.party.ItemSellerTradeParty` (BG-X-90)
     is modelled here (field :attr:`item_seller`).
@@ -956,8 +956,8 @@ class LineMonetarySummation(Element):
     )
     """Invoice line net amount (BT-131).
 
-    The total amount of the invoice line — net of VAT but inclusive
-    of line-level allowances, charges and other relevant taxes
+    What the whole line comes to — net of VAT but inclusive of
+    line-level allowances, charges and other relevant taxes
     (computed as ``net_price * billed_quantity +/- line allowances /
     charges``).
     """
@@ -969,7 +969,7 @@ class LineMonetarySummation(Element):
             "amount": True,
         },
     )
-    """Total allowance and charge amount for the line (BT-X-98);
+    """Combined allowance / charge total of the line (BT-X-98);
     EXTENDED-only.
 
     The net of all BG-27 allowances and BG-28 charges on this invoice
@@ -986,9 +986,9 @@ class LineMonetarySummation(Element):
 class LineTradeSettlement(Element):
     """Line trade settlement (BG-30-00).
 
-    Grouping of billing information at line level: line VAT
-    (BG-30), optional invoicing period (BG-26), optional allowances
-    (BG-27) and charges (BG-28), and the line total (BT-131-00).
+    The billing side of the invoice line: line VAT (BG-30), optional
+    invoicing period (BG-26), optional allowances (BG-27) and
+    charges (BG-28), and the line total (BT-131-00).
     """
 
     tag: ClassVar[str] = "SpecifiedLineTradeSettlement"
@@ -1018,8 +1018,8 @@ class LineTradeSettlement(Element):
     """Invoice line allowances (BG-27) and charges (BG-28).
 
     Note: same dataclass for both, distinguished by ``ChargeIndicator``.
-    All charges and taxes are assumed to be liable to the same VAT
-    rate as the invoice line.
+    Any charge or tax here is taken to share the VAT rate of its
+    invoice line.
     """
     monetary_summation: LineMonetarySummation
     """Invoice line totals (BT-131-00); required."""

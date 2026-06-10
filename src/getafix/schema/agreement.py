@@ -115,12 +115,12 @@ class TradeAgreement(Element):
     )
     """Buyer reference (BT-10).
 
-    An identifier assigned by the Buyer used for internal routing
-    purposes.
+    A value the Buyer hands out so the incoming invoice can be
+    routed internally on their side.
 
-    Note: the identifier is defined by the Buyer (e.g. contact id,
-    department, office id, project code) but provided by the Seller
-    in the invoice.
+    Note: the Buyer chooses the value (a department, contact id,
+    project code, office id, …); the Seller merely echoes it back on
+    the invoice.
     """
     seller: SellerTradeParty
     """Seller (BG-4) — supplier of the goods or services."""
@@ -139,8 +139,8 @@ class TradeAgreement(Element):
     end_user: ProductEndUserTradeParty | None = None
     """Product end user party (BG-X-18); EXTENDED-only.
 
-    The party acting as the end user for the products in this header
-    trade agreement.
+    Identifies who ultimately uses the products covered by this
+    header trade agreement.
     """
     delivery_terms: TradeDeliveryTerms | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}

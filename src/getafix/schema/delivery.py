@@ -60,8 +60,8 @@ class LogisticsTransportMovement(Element):
 class SupplyChainConsignment(Element):
     """Related SupplyChain Consignment (BG-X-24).
 
-    A consignment, at header level, related to this trade delivery.
-    EXTENDED-only.
+    Header-level consignment tied to this delivery — carries the
+    transport-movement details. EXTENDED-only.
     """
 
     tag: ClassVar[str] = "RelatedSupplyChainConsignment"
@@ -75,7 +75,7 @@ class SupplyChainConsignment(Element):
 class SupplyChainEvent(Element):
     """Actual delivery (BT-72-000).
 
-    Detailed information about the actual delivery event.
+    Event wrapper carrying the date the delivery actually took place.
     """
 
     tag: ClassVar[str] = "ActualDeliverySupplyChainEvent"
@@ -87,15 +87,15 @@ class SupplyChainEvent(Element):
     )
     """Actual delivery date (BT-72).
 
-    The date on which the supply of goods or services was made or
-    completed.
+    When the goods or services were actually supplied (or supply was
+    completed).
 
-    Note: In Germany, the date of delivery and performance is a
-    mandatory information on invoices. It may additionally be
-    indicated at line level, but must in any case be present here. An
-    exception is prepayment invoices (``ExchangedDocument/TypeCode =
-    386``), where the delivery or performance date is not yet known
-    at the time of invoicing.
+    Note: German invoices must state the delivery/performance date.
+    It may be repeated at line level, but the header occurrence is
+    the one that counts. Prepayment invoices
+    (``ExchangedDocument/TypeCode = 386``) are the exception — there
+    the delivery or performance date isn't known yet when the
+    invoice goes out.
     """
 
 
@@ -103,8 +103,9 @@ class SupplyChainEvent(Element):
 class TradeDelivery(Element):
     """Header trade delivery (BG-13-00).
 
-    A group of business terms providing information about where and
-    when the goods and services invoiced are delivered.
+    The where-and-when of the invoiced goods and services: delivery
+    parties, the actual delivery date, and the transport / receipt
+    document references.
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeDelivery"
