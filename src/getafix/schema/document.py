@@ -170,8 +170,9 @@ class IncludedNote(Element):
 class EffectivePeriod(Element):
     """Contractual due date of the invoice (BT-X-6-000).
 
-    Indicates the due date of the invoice when it differs from the
-    payment due date (typical case: SEPA direct debits). EXTENDED-only.
+    Marks when the invoice contractually falls due, where that
+    differs from the payment due date (typical case: SEPA direct
+    debits). EXTENDED-only.
     """
 
     tag: ClassVar[str] = "EffectiveSpecifiedPeriod"

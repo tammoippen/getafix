@@ -228,8 +228,8 @@ class PaymentMeans(Element):
     """Payment means type code (BT-81).
 
     The expected or used means of payment, expressed as a code.
-    Distinguishes SEPA from non-SEPA payments and between credit
-    transfers, direct debits, card payments and other means.
+    Tells SEPA apart from non-SEPA payments, and credit transfers
+    from direct debits, card payments and the rest.
 
     Code list: UNTDID 4461. Frequently-used codes:
 
