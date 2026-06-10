@@ -150,7 +150,7 @@ _LINE_TOL = 2.5  # spans within this many points of y share a visual line
 def _page_lines(page: fitz.Page) -> list[_Line]:
     """Cluster a page's spans into visual lines, dropping header/footer."""
     spans: list[dict[str, Any]] = []
-    text_dict = cast("dict[str, Any]", page.get_text("dict"))
+    text_dict = cast(dict[str, Any], page.get_text("dict"))
     for block in text_dict["blocks"]:
         for line in block.get("lines", []):
             for span in line["spans"]:
