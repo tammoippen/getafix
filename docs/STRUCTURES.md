@@ -443,12 +443,10 @@ selectively today; full set:
 | `LineTradeAgreementType`| `ApplicableTradeDeliveryTerms`               | `TradeAgreement.delivery_terms` (BG-X-22) |
 | `LineTradeAgreementType`| `SellerOrderReferencedDocument`              | `TradeAgreement.seller_order` (BT-14-00) |
 | `LineTradeAgreementType`| `ContractReferencedDocument`                 | `TradeAgreement.contract` (BT-12-00) |
-| `LineTradeAgreementType`| `AdditionalReferencedDocument` (0..*)        | `TradeAgreement.additional_references` (BG-24) |
 | `LineTradeAgreementType`| `UltimateCustomerOrderReferencedDocument` (0..*) | `TradeAgreement.customer_order` (BG-X-23) |
 | `LineTradeDeliveryType` | `ActualDeliverySupplyChainEvent`             | `TradeDelivery.event` (BT-72-000) |
 | `LineTradeDeliveryType` | `DespatchAdviceReferencedDocument`           | `TradeDelivery.despatch_advice` (BT-16-00) |
 | `LineTradeDeliveryType` | `ReceivingAdviceReferencedDocument`          | `TradeDelivery.receiving_advice` (BT-15-00) |
-| `LineTradeDeliveryType` | `DeliveryNoteReferencedDocument`             | `TradeDelivery.delivery_note` (BT-X-202-00) |
 | `LineTradeSettlementType`| `InvoiceReferencedDocument`                 | `TradeSettlement.invoice_referenced_document` (BG-3) |
 
 ### 5.2 Leaf attributes on shared complex types
@@ -480,10 +478,12 @@ honoured by the runtime gates:
   `list_max_cardinality_below(Profile.EXTENDED, max_count=1, ...)`
   on `TradeSettlement.terms`.
 * `AppliedTradeAllowanceCharge` on `TradePriceType` — 0..1 at
-  BASIC..COMFORT, 0..unbounded at EXTENDED. Getafix currently
-  models a singleton on `GrossTradePrice.applied_allowance_charge`;
-  the multi-entry case on EXTENDED gross / net prices is not yet
-  modelled.
+  BASIC..COMFORT, 0..unbounded at EXTENDED. Modelled as a list on
+  `GrossTradePrice.applied_allowance_charge`, capped to one entry below
+  EXTENDED by `list_max_cardinality_below`; a price *charge*
+  (`ChargeIndicator` true, BT-X-302-00) is EXTENDED-only via
+  `applied_price_charge_extended_only`, and the BT-X-34/35/36/313 leaf
+  fields are gated EXTENDED.
 
 ## 6. Out of scope
 

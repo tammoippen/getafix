@@ -4,15 +4,10 @@ getafix models every MINIMUM / BASIC_WL / BASIC / COMFORT field and is
 structurally complete at EXTENDED (``docs/STRUCTURES.md §1a``), so
 parsing a real sample with ``Document.from_xml`` and re-rendering it with
 ``Document.to_xml()`` must reproduce the source **element for element** —
-apart from two documented exceptions:
-
-* **empty source elements** (e.g. ``<ram:LineTwo/>``, ``<ram:Description/>``),
-  which getafix normalises away on parse — an empty element carries no
-  data, and PEPPOL-EN16931-R008 warns against them (see
-  ``Element._parse_str``);
-* a short, explicit **allow-list** of EXTENDED leaf / line-level fields
-  not yet modelled (``docs/STRUCTURES.md §5 / §6``) — shrink it as
-  coverage grows.
+apart from one exception: **empty source elements** (e.g.
+``<ram:LineTwo/>``, ``<ram:Description/>``), which getafix normalises away
+on parse (an empty element carries no data, and PEPPOL-EN16931-R008 warns
+against them — see ``Element._parse_str``).
 
 Anything else — a dropped, added, reordered or altered element / attribute
 / text — is a faithfulness regression. This complements
@@ -37,18 +32,6 @@ import lxml.etree as etree
 
 SAMPLES_DIR = Path(__file__).parent / "samples"
 _SAMPLES = sorted(SAMPLES_DIR.glob("*.xml"))
-
-# EXTENDED leaf / line-level fields getafix does not model yet, keyed by the
-# trailing ``parent/child`` of the element path so a line-level twin can be
-# allow-listed without also excusing its modelled header sibling. Each entry
-# is a known gap from docs/STRUCTURES.md §5 / §6; remove it once modelled.
-_ALLOWED_UNMODELLED: tuple[str, ...] = (
-    "SpecifiedLineTradeDelivery/DeliveryNoteReferencedDocument",  # line BT-X-202-00 twin
-    "SpecifiedLineTradeAgreement/AdditionalReferencedDocument",  # line BT-128-ish twin
-    "SpecifiedTradeSettlementLineMonetarySummation/TotalAllowanceChargeAmount",
-    "SellerOrderReferencedDocument/FormattedIssueDateTime",  # order-ref issue date
-    "BuyerOrderReferencedDocument/FormattedIssueDateTime",
-)
 
 
 def _local(tag: str) -> str:
@@ -83,9 +66,8 @@ def _diff(
             i += 1
             j += 1
         elif i < len(oc) and oc[i].tag not in {x.tag for x in rc[j:]}:
-            child_path = f"{path}/{_local(oc[i].tag)}"
-            if not _is_empty(oc[i]) and not child_path.endswith(_ALLOWED_UNMODELLED):
-                out.append(f"DROPPED  {child_path}")
+            if not _is_empty(oc[i]):
+                out.append(f"DROPPED  {path}/{_local(oc[i].tag)}")
             i += 1
         elif j < len(rc) and rc[j].tag not in {x.tag for x in oc[i:]}:
             out.append(f"INVENTED {path}/{_local(rc[j].tag)}")
@@ -98,8 +80,8 @@ def _diff(
 
 @pt.mark.parametrize("sample", _SAMPLES, ids=[s.name for s in _SAMPLES])
 def test_sample_renders_one_to_one(sample: Path) -> None:
-    """Parse → re-render → diff against the source; only empties and the
-    explicit EXTENDED allow-list may differ."""
+    """Parse → re-render → diff against the source; only empty source
+    elements may differ."""
     original = etree.parse(str(sample)).getroot()
     rendered = etree.fromstring(Document.from_xml(original).to_xml().render().encode())
     diffs: list[str] = []

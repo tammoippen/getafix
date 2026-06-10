@@ -56,6 +56,12 @@ class BuyerOrderReferencedDocument(Element):
 
     An identifier of a referenced purchase order, issued by the Buyer.
     """
+    issue_date_time: date | None = field(
+        default=None,
+        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
+    )
+    """Purchase order issue date (BT-13-00 ``FormattedIssueDateTime``);
+    EXTENDED-only — the issue date of the referenced purchase order."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -75,6 +81,12 @@ class SellerOrderReferencedDocument(Element):
 
     An identifier of a referenced sales order, issued by the Seller.
     """
+    issue_date_time: date | None = field(
+        default=None,
+        metadata={"tag": "FormattedIssueDateTime", "profile": Profile.EXTENDED},
+    )
+    """Sales order issue date (BT-14-00 ``FormattedIssueDateTime``);
+    EXTENDED-only — the issue date of the referenced sales order."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -365,6 +377,12 @@ class DeliveryNoteReferencedDocument(Element):
 
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Delivery note reference (BT-X-202)."""
+    line_id: str | None = field(default=None, metadata={"tag": "LineID"})
+    """Referenced delivery-note line position (BT-X-202-00 ``LineID``).
+
+    Set only on the per-line delivery note reference
+    (:attr:`~getafix.schema.line.LineTradeDelivery.delivery_note`); the
+    header delivery note leaves it ``None``."""
     issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
