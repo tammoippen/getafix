@@ -10,6 +10,8 @@ or add a business-rule validator.
 ```
 src/getafix/
 ├── __init__.py
+├── build.py               # high-level factories (profile constructors,
+│                          #   line-item factory, computed VAT breakdown/totals)
 ├── cli.py                 # console script entry point
 ├── pdf.py                 # PDF/A-3 attachment helpers (pypdf)
 ├── report/                # rich console pretty-printer (one module per schema topic)
@@ -194,6 +196,27 @@ in `rules/<topic>.py` short-circuits with
 guards with the inverse. Both end up on the same element's
 `_validators` tuple; profile gating in each function picks the
 right one to fire.
+
+## Factory layer (`getafix.build`)
+
+The schema stays deliberately low level — every BT is set explicitly.
+`getafix.build` is the convenience layer on top: free-standing
+factories that take business inputs and compute everything derivable
+(line totals per Factur-X §7.1.8 rounding, the BG-23 breakdown
+grouped per category/rate, the BG-22 totals along the `BR-CO-11` …
+`BR-CO-16` identities, canonical VATEX exemption-code defaults).
+`minimum_invoice` / `basic_wl_invoice` cover the two profiles without
+line items; `invoice` covers BASIC / COMFORT / EXTENDED from a list
+of `line_item()` results. Rules for changes here:
+
+- factories must return plain schema dataclasses and never mutate
+  caller-supplied elements (copy via `dataclasses.replace` when a
+  derived field needs filling);
+- every constructor's happy path must produce a document that passes
+  `Document.validate()` *and* the profile XSD — `tests/test_build.py`
+  asserts both;
+- monetary inputs are `Decimal | int | str`; `float` is rejected
+  (binary representation noise must not leak into amounts).
 
 ## Report architecture
 

@@ -93,6 +93,60 @@ pip install 'getafix[lxml,pdf]'
 
 ## Quickstart — build an invoice
 
+The quickest way to a valid document is the high-level factory layer
+in `getafix.build`: pass the business inputs, and everything that can
+be derived — the line totals (BT-131), the VAT breakdown (BG-23) and
+the monetary summation (BG-22) — is computed so the arithmetic rules
+(`BR-CO-10` … `BR-CO-16`) hold by construction:
+
+```python
+from datetime import date
+
+from getafix.build import buyer_party, invoice, line_item, seller_party
+from getafix.schema.types import Country
+
+doc = invoice(
+    "INV-2025-0001",
+    date(2025, 11, 16),
+    seller=seller_party(
+        "Acme GmbH",
+        country=Country.DE,
+        vat_id="DE123456789",
+        postcode="80331",
+        city="München",
+        line_one="Musterstraße 1",
+    ),
+    buyer=buyer_party("Beta AG", country=Country.DE),
+    items=[
+        line_item("1", "Widget", net_price="100.00", quantity=3, vat_rate=19),
+        line_item("2", "Gadget", net_price="9.90", quantity=2, vat_rate=7),
+    ],
+    due_date=date(2025, 12, 16),
+)
+
+doc.validate()                           # passes out of the box
+xml = doc.to_xml().render(indent=True)   # str — ready to write to factur-x.xml
+```
+
+`invoice()` defaults to the COMFORT (EN 16931) profile; pass
+`profile=Profile.BASIC` / `Profile.EXTENDED` for the other line-item
+profiles. The two profiles without line items have their own
+constructors — `minimum_invoice()` (give it the total without VAT and
+a `vat_rate` or `tax_amount`; the totals with VAT follow) and
+`basic_wl_invoice()` (give it one VAT-breakdown row per category with
+the taxable basis; the per-category tax amounts and the document
+totals follow). `line_item()` derives the line total from price ×
+quantity (with optional price base quantity and gross-price /
+discount wiring), defaults the VAT rate where the category admits
+exactly one legal value (0 for `Z`/`E`/`AE`/`G`/`K`, absent for `O`),
+and the breakdown fills in canonical VATEX exemption codes for
+`AE`/`G`/`K`/`O`. Monetary inputs accept `Decimal`, `int` or `str` —
+`float` is rejected. The factories return ordinary schema dataclasses,
+so anything they don't expose can still be set afterwards.
+
+For full control — or fields the factories don't cover — build the
+schema tree directly:
+
 ```python
 from datetime import date
 from decimal import Decimal
