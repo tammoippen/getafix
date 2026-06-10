@@ -90,7 +90,7 @@ class PayerPartyDebtorFinancialAccount(Element):
     iban_id: str = field(metadata={"tag": "IBANID"})
     """Debited account identifier (BT-91).
 
-    The account to be debited by the direct debit.
+    The account the direct debit will pull from.
     """
 
 
@@ -116,9 +116,9 @@ class PayeePartyCreditorFinancialAccount(Element):
     iban_id: str | None = field(default=None, metadata={"tag": "IBANID"})
     """Payment account identifier (BT-84).
 
-    A unique identifier of the financial account held at a payment
-    service provider to which the payment should be made — IBAN in
-    the SEPA case, a national account number otherwise.
+    Identifies the account — held with a payment service provider —
+    the payment should land on: IBAN in the SEPA case, a national
+    account number otherwise.
 
     Note: per ``BR-50`` either ``iban_id`` or ``proprietary_id``
     must be present; ``BR-61`` further requires an IBAN for SEPA /
@@ -129,8 +129,8 @@ class PayeePartyCreditorFinancialAccount(Element):
     )
     """Payment account name (BT-85); COMFORT+.
 
-    The name of the payment account, used to identify the account
-    when the account holder is different from the Payee.
+    Account name; identifies the account when its holder differs
+    from the Payee.
     """
     proprietary_id: str | None = field(default=None, metadata={"tag": "ProprietaryID"})
     """National (non-SEPA) account number (BT-84-0).
@@ -144,7 +144,7 @@ class PayeePartyCreditorFinancialAccount(Element):
 class FinancialCard(Element):
     """Payment card (BG-18); COMFORT+.
 
-    Carries the last 4..6 digits of the Payment card primary account
+    Carries the trailing 4..6 digits of the card's primary account
     number (BT-87) and an optional cardholder name (BT-88). ``BR-51``
     constrains BT-87 to exactly 4..6 numeric digits.
     """
@@ -206,8 +206,8 @@ class CreditorFinancialInstitution(Element):
 class PaymentMeans(Element):
     """Payment instructions (BG-16).
 
-    A group of business terms providing information about the
-    payment. Repeated 0..* on :class:`TradeSettlement`.
+    How the invoice is meant to be paid. Repeated 0..* on
+    :class:`TradeSettlement`.
 
     Note: only repeat when several bank accounts are to be
     transmitted for credit transfers — the payment means
@@ -375,9 +375,9 @@ class PaymentDiscountTerms(Element):
 class PaymentTerms(Element):
     """Payment terms (BT-20-00).
 
-    A group of business terms providing the textual description of
-    the payment terms, the payment due date and (for SEPA direct
-    debits) the mandate reference. EXTENDED adds optional partial-
+    Bundles the payment conditions: the free-text terms, the payment
+    due date and (for SEPA direct debits) the mandate
+    reference. EXTENDED adds optional partial-
     payment amount and nested penalty / discount terms; the
     settlement-level cardinality widens from 0..1 (BASIC_WL through
     COMFORT) to 0..* at EXTENDED (multiple payment-term schedules),
@@ -402,16 +402,15 @@ class PaymentTerms(Element):
     description: str | None = field(default=None, metadata={"tag": "Description"})
     """Payment terms, free text (BT-20).
 
-    A textual description of the payment terms that apply to the
-    amount due for payment — including the description of possible
-    penalties. May contain multiple lines and multiple terms.
+    Free-text statement of the conditions under which the amount due
+    is to be paid, penalty clauses included. May span several lines
+    and several terms.
     """
     due: date | None = field(default=None, metadata={"tag": "DueDateDateTime"})
     """Payment due date (BT-9).
 
-    The date when the payment is due — the due date of the net
-    payment. For partial payments this is the first net due date;
-    the description of more complex schedules belongs in
+    When the net payment falls due. With partial payments this names
+    the first net due date; spell out more complex schedules in
     :attr:`description` (BT-20).
     """
     debit_mandate_id: str | None = field(
@@ -419,9 +418,9 @@ class PaymentTerms(Element):
     )
     """SEPA mandate reference (BT-89).
 
-    Unique identifier assigned by the Payee for referencing the
-    direct-debit mandate. Used to pre-notify the Buyer of a SEPA
-    direct debit.
+    Mandate number under which the Payee tracks the direct-debit
+    authorisation; lets the Buyer recognise an announced SEPA direct
+    debit.
     """
     partial_payment_amount: Decimal | None = field(
         default=None,
@@ -455,8 +454,7 @@ class PaymentTerms(Element):
 class BillingSpecifiedPeriod(Element):
     """Invoicing period (BG-14 at header / BG-26 at line).
 
-    A group of business terms providing information on the period
-    the invoice covers — also called the delivery period.
+    The period the invoice covers — also called the delivery period.
 
     Note: the element name ``BillingSpecifiedPeriod`` is shared
     between header (BG-14) and line (BG-26) level — the BT IDs on
@@ -478,15 +476,16 @@ class BillingSpecifiedPeriod(Element):
     )
     """Invoicing period start date (BT-73 header / BT-134 line).
 
-    The initial date of delivery of goods or services.
+    First day of the period — when delivery of the goods or services
+    began.
     """
     end: date | None = field(
         default=None, metadata={"tag": "EndDateTime", "profile": Profile.BASIC_WL}
     )
     """Invoicing period end date (BT-74 header / BT-135 line).
 
-    The date on which the delivery of goods or services was
-    completed.
+    Last day of the period — when delivery of the goods or services
+    finished.
     """
 
 
@@ -494,8 +493,8 @@ class BillingSpecifiedPeriod(Element):
 class ReceivableAccountingAccount(Element):
     """Buyer accounting reference (BT-19-00).
 
-    Wrapper around BT-19 — the textual value specifying where the
-    relevant data is to be posted in the Buyer's financial accounts.
+    Wrapper around BT-19 — the posting key for the Buyer's financial
+    accounts.
     """
 
     tag: ClassVar[str] = "ReceivableSpecifiedTradeAccountingAccount"
@@ -504,8 +503,8 @@ class ReceivableAccountingAccount(Element):
     id: str = field(metadata={"tag": "ID"})
     """Buyer accounting reference (BT-19).
 
-    A textual value that specifies where to book the relevant data
-    in the Buyer's financial accounts.
+    Free-text posting key telling the Buyer's bookkeeping which
+    account the invoice data belongs on.
     """
 
 
@@ -750,10 +749,9 @@ class TradeSettlement(Element):
     )
     """Bank-assigned creditor identifier (BT-90).
 
-    A unique banking reference identifier of the Payee or Seller
-    assigned by the Payee's or Seller's bank — typically the SEPA
-    creditor identifier. Used to pre-notify the Buyer of a SEPA
-    direct debit.
+    Banking reference that identifies the Payee or Seller, issued by
+    their bank — typically the SEPA creditor identifier; lets the
+    Buyer recognise an announced SEPA direct debit.
     """
     payment_reference: str | None = field(
         default=None, metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL}
@@ -761,11 +759,11 @@ class TradeSettlement(Element):
     """Remittance information (BT-83).
 
     A textual value used to link the payment to the invoice — most
-    commonly the invoice number. In a payment transaction this
-    reference is returned to the Seller as remittance information.
+    commonly the invoice number. When the payment executes, the
+    Seller receives the value again as remittance information.
 
-    Note: for cross-border SEPA payments only Latin characters and
-    at most 140 characters should be used; the value must not start
+    Note: cross-border SEPA payments accept Latin characters only,
+    and at most 140 of them; the value must not start
     or end with ``/`` and must not contain ``//``. Structured
     references following ISO 11649:2009 map to the SEPA Structured
     Remittance Information / Creditor Reference field; EACT
@@ -778,8 +776,8 @@ class TradeSettlement(Element):
     )
     """VAT accounting currency code (BT-6); BASIC_WL+.
 
-    The currency used for VAT accounting and reporting purposes as
-    accepted or required in the Seller's country.
+    Currency in which VAT is accounted and reported, as the Seller's
+    country accepts or prescribes.
 
     Note: required only when it differs from the invoice currency
     (BT-5). When set, ``BR-53`` requires a second ``TaxTotal`` row
@@ -791,10 +789,10 @@ class TradeSettlement(Element):
     currency_code: Currency = field(metadata={"tag": "InvoiceCurrencyCode"})
     """Invoice currency code (BT-5).
 
-    The currency in which all invoice amounts are given, except for
-    the invoice VAT total in VAT accounting currency (BT-111). Only
-    one currency may be used in the invoice, except for that BT-111
-    exception per Article 230 of Council Directive 2006/112/EC.
+    Currency every amount on the invoice is denominated in. The one
+    permitted exception is the VAT total restated in the VAT
+    accounting currency (BT-111), per Article 230 of Council
+    Directive 2006/112/EC.
 
     Code list: ISO 4217.
     """

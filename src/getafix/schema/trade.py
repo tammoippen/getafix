@@ -104,8 +104,8 @@ from getafix.schema.types import Namespace, Profile
 class TradeLineItem(Element):
     """Invoice line (BG-25).
 
-    A group of business terms providing information on an individual
-    invoice line. Required from BASIC upwards.
+    One line of the invoice — everything getafix knows about a single
+    invoiced item. Required from BASIC upwards.
     """
 
     tag: ClassVar[str] = "IncludedSupplyChainTradeLineItem"
