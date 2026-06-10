@@ -27,4 +27,4 @@ ZF24_EN.zip
 tools/business_terms.json
 tools/business_terms_tree.json
 tools/business_rules.json
-tools/extract_specs.py
+tools/specs.json
