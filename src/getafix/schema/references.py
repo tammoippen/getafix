@@ -24,9 +24,10 @@ No business rules are enforced in this module. ``BR-52`` (every BG-24
 entry must carry BT-122) is implicit through ``AdditionalReferencedDocument.issuer_assigned_id``
 being a required field.
 
-Line-level twins of the despatch advice, receiving advice and
-delivery note references live on ``LineTradeDelivery`` (EXTENDED) and
-are tracked in ``docs/STRUCTURES.md §5.1``.
+The line-level delivery-note reference twin lives on
+``LineTradeDelivery.delivery_note`` (EXTENDED); the despatch / receiving
+advice line twins are not yet modelled (see the README "Status and
+known gaps").
 :class:`~getafix.schema.line.LineBuyerOrderReferencedDocument` (BT-132-00)
 and :class:`~getafix.schema.line.LineAdditionalReferencedDocument`
 (BT-128-00) cover the COMFORT line-level references.

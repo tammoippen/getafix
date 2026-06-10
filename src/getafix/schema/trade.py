@@ -12,8 +12,6 @@ This module is also where every *cross-sibling* validator wires in —
 rules that need to read across line items, header allowances/charges
 and the monetary summation in one pass. The validator functions
 themselves live in :mod:`getafix.rules.trade`.
-
-See ``docs/VALIDATION.md`` for the full BR-* catalogue.
 """
 
 from dataclasses import dataclass, field

@@ -1,8 +1,8 @@
 """Source-vs-render fidelity — every sample must re-render 1:1.
 
 getafix models every MINIMUM / BASIC_WL / BASIC / COMFORT field and is
-structurally complete at EXTENDED (``docs/STRUCTURES.md §1a``), so
-parsing a real sample with ``Document.from_xml`` and re-rendering it with
+structurally complete at EXTENDED, so parsing a real sample with
+``Document.from_xml`` and re-rendering it with
 ``Document.to_xml()`` must reproduce the source **element for element** —
 apart from one exception: **empty source elements** (e.g.
 ``<ram:LineTwo/>``, ``<ram:Description/>``), which getafix normalises away

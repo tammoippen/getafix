@@ -27,7 +27,7 @@ through the required dataclass fields on :class:`Header` and
 The :meth:`Document.validate` method is the public entry point that
 collects every :class:`ValidationError` recursively in one pass and
 raises a single :class:`ValidationErrors`; child validators append to
-the list and never raise. See ``docs/STRUCTURES.md §5``.
+the list and never raise.
 """
 
 from dataclasses import dataclass, field

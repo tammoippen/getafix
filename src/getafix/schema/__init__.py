@@ -35,10 +35,6 @@ business term groupings:
   exceptions.
 * :mod:`getafix.schema.types` — enums (``Profile``, ``Namespace``,
   ``TypeCode``, ``CategoryCode``, ``MIME``, UNTDID 1001).
-
-For the module → BG/BT field map and the EXTENDED coverage diff see
-``docs/STRUCTURES.md``. For the cross-field business rules the model
-is meant to enforce see ``docs/VALIDATION.md``.
 """
 
 from getafix.schema.document import BusinessDocument as BusinessDocument

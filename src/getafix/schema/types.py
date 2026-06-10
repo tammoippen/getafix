@@ -14,7 +14,7 @@ class Profile(enum.StrEnum):
     and so on. Higher profiles inherit every business rule from
     lower profiles, with EXTENDED additionally adding a CIUS overlay
     (``BR-FXEXT-*``) that replaces some ``BR-CO-*`` rules with
-    rounding-tolerance variants — see ``docs/VALIDATION.md``.
+    rounding-tolerance variants.
 
     All four order comparators are overridden to compare by the
     declaration order of the members so e.g.
@@ -201,8 +201,8 @@ class CategoryCode(enum.StrEnum):
     """UNTDID 5305 VAT category code (BT-95 / BT-102 / BT-118 / BT-151).
 
     Determines which ``BR-*-2/3/4`` family applies for required-party
-    checks and which ``BR-*-5/6/7`` family constrains the rate. See
-    ``docs/VALIDATION.md §3.2`` for the full matrix.
+    checks and which ``BR-*-5/6/7`` family constrains the rate (see
+    :mod:`getafix.rules.trade`).
     """
 
     T_S = "S"  # Standard rate (BR-S-*); rate must be > 0

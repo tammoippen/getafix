@@ -48,12 +48,7 @@ src/getafix/
     ├── trade.py           # cross-sibling rules (per-VAT-category families, arithmetic)
     └── extended.py        # BR-FXEXT-* CIUS overlay
 
-docs/
-├── STRUCTURES.md          # module → BG/BT field map, profile applicability, EXTENDED gap diff
-├── VALIDATION.md          # every BR-*/BR-CO-*/BR-X-* rule + status, BR-CL-* / BR-DEC-* wirings
-└── READING_OFFICIAL_DOCS.md  # where to find what in the ZF24_EN kit
-
-ZF24_EN/                   # vendored spec (gitignored); see docs/READING_OFFICIAL_DOCS.md
+ZF24_EN/                   # vendored spec (gitignored)
 tests/                     # pytest suite, sample corpus, hypothesis strategies
 tools/                     # one-shot scripts (codelist regen, sample fetch,
                            #   render_report.py: XML → PNG/SVG of the report)
@@ -200,9 +195,6 @@ guards with the inverse. Both end up on the same element's
 `_validators` tuple; profile gating in each function picks the
 right one to fire.
 
-For the full BR-* catalogue with implementation status see
-`docs/VALIDATION.md`.
-
 ## Report architecture
 
 `getafix.report` mirrors the schema the same way `getafix.rules` does:
@@ -218,8 +210,8 @@ labelled with their BT/BG id.
 
 ## Adding a new BT / BG field
 
-1. Find the spec entry — `docs/READING_OFFICIAL_DOCS.md` is the
-   cheat sheet for navigating `ZF24_EN/`.
+1. Find the spec entry in the vendored `ZF24_EN/` appendix (the
+   technical-appendix PDF carries the BT/BG ids and XSD positions).
 2. Locate the right dataclass under `src/getafix/schema/`.
 3. Add the `field()` declaration, in XSD `<xs:sequence>` order:
    ```python
@@ -248,9 +240,7 @@ labelled with their BT/BG id.
        return [ValidationError("BR-42", "…message…")]
    ```
 2. Wire it into the target element's `_validators` ClassVar tuple.
-3. Add a row to `docs/VALIDATION.md` with status `✓` and the rule's
-   enforcement location.
-4. Add at least one positive (rule fires) and one negative (rule
+3. Add at least one positive (rule fires) and one negative (rule
    passes) test under `tests/`.
 
 ## Wire conventions
@@ -337,15 +327,13 @@ The test suite includes:
   checks are hand-coded.
 - **EXTENDED CIUS full coverage.** Every top-level EXTENDED
   structure is modelled; the residual leaf attributes and line-level
-  twins of header references are enumerated in
-  `docs/STRUCTURES.md §5` and added on demand.
+  twins of header references are enumerated in the README "Status and
+  known gaps" and added on demand.
 
 ## See also
 
-- `docs/READING_OFFICIAL_DOCS.md` — how to navigate the vendored
-  Factur-X 1.08 / ZUGFeRD 2.4 documentation kit.
-- `docs/STRUCTURES.md` — module → BG/BT field map with profile
-  applicability, wire conventions and the EXTENDED gap diff.
-- `docs/VALIDATION.md` — every business rule, with enforcement status
-  and the function that implements it; also the `BR-CL-*` codelist
-  enum registry and the `BR-DEC-*` decimal-precision wirings.
+- `README.md` — user guide, the profile table and the enumerated
+  EXTENDED gaps.
+- `tools/check_schema_docs.py` — audits every BT/BG/BR citation in the
+  sources against the workbook sidecars (`make ids-check`) and reports
+  XSD children not yet modelled (`make docs-coverage`).
