@@ -33,12 +33,15 @@ synth-check:
 # docstrings and docs against the JSON sidecars
 # (``tools/business_terms.json`` and ``tools/business_rules.json``) and
 # exits non-zero on any unknown id — catches typos / hallucinated spec
-# references.
+# references. The verbatim audit then fails on any schema docstring
+# that copies a 6+-word run from the workbook text (term names, code
+# lists and legal citations are allow-listed in the tool).
 .PHONY: ids-check
 ids-check:
 	uv run --locked python tools/extract_business_terms.py "ZF24_EN/Documentation/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
 	uv run --locked python tools/extract_business_rules.py "ZF24_EN/Documentation/1_FACTUR-X 1.08 - 2025 12 04 - EN FR - VF.xlsx"
 	uv run --locked python tools/check_schema_docs.py --check-citations
+	uv run --locked python tools/check_verbatim.py
 
 # Run the schema-docs audit with the full informational missing-attribute
 # report. Not in CI — flags XSD children that aren't modelled yet
