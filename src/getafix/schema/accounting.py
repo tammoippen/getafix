@@ -122,8 +122,7 @@ class MonetarySummation(Element):
     """Document totals (BG-22).
 
     A group of business terms providing the monetary totals for the
-    invoice. Field order follows the XSD
-    ``TradeSettlementHeaderMonetarySummationType`` ``<xs:sequence>``;
+    invoice.
     several fields are optional at MINIMUM but expected at BASIC_WL+.
     """
 
@@ -214,9 +213,8 @@ class MonetarySummation(Element):
     The amount to be added to the invoice total to round the amount
     to be paid.
 
-    Note: first permitted from COMFORT (EN 16931) onwards per the
-    XSD ``<xs:sequence>`` — sits between ``TaxTotalAmount`` and
-    ``GrandTotalAmount``. Enters the ``BR-CO-16`` identity ``BT-115
+    Note: first permitted from COMFORT (EN 16931) onwards.
+    Enters the ``BR-CO-16`` identity ``BT-115
     = BT-112 - BT-113 + BT-114``.
     """
     grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount", "amount": True})

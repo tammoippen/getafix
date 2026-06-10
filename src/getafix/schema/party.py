@@ -37,9 +37,6 @@ Address fields use parallel BT numbering across roles — e.g.
 representative, BT-75 on ship-to. The class docstring lists the
 Seller-side BT; consult the appendix for buyer / tax-rep / ship-to
 counterparts.
-
-All ``SchemeID`` / ``SchemeId`` / ``scheme_id`` names follow the XSD
-``schemeID`` attribute spelling.
 """
 
 from dataclasses import dataclass, field
@@ -224,7 +221,7 @@ class PostalTradeAddress(Element):
 
 @dataclass(kw_only=True, slots=True)
 class PostalTradeAddressExtended(PostalTradeAddress):
-    """Postal address with subdivision (final field of the XSD ``<xs:sequence>``).
+    """Postal address with subdivision.
 
     Adds ``CountrySubDivisionName`` (BT-39 Seller / BT-54 Buyer /
     BT-68 TaxRep / BT-79 ShipTo) — the only field permitted on

@@ -26,8 +26,7 @@ Per-profile contents:
 
 No business rules are enforced in this module. ``BR-6`` (Seller name
 required) and ``BR-7`` (Buyer name required) are implicit through the
-required ``seller`` / ``buyer`` fields. Field order follows the XSD
-``HeaderTradeAgreementType`` ``<xs:sequence>``.
+required ``seller`` / ``buyer`` fields.
 """
 
 from dataclasses import dataclass, field

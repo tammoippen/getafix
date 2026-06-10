@@ -163,10 +163,7 @@ class AppliedTradeAllowanceCharge(Element):
     :func:`getafix.rules.line.applied_price_charge_extended_only`.
 
     Note: distinct from :class:`getafix.schema.accounting.TradeAllowanceCharge`
-    (document- / line-level BG-20/21/27/28). Field order follows the XSD
-    ``TradeAllowanceChargeType`` sequence: ``ChargeIndicator`` →
-    ``CalculationPercent`` → ``BasisAmount`` → ``ActualAmount`` →
-    ``ReasonCode`` → ``Reason``.
+    (document- / line-level BG-20/21/27/28).
     """
 
     tag: ClassVar[str] = "AppliedTradeAllowanceCharge"
@@ -485,11 +482,6 @@ class IncludedReferencedProduct(Element):
     case-pack) and the invoice needs to enumerate the constituents
     — e.g. a "Joghurt-Variety-12er" line with three sub-products
     Erdbeer / Banane / Schoko.
-
-    Field order matches the XSD ``ReferencedProductType``: ``ID`` →
-    ``GlobalID`` → ``SellerAssignedID`` → ``BuyerAssignedID`` →
-    ``IndustryAssignedID`` → ``Name`` → ``Description`` →
-    ``UnitQuantity``.
     """
 
     tag: ClassVar[str] = "IncludedReferencedProduct"
@@ -786,8 +778,7 @@ class LineAdditionalReferencedDocument(Element):
     :attr:`~getafix.schema.line.LineTradeAgreement.additional_references`
     (BG-X-3, the line twin of the header BG-24); there it additionally
     carries a ``LineID`` (BT-X-29, referenced document line position) and a
-    ``Name`` (BT-X-299, document description), both EXTENDED-only. Field
-    order follows the XSD ``ReferencedDocumentType`` sequence.
+    ``Name`` (BT-X-299, document description), both EXTENDED-only.
     """
 
     tag: ClassVar[str] = "AdditionalReferencedDocument"
@@ -828,12 +819,6 @@ class LineTradeAgreement(Element):
 
     A group of business terms providing information about the price
     applied for the goods and services invoiced on the invoice line.
-
-    Note: element order in the rendered XML follows the XSD sequence
-    — ``BuyerOrderReferencedDocument`` (BT-132-00; COMFORT+) precedes
-    ``QuotationReferencedDocument`` (EXTENDED) precedes
-    ``GrossPriceProductTradePrice`` (optional) which precedes
-    ``NetPriceProductTradePrice`` (required).
 
     :class:`~getafix.schema.party.ItemSellerTradeParty` (BG-X-90)
     is modelled here (field :attr:`item_seller`).

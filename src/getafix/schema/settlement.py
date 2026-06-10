@@ -584,11 +584,6 @@ class TaxCurrencyExchange(Element):
     the tax-accounting-currency totals (BT-X-260..264) when the
     invoice is denominated in a currency different from the local
     tax accounting currency.
-
-    Field order matches the XSD ``TradeCurrencyExchangeType``
-    ``<xs:sequence>``: ``SourceCurrencyCode`` →
-    ``TargetCurrencyCode`` → ``ConversionRate`` →
-    ``ConversionRateDateTime``.
     """
 
     tag: ClassVar[str] = "TaxApplicableTradeCurrencyExchange"
@@ -681,10 +676,6 @@ class AdvancePayment(Element):
     Records an amount already paid before the invoice, together with
     the VAT it included and an optional reference to the prepayment
     invoice. ``PaidAmount`` (BT-X-291) reduces the amount still due.
-
-    Field order matches the XSD ``AdvancePaymentType`` sequence:
-    ``PaidAmount`` → ``FormattedReceivedDateTime`` →
-    ``IncludedTradeTax`` (1..*) → ``InvoiceSpecifiedReferencedDocument``.
     """
 
     tag: ClassVar[str] = "SpecifiedAdvancePayment"

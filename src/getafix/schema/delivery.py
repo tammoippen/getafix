@@ -105,11 +105,6 @@ class TradeDelivery(Element):
 
     A group of business terms providing information about where and
     when the goods and services invoiced are delivered.
-
-    Note: field order follows the XSD ``HeaderTradeDeliveryType``
-    ``<xs:sequence>``: consignment, ship-to, ultimate-ship-to,
-    ship-from, actual-delivery event, despatch-advice, receiving-
-    advice, delivery-note.
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeDelivery"

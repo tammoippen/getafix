@@ -121,8 +121,7 @@ class QuotationReferencedDocument(Element):
     Reference to the quotation that this invoice as a whole responds
     to. Distinct from the per-line
     :class:`~getafix.schema.line.LineQuotationReferencedDocument`
-    (BG-X-47). XSD position: between ``BuyerOrderReferencedDocument``
-    and ``ContractReferencedDocument``.
+    (BG-X-47).
     """
 
     tag: ClassVar[str] = "QuotationReferencedDocument"
