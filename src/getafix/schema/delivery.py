@@ -51,8 +51,10 @@ class LogisticsTransportMovement(Element):
     mode: str | None = field(default=None, metadata={"tag": "ModeCode"})
     """Delivery method, code (BT-X-152).
 
-    Code list: UN/CEFACT Recommendation 19 / UNTDID 8067 transport
-    mode codes.
+    Code list:
+    [UN/CEFACT Recommendation 19](https://unece.org/trade/uncefact/cl-recommendations) /
+    [UNTDID 8067](https://service.unece.org/trade/untdid/d16b/tred/tred8067.htm)
+    transport mode codes.
     """
 
 

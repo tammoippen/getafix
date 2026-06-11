@@ -292,7 +292,7 @@ class ApplicableTradeTax(Element):
     (insurance tax, mineral oil tax, …) are only allowed in the
     EXTENDED profile, where the value must come from UNTDID 5153.
 
-    Code list: UNTDID 5153.
+    Code list: [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm).
     """
     exemption_reason: str | None = field(
         default=None, metadata={"tag": "ExemptionReason"}
@@ -401,8 +401,9 @@ class ApplicableTradeTax(Element):
     decisive (BT-72 on the trade delivery).
 
     Code list: UNTDID 2475 (subset). The semantic values cited in
-    the standard (UNTDID 2005 values ``3`` / ``35`` / ``432``) map
-    to:
+    the standard
+    ([UNTDID 2005](https://service.unece.org/trade/untdid/d16b/tred/tred2005.htm)
+    values ``3`` / ``35`` / ``432``) map to:
 
     * ``5`` — Invoice document issue date
     * ``29`` — Delivery date, actual
@@ -453,7 +454,7 @@ class CategoryTradeTax(Element):
     (insurance tax, mineral oil tax, …) are only allowed in
     EXTENDED, where the value must come from UNTDID 5153.
 
-    Code list: UNTDID 5153.
+    Code list: [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm).
     """
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
     """VAT category code (BT-95 allowance / BT-102 charge).
@@ -552,9 +553,9 @@ class TradeAllowanceCharge(Element):
     same allowance / charge reason — enforced as ``BR-CO-21..24``
     in :mod:`trade`.
 
-    Code list: UNTDID 5189 for allowances, UNTDID 7161 for charges.
-
-    https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5189.htm
+    Code list: UNTDID 5189 for allowances,
+    [UNTDID 7161](https://service.unece.org/trade/untdid/d16b/tred/tred7161.htm)
+    for charges.
     """
     reason: str | None = field(default=None, metadata={"tag": "Reason"})
     """Allowance / charge reason, free text (BT-97 allowance / BT-104 charge).

@@ -105,14 +105,14 @@ class ISO6523SchemeId(SchemeID):
     depends on the parent party. When ``scheme_id`` is set, it must
     come from the ISO/IEC 6523 Maintenance Agency code list.
 
-    Code list: ISO/IEC 6523. Frequently-used codes:
+    Code list:
+    [ISO/IEC 6523 ICD](https://docs.peppol.eu/poacc/billing/3.0/codelist/ICD/).
+    Frequently-used codes:
 
     * ``0021`` — SWIFT
     * ``0060`` — DUNS
     * ``0088`` — EAN / GLN
     * ``0177`` — ODETTE
-
-    https://test-docs.peppol.eu/poacc/billing/3.0/2024-q4-release/codelist/ICD/
     """
 
 

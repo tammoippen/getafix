@@ -107,9 +107,11 @@ class Quantity(Element):
     ``BilledQuantity``, BT-150 / BT-150-1 on ``BasisQuantity``.
     Rendered as the ``unitCode`` attribute.
 
-    Code list: UN/ECE Recommendation 20 (Recommendation 21 covers
-    the passenger / cargo-type / package codes) — e.g. ``C62`` for
-    "one", ``H87`` for "piece", ``KGM`` for kilogram.
+    Code list:
+    [UN/ECE Recommendation 20](https://unece.org/trade/uncefact/cl-recommendations)
+    ([UN/ECE Recommendation 21](https://unece.org/trade/uncefact/cl-recommendations)
+    covers the passenger / cargo-type / package codes) — e.g. ``C62``
+    for "one", ``H87`` for "piece", ``KGM`` for kilogram.
     """
 
     @override
@@ -208,7 +210,9 @@ class AppliedTradeAllowanceCharge(Element):
         default=None, metadata={"tag": "ReasonCode", "profile": Profile.EXTENDED}
     )
     """Reason code for the discount (BT-X-313) / charge (BT-X-314);
-    EXTENDED only. Code list: UNTDID 5189 (allowance) / 7161 (charge)."""
+    EXTENDED only. Code list: UNTDID 5189 (allowance) /
+    [UNTDID 7161](https://service.unece.org/trade/untdid/d16b/tred/tred7161.htm)
+    (charge)."""
     reason: str | None = field(
         default=None, metadata={"tag": "Reason", "profile": Profile.EXTENDED}
     )
@@ -331,7 +335,9 @@ class ProductClassification(Element):
     Note: EN 16931 modelled this group as BG-33; Factur-X 1.08 folds
     it into the BT-158-00 wrapper id.
 
-    Code list for ``list_id``: UNTDID 7143 (extended Code List).
+    Code list for ``list_id``:
+    [UNTDID 7143](https://service.unece.org/trade/untdid/d16b/tred/tred7143.htm)
+    (extended Code List).
     """
 
     tag: ClassVar[str] = "DesignatedProductClassification"
@@ -661,7 +667,8 @@ class DocumentLineDocument(Element):
     )
     """Line status code (BT-X-7); EXTENDED only.
 
-    Per the XSD this is ``qdt:LineStatusCodeType`` (UNTDID 1229,
+    Per the XSD this is ``qdt:LineStatusCodeType``
+    ([UNTDID 1229](https://service.unece.org/trade/untdid/d16b/tred/tred1229.htm),
     "action request" — ADD / DELETE / CHANGE / NO_ACTION / …).
     Modelled as a plain ``str`` — the UNTDID 1229 codelist is not
     enumerated by getafix.
@@ -809,7 +816,9 @@ class LineAdditionalReferencedDocument(Element):
     """Scheme identifier (BT-128-1, line settlement / BT-X-32, BG-X-3
     line agreement).
 
-    Code list: UNTDID 1153 (reference qualifier).
+    Code list:
+    [UNTDID 1153](https://service.unece.org/trade/untdid/d16b/tred/tred1153.htm)
+    (reference qualifier).
     """
 
 
