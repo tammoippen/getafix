@@ -143,8 +143,8 @@ class IncludedNote(Element):
 
     Coded classification of what the note says. EXTENDED-only.
 
-    Code list: UNTDID 4451 — must carry the same meaning as
-    ``subject_code`` (BT-21).
+    Code list: [UNTDID 4451](https://service.unece.org/trade/untdid/d16b/tred/tred4451.htm)
+    — must carry the same meaning as ``subject_code`` (BT-21).
     """
     content: str | None = field(
         default=None, metadata={"tag": "Content", "profile": Profile.BASIC_WL}
@@ -162,7 +162,7 @@ class IncludedNote(Element):
 
     States what the note text (BT-22) is about.
 
-    Code list: UNTDID 4451.
+    Code list: [UNTDID 4451](https://service.unece.org/trade/untdid/d16b/tred/tred4451.htm).
     """
 
 
@@ -260,7 +260,7 @@ class Header(Element):
     Language the invoice document is written in.
     EXTENDED-only.
 
-    Code list: ISO 639-2.
+    Code list: [ISO 639-2](https://www.loc.gov/standards/iso639-2/php/code_list.php).
 
     Example: ``de``.
     """

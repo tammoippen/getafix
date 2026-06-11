@@ -524,7 +524,8 @@ class AppliedTradeTax(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Tax type code (BT-X-273-0). ``"VAT"`` at EN16931; UNTDID 5153
+    """Tax type code (BT-X-273-0). ``"VAT"`` at EN16931;
+    [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm)
     at EXTENDED for non-VAT tax types (insurance tax, mineral oil
     tax, …)."""
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
@@ -620,7 +621,9 @@ class AdvancePaymentTradeTax(Element):
     )
     """VAT amount included in the prepayment (BT-X-293)."""
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Tax type code (BT-X-294); UNTDID 5153, normally ``"VAT"``."""
+    """Tax type code (BT-X-294);
+    [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm),
+    normally ``"VAT"``."""
     exemption_reason: str | None = field(
         default=None, metadata={"tag": "ExemptionReason"}
     )
@@ -765,8 +768,10 @@ class TradeSettlement(Element):
     Note: cross-border SEPA payments accept Latin characters only,
     and at most 140 of them; the value must not start
     or end with ``/`` and must not contain ``//``. Structured
-    references following ISO 11649:2009 map to the SEPA Structured
-    Remittance Information / Creditor Reference field; EACT
+    references following
+    [ISO 11649:2009](https://www.iso.org/standard/50649.html) map to
+    the SEPA Structured Remittance Information / Creditor Reference
+    field; EACT
     structured references map to the Unstructured Remittance
     Information field. National-border SEPA payments may relax
     these rules.
