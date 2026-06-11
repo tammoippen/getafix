@@ -210,7 +210,9 @@ class AppliedTradeAllowanceCharge(Element):
         default=None, metadata={"tag": "ReasonCode", "profile": Profile.EXTENDED}
     )
     """Reason code for the discount (BT-X-313) / charge (BT-X-314);
-    EXTENDED only. Code list: UNTDID 5189 (allowance) /
+    EXTENDED only. Code list:
+    [UNTDID 5189](https://service.unece.org/trade/untdid/d16b/tred/tred5189.htm)
+    (allowance) /
     [UNTDID 7161](https://service.unece.org/trade/untdid/d16b/tred/tred7161.htm)
     (charge)."""
     reason: str | None = field(

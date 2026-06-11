@@ -553,7 +553,9 @@ class TradeAllowanceCharge(Element):
     same allowance / charge reason — enforced as ``BR-CO-21..24``
     in :mod:`trade`.
 
-    Code list: UNTDID 5189 for allowances,
+    Code list:
+    [UNTDID 5189](https://service.unece.org/trade/untdid/d16b/tred/tred5189.htm)
+    for allowances,
     [UNTDID 7161](https://service.unece.org/trade/untdid/d16b/tred/tred7161.htm)
     for charges.
     """
