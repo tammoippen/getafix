@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 def br_5_currency_shape(m: _acc.TaxTotal, _profile: Profile) -> list[ValidationError]:
-    """BR-5: An Invoice shall have an Invoice currency code (BT-5).
+    """BR-5: the Invoice currency code (BT-5) is required.
 
     Applies: MINIMUM+. Getafix stretches the rule to also check
     that the value has the ISO 4217 alpha-3 uppercase shape; the
@@ -54,7 +54,8 @@ def br_5_currency_shape(m: _acc.TaxTotal, _profile: Profile) -> list[ValidationE
 
 
 def br_12(m: _acc.MonetarySummation, profile: Profile) -> list[ValidationError]:
-    """BR-12: An Invoice shall have the Sum of Invoice line net amount (BT-106).
+    """BR-12: BT-106 — the total over the line net amounts — is
+    required.
 
     Applies: BASIC_WL+ (the MINIMUM XSD drops ``LineTotalAmount``
     from ``MonetarySummationType``, so the rule is not checkable
@@ -66,15 +67,14 @@ def br_12(m: _acc.MonetarySummation, profile: Profile) -> list[ValidationError]:
         return []
     return [
         ValidationError(
-            "BR-12",
-            "An Invoice shall have the Sum of Invoice line net amount (BT-106).",
+            "BR-12", "BT-106 (the total over the line net amounts) is missing."
         )
     ]
 
 
 def br_co_3(m: _acc.ApplicableTradeTax, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-3: Value added tax point date (BT-7) and Value added tax point
-    date code (BT-8) are mutually exclusive.
+    """BR-CO-3: give either the tax point date (BT-7) or its coded
+    form (BT-8) — never both.
 
     Applies: COMFORT+ (BT-7 is gated on COMFORT in getafix — the
     rule is only triggerable from there upwards).
@@ -84,16 +84,16 @@ def br_co_3(m: _acc.ApplicableTradeTax, _profile: Profile) -> list[ValidationErr
     return [
         ValidationError(
             "BR-CO-3",
-            "Value added tax point date (BT-7) and Value added "
-            "tax point date code (BT-8) are mutually exclusive.",
+            "Both BT-7 (tax point date) and BT-8 (its coded form) "
+            "are set — only one of the two may appear.",
         )
     ]
 
 
 def br_co_17(m: _acc.ApplicableTradeTax, profile: Profile) -> list[ValidationError]:
-    """BR-CO-17: VAT category tax amount (BT-117) = VAT category taxable
-    amount (BT-116) * (VAT category rate (BT-119) / 100), rounded to two
-    decimals.
+    """BR-CO-17: BT-117 must equal BT-116 * BT-119 / 100, rounded to
+    2 dp — the category's tax amount derives from its taxable amount
+    and rate.
 
     Applies: BASIC_WL+ except EXTENDED. At EXTENDED the per-VAT-
     category ``BR-FXEXT-*-09`` family supersedes this rule with
@@ -118,8 +118,7 @@ def br_co_17(m: _acc.ApplicableTradeTax, profile: Profile) -> list[ValidationErr
     return [
         ValidationError(
             "BR-CO-17",
-            "VAT category tax amount (BT-117) = "
-            f"{m.calculated_amount} differs from "
+            f"BT-117 = {m.calculated_amount} differs from "
             "round(BT-116 * BT-119 / 100, 2) = "
             f"round({m.basis_amount} * "
             f"{m.rate_applicable_percent} / 100, 2) = "
@@ -131,7 +130,8 @@ def br_co_17(m: _acc.ApplicableTradeTax, profile: Profile) -> list[ValidationErr
 def bt_8_code_shape(
     m: _acc.ApplicableTradeTax, _profile: Profile
 ) -> list[ValidationError]:
-    """BT-8 (Value added tax point date code) must be a UNTDID 2475 code.
+    """BT-8 — the tax point date in coded form — must come from
+    UNTDID 2475.
 
     Applies: BASIC_WL+. Not a numbered EN 16931 rule — a code-shape
     guard kept for back-compat with the error code ``"BT-8"``.
@@ -143,17 +143,13 @@ def bt_8_code_shape(
     if code is None or (len(code) <= 3 and code.isdigit()):
         return []
     return [
-        ValidationError(
-            "BT-8",
-            "Value added tax point date code (BT-8) must be a "
-            f"UNTDID 2475 code; got {code!r}.",
-        )
+        ValidationError("BT-8", f"BT-8 must carry a UNTDID 2475 code; got {code!r}.")
     ]
 
 
 def br_48(m: _acc.ApplicableTradeTax, _profile: Profile) -> list[ValidationError]:
-    """BR-48: Each VAT breakdown (BG-23) shall have a VAT category rate
-    (BT-119), except if the Invoice is not subject to VAT.
+    """BR-48: every VAT breakdown row (BG-23) needs its category rate
+    (BT-119) unless the invoice falls outside VAT scope.
 
     Applies: BASIC_WL+ (BG-23 first appears there). Category ``O``
     (Services outside scope of tax) is exempt because the rate is
@@ -166,8 +162,8 @@ def br_48(m: _acc.ApplicableTradeTax, _profile: Profile) -> list[ValidationError
     return [
         ValidationError(
             "BR-48",
-            "Each VAT breakdown (BG-23) shall have a VAT category rate "
-            "(BT-119), except if the Invoice is not subject to VAT.",
+            "VAT breakdown row (BG-23) lacks its category rate (BT-119) — "
+            "only permissible when the invoice is outside VAT scope.",
         )
     ]
 

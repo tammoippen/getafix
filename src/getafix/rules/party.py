@@ -49,11 +49,10 @@ def bt_31_0_scheme_id(
 
 
 def br_co_9(m: _party.TaxSchemeId, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-9: The Seller VAT identifier (BT-31), the Seller tax
-    representative VAT identifier (BT-63) and the Buyer VAT identifier
-    (BT-48) shall have a prefix in accordance with ISO 3166-1 alpha-2 by
-    which the country of issue may be identified. Nevertheless, Greece may
-    use the prefix ``EL``.
+    """BR-CO-9: every VAT identifier — BT-31 (Seller), BT-63 (tax
+    representative), BT-48 (Buyer) — must open with the ISO 3166-1
+    alpha-2 code of its issuing country; Greece alternatively uses
+    the prefix ``EL``.
 
     Applies: MINIMUM+. Only checked for VAT identifiers
     (``scheme_id == "VA"``) — local tax identifiers (``FC``, BT-32)
@@ -68,21 +67,18 @@ def br_co_9(m: _party.TaxSchemeId, _profile: Profile) -> list[ValidationError]:
     return [
         ValidationError(
             "BR-CO-9",
-            "The Seller VAT identifier (BT-31), the Seller tax "
-            "representative VAT identifier (BT-63) and the Buyer "
-            "VAT identifier (BT-48) must each carry a prefix "
-            "according to ISO 3166-1 alpha-2 by which the "
-            "country of issue may be identified. Greece may use "
-            "the prefix 'EL'.",
+            "VAT identifiers (BT-31 / BT-63 / BT-48) must open with "
+            "the ISO 3166-1 alpha-2 code of the issuing country; "
+            f"Greece may also use 'EL'. Got {m.id!r}.",
         )
     ]
 
 
 def br_co_26(m: _party.SellerTradeParty, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-26: In order for the buyer to automatically identify a
-    supplier, the Seller identifier (BT-29), the Seller legal registration
-    identifier (BT-30) and/or the Seller VAT identifier (BT-31) shall be
-    present.
+    """BR-CO-26: at least one of BT-29 (Seller identifier), BT-30
+    (legal registration identifier) or BT-31 (Seller VAT identifier)
+    must be present, so the Buyer can match the supplier
+    automatically.
 
     Applies: MINIMUM+ (Seller is required at every profile).
     """
@@ -96,16 +92,15 @@ def br_co_26(m: _party.SellerTradeParty, _profile: Profile) -> list[ValidationEr
     return [
         ValidationError(
             "BR-CO-26",
-            "In order for the buyer to automatically identify a "
-            "supplier, the Seller identifier (BT-29), the Seller "
-            "legal registration identifier (BT-30) and/or the "
-            "Seller VAT identifier (BT-31) shall be present.",
+            "None of BT-29 / BT-30 / BT-31 is set — the Buyer needs "
+            "at least one Seller identifier to match the supplier "
+            "automatically.",
         )
     ]
 
 
 def br_10(m: _party.BuyerTradeParty, profile: Profile) -> list[ValidationError]:
-    """BR-10: An Invoice shall contain the Buyer postal address (BG-8).
+    """BR-10: a Buyer postal address (BG-8) is required.
 
     Applies: BASIC_WL+. The MINIMUM XSD lets ``PostalTradeAddress``
     be omitted, and the MINIMUM appendix does NOT list BG-8 as
@@ -115,16 +110,12 @@ def br_10(m: _party.BuyerTradeParty, profile: Profile) -> list[ValidationError]:
         return []
     if m.address is not None:
         return []
-    return [
-        ValidationError(
-            "BR-10", "An Invoice shall contain the Buyer postal address (BG-8)."
-        )
-    ]
+    return [ValidationError("BR-10", "Buyer postal address (BG-8) is missing.")]
 
 
 def br_62(m: _party.SellerTradeParty, _profile: Profile) -> list[ValidationError]:
-    """BR-62: The Seller electronic address (BT-34) shall have a Scheme
-    identifier.
+    """BR-62: a scheme identifier must accompany any Seller electronic
+    address (BT-34).
 
     Applies: BASIC_WL+ (BT-34-00 first appears there).
     """
@@ -135,15 +126,14 @@ def br_62(m: _party.SellerTradeParty, _profile: Profile) -> list[ValidationError
         return []
     return [
         ValidationError(
-            "BR-62",
-            "The Seller electronic address (BT-34) shall have a Scheme identifier.",
+            "BR-62", "Seller electronic address (BT-34) lacks its scheme identifier."
         )
     ]
 
 
 def br_63(m: _party.BuyerTradeParty, _profile: Profile) -> list[ValidationError]:
-    """BR-63: The Buyer electronic address (BT-49) shall have a Scheme
-    identifier.
+    """BR-63: a scheme identifier must accompany any Buyer electronic
+    address (BT-49).
 
     Applies: BASIC_WL+ (BT-49-00 first appears there).
     """
@@ -154,7 +144,6 @@ def br_63(m: _party.BuyerTradeParty, _profile: Profile) -> list[ValidationError]
         return []
     return [
         ValidationError(
-            "BR-63",
-            "The Buyer electronic address (BT-49) shall have a Scheme identifier.",
+            "BR-63", "Buyer electronic address (BT-49) lacks its scheme identifier."
         )
     ]
