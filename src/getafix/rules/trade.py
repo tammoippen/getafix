@@ -236,54 +236,45 @@ def _err(code: str, message: str) -> ValidationError:
 
 
 _AE_MSG = (
-    "VAT category 'Reverse charge' (AE) requires the Seller "
-    "VAT identifier (BT-31), the Seller tax registration "
-    "identifier (BT-32) and/or the Seller tax representative "
-    "VAT identifier (BT-63), and the Buyer VAT identifier "
-    "(BT-48) and/or the Buyer legal registration identifier "
-    "(BT-47)."
+    "VAT category 'Reverse charge' (AE) requires a Seller VAT id "
+    "(BT-31), Seller tax registration id (BT-32) and/or "
+    "tax-representative VAT id (BT-63), plus a Buyer VAT id "
+    "(BT-48) and/or Buyer legal registration id (BT-47)."
 )
 _E_MSG = (
-    "VAT category 'Exempt from VAT' (E) requires the Seller "
-    "VAT identifier (BT-31), the Seller tax registration "
-    "identifier (BT-32) and/or the Seller tax representative "
-    "VAT identifier (BT-63)."
+    "VAT category 'Exempt from VAT' (E) requires a Seller VAT id "
+    "(BT-31), Seller tax registration id (BT-32) and/or "
+    "tax-representative VAT id (BT-63)."
 )
 _G_MSG = (
-    "VAT category 'Export outside the EU' (G) requires the "
-    "Seller VAT identifier (BT-31) or the Seller tax "
-    "representative VAT identifier (BT-63). The local tax "
-    "identifier (BT-32) is *not* sufficient."
+    "VAT category 'Export outside the EU' (G) requires a Seller "
+    "VAT id (BT-31) or tax-representative VAT id (BT-63). The "
+    "local tax id (BT-32) is *not* sufficient."
 )
 _IC_MSG = (
-    "VAT category 'Intra-community supply' (K) requires the "
-    "Seller VAT identifier (BT-31) or the Seller tax "
-    "representative VAT identifier (BT-63), and the Buyer VAT "
-    "identifier (BT-48)."
+    "VAT category 'Intra-community supply' (K) requires a Seller "
+    "VAT id (BT-31) or tax-representative VAT id (BT-63), plus a "
+    "Buyer VAT id (BT-48)."
 )
 _AF_MSG = (
-    "VAT category 'IGIC' (L, Canary Islands) requires the "
-    "Seller VAT identifier (BT-31), the Seller tax registration "
-    "identifier (BT-32) and/or the Seller tax representative "
-    "VAT identifier (BT-63)."
+    "VAT category 'IGIC' (L, Canary Islands) requires a Seller "
+    "VAT id (BT-31), Seller tax registration id (BT-32) and/or "
+    "tax-representative VAT id (BT-63)."
 )
 _AG_MSG = (
-    "VAT category 'IPSI' (M, Ceuta/Melilla) requires the "
-    "Seller VAT identifier (BT-31), the Seller tax registration "
-    "identifier (BT-32) and/or the Seller tax representative "
-    "VAT identifier (BT-63)."
+    "VAT category 'IPSI' (M, Ceuta/Melilla) requires a Seller "
+    "VAT id (BT-31), Seller tax registration id (BT-32) and/or "
+    "tax-representative VAT id (BT-63)."
 )
 _S_MSG = (
-    "VAT category 'Standard rated' (S) requires the Seller "
-    "VAT identifier (BT-31), the Seller tax registration "
-    "identifier (BT-32) and/or the Seller tax representative "
-    "VAT identifier (BT-63)."
+    "VAT category 'Standard rated' (S) requires a Seller VAT id "
+    "(BT-31), Seller tax registration id (BT-32) and/or "
+    "tax-representative VAT id (BT-63)."
 )
 _Z_MSG = (
-    "VAT category 'Zero rated' (Z) requires the Seller VAT "
-    "identifier (BT-31), the Seller tax registration identifier "
-    "(BT-32) and/or the Seller tax representative VAT "
-    "identifier (BT-63)."
+    "VAT category 'Zero rated' (Z) requires a Seller VAT id "
+    "(BT-31), Seller tax registration id (BT-32) and/or "
+    "tax-representative VAT id (BT-63)."
 )
 
 
@@ -291,12 +282,11 @@ _Z_MSG = (
 
 
 def br_ae_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-AE-2: An Invoice that contains an Invoice line, a Document level
-    allowance or a Document level charge where the VAT category code is
-    'Reverse charge' (AE) shall contain the Seller VAT Identifier (BT-31),
-    the Seller tax registration identifier (BT-32) and/or the Seller tax
-    representative VAT identifier (BT-63), and the Buyer VAT identifier
-    (BT-48) and/or the Buyer legal registration identifier (BT-47)."""
+    """BR-AE-2: when any line carries VAT category 'Reverse charge'
+    (AE), the seller side must show a VAT id (BT-31), tax
+    registration id (BT-32) and/or tax-representative VAT id
+    (BT-63), and the buyer side a VAT id (BT-48) and/or legal
+    registration id (BT-47)."""
     if _seller_predicate_vat_local_or_taxrep(m) and _buyer_predicate_vat_or_legal(m):
         return []
     if not _line_has_category(m, CategoryCode.T_AE):
@@ -328,10 +318,10 @@ def br_ae_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_e_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-E-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'Exempt from VAT' (E) shall contain the Seller VAT
-    Identifier (BT-31), the Seller tax registration identifier (BT-32)
-    and/or the Seller tax representative VAT identifier (BT-63)."""
+    """BR-E-2: when any line carries VAT category 'Exempt from VAT'
+    (E), the seller side must show a VAT id (BT-31), tax
+    registration id (BT-32) and/or tax-representative VAT id
+    (BT-63)."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _line_has_category(m, CategoryCode.T_E):
@@ -363,10 +353,9 @@ def br_e_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_g_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-G-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'Export outside the EU' (G) shall contain the
-    Seller VAT identifier (BT-31) or the Seller tax representative VAT
-    identifier (BT-63)."""
+    """BR-G-2: when any line carries VAT category 'Export outside the
+    EU' (G), a Seller VAT id (BT-31) or tax-representative VAT id
+    (BT-63) must be present."""
     if _seller_predicate_vat_or_taxrep(m):
         return []
     if not _line_has_category(m, CategoryCode.T_G):
@@ -398,10 +387,9 @@ def br_g_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_ic_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-IC-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'Intra-community supply' (K) shall contain the
-    Seller VAT identifier (BT-31) or the Seller tax representative VAT
-    identifier (BT-63), and the Buyer VAT identifier (BT-48)."""
+    """BR-IC-2: when any line carries VAT category 'Intra-community
+    supply' (K), a Seller VAT id (BT-31) or tax-representative VAT
+    id (BT-63) must be present, plus a Buyer VAT id (BT-48)."""
     if _seller_predicate_vat_or_taxrep(m) and _has_vat_id(m.agreement.buyer):
         return []
     if not _line_has_category(m, CategoryCode.T_K):
@@ -433,10 +421,9 @@ def br_ic_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_af_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-AF-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'IGIC' (L) shall contain the Seller VAT Identifier
-    (BT-31), the Seller tax registration identifier (BT-32) and/or the
-    Seller tax representative VAT identifier (BT-63)."""
+    """BR-AF-2: when any line carries VAT category 'IGIC' (L), the
+    seller side must show a VAT id (BT-31), tax registration id
+    (BT-32) and/or tax-representative VAT id (BT-63)."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _line_has_category(m, CategoryCode.T_L):
@@ -468,10 +455,9 @@ def br_af_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_ag_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-AG-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'IPSI' (M) shall contain the Seller VAT Identifier
-    (BT-31), the Seller tax registration identifier (BT-32) and/or the
-    Seller tax representative VAT identifier (BT-63)."""
+    """BR-AG-2: when any line carries VAT category 'IPSI' (M), the
+    seller side must show a VAT id (BT-31), tax registration id
+    (BT-32) and/or tax-representative VAT id (BT-63)."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _line_has_category(m, CategoryCode.T_M):
@@ -503,10 +489,10 @@ def br_ag_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_s_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-S-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'Standard rated' (S) shall contain the Seller VAT
-    Identifier (BT-31), the Seller tax registration identifier (BT-32)
-    and/or the Seller tax representative VAT identifier (BT-63)."""
+    """BR-S-2: when any line carries VAT category 'Standard rated'
+    (S), the seller side must show a VAT id (BT-31), tax
+    registration id (BT-32) and/or tax-representative VAT id
+    (BT-63)."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _line_has_category(m, CategoryCode.T_S):
@@ -538,10 +524,9 @@ def br_s_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_z_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-Z-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'Zero rated' (Z) shall contain the Seller VAT
-    Identifier (BT-31), the Seller tax registration identifier (BT-32)
-    and/or the Seller tax representative VAT identifier (BT-63)."""
+    """BR-Z-2: when any line carries VAT category 'Zero rated' (Z),
+    the seller side must show a VAT id (BT-31), tax registration id
+    (BT-32) and/or tax-representative VAT id (BT-63)."""
     if _seller_predicate_vat_local_or_taxrep(m):
         return []
     if not _line_has_category(m, CategoryCode.T_Z):
@@ -573,10 +558,9 @@ def br_z_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_o_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-O-2: An Invoice that contains an Invoice line where the VAT
-    category code is 'Not subject to VAT' (O) shall not contain the
-    Seller VAT identifier (BT-31), the Seller tax representative VAT
-    identifier (BT-63) or the Buyer identifier (BT-46)."""
+    """BR-O-2: a line with VAT category 'Not subject to VAT' (O)
+    forbids the Seller VAT id (BT-31), the tax-representative VAT id
+    (BT-63) and the Buyer id (BT-46) on the invoice."""
     if not _line_has_category(m, CategoryCode.T_O):
         return []
     forbidden = (
@@ -589,19 +573,19 @@ def br_o_2(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-O-2",
-            "An Invoice line with VAT category 'Not subject to VAT' "
-            "(O) shall not contain the Seller VAT identifier "
-            "(BT-31), the Seller tax representative VAT identifier "
-            "(BT-63) or the Buyer identifier (BT-46).",
+            "A line carries VAT category 'Not subject to VAT' (O), "
+            "which forbids a Seller VAT id (BT-31), a "
+            "tax-representative VAT id (BT-63) and a Buyer id "
+            "(BT-46) — at least one of those is present.",
         )
     ]
 
 
 def br_o_3(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-O-3: An Invoice that contains a Document level allowance where
-    the VAT category code is 'Not subject to VAT' (O) shall not contain
-    the Seller VAT identifier (BT-31), the Seller tax representative VAT
-    identifier (BT-63) or the Buyer VAT identifier (BT-48)."""
+    """BR-O-3: a document-level allowance with VAT category 'Not
+    subject to VAT' (O) forbids the Seller VAT id (BT-31), the
+    tax-representative VAT id (BT-63) and also the Buyer VAT id
+    (BT-48) on the invoice."""
     if not _alw_has_category(m, CategoryCode.T_O):
         return []
     forbidden = (
@@ -614,19 +598,19 @@ def br_o_3(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-O-3",
-            "A document-level allowance with VAT category 'Not subject "
-            "to VAT' (O) shall not contain the Seller VAT identifier "
-            "(BT-31), the Seller tax representative VAT identifier "
-            "(BT-63) or the Buyer VAT identifier (BT-48).",
+            "A document-level allowance carries VAT category 'Not "
+            "subject to VAT' (O), which forbids a Seller VAT id "
+            "(BT-31), a tax-representative VAT id (BT-63) and a "
+            "Buyer VAT id (BT-48) — at least one of those is present.",
         )
     ]
 
 
 def br_o_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-O-4: An Invoice that contains a Document level charge where the
-    VAT category code is 'Not subject to VAT' (O) shall not contain the
-    Seller VAT identifier (BT-31), the Seller tax representative VAT
-    identifier (BT-63) or the Buyer VAT identifier (BT-48)."""
+    """BR-O-4: a document-level charge with VAT category 'Not subject
+    to VAT' (O) forbids the Seller VAT id (BT-31), the
+    tax-representative VAT id (BT-63) and also the Buyer VAT id
+    (BT-48) on the invoice."""
     if not _chg_has_category(m, CategoryCode.T_O):
         return []
     forbidden = (
@@ -639,10 +623,10 @@ def br_o_4(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-O-4",
-            "A document-level charge with VAT category 'Not subject "
-            "to VAT' (O) shall not contain the Seller VAT identifier "
-            "(BT-31), the Seller tax representative VAT identifier "
-            "(BT-63) or the Buyer VAT identifier (BT-48).",
+            "A document-level charge carries VAT category 'Not "
+            "subject to VAT' (O), which forbids a Seller VAT id "
+            "(BT-31), a tax-representative VAT id (BT-63) and a "
+            "Buyer VAT id (BT-48) — at least one of those is present.",
         )
     ]
 
@@ -665,9 +649,9 @@ def _ic_in_use(m: _trade.Trade) -> bool:
 
 
 def br_ic_11(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-IC-11: An Invoice that contains a VAT breakdown group (BG-23) with
-    the VAT category code 'Intra-community supply' (K) shall contain an
-    Actual delivery date (BT-72) or an Invoicing period (BG-14)."""
+    """BR-IC-11: an intra-community supply (K) needs a date anchor —
+    either an actual delivery date (BT-72) or an invoicing period
+    (BG-14)."""
     if not _ic_in_use(m):
         return []
     event = m.delivery.event
@@ -681,17 +665,16 @@ def br_ic_11(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-IC-11",
-            "An Invoice with a VAT breakdown row of category "
-            "'Intra-community supply' (K) shall contain the actual "
-            "delivery date (BT-72) or the invoicing period (BG-14).",
+            "Intra-community supply (K) in use, but neither an "
+            "actual delivery date (BT-72) nor an invoicing period "
+            "(BG-14) is given.",
         )
     ]
 
 
 def br_ic_12(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-IC-12: An Invoice that contains a VAT breakdown group (BG-23) with
-    the VAT category code 'Intra-community supply' (K) shall contain the
-    Deliver to country code (BT-80)."""
+    """BR-IC-12: an intra-community supply (K) needs the deliver-to
+    country code (BT-80)."""
     if not _ic_in_use(m):
         return []
     ship_to = m.delivery.ship_to
@@ -705,9 +688,8 @@ def br_ic_12(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-IC-12",
-            "An Invoice with a VAT breakdown row of category "
-            "'Intra-community supply' (K) shall contain the "
-            "deliver-to country code (BT-80).",
+            "Intra-community supply (K) in use, but the deliver-to "
+            "country code (BT-80) is missing.",
         )
     ]
 
@@ -724,9 +706,8 @@ def _has_o_breakdown_row(m: _trade.Trade) -> bool:
 
 
 def br_o_11(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-O-11: An Invoice that contains a VAT breakdown group (BG-23) with
-    the VAT category code 'Not subject to VAT' (O) shall not contain other
-    VAT breakdown groups."""
+    """BR-O-11: a 'Not subject to VAT' (O) breakdown row excludes
+    every other VAT breakdown row (BG-23) — 'O' stands alone."""
     if not _has_o_breakdown_row(m):
         return []
     trade_taxes = m.settlement.trade_taxes or []
@@ -735,18 +716,15 @@ def br_o_11(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-O-11",
-            "An Invoice with a VAT breakdown row of category "
-            "'Not subject to VAT' (O) shall not contain other VAT "
-            "breakdown rows (BG-23).",
+            "A 'Not subject to VAT' (O) breakdown row coexists with "
+            "rows of other categories — 'O' must stand alone.",
         )
     ]
 
 
 def br_o_12(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-O-12: An Invoice that contains a VAT breakdown group (BG-23) with
-    the VAT category code 'Not subject to VAT' (O) shall not contain an
-    Invoice line where the VAT category code is not 'Not subject to VAT'
-    (O)."""
+    """BR-O-12: with a 'Not subject to VAT' (O) breakdown row present,
+    every invoice line must itself carry category 'O'."""
     if not _has_o_breakdown_row(m):
         return []
     if not any(
@@ -758,19 +736,16 @@ def br_o_12(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-O-12",
-            "An Invoice with a VAT breakdown row of category "
-            "'Not subject to VAT' (O) shall not contain an "
-            "Invoice line whose category code is not 'Not "
-            "subject to VAT'.",
+            "A 'Not subject to VAT' (O) breakdown row coexists with "
+            "an invoice line of another VAT category.",
         )
     ]
 
 
 def br_o_13(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-O-13: An Invoice that contains a VAT breakdown group (BG-23) with
-    the VAT category code 'Not subject to VAT' (O) shall not contain a
-    Document level allowance (BG-20) where the VAT category code is not
-    'Not subject to VAT' (O)."""
+    """BR-O-13: with a 'Not subject to VAT' (O) breakdown row present,
+    every document-level allowance (BG-20) must itself carry
+    category 'O'."""
     if not _has_o_breakdown_row(m):
         return []
     if not any(
@@ -783,19 +758,16 @@ def br_o_13(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-O-13",
-            "An Invoice with a VAT breakdown row of category 'Not "
-            "subject to VAT' (O) shall not contain a document-level "
-            "allowance whose VAT category code is not 'Not subject to "
-            "VAT'.",
+            "A 'Not subject to VAT' (O) breakdown row coexists with "
+            "a document-level allowance of another VAT category.",
         )
     ]
 
 
 def br_o_14(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-O-14: An Invoice that contains a VAT breakdown group (BG-23) with
-    the VAT category code 'Not subject to VAT' (O) shall not contain a
-    Document level charge (BG-21) where the VAT category code is not 'Not
-    subject to VAT' (O)."""
+    """BR-O-14: with a 'Not subject to VAT' (O) breakdown row present,
+    every document-level charge (BG-21) must itself carry category
+    'O'."""
     if not _has_o_breakdown_row(m):
         return []
     if not any(
@@ -808,10 +780,8 @@ def br_o_14(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-O-14",
-            "An Invoice with a VAT breakdown row of category 'Not "
-            "subject to VAT' (O) shall not contain a document-level "
-            "charge whose VAT category code is not 'Not subject to "
-            "VAT'.",
+            "A 'Not subject to VAT' (O) breakdown row coexists with "
+            "a document-level charge of another VAT category.",
         )
     ]
 
@@ -822,7 +792,7 @@ def br_o_14(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 
 
 def br_16(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-16: An Invoice shall have at least one Invoice line (BG-25).
+    """BR-16: the invoice must carry one or more invoice lines (BG-25).
 
     Applies: BASIC+ (line items first appear at BASIC).
     """
@@ -832,14 +802,14 @@ def br_16(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
         return []
     return [
         ValidationError(
-            "BR-16", "An Invoice shall have at least one Invoice line (BG-25)."
+            "BR-16", "The invoice has no lines (BG-25) — one or more are required."
         )
     ]
 
 
 def br_co_10(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-CO-10: Sum of Invoice line net amount (BT-106) = sum of all
-    Invoice line net amounts (BT-131).
+    """BR-CO-10: BT-106 must equal the individual line net amounts
+    (BT-131) added up.
 
     Applies: BASIC+ except EXTENDED. At EXTENDED ``BR-FXEXT-CO-10``
     replaces this with a tolerance-banded variant that also excludes
@@ -868,16 +838,15 @@ def br_co_10(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     return [
         ValidationError(
             "BR-CO-10",
-            "Sum of Invoice line net amount (BT-106) = "
-            f"{summation.line_total} differs from sum(BT-131) = "
-            f"{sum_line_totals}.",
+            f"BT-106 = {summation.line_total} differs from "
+            f"sum(BT-131) = {sum_line_totals}.",
         )
     ]
 
 
 def br_co_11(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-CO-11: Sum of allowances on document level (BT-107) = sum of
-    Document level allowance amounts (BT-92).
+    """BR-CO-11: BT-107 must equal the individual BT-92 allowance
+    amounts added up.
 
     Applies: BASIC_WL+ except EXTENDED. At EXTENDED ``BR-FXEXT-CO-11``
     replaces this with a tolerance-banded variant. Skipped when
@@ -901,16 +870,15 @@ def br_co_11(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     return [
         ValidationError(
             "BR-CO-11",
-            "Sum of allowances on document level (BT-107) = "
-            f"{summation.allowance_total} differs from sum(BT-92) = "
-            f"{sum_allowances}.",
+            f"BT-107 = {summation.allowance_total} differs from "
+            f"sum(BT-92) = {sum_allowances}.",
         )
     ]
 
 
 def br_co_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-CO-12: Sum of charges on document level (BT-108) = sum of
-    Document level charge amounts (BT-99).
+    """BR-CO-12: BT-108 must equal the individual BT-99 charge
+    amounts added up.
 
     Applies: BASIC_WL+ except EXTENDED. At EXTENDED
     ``BR-FXEXT-CO-12`` replaces this with a tolerance-banded variant
@@ -935,17 +903,16 @@ def br_co_12(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     return [
         ValidationError(
             "BR-CO-12",
-            "Sum of charges on document level (BT-108) = "
-            f"{summation.charge_total} differs from sum(BT-99) = "
-            f"{sum_charges}.",
+            f"BT-108 = {summation.charge_total} differs from "
+            f"sum(BT-99) = {sum_charges}.",
         )
     ]
 
 
 def br_co_13(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
-    """BR-CO-13: Invoice total amount without VAT (BT-109) = sum of Invoice
-    line net amounts (BT-131) - sum of allowances on document level
-    (BT-92) + sum of charges on document level (BT-99).
+    """BR-CO-13: BT-109 must equal sum(BT-131) - sum(BT-92) +
+    sum(BT-99) — the net total derives from the line amounts less
+    document-level allowances plus document-level charges.
 
     Applies: BASIC+ except EXTENDED. At EXTENDED ``BR-FXEXT-CO-13``
     replaces this with a tolerance-banded variant that excludes
@@ -990,8 +957,7 @@ def br_co_13(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     return [
         ValidationError(
             "BR-CO-13",
-            "Invoice total amount without VAT (BT-109) = "
-            f"{summation.tax_basis_total} differs from "
+            f"BT-109 = {summation.tax_basis_total} differs from "
             f"sum(BT-131) - sum(BT-92) + sum(BT-99) = "
             f"{sum_line_totals} - {sum_allowances} + "
             f"{sum_charges} = {expected_basis}.",
@@ -1000,9 +966,8 @@ def br_co_13(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
 
 
 def br_co_21(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-21: Each Document level allowance (BG-20) shall contain a
-    Document level allowance reason (BT-97) or a Document level allowance
-    reason code (BT-98), or both.
+    """BR-CO-21: every document-level allowance (BG-20) must state
+    its reason — as text (BT-97), code (BT-98), or both.
 
     Emits one ValidationError per offending allowance.
     """
@@ -1014,19 +979,16 @@ def br_co_21(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     "BR-CO-21",
-                    "Each Document level allowance (BG-20) shall "
-                    "contain a Document level allowance reason "
-                    "(BT-97) or a Document level allowance reason "
-                    "code (BT-98), or both.",
+                    "Document-level allowance (BG-20) gives no reason "
+                    "text (BT-97) or reason code (BT-98).",
                 )
             )
     return errors
 
 
 def br_co_22(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-22: Each Document level charge (BG-21) shall contain a
-    Document level charge reason (BT-104) or a Document level charge
-    reason code (BT-105), or both.
+    """BR-CO-22: every document-level charge (BG-21) must state its
+    reason — as text (BT-104), code (BT-105), or both.
 
     Emits one ValidationError per offending charge.
     """
@@ -1038,19 +1000,16 @@ def br_co_22(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     "BR-CO-22",
-                    "Each Document level charge (BG-21) shall "
-                    "contain a Document level charge reason "
-                    "(BT-104) or a Document level charge reason "
-                    "code (BT-105), or both.",
+                    "Document-level charge (BG-21) gives no reason "
+                    "text (BT-104) or reason code (BT-105).",
                 )
             )
     return errors
 
 
 def br_co_23(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-23: Each Invoice line allowance (BG-27) shall contain an
-    Invoice line allowance reason (BT-139) or an Invoice line allowance
-    reason code (BT-140), or both.
+    """BR-CO-23: every line allowance (BG-27) must state its reason —
+    as text (BT-139), code (BT-140), or both.
 
     Emits one ValidationError per offending line allowance.
     """
@@ -1063,19 +1022,16 @@ def br_co_23(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
                 errors.append(
                     ValidationError(
                         "BR-CO-23",
-                        "Each Invoice line allowance (BG-27) shall "
-                        "contain an Invoice line allowance reason "
-                        "(BT-139) or an Invoice line allowance "
-                        "reason code (BT-140), or both.",
+                        "Invoice line allowance (BG-27) gives no reason "
+                        "text (BT-139) or reason code (BT-140).",
                     )
                 )
     return errors
 
 
 def br_co_24(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-24: Each Invoice line charge (BG-28) shall contain an Invoice
-    line charge reason (BT-144) or an Invoice line charge reason code
-    (BT-145), or both.
+    """BR-CO-24: every line charge (BG-28) must state its reason — as
+    text (BT-144), code (BT-145), or both.
 
     Emits one ValidationError per offending line charge.
     """
@@ -1088,10 +1044,8 @@ def br_co_24(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
                 errors.append(
                     ValidationError(
                         "BR-CO-24",
-                        "Each Invoice line charge (BG-28) shall "
-                        "contain an Invoice line charge reason "
-                        "(BT-144) or an Invoice line charge "
-                        "reason code (BT-145), or both.",
+                        "Invoice line charge (BG-28) gives no reason "
+                        "text (BT-144) or reason code (BT-145).",
                     )
                 )
     return errors
@@ -1112,21 +1066,15 @@ def br_co_24(m: _trade.Trade, _profile: Profile) -> list[ValidationError]:
 _RatePredicate = Callable[[Decimal | None], bool]
 
 _VAT_RATE_PREDICATES: dict[CategoryCode, tuple[_RatePredicate, str]] = {
-    CategoryCode.T_S: (lambda r: r is not None and r > 0, "shall be greater than zero"),
-    CategoryCode.T_Z: (lambda r: r == 0, "shall be 0 (zero)"),
-    CategoryCode.T_E: (lambda r: r == 0, "shall be 0 (zero)"),
-    CategoryCode.T_AE: (lambda r: r == 0, "shall be 0 (zero)"),
-    CategoryCode.T_G: (lambda r: r == 0, "shall be 0 (zero)"),
-    CategoryCode.T_K: (lambda r: r == 0, "shall be 0 (zero)"),
-    CategoryCode.T_L: (
-        lambda r: r is not None and r >= 0,
-        "shall be 0 (zero) or greater than zero",
-    ),
-    CategoryCode.T_M: (
-        lambda r: r is not None and r >= 0,
-        "shall be 0 (zero) or greater than zero",
-    ),
-    CategoryCode.T_O: (lambda r: r is None, "shall not be present"),
+    CategoryCode.T_S: (lambda r: r is not None and r > 0, "must be above zero"),
+    CategoryCode.T_Z: (lambda r: r == 0, "must be exactly zero"),
+    CategoryCode.T_E: (lambda r: r == 0, "must be exactly zero"),
+    CategoryCode.T_AE: (lambda r: r == 0, "must be exactly zero"),
+    CategoryCode.T_G: (lambda r: r == 0, "must be exactly zero"),
+    CategoryCode.T_K: (lambda r: r == 0, "must be exactly zero"),
+    CategoryCode.T_L: (lambda r: r is not None and r >= 0, "must be zero or above"),
+    CategoryCode.T_M: (lambda r: r is not None and r >= 0, "must be zero or above"),
+    CategoryCode.T_O: (lambda r: r is None, "must be omitted"),
 }
 
 _VAT_RULE_PREFIX: dict[CategoryCode, str] = {
@@ -1190,18 +1138,18 @@ def vat_category_exemption_reason(
             errors.append(
                 _err(
                     _vat_rate_violation_code(cat, "10"),
-                    f"VAT breakdown with category {cat.value!r} shall "
-                    "not carry a VAT exemption reason text (BT-120) "
-                    "or code (BT-121).",
+                    f"VAT breakdown with category {cat.value!r} must "
+                    "not carry an exemption reason — neither as text "
+                    "(BT-120) nor as code (BT-121).",
                 )
             )
         if cat in _VAT_EXEMPTION_REQUIRES and not (has_text or has_code):
             errors.append(
                 _err(
                     _vat_rate_violation_code(cat, "10"),
-                    f"VAT breakdown with category {cat.value!r} shall "
-                    "carry a VAT exemption reason text (BT-120) or "
-                    "code (BT-121).",
+                    f"VAT breakdown with category {cat.value!r} must "
+                    "carry an exemption reason — as text (BT-120), "
+                    "code (BT-121), or both.",
                 )
             )
     return errors

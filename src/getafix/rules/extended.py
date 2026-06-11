@@ -135,8 +135,8 @@ def br_fxext_06(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
             errors.append(
                 _err(
                     "BR-FXEXT-06",
-                    f"line {ad.line_id!r}: subtype of invoice item "
-                    f"(BT-X-8 LineStatusReasonCode) shall be set when "
+                    f"line {ad.line_id!r}: the line-subtype code "
+                    f"(BT-X-8 LineStatusReasonCode) must be set when "
                     f"the line is part of a sub-invoice-line tree "
                     f"(has ParentLineID or is referenced as parent).",
                 )
@@ -319,7 +319,7 @@ def br_fxext_27(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
                 _err(
                     "BR-FXEXT-27",
                     f"line {item.associated_document.line_id!r}: item net "
-                    f"price (BT-146) shall not be negative "
+                    f"price (BT-146) is negative "
                     f"(got {net.charge_amount}).",
                 )
             )
@@ -371,7 +371,7 @@ def br_fxext_co_10(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
     return [
         _err(
             "BR-FXEXT-CO-10",
-            f"Sum of Invoice line net amount (BT-106) = "
+            f"BT-106 = "
             f"{summation.line_total} differs from Σ BT-131 = "
             f"{sum(line_amts, Decimal('0'))} by more than the EXTENDED "
             f"tolerance 0.01 * {len(line_amts)}.",

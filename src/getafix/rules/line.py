@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def br_27(m: _line.NetTradePrice, profile: Profile) -> list[ValidationError]:
-    """BR-27: The Item net price (BT-146) shall NOT be negative.
+    """BR-27: a negative Item net price (BT-146) is not allowed.
 
     Applies: BASIC+ (line items first appear at BASIC). Short-circuits
     at EXTENDED — there the replacement
@@ -40,21 +40,17 @@ def br_27(m: _line.NetTradePrice, profile: Profile) -> list[ValidationError]:
         return []
     if m.charge_amount >= 0:
         return []
-    return [
-        ValidationError("BR-27", "The Item net price (BT-146) shall NOT be negative.")
-    ]
+    return [ValidationError("BR-27", "Item net price (BT-146) is negative.")]
 
 
 def br_28(m: _line.GrossTradePrice, _profile: Profile) -> list[ValidationError]:
-    """BR-28: The Item gross price (BT-148) shall NOT be negative.
+    """BR-28: a negative Item gross price (BT-148) is not allowed.
 
     Applies: BASIC+ (line items first appear at BASIC).
     """
     if m.charge_amount >= 0:
         return []
-    return [
-        ValidationError("BR-28", "The Item gross price (BT-148) shall NOT be negative.")
-    ]
+    return [ValidationError("BR-28", "Item gross price (BT-148) is negative.")]
 
 
 def applied_price_charge_extended_only(

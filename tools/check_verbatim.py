@@ -7,10 +7,15 @@ getafix docstrings must paraphrase it, not copy it. This tool indexes
 every word n-gram of the English text columns in the two workbook
 sidecars (``tools/business_terms.json``: ``name`` / ``description`` /
 ``usage_note`` / ``cius_note``; ``tools/business_rules.json``: rule
-texts) and slides the same window across every ``Element`` subclass
-and field docstring in ``getafix.schema`` (extracted statically via
-:func:`check_schema_docs._load_schema`). Any shared run of
-:data:`NGRAM` or more consecutive words fails the audit.
+texts) and slides the same window across every docstring in
+``getafix.schema`` (``Element`` subclasses and their fields,
+extracted statically via :func:`check_schema_docs._load_schema`) and
+``getafix.rules`` (module, validator-function and class docstrings,
+walked via griffe). The rules package is additionally swept for
+non-docstring string literals — the ``ValidationError`` messages are
+user-facing output and must paraphrase the rule text just like the
+docstrings do. Any shared run of :data:`NGRAM` or more consecutive
+words fails the audit.
 
 Wording that legitimately matches the workbook is allow-listed in
 :data:`ALLOWED_RUNS` by its normalised phrase — official
@@ -37,11 +42,14 @@ CI:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
 from pathlib import Path
 from typing import Any
+
+import griffe
 
 # Sibling-module import: the tools directory is not a package, so put
 # it on sys.path before pulling in the schema extractor.
@@ -50,6 +58,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_schema_docs import _load_schema
 
 ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = ROOT / "src"
 TERMS_SIDECAR = ROOT / "tools/business_terms.json"
 RULES_SIDECAR = ROOT / "tools/business_rules.json"
 
@@ -71,7 +80,12 @@ WORD_RE = re.compile(r"[a-z0-9']+")
 ALLOWED_RUNS: frozenset[str] = frozenset(
     {
         # Official term names next to their BT/BG citation.
+        "actual delivery date bt 72",
         "amount due for payment bt 115",
+        "deliver to country code bt 80",
+        "invoice currency code bt 5",
+        "payment account identifier bt 84",
+        "payment due date bt 9",
         "contractual due date of the invoice",
         "invoice line net amount bt 131",
         "invoice total amount with vat bt 112",
@@ -93,8 +107,9 @@ ALLOWED_RUNS: frozenset[str] = frozenset(
         "vat category tax amount bt 117",
         "vat category taxable amount bt 116",
         "vat exemption reason code bt 121",
-        # Code-list entries, legal citations, proper nouns.
+        # Code-list entries, legal citations, proper nouns, id lists.
         "751 invoice information for accounting purposes",
+        "bt 29 bt 30 bt 31",
         "application pdf image png image jpeg text csv application vnd",
         "spreadsheetml sheet application vnd oasis opendocument spreadsheet",
         "articles 226 items 11 to 15",
@@ -229,31 +244,121 @@ def _matching_runs(
     return runs
 
 
+def _schema_docstrings() -> list[tuple[str, str]]:
+    """Every ``(where, docstring)`` from the schema Element classes."""
+    out: list[tuple[str, str]] = []
+    classes, _parents = _load_schema()
+    for cls in classes:
+        if cls.docstring:
+            out.append((f"{cls.module}:{cls.name}", cls.docstring))
+        for f in cls.fields:
+            if f.docstring:
+                out.append((f"{cls.module}:{cls.name}.{f.name}", f.docstring))
+    return out
+
+
+def _rules_docstrings() -> list[tuple[str, str]]:
+    """Every ``(where, docstring)`` from the ``getafix.rules`` package.
+
+    Walks module, top-level function and class (plus method)
+    docstrings — validator docstrings are where the BR-* rule text
+    would naturally get pasted. Nested closures (the validators built
+    by the ``_types`` factories) carry their factory's docstring
+    dynamically at runtime and have no static docstring to audit.
+    """
+    package = griffe.load("getafix", search_paths=[str(SRC_ROOT)])
+    rules = package["rules"]
+    out: list[tuple[str, str]] = []
+    modules = sorted(rules.modules.values(), key=lambda m: m.filepath.name)
+    for module in (rules, *modules):
+        where_prefix = f"rules/{module.filepath.name}"
+        if module.docstring:
+            out.append((where_prefix, module.docstring.value))
+        for fn in module.functions.values():
+            if not fn.is_alias and fn.docstring:
+                out.append((f"{where_prefix}:{fn.name}", fn.docstring.value))
+        for cls in module.classes.values():
+            if cls.is_alias:
+                continue
+            if cls.docstring:
+                out.append((f"{where_prefix}:{cls.name}", cls.docstring.value))
+            for method in cls.functions.values():
+                if not method.is_alias and method.docstring:
+                    out.append(
+                        (
+                            f"{where_prefix}:{cls.name}.{method.name}",
+                            method.docstring.value,
+                        )
+                    )
+    return out
+
+
+def _docstring_positions(tree: ast.Module) -> set[tuple[int, int]]:
+    """``(lineno, col_offset)`` of every docstring constant in ``tree``.
+
+    A docstring is the first statement of a module / class / function
+    body when that statement is a bare string expression.
+    """
+    positions: set[tuple[int, int]] = set()
+    for node in ast.walk(tree):
+        if not isinstance(
+            node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+        ):
+            continue
+        body = node.body
+        if (
+            body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            positions.add((body[0].value.lineno, body[0].value.col_offset))
+    return positions
+
+
+def _rules_string_literals() -> list[tuple[str, str]]:
+    """Every non-docstring string literal in ``getafix.rules``.
+
+    The ``ValidationError`` messages live here — they ship to users
+    at runtime, so copied rule text in them is the same problem as in
+    a docstring. Docstring constants are excluded (the griffe walk
+    already covers them with better labels). Implicitly concatenated
+    string parts arrive as separate ``Constant`` nodes; each part is
+    audited on its own, which is fine — a copied sentence split
+    mid-run still leaves 6-word runs in the parts.
+    """
+    out: list[tuple[str, str]] = []
+    for path in sorted((SRC_ROOT / "getafix/rules").glob("*.py")):
+        tree = ast.parse(path.read_text())
+        skip = _docstring_positions(tree)
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and (node.lineno, node.col_offset) not in skip
+            ):
+                out.append((f"rules/{path.name}:{node.lineno}", node.value))
+    return out
+
+
 def _audit(n: int) -> tuple[list[Finding], list[Finding]]:
-    """Scan every schema docstring; return (violations, allowed)."""
+    """Scan every schema and rules docstring; return (violations, allowed)."""
     corpus = _spec_corpus()
     index = _ngram_index(corpus, n)
-    classes, _parents = _load_schema()
 
     violations: list[Finding] = []
     allowed: list[Finding] = []
-    for cls in classes:
-        docstrings = [(f"{cls.module}:{cls.name}", cls.docstring)]
-        docstrings += [
-            (f"{cls.module}:{cls.name}.{f.name}", f.docstring) for f in cls.fields
-        ]
-        for where, doc in docstrings:
-            if not doc:
-                continue
-            tokens = _words(doc)
-            if len(tokens) < n:
-                continue
-            for source, run, length in _matching_runs(tokens, corpus, index, n):
-                finding = Finding(where, source, run, length)
-                if _is_allowed(run, n):
-                    allowed.append(finding)
-                else:
-                    violations.append(finding)
+    items = (*_schema_docstrings(), *_rules_docstrings(), *_rules_string_literals())
+    for where, doc in items:
+        tokens = _words(doc)
+        if len(tokens) < n:
+            continue
+        for source, run, length in _matching_runs(tokens, corpus, index, n):
+            finding = Finding(where, source, run, length)
+            if _is_allowed(run, n):
+                allowed.append(finding)
+            else:
+                violations.append(finding)
     return violations, allowed
 
 
@@ -266,8 +371,8 @@ def _report(
             print(f"         {f.run!r}")  # noqa: T201
     if not violations:
         print(  # noqa: T201
-            f"ok: no schema docstring shares {NGRAM}+ unallowed words "
-            f"with the workbook text ({len(allowed)} allow-listed runs)."
+            f"ok: no schema / rules docstring shares {NGRAM}+ unallowed "
+            f"words with the workbook text ({len(allowed)} allow-listed runs)."
         )
         return 0
     for f in sorted(violations, key=lambda f: (-f.length, f.where)):
