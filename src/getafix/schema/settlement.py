@@ -8,7 +8,7 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from getafix.rules import Validator
-from getafix.rules._types import fields_only_at, list_max_cardinality_below
+from getafix.rules._types import list_max_cardinality_below
 from getafix.rules.settlement import (
     br_5_currency_shape,
     br_29,
@@ -360,16 +360,6 @@ class PaymentTerms(Element):
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    _validators: ClassVar[tuple[Validator["PaymentTerms"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED,
-            "partial_payment_amount",
-            "penalty_terms",
-            "discount_terms",
-            "payee",
-        ),
-    )
-
     description: str | None = field(default=None, metadata={"tag": "Description"})
     """Payment terms, free text (BT-20).
 
@@ -688,18 +678,12 @@ class TradeSettlement(Element):
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
     _validators: ClassVar[tuple[Validator["TradeSettlement"], ...]] = (
-        # EXTENDED-only fields: must be None at lower profiles, lest the
-        # render machinery silently drop them.
-        fields_only_at(
-            Profile.EXTENDED,
-            "invoice_issuer_reference",
-            "invoicer",
-            "invoicee",
-            "payer",
-            "currency_exchange",
-            "logistics_service_charges",
-            "advance_payments",
-        ),
+        # EXTENDED-only fields (invoice_issuer_reference, invoicer,
+        # invoicee, payer, currency_exchange, logistics_service_charges,
+        # advance_payments) are gated generically by
+        # ``Element.validate_internal`` via each field's
+        # ``metadata['profile']``.
+        #
         # SpecifiedTradePaymentTerms widens from 0..1 (BASIC_WL..COMFORT)
         # to 0..* at EXTENDED — cap the getafix list to 1 entry below
         # EXTENDED so an over-populated list fails loud rather than

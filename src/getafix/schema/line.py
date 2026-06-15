@@ -27,11 +27,7 @@ from typing import ClassVar, Literal, Self, override
 from tagic.xml import XML
 
 from getafix.rules import Validator
-from getafix.rules._types import (
-    fields_only_at,
-    list_max_cardinality_below,
-    max_decimals,
-)
+from getafix.rules._types import list_max_cardinality_below, max_decimals
 from getafix.rules.line import applied_price_charge_extended_only, br_27, br_28
 from getafix.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from getafix.schema.element import Element, ETElement
@@ -146,7 +142,8 @@ class AppliedTradeAllowanceCharge(Element):
     ``ActualAmount`` (BT-147); EXTENDED adds the percentage (BT-X-34 /
     BT-X-300), basis amount (BT-X-35 / BT-X-301), reason code (BT-X-313 /
     BT-X-314) and reason text (BT-X-36 / BT-X-303) — all four gated
-    EXTENDED per-field and via ``fields_only_at``. The element is
+    EXTENDED per-field via ``metadata['profile']`` (enforced generically
+    by ``Element.validate_internal``). The element is
     ``0..1`` below EXTENDED (a single allowance) and ``0..*`` at
     EXTENDED; the cardinality / charge gates live on the enclosing
     :class:`GrossTradePrice` and in
@@ -161,13 +158,6 @@ class AppliedTradeAllowanceCharge(Element):
 
     _validators: ClassVar[tuple[Validator["AppliedTradeAllowanceCharge"], ...]] = (
         applied_price_charge_extended_only,
-        fields_only_at(
-            Profile.EXTENDED,
-            "calculation_percent",
-            "basis_amount",
-            "reason_code",
-            "reason",
-        ),
     )
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
@@ -528,19 +518,6 @@ class TradeProduct(Element):
     tag: ClassVar[str] = "SpecifiedTradeProduct"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    _validators: ClassVar[tuple[Validator["TradeProduct"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED,
-            "industry_assigned_id",
-            "model_id",
-            "batch_id",
-            "brand_name",
-            "model_name",
-            "individual_product_instances",
-            "included_referenced_products",
-        ),
-    )
-
     global_id: GlobalID | None = None
     """Item standard identifier (BT-157).
 
@@ -629,12 +606,6 @@ class DocumentLineDocument(Element):
     tag: ClassVar[str] = "AssociatedDocumentLineDocument"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    _validators: ClassVar[tuple[Validator["DocumentLineDocument"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED, "parent_line_id", "status_code", "status_reason_code"
-        ),
-    )
-
     line_id: str = field(metadata={"tag": "LineID"})
     """Invoice line identifier (BT-126).
 
@@ -694,12 +665,6 @@ class LineBuyerOrderReferencedDocument(Element):
 
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
-
-    _validators: ClassVar[tuple[Validator["LineBuyerOrderReferencedDocument"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED, "issuer_assigned_id", "formatted_issue_date_time"
-        ),
-    )
 
     issuer_assigned_id: str | None = field(
         default=None, metadata={"tag": "IssuerAssignedID", "profile": Profile.EXTENDED}
@@ -780,10 +745,6 @@ class LineAdditionalReferencedDocument(Element):
     tag: ClassVar[str] = "AdditionalReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    _validators: ClassVar[tuple[Validator["LineAdditionalReferencedDocument"], ...]] = (
-        fields_only_at(Profile.EXTENDED, "line_id", "name"),
-    )
-
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Invoice line object identifier (BT-128, line settlement) or
     supporting-document number (BT-X-27, BG-X-3 line agreement)."""
@@ -834,12 +795,6 @@ class LineTradeAgreement(Element):
     tag: ClassVar[str] = "SpecifiedLineTradeAgreement"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    _validators: ClassVar[tuple[Validator["LineTradeAgreement"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED, "quotation_ref", "additional_references", "item_seller"
-        ),
-    )
-
     buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
     """Referenced purchase-order line (BT-132-00); COMFORT+."""
     quotation_ref: LineQuotationReferencedDocument | None = field(
@@ -885,18 +840,6 @@ class LineTradeDelivery(Element):
 
     tag: ClassVar[str] = "SpecifiedLineTradeDelivery"
     profile: ClassVar[Profile] = Profile.BASIC
-
-    _validators: ClassVar[tuple[Validator["LineTradeDelivery"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED,
-            "charge_free_quantity",
-            "package_quantity",
-            "per_package_unit_quantity",
-            "ship_to",
-            "ultimate_ship_to",
-            "delivery_note",
-        ),
-    )
 
     billed_quantity: Quantity | None = field(
         default=None, metadata={"tag": "BilledQuantity"}
@@ -945,7 +888,6 @@ class LineMonetarySummation(Element):
 
     _validators: ClassVar[tuple[Validator["LineMonetarySummation"], ...]] = (
         max_decimals("BR-DEC-23", field_name="line_total"),
-        fields_only_at(Profile.EXTENDED, "total_allowance_charge"),
     )
 
     line_total: Decimal | None = field(

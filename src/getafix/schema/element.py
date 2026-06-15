@@ -127,10 +127,18 @@ class Element(ABC):
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
         """Collect every business-rule violation under this Element.
 
-        First runs ``self._validators`` against this element, then
-        recurses into every child :class:`Element` reachable through
-        dataclass fields. The Document root raises
-        :class:`ValidationErrors` if the final list is non-empty.
+        First runs ``self._validators`` against this element, then —
+        for every populated field — checks the per-field profile gate
+        (the validation-time mirror of the render-time gate in
+        :meth:`_children_xml`), and finally recurses into every child
+        :class:`Element` reachable through dataclass fields. The
+        Document root raises :class:`ValidationErrors` if the final
+        list is non-empty.
+
+        The profile gate emits ``GETAFIX-FIELD-PROFILE`` for any field
+        populated below the profile it is valid at. Recursion
+        into an out-of-profile subtree is skipped: its contents are
+        moot until the gate on the field itself is satisfied.
         """
         errors: list[ValidationError] = [
             e for v in self._validators for e in v(self, profile)
@@ -141,9 +149,19 @@ class Element(ABC):
             value = getattr(self, f.name)
             if value is None:
                 continue
-            if not isinstance(value, list):
-                value = [value]
-            for v in value:
+            required = self._required_profile(f, value)
+            if profile < required:
+                errors.append(
+                    ValidationError(
+                        "GETAFIX-FIELD-PROFILE",
+                        f"{type(self).__name__}.{f.name}: only allowed at "
+                        f"{required.name}+ profiles "
+                        f"(current profile: {profile.name}).",
+                    )
+                )
+                continue
+            items = value if isinstance(value, list) else [value]
+            for v in items:
                 if isinstance(v, Element):
                     errors.extend(v.validate_internal(profile))
         return errors
@@ -170,6 +188,25 @@ class Element(ABC):
         """
         return None
 
+    def _required_profile(self, f: Field[Any], value: Any) -> Profile:
+        """Lowest profile at which field ``f`` (currently holding
+        ``value``) may be populated.
+
+        Resolution order: the instance hook
+        :meth:`_field_profile`, then the per-field ``metadata['profile']``
+        (``_meta_profile``), then — for an Element / list-of-Element
+        value — the item class's own :attr:`profile` so a ``0..*`` group
+        is gated like a single ``0..1`` Element field. Empty lists and
+        plain scalars without a metadata gate fall through to
+        ``MINIMUM``.
+        """
+        p = self._field_profile(f.name) or _meta_profile(f)
+        if p is None:
+            sample = value[0] if isinstance(value, list) and value else value
+            if isinstance(sample, Element):
+                p = sample.__class__.profile
+        return p or Profile.MINIMUM
+
     def _children_xml(self, profile: Profile) -> list[XML]:
         children: list[XML] = []
         # Per-Element "currency" field provides the ``currencyID``
@@ -186,18 +223,7 @@ class Element(ABC):
                 # not required
                 continue
 
-            p = self._field_profile(f.name) or _meta_profile(f)
-            if p is None:
-                # For list-of-Element fields, the framework consults the
-                # item's class profile so a 0..* group declared at e.g.
-                # COMFORT is gated like a single 0..1 Element field would
-                # be. Empty lists fall through to MINIMUM.
-                sample = value[0] if isinstance(value, list) and value else value
-                if isinstance(sample, Element):
-                    p = sample.__class__.profile
-            if p is None:
-                p = Profile.MINIMUM
-
+            p = self._required_profile(f, value)
             if profile < p:
                 raise ProfileMismatch(
                     f"{self.__class__.__name__}.{f.name}: {profile} < {p}"
