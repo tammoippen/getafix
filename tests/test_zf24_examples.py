@@ -23,8 +23,8 @@ from pathlib import Path
 
 import pytest as pt
 
-from getafix.schema import Document, Profile
-from getafix.schema.types import TypeCode
+from getafix.schema.document import Document
+from getafix.schema.types import Profile, TypeCode
 
 SAMPLES_DIR = Path(__file__).parent / "samples"
 

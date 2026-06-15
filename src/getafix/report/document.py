@@ -26,8 +26,7 @@ from getafix.report.settlement import (
 from getafix.report.types import dim_paren, format_type_code
 
 if TYPE_CHECKING:
-    from getafix.schema import Document
-    from getafix.schema.document import Header
+    from getafix.schema.document import Document, Header
 
 
 def header_panel(doc: Document) -> Panel:

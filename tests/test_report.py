@@ -17,17 +17,10 @@ from rich.console import Console
 
 from getafix.report import render_invoice, render_validation_errors
 from getafix.report.line import net_price_cell
-from getafix.schema import (
-    Context,
-    Document,
-    GuidelineDocument,
-    Header,
-    Profile,
-    TypeCode,
-)
 from getafix.schema.accounting import LineTradeAllowanceCharge, MonetarySummation
 from getafix.schema.agreement import TradeAgreement
 from getafix.schema.delivery import TradeDelivery
+from getafix.schema.document import Context, Document, GuidelineDocument, Header
 from getafix.schema.element import ValidationError
 from getafix.schema.line import (
     LineAdditionalReferencedDocument,
@@ -58,6 +51,8 @@ from getafix.schema.trade import Trade
 from getafix.schema.types import (
     Country,
     Currency,
+    Profile,
+    TypeCode,
     UNTDID2475TaxPointDateCode,
     UNTDID4461PaymentMeansCode,
 )

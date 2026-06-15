@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
     from rich.console import Console
 
     from getafix.report import render_invoice
-    from getafix.schema import Document
+    from getafix.schema.document import Document
 
     try:
         tree = etree.parse(str(source))

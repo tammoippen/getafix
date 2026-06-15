@@ -45,7 +45,7 @@ from getafix.report.trade import lines_table
 if TYPE_CHECKING:
     from rich.console import Console
 
-    from getafix.schema import Document
+    from getafix.schema.document import Document
 
 
 def render_invoice(doc: Document, console: Console | None = None) -> None:

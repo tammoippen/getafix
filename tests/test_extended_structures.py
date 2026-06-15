@@ -21,7 +21,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from getafix.schema import Document
+from getafix.schema.document import Document
 
 _SAMPLES = Path(__file__).parent / "samples"
 

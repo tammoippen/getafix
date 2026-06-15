@@ -44,8 +44,8 @@ from pathlib import Path
 
 from lxml import etree
 
-from getafix.schema import Document
 from getafix.schema.agreement import RelevantTradeLocation, TradeDeliveryTerms
+from getafix.schema.document import Document
 from getafix.schema.element import ValidationErrors
 from getafix.schema.line import (
     ChargeFreeQuantity,

@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     from getafix.report import render_invoice, render_validation_errors
-    from getafix.schema import Document
+    from getafix.schema.document import Document
 
     out = Console()
     err = Console(stderr=True)

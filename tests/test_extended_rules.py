@@ -20,7 +20,6 @@ from decimal import Decimal
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.accounting import ApplicableTradeTax
 from getafix.schema.element import ValidationErrors
 from getafix.schema.line import (
@@ -38,6 +37,7 @@ from getafix.schema.trade import TradeLineItem
 from getafix.schema.types import (
     CategoryCode,
     LineStatusReasonCode,
+    Profile,
     UNTDID2475TaxPointDateCode,
 )
 from tests._fixtures import make_vat_doc
@@ -369,7 +369,7 @@ class TestFXExtSubInvoiceLineSampleClean:
 
         from lxml import etree
 
-        from getafix.schema import Document
+        from getafix.schema.document import Document
 
         xml = Path(
             "tests/samples/EXTENDED_zf24_SubInvoiceLines_Hardware.xml"

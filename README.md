@@ -97,8 +97,8 @@ pip install 'getafix[lxml,pdf]'
 from datetime import date
 from decimal import Decimal
 
-from getafix.schema import (
-    Context, Document, GuidelineDocument, Header, Profile, TypeCode,
+from getafix.schema.document import (
+    Context, Document, GuidelineDocument, Header
 )
 from getafix.schema.accounting import MonetarySummation, TaxTotal
 from getafix.schema.agreement import TradeAgreement
@@ -109,7 +109,7 @@ from getafix.schema.party import (
 )
 from getafix.schema.settlement import TradeSettlement
 from getafix.schema.trade import Trade
-from getafix.schema.types import Country, Currency
+from getafix.schema.types import Country, Currency, Profile, TypeCode
 
 doc = Document(
     context=Context(guideline=GuidelineDocument(id=Profile.MINIMUM)),
@@ -162,7 +162,7 @@ From XML bytes or a file:
 
 ```python
 import xml.etree.ElementTree as ET
-from getafix.schema import Document
+from getafix.schema.document import Document
 
 tree = ET.parse("factur-x.xml")
 doc = Document.from_xml(tree.getroot())
@@ -181,7 +181,7 @@ From a Factur-X / ZUGFeRD PDF (`getafix[pdf]` extra):
 ```python
 import xml.etree.ElementTree as ET
 from getafix.pdf import extract_xml
-from getafix.schema import Document
+from getafix.schema.document import Document
 
 payload = extract_xml(Path("invoice.pdf"))   # bytes or None
 if payload is None:

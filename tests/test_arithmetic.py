@@ -9,7 +9,6 @@ from decimal import Decimal
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from getafix.schema.element import ValidationErrors
 from getafix.schema.line import (
@@ -24,7 +23,12 @@ from getafix.schema.line import (
 )
 from getafix.schema.settlement import PaymentTerms, TradeSettlement
 from getafix.schema.trade import TradeLineItem
-from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema.types import (
+    CategoryCode,
+    Currency,
+    Profile,
+    UNTDID2475TaxPointDateCode,
+)
 from tests._fixtures import make_vat_doc
 
 

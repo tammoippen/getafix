@@ -3,7 +3,7 @@ BT-29 (id), BT-30 (legal organisation id) or BT-31 (VAT registration)."""
 
 from __future__ import annotations
 
-from getafix.schema import Profile
+from getafix.schema.document import Profile
 from getafix.schema.party import (
     ISO6523SchemeId,
     LegalOrganization,

@@ -6,11 +6,15 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from getafix.schema import Profile
 from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from getafix.schema.party import TaxSchemeId
 from getafix.schema.settlement import PaymentTerms, TradeSettlement
-from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema.types import (
+    CategoryCode,
+    Currency,
+    Profile,
+    UNTDID2475TaxPointDateCode,
+)
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 

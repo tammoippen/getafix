@@ -26,12 +26,12 @@ from decimal import Decimal
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.accounting import (
     HeaderTradeAllowanceCharge,
     LineTradeAllowanceCharge,
 )
 from getafix.schema.element import ProfileMismatch
+from getafix.schema.types import Profile
 
 
 class TestLineContextGating:
