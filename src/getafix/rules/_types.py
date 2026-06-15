@@ -7,8 +7,7 @@ Each rule submodule defines free-standing functions of the shape::
 The corresponding :mod:`getafix.schema.<topic>` module imports the
 functions it needs and exposes them via a
 ``_validators: ClassVar[tuple[Validator[...], ...]]`` attribute that
-``Element.validate_internal`` iterates. See
-``AGENTS.md`` "Validator architecture" for the design.
+``Element.validate_internal`` iterates.
 
 Also home to the :func:`max_decimals` factory used by the
 ``BR-DEC-*`` decimal-precision family — every monetary BT caps at

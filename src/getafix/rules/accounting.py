@@ -10,11 +10,9 @@ Each function:
   ``Business Rules`` sheet) and on the precondition data;
 * returns ``list[ValidationError]`` (empty on success);
 * never raises.
-
-See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
-# Pyright walks the static schema↔rules cycle and reports it; the
+# Pyright walks the static schema <-> rules cycle and reports it; the
 # runtime graph has no cycle (annotations are inert under ``from
 # __future__ import annotations`` and the schema imports sit under
 # TYPE_CHECKING). Silence the report module-wide.

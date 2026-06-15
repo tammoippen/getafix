@@ -15,8 +15,6 @@ Most family / single-rate rules emit at most one ``ValidationError``
 per call (deduplicated by rule code). ``br_co_21..24`` use
 per-occurrence semantics — one error per offending allowance /
 charge.
-
-See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
 # pyright: reportImportCycles=false

@@ -9,8 +9,6 @@ Each function:
 * self-gates on profile and on the precondition data;
 * returns ``list[ValidationError]`` (empty on success);
 * never raises.
-
-See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
 # pyright: reportImportCycles=false
