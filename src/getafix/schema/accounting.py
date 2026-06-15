@@ -580,17 +580,15 @@ class TradeAllowanceCharge(Element):
     programmatically.
     """
 
-    @override
     def __post_init__(self) -> None:
         if type(self) is TradeAllowanceCharge:
             raise TypeError(
                 "TradeAllowanceCharge is abstract; instantiate "
                 "HeaderTradeAllowanceCharge or LineTradeAllowanceCharge."
             )
-        # Zero-arg super() breaks under @dataclass(slots=True): the
-        # decorator returns a rebuilt class so the implicit __class__
-        # cell points at the original. Name the class explicitly.
-        super(TradeAllowanceCharge, self).__post_init__()
+        # Per-field type-shape checking lives in ``Element.__setattr__`` and
+        # runs during construction, so there's no base ``__post_init__`` to
+        # chain to here.
 
     @override
     def _field_profile(self, name: str) -> Profile | None:

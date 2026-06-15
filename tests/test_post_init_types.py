@@ -1,9 +1,11 @@
-"""Regression tests for ``Element.__post_init__`` shape checks.
+"""Regression tests for ``Element`` shape checks.
 
-The base ``__post_init__`` runs an ``isinstance``-style walk of every
-declared field at construction time and raises :class:`TypeError` on
-the first mismatch. It is the boundary check that complements the
-``_validators`` business-rule layer (which assumes the shape is
+``Element.__setattr__`` runs an ``isinstance``-style check of a field's
+declared type on every assignment and raises :class:`TypeError` on a
+mismatch. Because the dataclass-generated ``__init__`` assigns each
+field through ``__setattr__``, this covers both construction and
+post-construction mutation. It is the boundary check that complements
+the ``_validators`` business-rule layer (which assumes the shape is
 already correct).
 """
 
@@ -194,3 +196,56 @@ class TestRequiredFields:
     def test_required_enum_rejects_none(self) -> None:
         with pt.raises(TypeError, match=r"GuidelineDocument\.id: required, got None"):
             GuidelineDocument(id=None)  # type: ignore[arg-type]
+
+
+class TestAssignmentShapeChecks:
+    """``Element.__setattr__`` re-runs the same shape check on every
+    post-construction assignment, so mutation can't put the model into a
+    shape the XML renderer and ``BR-*`` validators assume away.
+    """
+
+    def _valid_header(self) -> Header:
+        return Header(
+            id="INV-1",
+            type_code=TypeCode.T_CommercialInvoice,
+            issue_date=date(2025, 1, 1),
+        )
+
+    def test_assign_scalar_wrong_type_rejected(self) -> None:
+        header = self._valid_header()
+        with pt.raises(TypeError, match=r"Header\.id: expected str"):
+            header.id = 42  # type: ignore[assignment]
+
+    def test_assign_date_wrong_type_rejected(self) -> None:
+        header = self._valid_header()
+        with pt.raises(TypeError, match=r"Header\.issue_date: expected date"):
+            header.issue_date = "2025-01-01"  # type: ignore[assignment]
+
+    def test_assign_required_none_rejected(self) -> None:
+        header = self._valid_header()
+        with pt.raises(TypeError, match=r"Header\.id: required, got None"):
+            header.id = None  # type: ignore[assignment]
+
+    def test_assign_optional_none_accepted(self) -> None:
+        header = self._valid_header()
+        header.name = None  # BT-X-2 is Optional[str]
+
+    def test_assign_list_scalar_rejected(self) -> None:
+        header = self._valid_header()
+        with pt.raises(TypeError, match=r"Header\.notes: expected list"):
+            header.notes = IncludedNote(content="hi")  # type: ignore[assignment]
+
+    def test_assign_list_wrong_item_rejected(self) -> None:
+        header = self._valid_header()
+        with pt.raises(TypeError, match=r"Header\.notes\[0\]: expected IncludedNote"):
+            header.notes = ["just a string"]  # type: ignore[list-item]
+
+    def test_assign_bool_int_rejected(self) -> None:
+        ac = HeaderTradeAllowanceCharge(indicator=True, actual_amount=Decimal("5.00"))
+        with pt.raises(TypeError, match="expected bool"):
+            ac.indicator = 1  # type: ignore[assignment]
+
+    def test_assign_well_typed_value_accepted(self) -> None:
+        header = self._valid_header()
+        header.id = "INV-2"
+        assert header.id == "INV-2"

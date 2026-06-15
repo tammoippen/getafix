@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest as pt
 
 from getafix.schema.element import ValidationErrors
-from getafix.schema.types import CategoryCode
+from getafix.schema.types import CategoryCode, VATEXCode
 from tests._fixtures import make_vat_doc
 
 
@@ -20,7 +20,10 @@ def _set_exemption(
     doc, *, reason: str | None = None, reason_code: str | None = None
 ) -> None:
     doc.trade.settlement.trade_taxes[0].exemption_reason = reason
-    doc.trade.settlement.trade_taxes[0].exemption_reason_code = reason_code
+    # exemption_reason_code is typed VATEXCode | None; wrap the raw code.
+    doc.trade.settlement.trade_taxes[0].exemption_reason_code = (
+        VATEXCode(reason_code) if reason_code is not None else None
+    )
 
 
 class TestForbidsExemption:

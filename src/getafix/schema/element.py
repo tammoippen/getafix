@@ -17,7 +17,16 @@ from abc import ABC
 from collections.abc import Callable
 from dataclasses import Field, dataclass, fields
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Literal,
+    Self,
+    get_args,
+    get_origin,
+    override,
+)
 
 from tagic.xml import XML
 
@@ -93,27 +102,27 @@ class Element(ABC):
     "Validator architecture" for the design.
     """
 
-    def __post_init__(self) -> None:
-        # Type-shape check at construction time: every dataclass-declared
-        # field must hold a value compatible with its annotation before
-        # any ``BR-*`` validator or XML renderer touches the data. Catches
-        # parser bugs (``from_xml`` builds an ``Any``-typed dict and splats
-        # it into ``cls(**params)``) and hand-built fixtures that drift
-        # from the model. Business rules — which presuppose the shape is
-        # correct — stay in ``validate_internal``.
-        for f in fields(self):
-            value = getattr(self, f.name)
-            expected = _get_non_none_type(f.type)
-            assert not isinstance(expected, str), (
-                f"{type(self).__name__}.{f.name}: annotation {f.type!r} is a "
-                "string-form forward reference; resolve via get_type_hints "
-                "or drop the future-annotations import on the module."
-            )
-            if value is None:
-                if _allows_none(f.type):
-                    continue
-                raise TypeError(f"{type(self).__name__}.{f.name}: required, got None.")
-            _check_field(type(self).__name__, f.name, value, expected)
+    @override
+    def __setattr__(self, name: str, value: Any) -> None:
+        # Type-shape check on *every* assignment — including the per-field
+        # writes the dataclass-generated ``__init__`` performs, so this also
+        # covers construction time (no separate ``__post_init__`` needed).
+        # Every dataclass-declared field must hold a value compatible with
+        # its annotation before any ``BR-*`` validator or XML renderer
+        # touches the data. Catches parser bugs (``from_xml`` builds an
+        # ``Any``-typed dict and splats it into ``cls(**params)``),
+        # hand-built fixtures that drift from the model, and post-construct
+        # mutation (``inv.currency = 42``) that would otherwise sail past
+        # the construction check. Business rules — which presuppose the
+        # shape is correct — stay in ``validate_internal``.
+        #
+        # Names that aren't dataclass fields (there are none settable on a
+        # ``slots=True`` instance beyond the fields, but be explicit) pass
+        # straight through to the slot descriptor.
+        annotation = _field_type_map(type(self)).get(name, _MISSING)
+        if annotation is not _MISSING:
+            _check_assignment(type(self).__name__, name, annotation, value)
+        object.__setattr__(self, name, value)
 
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
         """Collect every business-rule violation under this Element.
@@ -284,6 +293,47 @@ class Element(ABC):
         if has_currency_field and captured_currency is not None:
             params.setdefault("currency", captured_currency)
         return cls(**params)
+
+
+# Sentinel distinct from ``None`` (a legitimate field value) so
+# ``_field_type_map(...).get(name, _MISSING)`` can tell "not a field" apart
+# from "field whose current value is None".
+_MISSING: Any = object()
+
+# Per-class cache of ``field name -> annotation``. ``Element.__setattr__``
+# fires on every assignment, so resolving the field via ``fields()`` each
+# time would be wasteful; the field set of a class is fixed once defined.
+# Keyed on the exact concrete subclass (``type(self)``), which is what
+# ``__setattr__`` looks up.
+_FIELD_TYPE_CACHE: dict[type, dict[str, Any]] = {}
+
+
+def _field_type_map(cls: type) -> dict[str, Any]:
+    cached = _FIELD_TYPE_CACHE.get(cls)
+    if cached is None:
+        cached = {f.name: f.type for f in fields(cls)}
+        _FIELD_TYPE_CACHE[cls] = cached
+    return cached
+
+
+def _check_assignment(cls_name: str, name: str, annotation: Any, value: Any) -> None:
+    """Enforce a field's declared type-shape for one ``name = value`` write.
+
+    Shared by construction (via the per-field writes in the generated
+    ``__init__``) and post-construction mutation, both routed through
+    :meth:`Element.__setattr__`.
+    """
+    expected = _get_non_none_type(annotation)
+    assert not isinstance(expected, str), (
+        f"{cls_name}.{name}: annotation {annotation!r} is a "
+        "string-form forward reference; resolve via get_type_hints "
+        "or drop the future-annotations import on the module."
+    )
+    if value is None:
+        if _allows_none(annotation):
+            return
+        raise TypeError(f"{cls_name}.{name}: required, got None.")
+    _check_field(cls_name, name, value, expected)
 
 
 def _get_non_none_type(field_type: Any) -> Any:
