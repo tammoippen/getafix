@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tammoippen/getafix/actions/workflows/CI.yml/badge.svg)](https://github.com/tammoippen/getafix/actions/workflows/CI.yml)
 [![PyPi version](https://img.shields.io/pypi/v/getafix.svg)](https://pypi.python.org/pypi/getafix)
-![Downloads](https://pepy.tech/badge/getafix/month)](https://pepy.tech/project/getafix)
+[![Downloads](https://pepy.tech/badge/getafix/month)](https://pepy.tech/project/getafix)
 [![PyPi license](https://img.shields.io/pypi/l/getafix.svg)](https://pypi.python.org/pypi/getafix)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
@@ -16,14 +16,14 @@ spec.
 
 ## Why "getafix"?
 
-Getafix is the village druid in *Asterix* — the one who brews the
+Getafix is the village druid in _Asterix_ — the one who brews the
 magic potion from an exact recipe, drop by drop, so it comes out
 right every time. That is what this library does for **Factur-X**:
 it follows the EN 16931 recipe term by term (`BT-…`/`BG-…`) and
 mixes a valid invoice. The Gaulish `-ix` ending even echoes the
 `-X` in Factur-**X**, and since Factur-X is the French half of the
 standard, a French druid felt right. As a bonus, the name reads as
-"get a fix" — *get a valid Factur-X*.
+"get a fix" — _get a valid Factur-X_.
 
 > **Status: pre-1.0.** Solid for the fields that are modelled across
 > MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); selective EXTENDED
@@ -37,10 +37,10 @@ standard, a French druid felt right. As a bonus, the name reads as
 [`LICENSE`](LICENSE).
 
 This project is an application of the **ZUGFeRD / Factur-X**
-publication issued by the *Forum elektronische Rechnung Deutschland*
+publication issued by the _Forum elektronische Rechnung Deutschland_
 (FeRD) at AWV e.V. The format incorporates **EN 16931**, reproduced
-by FeRD with the permission of **CEN** and **DIN**. *ZUGFeRD* and
-*Factur-X* are trademarks of FeRD / AWV e.V., used here only to
+by FeRD with the permission of **CEN** and **DIN**. _ZUGFeRD_ and
+_Factur-X_ are trademarks of FeRD / AWV e.V., used here only to
 identify the standard this library implements.
 
 The vendored test fixtures under
@@ -79,11 +79,11 @@ pip install getafix
 The base install lets you build / serialise / validate documents with
 the Python stdlib XML parser. The optional extras unlock more:
 
-| Extra            | Pulls in                  | Enables |
-|------------------|---------------------------|---------|
-| `getafix[lxml]` | `lxml`                    | Round-tripping XML produced by other tools (the stdlib parser is fine for most documents; `lxml` is faster and more tolerant of large / namespaced inputs). |
-| `getafix[pdf]`  | `pypdf`                   | Embedding / extracting `factur-x.xml` in a PDF (`getafix.pdf.attach_xml` and `extract_xml`). |
-| `getafix[cli]`  | `lxml`, `rich`, `pypdf`   | The `getafix` console script — pretty-print an invoice and run the BR-* validators against it. |
+| Extra           | Pulls in                | Enables                                                                                                                                                     |
+| --------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getafix[lxml]` | `lxml`                  | Round-tripping XML produced by other tools (the stdlib parser is fine for most documents; `lxml` is faster and more tolerant of large / namespaced inputs). |
+| `getafix[pdf]`  | `pypdf`                 | Embedding / extracting `factur-x.xml` in a PDF (`getafix.pdf.attach_xml` and `extract_xml`).                                                                |
+| `getafix[cli]`  | `lxml`, `rich`, `pypdf` | The `getafix` console script — pretty-print an invoice and run the BR-\* validators against it.                                                             |
 
 Install several at once:
 
@@ -232,9 +232,9 @@ The `getafix[cli]` extra ships a console script that pretty-prints
 an invoice and runs the validators:
 
 ```bash
-$ getafix path/to/factur-x.xml
-$ getafix path/to/invoice.pdf            # reads the embedded XML
-$ getafix --no-validate path/to/file.xml # skip BR-* checks
+> getafix path/to/factur-x.xml
+> getafix path/to/invoice.pdf            # reads the embedded XML
+> getafix --no-validate path/to/file.xml # skip BR-* checks
 ```
 
 Exit codes:
@@ -250,13 +250,13 @@ Exit codes:
 ZUGFeRD / Factur-X defines five conformance profiles, ordered by
 completeness:
 
-| Profile     | URN                                                                 | Carries line items |
-|-------------|----------------------------------------------------------------------|--------------------|
-| `MINIMUM`   | `urn:factur-x.eu:1p0:minimum`                                        | ✗ (header totals only) |
-| `BASIC_WL`  | `urn:factur-x.eu:1p0:basicwl`                                        | ✗ (basic, without lines) |
-| `BASIC`     | `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic`        | ✓ |
-| `COMFORT`   | `urn:cen.eu:en16931:2017`  *(a.k.a. EN 16931)*                       | ✓ |
-| `EXTENDED`  | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended`    | ✓ + sub-lines |
+| Profile    | URN                                                               | Carries line items       |
+| ---------- | ----------------------------------------------------------------- | ------------------------ |
+| `MINIMUM`  | `urn:factur-x.eu:1p0:minimum`                                     | ✗ (header totals only).  |
+| `BASIC_WL` | `urn:factur-x.eu:1p0:basicwl`                                     | ✗ (basic, without lines) |
+| `BASIC`    | `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic`     | ✓                        |
+| `COMFORT`  | `urn:cen.eu:en16931:2017` _(a.k.a. EN 16931)_                     | ✓                        |
+| `EXTENDED` | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended` | ✓ + sub-lines            |
 
 The profile is set on the document via
 `Context(guideline=GuidelineDocument(id=Profile.X))`. Getafix
@@ -289,27 +289,27 @@ against the EXTENDED XSD (declare a `field()` gated `Profile.EXTENDED`,
 in XSD-sequence order); getafix will accept a PR, or pick one up when a
 sample needs it:
 
-* **Party extras** — `RoleCode` (`BT-X-483`…`BT-X-575`) on every trade
+- **Party extras** — `RoleCode` (`BT-X-483`…`BT-X-575`) on every trade
   party; additional legal info (`Description`) on the Buyer (`BT-X-334`)
   and the line-level item seller (`BT-X-571`); contact `TypeCode`
   (`BT-X-315`…`BT-X-575`) on every `DefinedTradeContact` (BG-6 / BG-9).
-* **Line-level twins of header references** — on `LineTradeAgreement`:
+- **Line-level twins of header references** — on `LineTradeAgreement`:
   delivery terms (`BG-X-87`), contract (`BG-X-2`), seller order
   (`BG-X-81`), ultimate-customer order (`BG-X-5`); on
   `LineTradeDelivery`: the actual delivery event / date (`BT-X-85-000`),
   despatch (`BG-X-13`) and receiving (`BG-X-82`) advice; on
   `LineTradeSettlement`: the preceding-invoice reference (`BG-X-48`);
   line-note codes (`BT-X-9` / `BT-X-10`).
-  *(The line-level delivery-note `BG-X-83` and additional-document
-  `BG-X-3` twins **are** modelled.)*
-* **Line monetary totals** — `AllowanceTotalAmount` / `ChargeTotalAmount`
+  _(The line-level delivery-note `BG-X-83` and additional-document
+  `BG-X-3` twins **are** modelled.)_
+- **Line monetary totals** — `AllowanceTotalAmount` / `ChargeTotalAmount`
   / `TaxTotalAmount` / `GrandTotalAmount` (`BT-X-327`…`BT-X-330`); the
   line total and total-allowance-charge are modelled.
-* **Referenced-document leaves** — `FormattedIssueDateTime` on the header
+- **Referenced-document leaves** — `FormattedIssueDateTime` on the header
   additional / contract references (`BT-X-33-00` / `BT-X-148-00` /
   `BT-X-149-00`); preceding-invoice `TypeCode` (`BT-X-555`); accounting
   reference `TypeCode` (`BT-X-99` / `BT-X-290`).
-* **Other shared leaves** — item characteristic `TypeCode` / `ValueMeasure`
+- **Other shared leaves** — item characteristic `TypeCode` / `ValueMeasure`
   (`BT-X-11` / `BT-X-12`), invoicing-period `Description` (`BT-X-264`),
   allowance/charge `SequenceNumeric` / `BasisQuantity` (`BT-X-265` /
   `BT-X-266`), per-line product local `ID` (`BT-X-305`), net-price
