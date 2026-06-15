@@ -15,7 +15,6 @@ known gaps").
 from base64 import b64decode
 from dataclasses import dataclass, field
 from datetime import date
-from pathlib import Path
 from typing import ClassVar, Self, override
 
 from tagic.xml import XML
