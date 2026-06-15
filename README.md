@@ -322,7 +322,7 @@ sample needs it:
   `BT-X-266`), per-line product local `ID` (`BT-X-305`), net-price
   `IncludedTradeTax` (`BG-X-4`, B2C VAT in the unit price).
 
-PDF/A-3 packaging is out of scope; use `factur-x` (PyPI),
+PDF/A-3 packaging is out of scope; use [factur-x](https://github.com/akretion/factur-x),
 [Mustangproject](https://github.com/ZUGFeRD/mustangproject) or a
 dedicated converter for full Factur-X PDF conformance.
 
