@@ -14,8 +14,8 @@ dependencies = [
 
 [project.optional-dependencies]
 lxml = ["lxml>=6.0.2"]
-cli = ["lxml>=6.0.2", "rich>=13.0", "pypdf>=6.11.0"]
-pdf = ["pypdf>=6.11.0"]
+pdf = ["pypdf>=6.12.0"]
+cli = ["lxml>=6.0.2", "rich>=13.0", "pypdf>=6.12.0"]
 
 [project.scripts]
 getafix = "getafix.cli:main"
@@ -35,7 +35,7 @@ dev = [
     "lxml-stubs>=0.5.1",
     "openpyxl>=3.1.5",
     "pymupdf>=1.27.2.3",
-    "pypdf>=6.11.0",
+    "pypdf>=6.12.0",
     "pytest>=9.0.1",
     "pytest-cov>=7.0.0",
     "pytest-randomly>=4.0.1",
@@ -115,4 +115,3 @@ exclude = [
 # file with `# pyright: enableImplicitStringConcatenation=true` if a
 # specific module wants the check.
 reportImplicitStringConcatenation = false
-

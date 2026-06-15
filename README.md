@@ -9,24 +9,29 @@
 
 Build, parse and validate
 [**ZUGFeRD 2.x / Factur-X**](https://www.ferd-net.de/standards/zugferd)
-Cross-Industry-Invoice (CII) XML in Python. The dataclass model is
+Cross-Industry-Invoice (CII) XML in Python. The fully typed dataclass model is
 traceable to the EN 16931 business terms (`BT-…`) and groups
 (`BG-…`), so every field on every class maps back to a line in the
-spec.
+spec. A broad, but selective set of business rules (`BR-…`) are enforced
+and documented to allow tracing. An accompanied cli tool `getafix` renders
+invoices to the terminal.
+
+[![minimum invoice](/imgs/minimum.png)](/imgs/minimum.png)
 
 ## Why "getafix"?
+
+> "get a fix" — _get a Factur-X_
 
 Getafix is the village druid in _Asterix_ — the one who brews the
 magic potion from an exact recipe, drop by drop, so it comes out
 right every time. That is what this library does for **Factur-X**:
 it follows the EN 16931 recipe term by term (`BT-…`/`BG-…`) and
-mixes a valid invoice. The Gaulish `-ix` ending even echoes the
+mixes a valid invoice. The Gaulish `-ix` ending echoes the
 `-X` in Factur-**X**, and since Factur-X is the French half of the
-standard, a French druid felt right. As a bonus, the name reads as
-"get a fix" — _get a valid Factur-X_.
+standard, the French druid felt right.
 
 > **Status: pre-1.0.** Solid for the fields that are modelled across
-> MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); selective EXTENDED
+> MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); broad EXTENDED
 > coverage. PDF/A-3 conformance for the host PDF is **out of scope** —
 > `getafix` attaches the embedded `factur-x.xml` but does not
 > upgrade the surrounding PDF to PDF/A-3.
@@ -244,6 +249,8 @@ Exit codes:
   document could not be parsed as a CII invoice, or no Factur-X XML
   was found in the supplied PDF).
 - `2` — usage / IO / missing dependency error.
+
+[![comfort invoice](/imgs/comfort.png)](/imgs/comfort.png)
 
 ## Profiles
 
