@@ -1,23 +1,4 @@
-"""Header trade delivery (BG-13-00) — ship-to, dispatch and receipt.
-
-``ApplicableHeaderTradeDelivery`` is the second sibling of the
-``SupplyChainTradeTransaction``. It carries the where-and-when of the
-goods or services covered by the invoice:
-
-* the consignment / transport mode (BG-X-24, EXTENDED only);
-* ship-to (BG-13, BASIC_WL+), ultimate-ship-to (BG-X-27, EXTENDED) and
-  ship-from (BG-X-30, EXTENDED) parties — defined in :mod:`party`;
-* the actual delivery date (BT-72) wrapped in a ``SupplyChainEvent``;
-* the despatch advice (BT-16-00, BASIC_WL+) and receiving advice
-  (BT-15-00, COMFORT+) references, plus the EXTENDED-only delivery
-  note reference — defined in :mod:`references`.
-
-No business rules are enforced in this module. ``BT-72`` participates
-in ``BR-IC-11`` (intra-community supply must carry a delivery date or
-an invoicing period) which lives in :mod:`trade`. The XSD
-``<xs:sequence>`` of ``HeaderTradeDeliveryType`` dictates the field
-order.
-"""
+"""Header trade delivery (BG-13-00) — ship-to, dispatch and receipt."""
 
 from dataclasses import dataclass, field
 from datetime import date
@@ -42,7 +23,7 @@ class LogisticsTransportMovement(Element):
     """Specified Logistics Transport Movement (BT-X-152-00).
 
     Transport-movement sub-block of the related supply-chain
-    consignment; EXTENDED-only.
+    consignment.
     """
 
     tag: ClassVar[str] = "SpecifiedLogisticsTransportMovement"
@@ -63,7 +44,7 @@ class SupplyChainConsignment(Element):
     """Related SupplyChain Consignment (BG-X-24).
 
     Header-level consignment tied to this delivery — carries the
-    transport-movement details. EXTENDED-only.
+    transport-movement details.
     """
 
     tag: ClassVar[str] = "RelatedSupplyChainConsignment"

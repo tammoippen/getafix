@@ -229,7 +229,8 @@ def _emit(spec: _ListSpec, rows: list[dict[int, object]]) -> str:
     lines.append("")
     for name, code, desc in members:
         if desc:
-            lines.append(f'    {name} = "{code}"  # {desc[:60]}')
+            lines.append(f'    {name} = "{code}"')
+            lines.append(f'    "{desc}"')
         else:
             lines.append(f'    {name} = "{code}"')
     lines.append(f"# AUTOGEN END {spec.enum_class}")

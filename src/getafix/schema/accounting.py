@@ -4,21 +4,12 @@ Owns the four BG groups that make up the financial spine of an
 invoice:
 
 * :class:`MonetarySummation` (BG-22) — the "totals" block at the
-  bottom of the invoice. Line total (BT-106), charge total (BT-108),
-  allowance total (BT-107), tax basis total (BT-109), one or two
-  tax totals (BT-110 / BT-111 — invoice currency, optionally
-  accounting currency), optional rounding amount (BT-114), grand
-  total (BT-112), prepaid total (BT-113) and amount due (BT-115).
+  bottom of the invoice.
 * :class:`ApplicableTradeTax` (BG-23 at header, BG-30 at line level)
-  — one row per VAT category / rate combination. Required at
-  BASIC_WL+ (``BR-CO-18``, enforced in :mod:`settlement`).
+  — one row per VAT category / rate combination.
 * :class:`TradeAllowanceCharge` — the unified dataclass for header
   allowances (BG-20), header charges (BG-21), line allowances
-  (BG-27) and line charges (BG-28). ``ChargeIndicator`` (``false`` /
-  ``true``) discriminates allowance from charge; placement on
-  :class:`~getafix.schema.settlement.TradeSettlement` vs
-  :class:`~getafix.schema.line.LineTradeSettlement` discriminates
-  header from line.
+  (BG-27) and line charges (BG-28).
 * :class:`CategoryTradeTax` — the embedded VAT category block
   (BT-95-00 at allowance level, BT-102-00 at charge level).
 """
@@ -326,7 +317,7 @@ class ApplicableTradeTax(Element):
     Informational breakdown showing how much of BT-116 came from
     line items (BT-131 lines filtered to this category / rate)
     before document-level allowances and charges are netted in.
-    Six of the current EXTENDED samples populate this — none of
+    Some of the EXTENDED samples populate this — none of
     the EN16931 / lower-profile XSDs accept it, so the field gates
     at EXTENDED.
     """
@@ -351,18 +342,7 @@ class ApplicableTradeTax(Element):
     Code naming the VAT category. Category code and VAT rate
     (BT-119) must agree with each other.
 
-    Code list: UNTDID 5305. The following entries are used:
-
-    * ``S`` — Standard rate
-    * ``Z`` — Zero rated
-    * ``E`` — Exempt from VAT (VAT / IGIC / IPSI)
-    * ``AE`` — VAT Reverse charge
-    * ``K`` — VAT exempt for EEA intra-community supply
-    * ``G`` — Free export item, VAT not charged
-    * ``O`` — Services outside scope of tax
-    * ``L`` — Canary Islands general indirect tax (IGIC)
-    * ``M`` — Tax for production, services and importation in Ceuta
-      and Melilla (IPSI)
+    Code list: UNTDID 5305.
     """
     exemption_reason_code: VATEXCode | None = field(
         default=None, metadata={"tag": "ExemptionReasonCode"}
@@ -384,9 +364,7 @@ class ApplicableTradeTax(Element):
     Note: mutually exclusive with ``due_date_code`` (BT-8) per
     ``BR-CO-3``. The tax point typically falls on the day the goods
     were handed over or the services finished; see Article 226(7)
-    of Council Directive 2006/112/EC. Rendered as
-    ``<ram:TaxPointDate><udt:DateTimeString format="102">YYYYMMDD</udt:DateTimeString></ram:TaxPointDate>``
-    per the EN16931 / Factur-X 1.08 appendix.
+    of Council Directive 2006/112/EC.
     """
     due_date_code: UNTDID2475TaxPointDateCode | None = field(
         default=None, metadata={"tag": "DueDateTypeCode"}
@@ -400,16 +378,7 @@ class ApplicableTradeTax(Element):
     ``BR-CO-3``. In Germany, the delivery and performance date is
     decisive (BT-72 on the trade delivery).
 
-    Code list: UNTDID 2475 (subset). The semantic values cited in
-    the standard
-    ([UNTDID 2005](https://service.unece.org/trade/untdid/d16b/tred/tred2005.htm)
-    values ``3`` / ``35`` / ``432``) map to:
-
-    * ``5`` — Invoice document issue date
-    * ``29`` — Delivery date, actual
-    * ``72`` — Paid to date
-
-    https://service.unece.org/trade/untdid/d96a/uncl/uncl2475.htm
+    Code list: UNTDID 2475 (subset).
     """
     rate_applicable_percent: Decimal | None = field(
         default=None, metadata={"tag": "RateApplicablePercent"}
@@ -460,8 +429,7 @@ class CategoryTradeTax(Element):
     """VAT category code (BT-95 allowance / BT-102 charge).
 
     Coded identification of the VAT category that applies to this
-    allowance or charge. See :attr:`ApplicableTradeTax.category_code`
-    for the legal values.
+    allowance or charge.
 
     Code list: UNTDID 5305.
     """

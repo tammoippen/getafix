@@ -6,31 +6,10 @@ payload. These are the cross-references that point from an invoice
 back to upstream documents (purchase order, contract, despatch
 advice, …) or forward to downstream supporting material.
 
-Header references by profile:
-
-* MINIMUM: ``BuyerOrderReferencedDocument`` (BT-13-00).
-* BASIC_WL: ``ContractReferencedDocument`` (BT-12-00),
-  ``DespatchAdviceReferencedDocument`` (BT-16-00),
-  ``InvoiceReferencedDocument`` (BG-3).
-* COMFORT: ``SellerOrderReferencedDocument`` (BT-14-00),
-  ``ReceivingAdviceReferencedDocument`` (BT-15-00),
-  ``AdditionalReferencedDocument`` (BG-24) carrying
-  ``AttachmentBinaryObject`` (BT-125), ``SpecifiedProcuringProject``
-  (BT-11-00).
-* EXTENDED: ``DeliveryNoteReferencedDocument`` (BT-X-202-00),
-  ``UltimateCustomerOrderReferencedDocument`` (BG-X-23).
-
-No business rules are enforced in this module. ``BR-52`` (every BG-24
-entry must carry BT-122) is implicit through ``AdditionalReferencedDocument.issuer_assigned_id``
-being a required field.
-
 The line-level delivery-note reference twin lives on
 ``LineTradeDelivery.delivery_note`` (EXTENDED); the despatch / receiving
 advice line twins are not yet modelled (see the README "Status and
 known gaps").
-:class:`~getafix.schema.line.LineBuyerOrderReferencedDocument` (BT-132-00)
-and :class:`~getafix.schema.line.LineAdditionalReferencedDocument`
-(BT-128-00) cover the COMFORT line-level references.
 """
 
 from dataclasses import dataclass, field
@@ -176,13 +155,7 @@ class AttachmentBinaryObject(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     mime_code: MIME
-    """Attached-document MIME code (BT-125-1).
-
-    Code list: allowed values are ``application/pdf``, ``image/png``,
-    ``image/jpeg``, ``text/csv``,
-    ``application/vnd.openxmlformats-officedocument.spreadsheetml.sheet``,
-    ``application/vnd.oasis.opendocument.spreadsheet``.
-    """
+    """Attached-document MIME code (BT-125-1)."""
     filename: str
     """Attached-document file name (BT-125-2)."""
     object: str
@@ -264,15 +237,6 @@ class AdditionalReferencedDocument(Element):
         default=None, metadata={"tag": "TypeCode", "profile": Profile.COMFORT}
     )
     """Reference type code (BT-17-0 / BT-18-0 / BT-122-0).
-
-    Selects which EN 16931 term ``issuer_assigned_id`` carries:
-
-    * ``50`` "Price/sales catalogue response" — tender or lot
-      reference (BT-17-0).
-    * ``130`` "Invoicing data sheet" — invoiced-object identifier
-      (BT-18-0).
-    * ``916`` "Reference paper" — supporting-document reference
-      (BT-122-0).
 
     Code list: UNTDID 1001 (Document name code).
     """
@@ -366,10 +330,9 @@ class ReceivingAdviceReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class DeliveryNoteReferencedDocument(Element):
-    """Delivery note reference (BT-X-202-00).
+    """Delivery note reference (BT-X-202-00). EXTENDED-only.
 
     Points at the delivery note that accompanied the goods.
-    EXTENDED-only.
     """
 
     tag: ClassVar[str] = "DeliveryNoteReferencedDocument"
@@ -378,7 +341,7 @@ class DeliveryNoteReferencedDocument(Element):
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Delivery note reference (BT-X-202)."""
     line_id: str | None = field(default=None, metadata={"tag": "LineID"})
-    """Delivery-note line position (BT-X-93); EXTENDED-only.
+    """Delivery-note line position (BT-X-93).
 
     Set only on the per-line delivery note reference
     (:attr:`~getafix.schema.line.LineTradeDelivery.delivery_note`,

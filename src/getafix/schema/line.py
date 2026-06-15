@@ -17,18 +17,6 @@ line-scoped element / BT IDs:
 * :class:`LineTradeSettlement` (BG-30-00) — line VAT (BG-30),
   optional invoicing period (BG-26), optional allowances (BG-27) and
   charges (BG-28), and the line total (BT-131-00).
-
-This module covers the BASIC profile shape plus the COMFORT
-product enrichments :class:`ProductCharacteristic` (BG-32),
-:class:`ProductClassification` (BG-33), :class:`OriginCountry`
-(BG-34) and the line-level reference fields
-:class:`LineBuyerOrderReferencedDocument` (BT-132),
-:class:`LineAdditionalReferencedDocument` (BT-128) and the line
-reuse of :class:`~getafix.schema.settlement.ReceivableAccountingAccount`
-(BT-133). The EXTENDED sub-line / ``IncludedReferencedProduct`` /
-per-line deviating-party groups are modelled here too; the residual
-EXTENDED line-level references are listed in the README "Status and
-known gaps".
 """
 
 from dataclasses import dataclass, field
@@ -337,9 +325,7 @@ class ProductClassification(Element):
     Note: EN 16931 modelled this group as BG-33; Factur-X 1.08 folds
     it into the BT-158-00 wrapper id.
 
-    Code list for ``list_id``:
-    [UNTDID 7143](https://service.unece.org/trade/untdid/d16b/tred/tred7143.htm)
-    (extended Code List).
+
     """
 
     tag: ClassVar[str] = "DesignatedProductClassification"
@@ -348,7 +334,10 @@ class ProductClassification(Element):
     class_code: str
     """Item classification identifier (BT-158)."""
     list_id: str
-    """Scheme identifier (BT-158-1); required per ``BR-65``."""
+    """Scheme identifier (BT-158-1); required per ``BR-65``.
+    
+    Code list: [UNTDID 7143](https://service.unece.org/trade/untdid/d16b/tred/tred7143.htm)
+    (extended Code List)."""
     list_version_id: str | None = None
     """Scheme version identifier (BT-158-2)."""
     class_name: str | None = None
@@ -672,8 +661,6 @@ class DocumentLineDocument(Element):
     Per the XSD this is ``qdt:LineStatusCodeType``
     ([UNTDID 1229](https://service.unece.org/trade/untdid/d16b/tred/tred1229.htm),
     "action request" — ADD / DELETE / CHANGE / NO_ACTION / …).
-    Modelled as a plain ``str`` — the UNTDID 1229 codelist is not
-    enumerated by getafix.
     """
     status_reason_code: LineStatusReasonCode | None = field(
         default=None,
@@ -835,8 +822,7 @@ class LineTradeAgreement(Element):
     is modelled here (field :attr:`item_seller`).
 
     Deferred EXTENDED slots (per-line twins of structures already
-    modelled at header level; no observed real-world use — add when
-    a fixture needs them):
+    modelled at header level; add when needed):
 
     * ``ApplicableTradeDeliveryTerms`` — line-level Incoterms.
     * ``SellerOrderReferencedDocument`` — per-line seller's order ref.

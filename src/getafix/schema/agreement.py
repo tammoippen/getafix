@@ -1,32 +1,9 @@
 """Header trade agreement (BT-10-00) — parties and upstream references.
 
-``ApplicableHeaderTradeAgreement`` is the first sibling of the
-``SupplyChainTradeTransaction``. It carries the *who* and *why* of
+``ApplicableHeaderTradeAgreement`` carries the *who* and *why* of
 the invoice: the trading parties (defined in :mod:`party`) and every
 upstream reference document that frames the transaction (defined in
 :mod:`references`).
-
-Per-profile contents:
-
-* MINIMUM: ``BuyerReference`` (BT-10), ``SellerTradeParty`` (BG-4),
-  ``BuyerTradeParty`` (BG-7), ``BuyerOrderReferencedDocument``
-  (BT-13-00).
-* BASIC_WL: adds ``SellerTaxRepresentativeTradeParty`` (BG-11) and
-  ``ContractReferencedDocument`` (BT-12-00).
-* COMFORT: adds ``SellerOrderReferencedDocument`` (BT-14-00),
-  ``AdditionalReferencedDocument`` 0..* (BG-24), and
-  ``SpecifiedProcuringProject`` (BT-11-00).
-* EXTENDED: adds ``SalesAgentTradeParty`` (BG-X-49),
-  ``BuyerTaxRepresentativeTradeParty`` (BG-X-54),
-  ``ProductEndUserTradeParty`` (BG-X-18),
-  ``ApplicableTradeDeliveryTerms`` (BG-X-22),
-  ``QuotationReferencedDocument`` (BG-X-61),
-  ``BuyerAgentTradeParty`` (BG-X-62), and
-  ``UltimateCustomerOrderReferencedDocument`` (BG-X-23).
-
-No business rules are enforced in this module. ``BR-6`` (Seller name
-required) and ``BR-7`` (Buyer name required) are implicit through the
-required ``seller`` / ``buyer`` fields.
 """
 
 from dataclasses import dataclass, field
@@ -99,13 +76,7 @@ class TradeAgreement(Element):
     """Header trade agreement (BT-10-00).
 
     Container for the process and contract details of the invoice:
-    trading parties plus every upstream document reference. The
-    EXTENDED additions are the agent parties
-    (:class:`SalesAgentTradeParty` BG-X-49,
-    :class:`BuyerTaxRepresentativeTradeParty` BG-X-54,
-    :class:`BuyerAgentTradeParty` BG-X-62), the header
-    :class:`~getafix.schema.references.QuotationReferencedDocument`
-    (BG-X-61) and :class:`TradeDeliveryTerms` (BG-X-22).
+    trading parties plus every upstream document reference.
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeAgreement"

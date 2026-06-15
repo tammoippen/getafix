@@ -1,18 +1,4 @@
-"""Supply chain trade transaction (BG-25-00) and BG-25 line items.
-
-:class:`Trade` is the second sibling of :class:`Document` and
-stitches together the three header groups
-(:class:`~getafix.schema.agreement.TradeAgreement` (BT-10-00),
-:class:`~getafix.schema.delivery.TradeDelivery` (BG-13-00),
-:class:`~getafix.schema.settlement.TradeSettlement` (BG-19)) with a
-list of :class:`TradeLineItem` (BG-25, BASIC+). The line sub-tree
-content lives in :mod:`getafix.schema.line`.
-
-This module is also where every *cross-sibling* validator wires in —
-rules that need to read across line items, header allowances/charges
-and the monetary summation in one pass. The validator functions
-themselves live in :mod:`getafix.rules.trade`.
-"""
+"""Supply chain trade transaction (BG-25-00) and BG-25 line items."""
 
 from dataclasses import dataclass, field
 from typing import ClassVar

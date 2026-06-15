@@ -1,33 +1,4 @@
-"""Header trade settlement (BG-19) — currency, payment, totals.
-
-``ApplicableHeaderTradeSettlement`` is the third sibling of the
-``SupplyChainTradeTransaction``. It carries:
-
-* the invoice currency (BT-5) and the optional VAT accounting
-  currency (BT-6, BASIC_WL+);
-* SEPA-specific creditor reference (BT-90) and remittance
-  information (BT-83);
-* payee details if different from seller (BG-10);
-* EXTENDED-only settlement parties: the Seller's invoice file
-  reference (BT-X-204), the Invoicer (BG-X-33), the Invoicee
-  (BG-X-36), and the Payer (BG-X-73);
-* zero-or-more payment means (BG-16) with the associated debited
-  account (BT-91-00) and creditor account (BG-17);
-* one or more VAT breakdowns (BG-23) at BASIC_WL+;
-* optional invoicing period (BG-14, also reused at line level as
-  BG-26);
-* zero-or-more allowance (BG-20) and charge (BG-21) groups —
-  defined in :mod:`accounting`;
-* optional payment terms (BT-20-00); EXTENDED upgrades this to a
-  list of payment-term blocks;
-* the monetary summation (BG-22) — defined in :mod:`accounting`;
-* zero-or-more preceding-invoice references (BG-3) — defined in
-  :mod:`references`;
-* zero-or-more accounting references (BT-19-00);
-* zero-or-more EXTENDED advance payments (BG-X-45) with their
-  included VAT (BG-X-46) and an optional prepayment-invoice
-  reference (BG-X-85).
-"""
+"""Header trade settlement (BG-19) — currency, payment, totals."""
 
 from dataclasses import dataclass, field
 from datetime import date
@@ -73,6 +44,7 @@ from getafix.schema.types import (
     Profile,
     TypeCode,
     UNTDID4461PaymentMeansCode,
+    VATEXCode,
 )
 
 
@@ -274,7 +246,9 @@ class BasisPeriodMeasure(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     value: Decimal
-    """Numeric period length. Role-dependent BT id — BT-X-277 on
+    """Numeric period length. 
+    
+    Role-dependent BT id — BT-X-277 on
     :class:`PaymentPenaltyTerms.basis_period_measure`, BT-X-283 on
     :class:`PaymentDiscountTerms.basis_period_measure`."""
     unit_code: str
@@ -303,10 +277,8 @@ class BasisPeriodMeasure(Element):
 class PaymentPenaltyTerms(Element):
     """Late-payment penalty terms (BG-X-43); EXTENDED only.
 
-    Nested 0..1 on :class:`PaymentTerms`. Shape matches the XSD
-    ``TradePaymentPenaltyTermsType``: every field is optional —
-    callers populate the subset they need (e.g. just
-    ``calculation_percent`` for a flat-rate late fee, or
+    Every field is optional — callers populate the subset they need
+    (e.g. just ``calculation_percent`` for a flat-rate late fee, or
     ``basis_period_measure + actual_amount`` for "after N days, owe
     X"). The mirror class :class:`PaymentDiscountTerms` covers the
     early-payment side with the same shape modulo the final amount
@@ -341,10 +313,9 @@ class PaymentPenaltyTerms(Element):
 class PaymentDiscountTerms(Element):
     """Early-payment discount terms (BG-X-44); EXTENDED only.
 
-    Nested 0..1 on :class:`PaymentTerms`. Same shape as
-    :class:`PaymentPenaltyTerms` except the final amount carries
-    the ``ActualDiscountAmount`` XML tag rather than
-    ``ActualPenaltyAmount``.
+    Same shape as :class:`PaymentPenaltyTerms` except the
+    final amount carries the ``ActualDiscountAmount`` XML
+    tag rather than ``ActualPenaltyAmount``.
     """
 
     tag: ClassVar[str] = "ApplicableTradePaymentDiscountTerms"
@@ -524,8 +495,9 @@ class AppliedTradeTax(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Tax type code (BT-X-273-0). ``"VAT"`` at EN16931;
-    [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm)
+    """Tax type code (BT-X-273-0). `
+    
+    `"VAT"`` at EN16931; [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm)
     at EXTENDED for non-VAT tax types (insurance tax, mineral oil
     tax, …)."""
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
@@ -546,10 +518,6 @@ class LogisticsServiceCharge(Element):
     into BT-108 alongside BG-21 document-level charges per
     ``BR-FXEXT-CO-12``, and into the per-category VAT breakdown via
     ``BR-FXEXT-{cat}-08``.
-
-    Field order matches the XSD ``LogisticsServiceChargeType``
-    ``<xs:sequence>``: ``Description`` → ``AppliedAmount`` →
-    ``AppliedTradeTax``.
     """
 
     tag: ClassVar[str] = "SpecifiedLogisticsServiceCharge"
@@ -598,8 +566,9 @@ class TaxCurrencyExchange(Element):
     conversion_rate_date_time: date | None = field(
         default=None, metadata={"tag": "ConversionRateDateTime"}
     )
-    """Conversion-rate date (BT-X-261, wrapped in BT-X-261-00). Plain
-    date — XSD wraps it in ``udt:DateTimeType`` with the same
+    """Conversion-rate date (BT-X-261, wrapped in BT-X-261-00). 
+    
+    Plain date — XSD wraps it in ``udt:DateTimeType`` with the same
     ``format="102"`` (YYYYMMDD) pattern as BT-2 IssueDateTime."""
 
 
@@ -607,10 +576,9 @@ class TaxCurrencyExchange(Element):
 class AdvancePaymentTradeTax(Element):
     """VAT included in an advance payment (BG-X-46); EXTENDED-only.
 
-    The ``IncludedTradeTax`` of a :class:`AdvancePayment` — the VAT
-    already accounted for in a prepayment. Same ``ram:TradeTaxType``
+    The VAT already accounted for in a prepayment. Same ``ram:TradeTaxType``
     as the BG-23 breakdown; only the fields the prepayment populates
-    are modelled, in XSD-sequence order.
+    are modelle.
     """
 
     tag: ClassVar[str] = "IncludedTradeTax"
@@ -630,7 +598,7 @@ class AdvancePaymentTradeTax(Element):
     """VAT exemption reason text (BT-X-295)."""
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
     """VAT category code (BT-X-296)."""
-    exemption_reason_code: str | None = field(
+    exemption_reason_code: VATEXCode | None = field(
         default=None, metadata={"tag": "ExemptionReasonCode"}
     )
     """VAT exemption reason code (BT-X-297)."""
@@ -649,9 +617,7 @@ class AdvancePaymentTradeTax(Element):
 class AdvancePaymentReferencedDocument(Element):
     """Prepayment-invoice reference on an advance payment (BG-X-85); EXTENDED-only.
 
-    The ``InvoiceSpecifiedReferencedDocument`` of a
-    :class:`AdvancePayment` — points at the prepayment / proforma
-    invoice that recorded the advance.
+    Points at the prepayment / proforma invoice that recorded the advance.
     """
 
     tag: ClassVar[str] = "InvoiceSpecifiedReferencedDocument"
@@ -695,8 +661,10 @@ class AdvancePayment(Element):
     """Reference to the prepayment invoice (BG-X-85, 0..1)."""
     currency: str | None = None
     """Document currency (BT-5) echoed as ``currencyID`` on
-    ``PaidAmount`` (BT-X-291). Getafix helper — not a BT field
-    itself (the XSD encodes it as an attribute, not an element)."""
+    ``PaidAmount`` (BT-X-291). 
+    
+    Getafix helper — not a BT field itself (the XSD encodes 
+    it as an attribute, not an element)."""
 
     def __post_init__(self) -> None:
         # XSD minOccurs=1 on IncludedTradeTax.
@@ -810,21 +778,25 @@ class TradeSettlement(Element):
     invoicer: InvoicerTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Invoicer party (BG-X-33); EXTENDED-only — the party that
-    issued the invoice when different from the Seller."""
+    """Invoicer party (BG-X-33); EXTENDED-only,
+    
+    The party that issued the invoice when different from the Seller."""
     invoicee: InvoiceeTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Invoicee party (BG-X-36); EXTENDED-only — the party the
-    invoice is addressed to when different from the Buyer."""
+    """Invoicee party (BG-X-36); EXTENDED-only.
+    
+    The party the invoice is addressed to when different from the Buyer."""
     payee: PayeeTradeParty | None = None
-    """Payee (BG-10); BASIC_WL+ — provided when different from the
-    Seller."""
+    """Payee (BG-10); BASIC_WL+.
+    
+    Provided when different from the Seller."""
     payer: PayerTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Payer party (BG-X-73); EXTENDED-only — the party that settles
-    the invoice when neither Buyer nor Payee."""
+    """Payer party (BG-X-73); EXTENDED-only.
+    
+    The party that settles the invoice when neither Buyer nor Payee."""
     currency_exchange: TaxCurrencyExchange | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
@@ -832,8 +804,7 @@ class TradeSettlement(Element):
     payment_means: list[PaymentMeans] | None = None
     """Payment means (BG-16, 0..*); BASIC_WL+."""
     trade_taxes: list[ApplicableTradeTax] | None = None
-    """VAT breakdown rows (BG-23, 1..*); required from BASIC_WL+
-    (``BR-CO-18``)."""
+    """VAT breakdown rows (BG-23, 1..*); required from BASIC_WL+ (``BR-CO-18``)."""
     billing_period: BillingSpecifiedPeriod | None = None
     """Header invoicing period (BG-14); BASIC_WL+."""
     allowance_charge: list[HeaderTradeAllowanceCharge] | None = None
@@ -843,18 +814,18 @@ class TradeSettlement(Element):
     )
     """Logistics service charges (BG-X-42, 0..*); EXTENDED only.
 
-    Each entry sums into BT-108 via
-    ``BR-FXEXT-CO-12`` and into its declared VAT category's BG-23 row
-    via ``BR-FXEXT-{cat}-08``.
+    Each entry sums into BT-108 via ``BR-FXEXT-CO-12`` and into 
+    its declared VAT category's BG-23 row via ``BR-FXEXT-{cat}-08``.
     """
     terms: list[PaymentTerms] | None = None
-    """Payment terms (BT-20-00); BASIC_WL+ — singleton list at every
-    profile up to and including COMFORT; multiple entries permitted
-    only at EXTENDED (XSD widens from ``minOccurs=0`` to
-    ``minOccurs=0 maxOccurs=unbounded``). Constructing a list of
-    more than one entry at a non-EXTENDED profile renders fine but
-    fails XSD validation when checked against the lower-profile
-    schemas — exercised by ``test_xsd_validity``.
+    """Payment terms (BT-20-00); BASIC_WL+ 
+    
+    Singleton list at every profile up to and including COMFORT; 
+    multiple entries permitted only at EXTENDED (XSD widens from 
+    ``minOccurs=0`` to ``minOccurs=0 maxOccurs=unbounded``). 
+    Constructing a list of more than one entry at a non-EXTENDED 
+    profile renders fine but fails XSD validation when checked 
+    against the lower-profile schemas — exercised by ``test_xsd_validity``.
     """
     monetary_summation: MonetarySummation
     """Document totals (BG-22); required at every profile."""

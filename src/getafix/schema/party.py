@@ -5,33 +5,6 @@ shape is the same across roles (``ram:TradePartyType`` in the XSD);
 the dataclasses specialise on which fields are required vs optional
 per profile and on which BT IDs they map to in EN 16931.
 
-Roles modelled:
-
-* :class:`SellerTradeParty` (BG-4) and :class:`BuyerTradeParty`
-  (BG-7) — header.
-* :class:`SellerTaxRepresentativeTradeParty` (BG-11) — header,
-  BASIC_WL+.
-* :class:`PayeeTradeParty` (BG-10) — settlement, BASIC_WL+.
-* :class:`ShipToTradeParty` (BG-13) — delivery, BASIC_WL+.
-* :class:`UltimateShipToTradeParty` (BG-X-27) and
-  :class:`ShipFromTradeParty` (BG-X-30) — delivery, EXTENDED.
-* :class:`ProductEndUserTradeParty` (BG-X-18) — agreement, EXTENDED.
-
-The shared sub-elements are factored at the top of the file:
-
-* :class:`SchemeID` family — :class:`SchemeID` (base),
-  :class:`ISO6523SchemeId`, :class:`GlobalID`, :class:`URIID`,
-  :class:`TaxSchemeId`. All wrap a value plus optional / required
-  ``schemeID`` attribute.
-* :class:`PostalTradeAddress` (BG-5 / BG-8 / BG-12 / BG-15 — and
-  :class:`PostalTradeAddressExtended` with ``CountrySubDivisionName``).
-* :class:`LegalOrganization` (BT-30-00 Seller / BT-47-00 Buyer).
-* :class:`TradeContact` (BG-6 Seller / BG-9 Buyer) with
-  :class:`PhoneNumber`, :class:`FaxNumber` and :class:`EmailURI`.
-* :class:`URIUniversalCommunication` (BT-34-00 Seller / BT-49-00 Buyer).
-* :class:`SpecifiedTaxRegistration` (BT-31-00 / BT-32-00 / BT-48-00 /
-  BT-63-00).
-
 Address fields use parallel BT numbering across roles — e.g.
 ``line_one`` is BT-35 on Seller, BT-50 on Buyer, BT-64 on the tax
 representative, BT-75 on ship-to. The class docstring lists the
@@ -328,8 +301,7 @@ class TradeContact(Element):
     telephone: PhoneNumber | None = None
     """Telephone number (BT-42 Seller / BT-57 Buyer)."""
     fax: FaxNumber | None = None
-    """Fax number (BT-X-107-00 Seller / BT-X-115-00 Buyer / etc.);
-    EXTENDED-only XSD extension, no EN 16931 semantic equivalent."""
+    """Fax number (BT-X-107-00 Seller / BT-X-115-00 Buyer / etc.); EXTENDED-only."""
     email: EmailURI | None = None
     """Email address (BT-43 Seller / BT-58 Buyer)."""
 
@@ -617,7 +589,7 @@ class SalesAgentTradeParty(Element):
     A commercial intermediary (broker / agent) acting on the
     Seller's behalf between Seller and Buyer. Same generic
     ``TradePartyType`` shape as :class:`ProductEndUserTradeParty`;
-    every field except ``name`` is optional.
+    only ``name`` is required.
     """
 
     tag: ClassVar[str] = "SalesAgentTradeParty"
@@ -707,7 +679,7 @@ class ProductEndUserTradeParty(Element):
     """Product end user party (BG-X-18); EXTENDED-only.
 
     Identifies who ultimately uses the products covered by this
-    header trade agreement.
+    header trade agreement. Only ``name`` is required.
     """
 
     tag: ClassVar[str] = "ProductEndUserTradeParty"
@@ -771,11 +743,7 @@ class ShipToTradeParty(Element):
     contact: TradeContact | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Deliver-to contact details (BG-X-26); EXTENDED-only.
-
-    A Factur-X extension term; the workbook lists ``DefinedTradeContact``
-    on the ship-to party only from EXTENDED upwards.
-    """
+    """Deliver-to contact details (BG-X-26); EXTENDED-only."""
     address: PostalTradeAddressExtended | None = None
     """Deliver-to address (BG-15).
 

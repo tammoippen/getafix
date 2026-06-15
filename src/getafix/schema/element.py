@@ -6,7 +6,7 @@
 # that is itself a type annotation" without falling back to ``Any``.
 # Suppress the ``Any`` / ``Unknown`` categories here only; elsewhere
 # in the package they stay on.
-# pyright: reportAny=false, reportExplicitAny=false, reportPrivateUsage = false
+# pyright: reportAny=false, reportExplicitAny=false, reportPrivateUsage=false
 # pyright: reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
 
 import datetime

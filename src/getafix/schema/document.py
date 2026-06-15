@@ -4,30 +4,7 @@ Top-level shape of a Cross-Industry Invoice:
 
 * :class:`Document` — the ``rsm:CrossIndustryInvoice`` root carrying
   :attr:`~Document.context` (BG-2), :attr:`~Document.header`
-  (BT-1-00) and :attr:`~Document.trade` (BG-25-00). Public entry
-  points are :meth:`~Document.to_xml` and :meth:`~Document.validate`.
-* :class:`Context` (BG-2) — process-control block; carries the
-  optional :class:`BusinessDocument` (BT-23-00) and the required
-  :class:`GuidelineDocument` (BT-24-00).
-* :class:`Header` (BT-1-00) — document-wide properties: invoice
-  number (BT-1), type code (BT-3), issue date (BT-2), invoice notes
-  (BG-1), plus EXTENDED-only ``Name`` / ``CopyIndicator`` /
-  ``LanguageID`` / ``EffectiveSpecifiedPeriod``.
-* :class:`IncludedNote` (BG-1) — invoice note repeated 0..* on the
-  header.
-* :class:`EffectivePeriod` (BT-X-6-000) — contractual due date when
-  it differs from the payment due date (e.g. SEPA direct debit).
-
-No business rules are enforced in this module. ``BR-1`` (specification
-identifier required), ``BR-2`` (invoice number required), ``BR-3``
-(issue date required) and ``BR-4`` (type code required) are implicit
-through the required dataclass fields on :class:`Header` and
-:class:`GuidelineDocument`.
-
-The :meth:`Document.validate` method is the public entry point that
-collects every :class:`ValidationError` recursively in one pass and
-raises a single :class:`ValidationErrors`; child validators append to
-the list and never raise.
+  (BT-1-00) and :attr:`~Document.trade` (BG-25-00).
 """
 
 from dataclasses import dataclass, field
@@ -91,11 +68,6 @@ class GuidelineDocument(Element):
     Points at the specification — the complete rule set covering
     semantics, cardinalities and business rules — that the instance
     document claims conformance with.
-
-    Note: EN 16931-conformant invoices carry
-    ``urn:cen.eu:en16931:2017``; an invoice following a CIUS or user
-    specification names that specification's URN here instead. The
-    value is given bare, without an identification scheme.
     """
 
 
@@ -120,9 +92,9 @@ class Context(Element):
     """
 
     business: BusinessDocument | None = None
-    """Business process context (BT-23-00); EXTENDED-mandatory."""
+    """Business process context (BT-23-00)."""
     guideline: GuidelineDocument
-    """Specification identifier (BT-24-00); required at every profile."""
+    """Specification identifier (BT-24-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -216,11 +188,6 @@ class Header(Element):
 
     Free-text label for the document — e.g. ``INVOICE``, ``CREDIT
     NOTE``, ``DEBIT NOTE``, ``PROFORMA INVOICE``.
-
-    Note: the Factur-X 1.08 XSD emits ``Name`` on
-    ``ExchangedDocumentType`` only at EXTENDED; MINIMUM, BASIC_WL,
-    BASIC and EN 16931 drop the field. Placed between ``ID`` and
-    ``TypeCode`` to match the EXTENDED XSD ``<xs:sequence>``.
     """
 
     type_code: TypeCode = field(metadata={"tag": "TypeCode"})
@@ -244,7 +211,7 @@ class Header(Element):
     Calendar date on which the Seller issued the invoice.
     """
 
-    copyright_indicator: bool | None = field(
+    copy_indicator: bool | None = field(
         default=None, metadata={"tag": "CopyIndicator", "profile": Profile.EXTENDED}
     )
     """Copy indicator (BT-X-3).
