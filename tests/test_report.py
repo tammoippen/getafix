@@ -460,7 +460,29 @@ def test_render_invoice_renders_business_process_accounting_and_attachment() -> 
     assert "Supporting documents (BG-24)" in text
     assert "13130162" in text  # BT-122 reference id
     assert "Aufmass" in text  # BT-123 description
-    assert "Aufmass.pdf (application/pdf)" in text  # BT-125 attachment summary
+    assert "Aufmass.pdf (application/pdf, 35.6 KiB)" in text  # BT-125 attachment
+
+
+@pytest.mark.parametrize(
+    ("size", "expected"),
+    [
+        (0, "0 B"),
+        (512, "512 B"),
+        (1023, "1023 B"),
+        (1024, "1.0 KiB"),
+        (36480, "35.6 KiB"),  # the Aufmass.pdf attachment
+        (1024 * 1024, "1.0 MiB"),
+        (5 * 1024 * 1024 + 512 * 1024, "5.5 MiB"),
+        (1024**3, "1.0 GiB"),
+        (1024**4, "1.0 TiB"),
+        (3 * 1024**5, "3.0 PiB"),
+    ],
+)
+def test_format_bytes_picks_appropriate_unit(size: int, expected: str) -> None:
+    """Byte counts render with a 1024-based IEC unit suffix."""
+    from getafix.report.types import format_bytes
+
+    assert format_bytes(size) == expected
 
 
 def test_render_invoice_renders_payment_means_info() -> None:

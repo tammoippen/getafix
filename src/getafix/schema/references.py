@@ -12,8 +12,10 @@ advice line twins are not yet modelled (see the README "Status and
 known gaps").
 """
 
+from base64 import b64decode
 from dataclasses import dataclass, field
 from datetime import date
+from pathlib import Path
 from typing import ClassVar, Self, override
 
 from tagic.xml import XML
@@ -160,6 +162,10 @@ class AttachmentBinaryObject(Element):
     """Attached-document file name (BT-125-2)."""
     object: str
     """Base64-encoded payload of the attached document (BT-125)."""
+
+    @property
+    def binary_object(self) -> bytes:
+        return b64decode(self.object)
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
