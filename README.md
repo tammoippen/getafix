@@ -329,9 +329,8 @@ validator, and the test / lint workflow.
 
 Specification and validators:
 
-- [FeRD net — ZUGFeRD overview](https://www.ferd-net.de/standards/zugferd)
+- [FeRD net — ZUGFeRD standard](https://www.ferd-net.de/standards/zugferd)
 - [Rechnung Fans — XRechnung / EN 16931 portal](https://portal3.gefeg.com/invoice/tthome/index/617afdc4-623f-44e0-a05b-5b878840e508)
-- [e-Rechnung Bund — official documents](https://e-rechnung-bund.de/mediathek/dokumente/)
 - [Service BW e-Rechnung Validator](https://erechnungsvalidator.service-bw.de/)
 - [Rechnung.fans validator](https://portal3.gefeg.com/invoice/validation)
 - [Invoice Portal validator](https://validator.invoice-portal.de/index.php)
