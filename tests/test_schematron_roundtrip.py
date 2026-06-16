@@ -23,10 +23,16 @@ The test asserts two things:
    ``_EXPECTED_SCHEMATRON_ONLY``. Implementing a missing rule should
    shrink that set; introducing a new gap fails the test loudly so
    nothing slips in unintentionally.
+
+Fired ``<sch:report>`` elements (the inverse of asserts —
+informational "marked as not used in the given context" notices) are
+surfaced as :class:`SchematronReportWarning` rather than asserted on,
+so they show up in pytest's warnings summary without failing the run.
 """
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import pytest as pt
@@ -89,10 +95,31 @@ _ELEMENTPATH_FALSE_POSITIVES: frozenset[str] = frozenset(
 _EXPECTED_SCHEMATRON_ONLY: dict[str, frozenset[str]] = {}
 
 
+class SchematronReportWarning(UserWarning):
+    """A ``<sch:report>`` fired on a sample.
+
+    Reports are the inverse of asserts: they flag conditions the
+    schematron wants to *surface* (here, "marked as not used in the
+    given context") rather than reject. They're informational, so we
+    raise them as warnings — visible in pytest's summary — instead of
+    failing the test.
+    """
+
+
 @pt.mark.parametrize("sample", _SAMPLES, ids=lambda p: p.name)
 def test_extended_sample_matches_schematron(sample: Path) -> None:
     xml_root = etree.parse(str(sample)).getroot()
     sch_result = evaluate_schematron(_SCH_PATH, xml_root)
+
+    # Reports never fail the test — surface them as warnings so a
+    # newly-tripped report shows up in the run without turning red.
+    if sch_result.reports:
+        warnings.warn(
+            f"{sample.name}: schematron reports fired:\n  "
+            + "\n  ".join(sorted(sch_result.reports)),
+            SchematronReportWarning,
+            stacklevel=2,
+        )
 
     doc = Document.from_xml(xml_root)
     try:
