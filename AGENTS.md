@@ -10,8 +10,12 @@ or add a business-rule validator.
 ```
 src/getafix/
 ├── __init__.py
-├── build.py               # high-level factories (profile constructors,
-│                          #   line-item factory, computed VAT breakdown/totals)
+├── build/                 # high-level factories — one module per profile
+│   ├── __init__.py        # public re-exports
+│   ├── _shared.py         # party builders, monetary_summation, cross-profile internals
+│   ├── minimum.py         # minimum_invoice
+│   ├── basic_wl.py        # basic_wl_invoice
+│   └── basic.py           # line_item, vat_breakdown, basic_invoice
 ├── cli.py                 # console script entry point
 ├── pdf.py                 # PDF/A-3 attachment helpers (pypdf)
 ├── report/                # rich console pretty-printer (one module per schema topic)
@@ -204,10 +208,24 @@ The schema stays deliberately low level — every BT is set explicitly.
 factories that take business inputs and compute everything derivable
 (line totals per Factur-X §7.1.8 rounding, the BG-23 breakdown
 grouped per category/rate, the BG-22 totals along the `BR-CO-11` …
-`BR-CO-16` identities, canonical VATEX exemption-code defaults).
-`minimum_invoice` / `basic_wl_invoice` cover the two profiles without
-line items; `invoice` covers BASIC / COMFORT / EXTENDED from a list
-of `line_item()` results. Rules for changes here:
+`BR-CO-16` identities, canonical VATEX exemption-code defaults). The
+package has one module per profile — `minimum.py` (`minimum_invoice`),
+`basic_wl.py` (`basic_wl_invoice`), `basic.py` (`line_item`,
+`vat_breakdown`, `basic_invoice`) — plus `_shared.py` for the helpers
+used by more than one of them (party builders, `monetary_summation`,
+the numeric coercion / header / payment-term internals). `__init__.py`
+re-exports the public surface. Follow the `rules/_types.py` convention:
+the `_shared` module is private, so its members carry plain names (no
+leading underscore) and are imported across the package; only names
+private to a single module keep the underscore.
+
+**The builders stop at BASIC on purpose.** COMFORT (EN 16931) and
+EXTENDED add far more optional structure than a convenience constructor
+can usefully default — point users at the raw schema for those, and do
+not grow `build/` to cover them. COMFORT-only fields (e.g. BT-154 item
+description, BT-114 rounding) are deliberately not exposed.
+
+Rules for changes here:
 
 - factories must return plain schema dataclasses and never mutate
   caller-supplied elements (copy via `dataclasses.replace` when a

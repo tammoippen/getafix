@@ -17,9 +17,9 @@ from pathlib import Path
 import pytest as pt
 
 from getafix.build import (
+    basic_invoice,
     basic_wl_invoice,
     buyer_party,
-    invoice,
     line_item,
     minimum_invoice,
     monetary_summation,
@@ -37,14 +37,12 @@ from getafix.schema.types import CategoryCode, Country, Currency, VATEXCode
 
 SCHEMAS_DIR = Path(__file__).parent / "schemas"
 
+# The high-level builders stop at BASIC, so only these three profiles
+# are exercised here.
 _PROFILE_TO_XSD: dict[Profile, Path] = {
     Profile.MINIMUM: SCHEMAS_DIR / "0_Factur-X_1.08_MINIMUM" / "FACTUR-X_MINIMUM.xsd",
     Profile.BASIC_WL: SCHEMAS_DIR / "1_Factur-X_1.08_BASICWL" / "FACTUR-X_BASIC-WL.xsd",
     Profile.BASIC: SCHEMAS_DIR / "2_Factur-X_1.08_BASIC" / "FACTUR-X_BASIC.xsd",
-    Profile.COMFORT: SCHEMAS_DIR / "3_Factur-X_1.08_EN16931" / "FACTUR-X_EN16931.xsd",
-    Profile.EXTENDED: SCHEMAS_DIR
-    / "4_Factur-X_1.08_EXTENDED"
-    / "FACTUR-X_EXTENDED.xsd",
 }
 
 _SCHEMA_CACHE: dict[Profile, object] = {}
@@ -219,11 +217,8 @@ def test_line_item_rejects_float() -> None:
         line_item("1", "W", net_price=10.0, vat_rate=19)
 
 
-def test_line_item_note_and_description() -> None:
-    item = line_item(
-        "1", "W", net_price="10", vat_rate=19, description="blue", note="fragile"
-    )
-    assert item.product.description == "blue"
+def test_line_item_note() -> None:
+    item = line_item("1", "W", net_price="10", vat_rate=19, note="fragile")
     assert item.associated_document.note is not None
     assert item.associated_document.note.content == "fragile"
 
@@ -594,12 +589,12 @@ def test_terms_and_due_date_conflict() -> None:
 
 
 # ---------------------------------------------------------------------------
-# invoice (BASIC+)
+# basic_invoice
 # ---------------------------------------------------------------------------
 
 
-def test_invoice_comfort_default_end_to_end() -> None:
-    doc = invoice(
+def test_basic_invoice_end_to_end() -> None:
+    doc = basic_invoice(
         "INV-6",
         date(2025, 1, 1),
         seller=_seller(),
@@ -610,7 +605,7 @@ def test_invoice_comfort_default_end_to_end() -> None:
         ],
         due_date=date(2025, 2, 1),
     )
-    assert doc.context.guideline.id == Profile.COMFORT
+    assert doc.context.guideline.id == Profile.BASIC
     ms = doc.trade.settlement.monetary_summation
     assert ms.line_total == Decimal("319.80")
     assert ms.tax_basis_total == Decimal("319.80")
@@ -622,14 +617,13 @@ def test_invoice_comfort_default_end_to_end() -> None:
     _assert_xsd_valid(doc)
 
 
-def test_invoice_basic_profile_with_allowance_charge() -> None:
-    doc = invoice(
+def test_basic_invoice_with_allowance_charge() -> None:
+    doc = basic_invoice(
         "INV-7",
         date(2025, 1, 1),
         seller=_seller(),
         buyer=_buyer(),
         items=[line_item("1", "Widget", net_price="100.00", vat_rate=19)],
-        profile=Profile.BASIC,
         allowance_charges=[
             HeaderTradeAllowanceCharge(
                 indicator=False,
@@ -653,22 +647,8 @@ def test_invoice_basic_profile_with_allowance_charge() -> None:
     _assert_xsd_valid(doc)
 
 
-def test_invoice_extended_profile_renders() -> None:
-    doc = invoice(
-        "INV-8",
-        date(2025, 1, 1),
-        seller=_seller(),
-        buyer=_buyer(),
-        items=[line_item("1", "Widget", net_price="100.00", vat_rate=19)],
-        profile=Profile.EXTENDED,
-        due_date=date(2025, 2, 1),
-    )
-    doc.validate()
-    _assert_xsd_valid(doc)
-
-
-def test_invoice_reverse_charge_defaults_exemption_code() -> None:
-    doc = invoice(
+def test_basic_invoice_reverse_charge_defaults_exemption_code() -> None:
+    doc = basic_invoice(
         "INV-9",
         date(2025, 1, 1),
         seller=_seller(),
@@ -688,35 +668,24 @@ def test_invoice_reverse_charge_defaults_exemption_code() -> None:
     _assert_xsd_valid(doc)
 
 
-def test_invoice_prepaid_and_rounding() -> None:
-    doc = invoice(
+def test_basic_invoice_prepaid() -> None:
+    doc = basic_invoice(
         "INV-10",
         date(2025, 1, 1),
         seller=_seller(),
         buyer=_buyer(),
         items=[line_item("1", "Widget", net_price="100.00", vat_rate=19)],
         prepaid_total="19.00",
-        rounding_amount="0.05",
         due_date=date(2025, 2, 1),
     )
     ms = doc.trade.settlement.monetary_summation
-    assert ms.due_amount == Decimal("100.05")  # 119.00 - 19.00 + 0.05
+    assert ms.due_amount == Decimal("100.00")  # 119.00 - 19.00
     doc.validate()
     _assert_xsd_valid(doc)
 
 
-def test_invoice_rejects_profiles_without_line_items() -> None:
-    with pt.raises(ValueError, match="minimum_invoice"):
-        invoice(
-            "INV-11",
-            date(2025, 1, 1),
-            seller=_seller(),
-            buyer=_buyer(),
-            items=[line_item("1", "W", net_price="1", vat_rate=19)],
-            profile=Profile.MINIMUM,
-        )
-
-
-def test_invoice_rejects_empty_items() -> None:
+def test_basic_invoice_rejects_empty_items() -> None:
     with pt.raises(ValueError, match="BR-16"):
-        invoice("INV-12", date(2025, 1, 1), seller=_seller(), buyer=_buyer(), items=[])
+        basic_invoice(
+            "INV-12", date(2025, 1, 1), seller=_seller(), buyer=_buyer(), items=[]
+        )
