@@ -14,6 +14,15 @@ Anything else — a dropped, added, reordered or altered element / attribute
 ``test_xsd_validity`` (which only checks the re-render is *valid*, not that
 it is *the same*) and ``test_zf24_examples`` (which round-trips
 model→XML→model, blind to what the parser silently ignores).
+
+A second exception is the ``currencyID`` attribute on monetary amounts.
+getafix no longer stores it per element; ``to_xml`` reconstructs it from the
+document currency (BT-5) and threads it onto *every* amount. The
+attribute is optional in the XSD and many real samples omit it, so the
+re-render may carry a ``currencyID="<BT-5>"`` the source lacked. That
+addition is a deliberate normalisation (the value is always the document
+currency, the only sanctioned one) — a ``currencyID`` that is *dropped* or
+*altered* is still a regression.
 """
 
 from __future__ import annotations
@@ -53,8 +62,16 @@ def _diff(
     """Append a human-readable note for every divergence under ``path``."""
     if _norm(orig.text) != _norm(rend.text):
         out.append(f"TEXT     {path}: {_norm(orig.text)!r} -> {_norm(rend.text)!r}")
-    if dict(orig.attrib) != dict(rend.attrib):
-        out.append(f"ATTR     {path}: {dict(orig.attrib)} -> {dict(rend.attrib)}")
+    oa = dict(orig.attrib)
+    ra = dict(rend.attrib)
+    # getafix re-emits the document currency (BT-5) as ``currencyID`` on
+    # every monetary amount; the source often omits that optional
+    # attribute. Ignore a ``currencyID`` present only on the rendered side
+    # — but still flag one that is dropped (in ``oa`` only) or altered.
+    if "currencyID" in ra and "currencyID" not in oa:
+        del ra["currencyID"]
+    if oa != ra:
+        out.append(f"ATTR     {path}: {oa} -> {ra}")
     oc = [c for c in orig if isinstance(c.tag, str)]
     rc = [c for c in rend if isinstance(c.tag, str)]
     i = j = 0

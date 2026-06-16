@@ -167,7 +167,7 @@ class AttachmentBinaryObject(Element):
         return b64decode(self.object)
 
     @override
-    def to_xml_internal(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
         return XML(
             self.get_tag(),
             attrs={"mimeCode": self.mime_code, "filename": self.filename},

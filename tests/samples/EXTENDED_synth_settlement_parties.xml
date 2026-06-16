@@ -56,10 +56,10 @@ GLN 4304171000002</ram:Content>
       </ram:SpecifiedTradeProduct>
       <ram:SpecifiedLineTradeAgreement>
         <ram:GrossPriceProductTradePrice>
-          <ram:ChargeAmount>0.0520</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0520</ram:ChargeAmount>
         </ram:GrossPriceProductTradePrice>
         <ram:NetPriceProductTradePrice>
-          <ram:ChargeAmount>0.0520</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0520</ram:ChargeAmount>
         </ram:NetPriceProductTradePrice>
       </ram:SpecifiedLineTradeAgreement>
       <ram:SpecifiedLineTradeDelivery>
@@ -72,7 +72,7 @@ GLN 4304171000002</ram:Content>
           <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>52.00</ram:LineTotalAmount>
+          <ram:LineTotalAmount currencyID="EUR">52.00</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>
@@ -87,10 +87,10 @@ GLN 4304171000002</ram:Content>
       </ram:SpecifiedTradeProduct>
       <ram:SpecifiedLineTradeAgreement>
         <ram:GrossPriceProductTradePrice>
-          <ram:ChargeAmount>0.0205</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0205</ram:ChargeAmount>
         </ram:GrossPriceProductTradePrice>
         <ram:NetPriceProductTradePrice>
-          <ram:ChargeAmount>0.0205</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0205</ram:ChargeAmount>
         </ram:NetPriceProductTradePrice>
       </ram:SpecifiedLineTradeAgreement>
       <ram:SpecifiedLineTradeDelivery>
@@ -103,7 +103,7 @@ GLN 4304171000002</ram:Content>
           <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>20.50</ram:LineTotalAmount>
+          <ram:LineTotalAmount currencyID="EUR">20.50</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>
@@ -118,17 +118,17 @@ GLN 4304171000002</ram:Content>
       </ram:SpecifiedTradeProduct>
       <ram:SpecifiedLineTradeAgreement>
         <ram:GrossPriceProductTradePrice>
-          <ram:ChargeAmount>15.0000</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">15.0000</ram:ChargeAmount>
           <ram:AppliedTradeAllowanceCharge>
             <ram:ChargeIndicator>
               <udt:Indicator>false</udt:Indicator>
             </ram:ChargeIndicator>
-            <ram:ActualAmount>4.50</ram:ActualAmount>
+            <ram:ActualAmount currencyID="EUR">4.50</ram:ActualAmount>
             <ram:Reason>Artikelrabatt 1</ram:Reason>
           </ram:AppliedTradeAllowanceCharge>
         </ram:GrossPriceProductTradePrice>
         <ram:NetPriceProductTradePrice>
-          <ram:ChargeAmount>10.5000</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">10.5000</ram:ChargeAmount>
         </ram:NetPriceProductTradePrice>
       </ram:SpecifiedLineTradeAgreement>
       <ram:SpecifiedLineTradeDelivery>
@@ -141,7 +141,7 @@ GLN 4304171000002</ram:Content>
           <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>288.75</ram:LineTotalAmount>
+          <ram:LineTotalAmount currencyID="EUR">288.75</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>
@@ -156,10 +156,10 @@ GLN 4304171000002</ram:Content>
       </ram:SpecifiedTradeProduct>
       <ram:SpecifiedLineTradeAgreement>
         <ram:GrossPriceProductTradePrice>
-          <ram:ChargeAmount>0.0105</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0105</ram:ChargeAmount>
         </ram:GrossPriceProductTradePrice>
         <ram:NetPriceProductTradePrice>
-          <ram:ChargeAmount>0.0105</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0105</ram:ChargeAmount>
         </ram:NetPriceProductTradePrice>
       </ram:SpecifiedLineTradeAgreement>
       <ram:SpecifiedLineTradeDelivery>
@@ -172,7 +172,7 @@ GLN 4304171000002</ram:Content>
           <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>36.75</ram:LineTotalAmount>
+          <ram:LineTotalAmount currencyID="EUR">36.75</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>
@@ -192,10 +192,10 @@ GLN 4304171000002</ram:Content>
       </ram:SpecifiedTradeProduct>
       <ram:SpecifiedLineTradeAgreement>
         <ram:GrossPriceProductTradePrice>
-          <ram:ChargeAmount>0.0100</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0100</ram:ChargeAmount>
         </ram:GrossPriceProductTradePrice>
         <ram:NetPriceProductTradePrice>
-          <ram:ChargeAmount>0.0100</ram:ChargeAmount>
+          <ram:ChargeAmount currencyID="EUR">0.0100</ram:ChargeAmount>
         </ram:NetPriceProductTradePrice>
       </ram:SpecifiedLineTradeAgreement>
       <ram:SpecifiedLineTradeDelivery>
@@ -208,7 +208,7 @@ GLN 4304171000002</ram:Content>
           <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>12.10</ram:LineTotalAmount>
+          <ram:LineTotalAmount currencyID="EUR">12.10</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>
@@ -314,11 +314,11 @@ GLN 4304171000002</ram:Content>
         </ram:SpecifiedTaxRegistration>
       </ram:PayerTradeParty>
       <ram:ApplicableTradeTax>
-        <ram:CalculatedAmount>76.67</ram:CalculatedAmount>
+        <ram:CalculatedAmount currencyID="EUR">76.67</ram:CalculatedAmount>
         <ram:TypeCode>VAT</ram:TypeCode>
-        <ram:BasisAmount>403.55</ram:BasisAmount>
-        <ram:LineTotalBasisAmount>410.10</ram:LineTotalBasisAmount>
-        <ram:AllowanceChargeBasisAmount>-6.55</ram:AllowanceChargeBasisAmount>
+        <ram:BasisAmount currencyID="EUR">403.55</ram:BasisAmount>
+        <ram:LineTotalBasisAmount currencyID="EUR">410.10</ram:LineTotalBasisAmount>
+        <ram:AllowanceChargeBasisAmount currencyID="EUR">-6.55</ram:AllowanceChargeBasisAmount>
         <ram:CategoryCode>S</ram:CategoryCode>
         <ram:RateApplicablePercent>19.00</ram:RateApplicablePercent>
       </ram:ApplicableTradeTax>
@@ -326,8 +326,8 @@ GLN 4304171000002</ram:Content>
         <ram:ChargeIndicator>
           <udt:Indicator>false</udt:Indicator>
         </ram:ChargeIndicator>
-        <ram:BasisAmount>410.10</ram:BasisAmount>
-        <ram:ActualAmount>21.55</ram:ActualAmount>
+        <ram:BasisAmount currencyID="EUR">410.10</ram:BasisAmount>
+        <ram:ActualAmount currencyID="EUR">21.55</ram:ActualAmount>
         <ram:Reason>Sonderrabatt</ram:Reason>
         <ram:CategoryTradeTax>
           <ram:TypeCode>VAT</ram:TypeCode>
@@ -337,7 +337,7 @@ GLN 4304171000002</ram:Content>
       </ram:SpecifiedTradeAllowanceCharge>
       <ram:SpecifiedLogisticsServiceCharge>
         <ram:Description>Transportkosten: Frachbetrag</ram:Description>
-        <ram:AppliedAmount>15.00</ram:AppliedAmount>
+        <ram:AppliedAmount currencyID="EUR">15.00</ram:AppliedAmount>
         <ram:AppliedTradeTax>
           <ram:TypeCode>VAT</ram:TypeCode>
           <ram:CategoryCode>S</ram:CategoryCode>
@@ -355,14 +355,14 @@ GLN 4304171000002</ram:Content>
         </ram:PayeeTradeParty>
       </ram:SpecifiedTradePaymentTerms>
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-        <ram:LineTotalAmount>410.10</ram:LineTotalAmount>
-        <ram:ChargeTotalAmount>15.00</ram:ChargeTotalAmount>
-        <ram:AllowanceTotalAmount>21.55</ram:AllowanceTotalAmount>
-        <ram:TaxBasisTotalAmount>403.55</ram:TaxBasisTotalAmount>
+        <ram:LineTotalAmount currencyID="EUR">410.10</ram:LineTotalAmount>
+        <ram:ChargeTotalAmount currencyID="EUR">15.00</ram:ChargeTotalAmount>
+        <ram:AllowanceTotalAmount currencyID="EUR">21.55</ram:AllowanceTotalAmount>
+        <ram:TaxBasisTotalAmount currencyID="EUR">403.55</ram:TaxBasisTotalAmount>
         <ram:TaxTotalAmount currencyID="EUR">76.67</ram:TaxTotalAmount>
-        <ram:GrandTotalAmount>480.22</ram:GrandTotalAmount>
-        <ram:TotalPrepaidAmount>119.00</ram:TotalPrepaidAmount>
-        <ram:DuePayableAmount>361.22</ram:DuePayableAmount>
+        <ram:GrandTotalAmount currencyID="EUR">480.22</ram:GrandTotalAmount>
+        <ram:TotalPrepaidAmount currencyID="EUR">119.00</ram:TotalPrepaidAmount>
+        <ram:DuePayableAmount currencyID="EUR">361.22</ram:DuePayableAmount>
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
       <ram:SpecifiedAdvancePayment>
         <ram:PaidAmount currencyID="EUR">119.00</ram:PaidAmount>

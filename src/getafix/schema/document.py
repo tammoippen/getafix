@@ -257,21 +257,25 @@ class Document(Element):
     """Supply chain trade transaction (BG-25-00)."""
 
     @override
-    def to_xml_internal(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
         if profile != self.context.guideline.id:
             raise ValueError(
                 f"{profile=} has to be the same as set profile: {self.context.guideline.id}"
             )
+        # The document currency (BT-5) is the single source of truth for
+        # every ``currencyID`` attribute below it; thread it down from the
+        # root rather than echoing it onto each amount-bearing element.
+        currency = currency or self.trade.settlement.currency_code
         return XML(
             self.get_tag(),
             attrs={f"xmlns:{ns.name}": ns.value for ns in Namespace},
             is_root=True,
-            children=self._children_xml(profile),
+            children=self._children_xml(profile, currency),
         )
 
     def to_xml(self) -> XML:
         profile = self.context.guideline.id
-        return self.to_xml_internal(profile)
+        return self.to_xml_internal(profile, self.trade.settlement.currency_code)
 
     def validate(self) -> None:
         """Validate every business rule recursively.

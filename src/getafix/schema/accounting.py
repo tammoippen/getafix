@@ -89,7 +89,9 @@ class TaxTotal(Element):
     """
 
     @override
-    def to_xml_internal(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
+        # BT-110/BT-111 carry their own ``currency_id`` (the invoice vs. VAT
+        # accounting currency); the threaded document currency is irrelevant.
         return XML(self.get_tag(), attrs={"currencyID": self.currency_id})[
             str(self.amount)
         ]
@@ -233,14 +235,6 @@ class MonetarySummation(Element):
     invoice total (BT-112) less everything already paid up front
     (BT-113). Zero for a fully paid invoice; may be negative, in
     which case the Seller owes the Buyer.
-    """
-    currency: str | None = None
-    """Document currency (BT-5) echoed as ``currencyID`` on every
-    amount in this group.
-
-    Populated on parse from the ``currencyID`` attribute of the
-    first amount element; set explicitly when building
-    programmatically (the XSD allows omitting it on render).
     """
 
 
@@ -391,13 +385,6 @@ class ApplicableTradeTax(Element):
     Note: the value is the percentage itself — for 20%, pass ``20``,
     not ``0.2``.
     """
-    currency: str | None = None
-    """Document currency (BT-5) echoed as ``currencyID`` on
-    ``BasisAmount`` (BT-116) and ``CalculatedAmount`` (BT-117).
-
-    Populated on parse; set explicitly when building
-    programmatically.
-    """
 
 
 @dataclass(kw_only=True, slots=True)
@@ -538,14 +525,6 @@ class TradeAllowanceCharge(Element):
     Note: required at BASIC_WL per the appendix narrative; the XSD
     relaxes it to optional from BASIC onwards. Getafix keeps it
     ``Optional`` so the same dataclass works at every profile.
-    """
-    currency: str | None = None
-    """Document currency (BT-5) echoed as ``currencyID`` on
-    ``ActualAmount`` (BT-92 / BT-99) and ``BasisAmount`` (BT-93 /
-    BT-100).
-
-    Populated on parse; set explicitly when building
-    programmatically.
     """
 
     def __post_init__(self) -> None:
