@@ -15,16 +15,6 @@ Anything else — a dropped, added, reordered or altered element / attribute
 it is *the same*) and ``test_zf24_examples`` (which round-trips
 model→XML→model, blind to what the parser silently ignores).
 
-A second exception is the ``currencyID`` attribute on monetary amounts.
-The Factur-X Schematron forbids it (a forbidding ``<report>``) on every
-amount except ``TaxTotalAmount`` (BT-110 / BT-111), the one amount that may
-differ in currency — so getafix renders ``currencyID`` *only* there. A few
-source samples carry it on other amounts anyway (e.g. the official French
-MINIMUM example puts it on the totals); re-rendering drops it. Those
-samples are named in ``_CURRENCYID_DROP_ALLOWED`` and a ``currencyID``
-present only on the source side is tolerated for them. A dropped
-``currencyID`` on any other sample, or an *altered* one anywhere, is still a
-regression.
 """
 
 from __future__ import annotations
