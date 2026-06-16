@@ -147,7 +147,6 @@ doc = Document(
                 tax_total=[TaxTotal(amount=Decimal("19.00"), currency_id=Currency.EUR)],
                 grand_total=Decimal("119.00"),
                 due_amount=Decimal("119.00"),
-                currency="EUR",
             ),
         ),
     ),

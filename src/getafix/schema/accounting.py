@@ -89,9 +89,11 @@ class TaxTotal(Element):
     """
 
     @override
-    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
-        # BT-110/BT-111 carry their own ``currency_id`` (the invoice vs. VAT
-        # accounting currency); the threaded document currency is irrelevant.
+    def to_xml_internal(self, profile: Profile) -> XML:
+        # ``TaxTotalAmount`` (BT-110 / BT-111) is the one monetary amount the
+        # Factur-X Schematron permits a ``currencyID`` on — it distinguishes
+        # the invoice currency (BT-5) from the VAT accounting currency (BT-6).
+        # It is therefore the only amount getafix renders the attribute on.
         return XML(self.get_tag(), attrs={"currencyID": self.currency_id})[
             str(self.amount)
         ]
@@ -133,12 +135,7 @@ class MonetarySummation(Element):
     )
 
     line_total: Decimal | None = field(
-        default=None,
-        metadata={
-            "tag": "LineTotalAmount",
-            "profile": Profile.BASIC_WL,
-            "amount": True,
-        },
+        default=None, metadata={"tag": "LineTotalAmount", "profile": Profile.BASIC_WL}
     )
     """Sum of invoice line net amounts (BT-106).
 
@@ -148,12 +145,7 @@ class MonetarySummation(Element):
     when the field is missing at that profile.
     """
     charge_total: Decimal | None = field(
-        default=None,
-        metadata={
-            "tag": "ChargeTotalAmount",
-            "profile": Profile.BASIC_WL,
-            "amount": True,
-        },
+        default=None, metadata={"tag": "ChargeTotalAmount", "profile": Profile.BASIC_WL}
     )
     """Sum of charges on document level (BT-108).
 
@@ -165,11 +157,7 @@ class MonetarySummation(Element):
     """
     allowance_total: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "AllowanceTotalAmount",
-            "profile": Profile.BASIC_WL,
-            "amount": True,
-        },
+        metadata={"tag": "AllowanceTotalAmount", "profile": Profile.BASIC_WL},
     )
     """Sum of allowances on document level (BT-107).
 
@@ -179,9 +167,7 @@ class MonetarySummation(Element):
     are folded into the line net amount which feeds ``line_total``
     (BT-106).
     """
-    tax_basis_total: Decimal = field(
-        metadata={"tag": "TaxBasisTotalAmount", "amount": True}
-    )
+    tax_basis_total: Decimal = field(metadata={"tag": "TaxBasisTotalAmount"})
     """Invoice total amount without VAT (BT-109).
 
     Equals BT-106 - BT-107 + BT-108: line net amounts, less the
@@ -197,8 +183,7 @@ class MonetarySummation(Element):
     onwards both may appear in that order.
     """
     rounding_amount: Decimal | None = field(
-        default=None,
-        metadata={"tag": "RoundingAmount", "profile": Profile.COMFORT, "amount": True},
+        default=None, metadata={"tag": "RoundingAmount", "profile": Profile.COMFORT}
     )
     """Rounding amount (BT-114).
 
@@ -209,7 +194,7 @@ class MonetarySummation(Element):
     Enters the ``BR-CO-16`` identity ``BT-115
     = BT-112 - BT-113 + BT-114``.
     """
-    grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount", "amount": True})
+    grand_total: Decimal = field(metadata={"tag": "GrandTotalAmount"})
     """Invoice total amount with VAT (BT-112).
 
     VAT-inclusive invoice total: the net total (BT-109) plus the
@@ -217,18 +202,14 @@ class MonetarySummation(Element):
     """
     prepaid_total: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "TotalPrepaidAmount",
-            "profile": Profile.BASIC_WL,
-            "amount": True,
-        },
+        metadata={"tag": "TotalPrepaidAmount", "profile": Profile.BASIC_WL},
     )
     """Paid amount (BT-113).
 
     Everything already paid up front, totalled; subtracted from
     BT-112 when deriving the amount due for payment (BT-115).
     """
-    due_amount: Decimal = field(metadata={"tag": "DuePayableAmount", "amount": True})
+    due_amount: Decimal = field(metadata={"tag": "DuePayableAmount"})
     """Amount due for payment (BT-115).
 
     The outstanding amount requested for payment — the VAT-inclusive
@@ -262,7 +243,7 @@ class ApplicableTradeTax(Element):
     )
 
     calculated_amount: Decimal | None = field(
-        default=None, metadata={"tag": "CalculatedAmount", "amount": True}
+        default=None, metadata={"tag": "CalculatedAmount"}
     )
     """VAT category tax amount (BT-117).
 
@@ -288,9 +269,7 @@ class ApplicableTradeTax(Element):
     exempt from it. See Articles 226 items 11 to 15 of Directive
     2006/112/EC.
     """
-    basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "amount": True}
-    )
+    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
     """VAT category taxable amount (BT-116).
 
     Adds up every taxable amount falling under this VAT category
@@ -300,11 +279,7 @@ class ApplicableTradeTax(Element):
     """
     line_total_basis_amount: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "LineTotalBasisAmount",
-            "amount": True,
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "LineTotalBasisAmount", "profile": Profile.EXTENDED},
     )
     """Sum of line net amounts at this category and rate (BT-X-262); EXTENDED only.
 
@@ -317,11 +292,7 @@ class ApplicableTradeTax(Element):
     """
     allowance_charge_basis_amount: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "AllowanceChargeBasisAmount",
-            "amount": True,
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "AllowanceChargeBasisAmount", "profile": Profile.EXTENDED},
     )
     """Net of document-level charges minus allowances at this
     category and rate (BT-X-263); EXTENDED only.
@@ -486,9 +457,7 @@ class TradeAllowanceCharge(Element):
     Note: up to COMFORT only the final result (``actual_amount``)
     is transmitted; the base amount and percentage are informational.
     """
-    basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "amount": True}
-    )
+    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
     """Allowance / charge base amount (BT-93 allowance / BT-100 charge
     at header; BT-137 / BT-141 at line).
 
@@ -496,7 +465,7 @@ class TradeAllowanceCharge(Element):
     allowance or charge amount. Gated BASIC_WL at header, COMFORT
     at line — see :meth:`_field_profile`.
     """
-    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount"})
     """Allowance / charge amount (BT-92 allowance / BT-99 charge).
 
     Net (VAT-exclusive) value of the allowance or charge.

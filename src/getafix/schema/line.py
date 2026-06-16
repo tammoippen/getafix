@@ -99,7 +99,7 @@ class Quantity(Element):
     """
 
     @override
-    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
+    def to_xml_internal(self, profile: Profile) -> XML:
         return XML(self.get_tag(), attrs={"unitCode": self.unit_code})[str(self.value)]
 
     @override
@@ -173,12 +173,11 @@ class AppliedTradeAllowanceCharge(Element):
     """Item price discount / charge percentage (BT-X-34 allowance /
     BT-X-300 charge); EXTENDED only."""
     basis_amount: Decimal | None = field(
-        default=None,
-        metadata={"tag": "BasisAmount", "profile": Profile.EXTENDED, "amount": True},
+        default=None, metadata={"tag": "BasisAmount", "profile": Profile.EXTENDED}
     )
     """Item price discount / charge basis amount (BT-X-35 allowance /
     BT-X-301 charge); EXTENDED only."""
-    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount"})
     """Item price discount (BT-147) or charge (BT-X-302).
 
     Total discount taken off — or charge added onto — the gross
@@ -221,7 +220,7 @@ class GrossTradePrice(Element):
         ),
     )
 
-    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
+    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount"})
     """Item gross price (BT-148).
 
     VAT-exclusive unit price before the item price discount comes
@@ -255,7 +254,7 @@ class NetTradePrice(Element):
 
     _validators: ClassVar[tuple[Validator["NetTradePrice"], ...]] = (br_27,)
 
-    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
+    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount"})
     """Item net price (BT-146).
 
     VAT-exclusive unit price once the item price discount has been
@@ -328,7 +327,7 @@ class ProductClassification(Element):
     """
 
     @override
-    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
+    def to_xml_internal(self, profile: Profile) -> XML:
         attrs: dict[str, str | bool] = {"listID": self.list_id}
         if self.list_version_id is not None:
             attrs["listVersionID"] = self.list_version_id
@@ -877,7 +876,7 @@ class LineMonetarySummation(Element):
     )
 
     line_total: Decimal | None = field(
-        default=None, metadata={"tag": "LineTotalAmount", "amount": True}
+        default=None, metadata={"tag": "LineTotalAmount"}
     )
     """Invoice line net amount (BT-131).
 
@@ -888,11 +887,7 @@ class LineMonetarySummation(Element):
     """
     total_allowance_charge: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "TotalAllowanceChargeAmount",
-            "profile": Profile.EXTENDED,
-            "amount": True,
-        },
+        metadata={"tag": "TotalAllowanceChargeAmount", "profile": Profile.EXTENDED},
     )
     """Combined allowance / charge total of the line (BT-X-98);
     EXTENDED-only.

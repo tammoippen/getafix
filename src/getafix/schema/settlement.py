@@ -154,7 +154,7 @@ class CreditorFinancialInstitution(Element):
     """Payment service provider identifier (BT-86)."""
 
     @override
-    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
+    def to_xml_internal(self, profile: Profile) -> XML:
         inner = XML(f"{Namespace.ram.name}:BICID")
         if self.bic_id is not None:
             inner = inner[self.bic_id]
@@ -257,7 +257,7 @@ class BasisPeriodMeasure(Element):
     penalty measure, BT-X-284 on the discount measure."""
 
     @override
-    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
+    def to_xml_internal(self, profile: Profile) -> XML:
         return XML(self.get_tag(), attrs={"unitCode": self.unit_code})[str(self.value)]
 
     @override
@@ -295,16 +295,14 @@ class PaymentPenaltyTerms(Element):
     attribute is BT-X-276-0)."""
     basis_period_measure: BasisPeriodMeasure | None = None
     """Penalty basis period (BT-X-277; ``@unitCode`` attribute is BT-X-278)."""
-    basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "amount": True}
-    )
+    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
     """Penalty basis amount (BT-X-279)."""
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent"}
     )
     """Penalty rate percentage (BT-X-280)."""
     actual_amount: Decimal | None = field(
-        default=None, metadata={"tag": "ActualPenaltyAmount", "amount": True}
+        default=None, metadata={"tag": "ActualPenaltyAmount"}
     )
     """Penalty amount (BT-X-281)."""
 
@@ -328,16 +326,14 @@ class PaymentDiscountTerms(Element):
     attribute is BT-X-282-0)."""
     basis_period_measure: BasisPeriodMeasure | None = None
     """Discount basis period (BT-X-283; ``@unitCode`` attribute is BT-X-284)."""
-    basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "amount": True}
-    )
+    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
     """Discount basis amount (BT-X-285)."""
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent"}
     )
     """Discount rate percentage (BT-X-286)."""
     actual_amount: Decimal | None = field(
-        default=None, metadata={"tag": "ActualDiscountAmount", "amount": True}
+        default=None, metadata={"tag": "ActualDiscountAmount"}
     )
     """Discount amount (BT-X-287)."""
 
@@ -385,11 +381,7 @@ class PaymentTerms(Element):
     """
     partial_payment_amount: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "PartialPaymentAmount",
-            "amount": True,
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "PartialPaymentAmount", "profile": Profile.EXTENDED},
     )
     """Partial-payment amount for this term (BT-X-275); EXTENDED only."""
     penalty_terms: PaymentPenaltyTerms | None = field(
@@ -515,7 +507,7 @@ class LogisticsServiceCharge(Element):
 
     description: str = field(metadata={"tag": "Description"})
     """Logistics service charge description (BT-X-271)."""
-    applied_amount: Decimal = field(metadata={"tag": "AppliedAmount", "amount": True})
+    applied_amount: Decimal = field(metadata={"tag": "AppliedAmount"})
     """Logistics service charge amount (BT-X-272)."""
     applied_trade_tax: list[AppliedTradeTax]
     """Per-category VAT applied to the charge (BT-X-273-00 wrapper;
@@ -574,7 +566,7 @@ class AdvancePaymentTradeTax(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     calculated_amount: Decimal | None = field(
-        default=None, metadata={"tag": "CalculatedAmount", "amount": True}
+        default=None, metadata={"tag": "CalculatedAmount"}
     )
     """VAT amount included in the prepayment (BT-X-293)."""
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
@@ -633,7 +625,7 @@ class AdvancePayment(Element):
     tag: ClassVar[str] = "SpecifiedAdvancePayment"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    paid_amount: Decimal = field(metadata={"tag": "PaidAmount", "amount": True})
+    paid_amount: Decimal = field(metadata={"tag": "PaidAmount"})
     """Prepaid amount (BT-X-291)."""
     received_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedReceivedDateTime"}

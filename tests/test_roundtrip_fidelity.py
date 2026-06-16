@@ -16,13 +16,15 @@ it is *the same*) and ``test_zf24_examples`` (which round-trips
 model→XML→model, blind to what the parser silently ignores).
 
 A second exception is the ``currencyID`` attribute on monetary amounts.
-getafix no longer stores it per element; ``to_xml`` reconstructs it from the
-document currency (BT-5) and threads it onto *every* amount. The
-attribute is optional in the XSD and many real samples omit it, so the
-re-render may carry a ``currencyID="<BT-5>"`` the source lacked. That
-addition is a deliberate normalisation (the value is always the document
-currency, the only sanctioned one) — a ``currencyID`` that is *dropped* or
-*altered* is still a regression.
+The Factur-X Schematron forbids it (a forbidding ``<report>``) on every
+amount except ``TaxTotalAmount`` (BT-110 / BT-111), the one amount that may
+differ in currency — so getafix renders ``currencyID`` *only* there. A few
+source samples carry it on other amounts anyway (e.g. the official French
+MINIMUM example puts it on the totals); re-rendering drops it. Those
+samples are named in ``_CURRENCYID_DROP_ALLOWED`` and a ``currencyID``
+present only on the source side is tolerated for them. A dropped
+``currencyID`` on any other sample, or an *altered* one anywhere, is still a
+regression.
 """
 
 from __future__ import annotations
@@ -56,20 +58,30 @@ def _is_empty(el: etree._Element) -> bool:
     return not _norm(el.text) and not children and not el.attrib
 
 
+# Samples that (legitimately or not) carry ``currencyID`` on amounts other
+# than ``TaxTotalAmount``. getafix renders it only on ``TaxTotalAmount``, so
+# re-rendering drops it on these — tolerate that one-sided difference here.
+_CURRENCYID_DROP_ALLOWED = {"MINIMUM_facturFrMinimum.xml"}
+
+
 def _diff(
-    orig: etree._Element, rend: etree._Element, path: str, out: list[str]
+    orig: etree._Element,
+    rend: etree._Element,
+    path: str,
+    out: list[str],
+    *,
+    allow_currencyid_drop: bool = False,
 ) -> None:
     """Append a human-readable note for every divergence under ``path``."""
     if _norm(orig.text) != _norm(rend.text):
         out.append(f"TEXT     {path}: {_norm(orig.text)!r} -> {_norm(rend.text)!r}")
     oa = dict(orig.attrib)
     ra = dict(rend.attrib)
-    # getafix re-emits the document currency (BT-5) as ``currencyID`` on
-    # every monetary amount; the source often omits that optional
-    # attribute. Ignore a ``currencyID`` present only on the rendered side
-    # — but still flag one that is dropped (in ``oa`` only) or altered.
-    if "currencyID" in ra and "currencyID" not in oa:
-        del ra["currencyID"]
+    # getafix renders ``currencyID`` only on ``TaxTotalAmount``; for an
+    # allow-listed sample, ignore a ``currencyID`` present only on the source
+    # side (the dropped attribute). A differing value is never tolerated.
+    if allow_currencyid_drop and "currencyID" in oa and "currencyID" not in ra:
+        del oa["currencyID"]
     if oa != ra:
         out.append(f"ATTR     {path}: {oa} -> {ra}")
     oc = [c for c in orig if isinstance(c.tag, str)]
@@ -77,7 +89,13 @@ def _diff(
     i = j = 0
     while i < len(oc) or j < len(rc):
         if i < len(oc) and j < len(rc) and oc[i].tag == rc[j].tag:
-            _diff(oc[i], rc[j], f"{path}/{_local(oc[i].tag)}", out)
+            _diff(
+                oc[i],
+                rc[j],
+                f"{path}/{_local(oc[i].tag)}",
+                out,
+                allow_currencyid_drop=allow_currencyid_drop,
+            )
             i += 1
             j += 1
         elif i < len(oc) and oc[i].tag not in {x.tag for x in rc[j:]}:
@@ -100,7 +118,13 @@ def test_sample_renders_one_to_one(sample: Path) -> None:
     original = etree.parse(str(sample)).getroot()
     rendered = etree.fromstring(Document.from_xml(original).to_xml().render().encode())
     diffs: list[str] = []
-    _diff(original, rendered, _local(original.tag), diffs)
+    _diff(
+        original,
+        rendered,
+        _local(original.tag),
+        diffs,
+        allow_currencyid_drop=sample.name in _CURRENCYID_DROP_ALLOWED,
+    )
     assert not diffs, (
         f"{sample.name}: re-render is not 1:1 with the source:\n" + "\n".join(diffs)
     )
