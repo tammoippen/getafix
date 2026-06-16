@@ -44,9 +44,10 @@ def test_monetary_summation_two_tax_totals(parser: ParseFromBytes):
 
 
 def test_amount_currency_id_round_trips(parser: ParseFromBytes):
-    """``currencyID`` attributes on udt:AmountType elements survive a
-    parse → render round-trip even though getafix does not expose
-    them as dataclass fields. Bug sweep #7."""
+    """``currencyID`` attributes on udt:AmountType elements are not stored
+    per element; they are reconstructed from the document currency (BT-5)
+    that ``to_xml`` threads down the tree. Re-rendering with that currency
+    therefore reproduces ``currencyID`` on every amount. Bug sweep #7."""
     src = (
         "<ram:SpecifiedTradeSettlementHeaderMonetarySummation "
         'xmlns:ram="urn:un:unece:uncefact:data:standard:'
@@ -61,9 +62,15 @@ def test_amount_currency_id_round_trips(parser: ParseFromBytes):
         "</ram:SpecifiedTradeSettlementHeaderMonetarySummation>"
     )
     parsed = MonetarySummation.from_xml(parser(src.encode()))
-    out = parsed.to_xml_internal(Profile.BASIC_WL).render(indent=True)
-    # Every amount element keeps its currencyID="EUR" attribute.
+    # With the document currency threaded in, every amount element gets its
+    # currencyID="EUR" attribute back. BT-110/111 (TaxTotalAmount) carry
+    # their own currency_id and round-trip independently of the thread.
+    out = parsed.to_xml_internal(Profile.BASIC_WL, "EUR").render(indent=True)
     assert out.count('currencyID="EUR"') == 5
+    # Without a threaded currency, only the self-describing TaxTotalAmount
+    # keeps its currencyID — the plain amounts render bare.
+    bare = parsed.to_xml_internal(Profile.BASIC_WL).render(indent=True)
+    assert bare.count('currencyID="EUR"') == 1
 
 
 def test_tax_currency_code_requires_matching_tax_total():

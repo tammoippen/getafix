@@ -220,7 +220,6 @@ def build_settlement_parties() -> bytes:
                     calculated_amount=Decimal("19.00"),
                     category_code=CategoryCode.T_S,
                     rate_applicable_percent=Decimal("19.00"),
-                    currency="EUR",
                 )
             ],
             invoice_referenced_document=AdvancePaymentReferencedDocument(
@@ -228,7 +227,6 @@ def build_settlement_parties() -> bytes:
                 type_code=TypeCode.T_ProformaInvoice,
                 issue_date_time=date(2026, 4, 15),
             ),
-            currency="EUR",
         )
     ]
     # Reconcile BT-113 (prepaid) and BT-115 (due) with the prepayment so

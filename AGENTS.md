@@ -77,7 +77,7 @@ Every schema class inherits from `getafix.schema.element.Element`, a
 | `tag`     | `str`       | leaf renderers          | XML element name for `str`/`Decimal`/`bool`/`date` fields. Not needed on `Element`-typed fields (the child uses its class `tag`). |
 | `ns`      | `Namespace` | leaf renderers          | Override the default `ram:` namespace on this field.                                                                              |
 | `profile` | `Profile`   | `Element._children_xml` | Field-level minimum profile gate.                                                                                                 |
-| `amount`  | `bool`      | `Element._children_xml` | When `True`, the sibling `currency: str \| None` field stamps `currencyID` onto this element.                                     |
+| `amount`  | `bool`      | `Element._children_xml` | When `True`, the document currency (BT-5) threaded into `_children_xml` stamps `currencyID` onto this element.                    |
 
 ### Profile gating, two layers
 
@@ -100,16 +100,20 @@ and `basis_amount` differently for header vs line.
 
 ### Currency on amounts
 
-Every amount-bearing dataclass (`MonetarySummation`, `TaxTotal`,
-`ApplicableTradeTax`, `TradeAllowanceCharge`, `GrossTradePrice`,
-`NetTradePrice`, `AppliedTradeAllowanceCharge`, `LineMonetarySummation`,
-`LogisticsServiceCharge`, `AdvancePayment`, `AdvancePaymentTradeTax`,
-`PaymentPenaltyTerms`, `PaymentDiscountTerms`) carries a sibling
-`currency: str | None` field. On render, `_children_xml` stamps it onto
-every `"amount": True` field's `currencyID` attribute; on parse,
-`from_xml` captures the first `currencyID` it sees back into
-`currency`. The field is excluded from XML iteration and validation
-walks.
+`currencyID` on a monetary amount echoes the document currency (BT-5),
+the only currency the invoice may use. Rather than store it on every
+amount-bearing element, `to_xml` reads it once from
+`TradeSettlement.currency_code` and threads it down the tree:
+`to_xml_internal(profile, currency)` passes `currency` into
+`_children_xml`, which stamps it onto every `"amount": True` field's
+`currencyID` attribute and forwards it unchanged to child elements. The
+sole amount in a different currency — BT-111, the VAT-accounting-currency
+tax total — is the exception: `TaxTotal` carries its own `currency_id`
+field and overrides `to_xml_internal` to render from that, ignoring the
+threaded value. On parse, the `currencyID` attribute is read but dropped
+(see `Element.from_xml`); it is reconstructed from BT-5 on the next
+render, so an amount the source left bare comes back carrying
+`currencyID="<BT-5>"`. Currency is not part of validation.
 
 ### Profile enum ordering
 
@@ -222,8 +226,10 @@ labelled with their BT/BG id.
    """Docstring with the BT id and a short narrative."""
    ```
 
-4. If the field is monetary, add `"amount": True` to the metadata and
-   make sure the enclosing dataclass has a `currency: str | None` field.
+4. If the field is monetary, add `"amount": True` to the metadata. The
+   `currencyID` attribute is supplied automatically from the document
+   currency (BT-5) threaded through `to_xml` — no per-element field is
+   needed (see "Currency on amounts").
 5. Run `make tests`. `tests/test_xsd_validity.py` will catch ordering
    regressions automatically by re-rendering every shipped sample and
    validating against the profile XSD.

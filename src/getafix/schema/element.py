@@ -144,8 +144,6 @@ class Element(ABC):
             e for v in self._validators for e in v(self, profile)
         ]
         for f in fields(self):
-            if f.name == "currency":
-                continue
             value = getattr(self, f.name)
             if value is None:
                 continue
@@ -207,17 +205,14 @@ class Element(ABC):
                 p = sample.__class__.profile
         return p or Profile.MINIMUM
 
-    def _children_xml(self, profile: Profile) -> list[XML]:
+    def _children_xml(self, profile: Profile, currency: str | None = None) -> list[XML]:
         children: list[XML] = []
-        # Per-Element "currency" field provides the ``currencyID``
-        # attribute for every Decimal field marked ``"amount": True`` in
-        # metadata. Elements without amount fields don't declare it.
-        currency: str | None = getattr(self, "currency", None)
+        # ``currency`` (the document currency, BT-5) is threaded down from
+        # the Document root by ``to_xml`` — not stored per element. It
+        # supplies the ``currencyID`` attribute for every Decimal field
+        # marked ``"amount": True`` in metadata, and is passed on unchanged
+        # to child elements so the whole subtree shares one currency.
         for f in fields(self):
-            if f.name == "currency":
-                # Internal: not rendered as its own element; it shows up
-                # as the ``currencyID`` attribute on amount fields.
-                continue
             value: Any = getattr(self, f.name)
             if value is None:
                 # not required
@@ -243,14 +238,14 @@ class Element(ABC):
                     case datetime.date():
                         children += [_render_date(v, f)]
                     case Element():
-                        children += [v.to_xml_internal(profile)]
+                        children += [v.to_xml_internal(profile, currency)]
                     case _:
                         raise TypeError(f"Unknown type {v=}.")
 
         return children
 
-    def to_xml_internal(self, profile: Profile) -> XML:
-        return XML(self.get_tag(), children=self._children_xml(profile))
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
+        return XML(self.get_tag(), children=self._children_xml(profile, currency))
 
     @classmethod
     def from_xml(cls, elem: ETElement) -> Self:
@@ -265,12 +260,8 @@ class Element(ABC):
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
 
         params: dict[str, Any] = {}
-        has_currency_field = any(f.name == "currency" for f in fields(cls))
-        captured_currency: str | None = None
         for el in elem:
             for f in fields(cls):
-                if f.name == "currency":
-                    continue
                 curr_type = _get_non_none_type(f.type)
                 origin = get_origin(curr_type)
                 is_list = False
@@ -296,10 +287,20 @@ class Element(ABC):
                     if res is None:
                         continue
                     params[f.name] = Decimal(res)
-                    if has_currency_field and f.metadata.get("amount"):
-                        currency_attr = el.attrib.get("currencyID")
-                        if currency_attr is not None:
-                            captured_currency = currency_attr
+                    if f.metadata.get("amount") and el.attrib.get("currencyID"):
+                        """Stray ``currencyID`` on a monetary amount — dropped.
+
+                        The ``currencyID`` attribute echoes the document
+                        currency (BT-5). getafix no longer keeps it per
+                        element: ``to_xml`` reconstructs it from
+                        ``TradeSettlement.currency_code`` and threads it back
+                        down the tree (the only amount in a different
+                        currency, BT-111, carries its own
+                        :class:`~getafix.schema.accounting.TaxTotal.currency_id`).
+                        The attribute therefore holds nothing we need to
+                        retain on parse, so it is intentionally ignored.
+                        """
+                        pass
                 elif issubclass(curr_type, bool):
                     assert not is_list
                     params.update(_parse_bool(el, f))
@@ -316,8 +317,6 @@ class Element(ABC):
                             params[f.name] += [curr_type.from_xml(el)]
                         else:
                             params[f.name] = curr_type.from_xml(el)
-        if has_currency_field and captured_currency is not None:
-            params.setdefault("currency", captured_currency)
         return cls(**params)
 
 

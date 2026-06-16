@@ -42,7 +42,7 @@ from getafix.schema.settlement import (
     BillingSpecifiedPeriod,
     ReceivableAccountingAccount,
 )
-from getafix.schema.types import Currency, LineStatusReasonCode, Namespace, Profile
+from getafix.schema.types import LineStatusReasonCode, Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
@@ -99,7 +99,7 @@ class Quantity(Element):
     """
 
     @override
-    def to_xml_internal(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
         return XML(self.get_tag(), attrs={"unitCode": self.unit_code})[str(self.value)]
 
     @override
@@ -198,12 +198,6 @@ class AppliedTradeAllowanceCharge(Element):
     )
     """Reason, free text, for the discount (BT-X-36) / charge (BT-X-303);
     EXTENDED only."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed on every amount attribute.
-
-    Populated on parse from the ``currencyID`` attribute; set
-    explicitly when building programmatically.
-    """
 
 
 @dataclass(kw_only=True, slots=True)
@@ -246,8 +240,6 @@ class GrossTradePrice(Element):
     :func:`getafix.rules._types.list_max_cardinality_below` and
     :func:`getafix.rules.line.applied_price_charge_extended_only`.
     """
-    currency: Currency | None = None
-    """Document currency (BT-5) echoed on the gross-price amount."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -275,12 +267,6 @@ class NetTradePrice(Element):
     """
     basis_quantity: BasisQuantity | None = None
     """Item price base quantity (BT-149)."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed on the net-price amount.
-
-    Populated on parse from the ``currencyID`` attribute; set
-    explicitly when building programmatically.
-    """
 
 
 @dataclass(kw_only=True, slots=True)
@@ -342,7 +328,7 @@ class ProductClassification(Element):
     """
 
     @override
-    def to_xml_internal(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
         attrs: dict[str, str | bool] = {"listID": self.list_id}
         if self.list_version_id is not None:
             attrs["listVersionID"] = self.list_version_id
@@ -913,12 +899,6 @@ class LineMonetarySummation(Element):
 
     The net of all BG-27 allowances and BG-28 charges on this invoice
     line; informational, already folded into :attr:`line_total`."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed on the line-total amount.
-
-    Populated on parse from the ``currencyID`` attribute; set
-    explicitly when building programmatically.
-    """
 
 
 @dataclass(kw_only=True, slots=True)

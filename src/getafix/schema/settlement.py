@@ -154,7 +154,7 @@ class CreditorFinancialInstitution(Element):
     """Payment service provider identifier (BT-86)."""
 
     @override
-    def to_xml_internal(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
         inner = XML(f"{Namespace.ram.name}:BICID")
         if self.bic_id is not None:
             inner = inner[self.bic_id]
@@ -257,7 +257,7 @@ class BasisPeriodMeasure(Element):
     penalty measure, BT-X-284 on the discount measure."""
 
     @override
-    def to_xml_internal(self, profile: Profile) -> XML:
+    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
         return XML(self.get_tag(), attrs={"unitCode": self.unit_code})[str(self.value)]
 
     @override
@@ -520,7 +520,6 @@ class LogisticsServiceCharge(Element):
     applied_trade_tax: list[AppliedTradeTax]
     """Per-category VAT applied to the charge (BT-X-273-00 wrapper;
     1..* per XSD). Non-empty asserted in :meth:`__post_init__`."""
-    currency: str | None = None
 
     def __post_init__(self) -> None:
         # XSD minOccurs=1 on AppliedTradeTax — the dataclass type is
@@ -596,11 +595,6 @@ class AdvancePaymentTradeTax(Element):
         default=None, metadata={"tag": "RateApplicablePercent"}
     )
     """VAT rate (BT-X-298)."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed as ``currencyID`` on
-    ``CalculatedAmount`` (BT-X-293). Getafix helper — not a BT
-    field itself (the XSD encodes it as an attribute, not an
-    element)."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -649,12 +643,6 @@ class AdvancePayment(Element):
     """VAT included in the prepayment (BG-X-46, 1..* per XSD)."""
     invoice_referenced_document: AdvancePaymentReferencedDocument | None = None
     """Reference to the prepayment invoice (BG-X-85, 0..1)."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed as ``currencyID`` on
-    ``PaidAmount`` (BT-X-291). 
-    
-    Getafix helper — not a BT field itself (the XSD encodes 
-    it as an attribute, not an element)."""
 
     def __post_init__(self) -> None:
         # XSD minOccurs=1 on IncludedTradeTax.
