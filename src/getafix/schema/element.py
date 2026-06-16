@@ -112,8 +112,8 @@ class Element(ABC):
         # touches the data. Catches parser bugs (``from_xml`` builds an
         # ``Any``-typed dict and splats it into ``cls(**params)``),
         # hand-built fixtures that drift from the model, and post-construct
-        # mutation (``inv.currency = 42``) that would otherwise sail past
-        # the construction check. Business rules — which presuppose the
+        # mutation (``settlement.currency_code = 42``) that would otherwise
+        # sail past the construction check. Business rules — which presuppose the
         # shape is correct — stay in ``validate_internal``.
         #
         # Names that aren't dataclass fields (there are none settable on a
@@ -205,13 +205,8 @@ class Element(ABC):
                 p = sample.__class__.profile
         return p or Profile.MINIMUM
 
-    def _children_xml(self, profile: Profile, currency: str | None = None) -> list[XML]:
+    def _children_xml(self, profile: Profile) -> list[XML]:
         children: list[XML] = []
-        # ``currency`` (the document currency, BT-5) is threaded down from
-        # the Document root by ``to_xml`` — not stored per element. It
-        # supplies the ``currencyID`` attribute for every Decimal field
-        # marked ``"amount": True`` in metadata, and is passed on unchanged
-        # to child elements so the whole subtree shares one currency.
         for f in fields(self):
             value: Any = getattr(self, f.name)
             if value is None:
@@ -224,28 +219,25 @@ class Element(ABC):
                     f"{self.__class__.__name__}.{f.name}: {profile} < {p}"
                 )
             items: list[Any] = value if isinstance(value, list) else [value]
-            extra_attrs: dict[str, str] | None = None
-            if _meta_is_amount(f) and currency:
-                extra_attrs = {"currencyID": currency}
             for v in items:
                 match v:
                     case str():
-                        children += [_render_str(v, f, extra_attrs)]
+                        children += [_render_str(v, f)]
                     case Decimal():
-                        children += [_render_str(str(v), f, extra_attrs)]
+                        children += [_render_str(str(v), f)]
                     case bool():
                         children += [_render_bool(v, f)]
                     case datetime.date():
                         children += [_render_date(v, f)]
                     case Element():
-                        children += [v.to_xml_internal(profile, currency)]
+                        children += [v.to_xml_internal(profile)]
                     case _:
                         raise TypeError(f"Unknown type {v=}.")
 
         return children
 
-    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
-        return XML(self.get_tag(), children=self._children_xml(profile, currency))
+    def to_xml_internal(self, profile: Profile) -> XML:
+        return XML(self.get_tag(), children=self._children_xml(profile))
 
     @classmethod
     def from_xml(cls, elem: ETElement) -> Self:
@@ -287,19 +279,18 @@ class Element(ABC):
                     if res is None:
                         continue
                     params[f.name] = Decimal(res)
-                    if f.metadata.get("amount") and el.attrib.get("currencyID"):
-                        """Stray ``currencyID`` on a monetary amount — dropped.
-
-                        The ``currencyID`` attribute echoes the document
-                        currency (BT-5). getafix no longer keeps it per
-                        element: ``to_xml`` reconstructs it from
-                        ``TradeSettlement.currency_code`` and threads it back
-                        down the tree (the only amount in a different
-                        currency, BT-111, carries its own
-                        :class:`~getafix.schema.accounting.TaxTotal.currency_id`).
-                        The attribute therefore holds nothing we need to
-                        retain on parse, so it is intentionally ignored.
-                        """
+                    if el.attrib.get("currencyID") is not None:
+                        # ``currencyID`` on a monetary amount. The Factur-X
+                        # Schematron forbids it (a forbidding ``<report>``)
+                        # on every amount except ``TaxTotalAmount`` (BT-110 /
+                        # BT-111), which has its own ``TaxTotal.from_xml`` and
+                        # never reaches this generic branch. So any
+                        # ``currencyID`` seen here is on an amount that should
+                        # not carry one. TODO: once parse is profile-aware,
+                        # raise a ValidationError at EXTENDED (where the
+                        # forbidding reports apply) and keep ignoring it
+                        # below EXTENDED. For now, drop it silently — getafix
+                        # never re-emits it on render.
                         pass
                 elif issubclass(curr_type, bool):
                     assert not is_list
@@ -446,11 +437,6 @@ def _meta_profile(field: Field[Any]) -> Profile | None:
     return p
 
 
-def _meta_is_amount(field: Field[Any]) -> bool:
-    """``True`` when the field renders as a monetary ``udt:AmountType``."""
-    return bool(field.metadata.get("amount"))
-
-
 def _render_bool(value: bool, field: Field[bool]) -> XML:
     return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}")[
         XML("udt:Indicator")[str(value).lower()]
@@ -469,11 +455,8 @@ def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
     return {field.name: json.loads(el[0].text)}
 
 
-def _render_str(
-    value: str, field: Field[str], extra_attrs: dict[str, str] | None = None
-) -> XML:
-    attrs: dict[str, str | bool] = dict(extra_attrs) if extra_attrs else {}
-    return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}", attrs=attrs)[value]
+def _render_str(value: str, field: Field[str]) -> XML:
+    return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}")[value]
 
 
 def _parse_str[T: str](

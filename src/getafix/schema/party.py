@@ -53,7 +53,7 @@ class SchemeID(Element):
     Seller / BT-46-1 Buyer identifier scheme)."""
 
     @override
-    def to_xml_internal(self, profile: Profile, currency: str | None = None) -> XML:
+    def to_xml_internal(self, profile: Profile) -> XML:
         attrs: dict[str, str | bool] = {}
         if self.scheme_id is not None:
             attrs["schemeID"] = self.scheme_id
