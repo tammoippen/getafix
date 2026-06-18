@@ -26,14 +26,14 @@ from getafix.build import (
     seller_party,
     vat_breakdown,
 )
-from getafix.schema import Document, Profile
 from getafix.schema.accounting import (
     ApplicableTradeTax,
     CategoryTradeTax,
     HeaderTradeAllowanceCharge,
 )
+from getafix.schema.document import Document
 from getafix.schema.settlement import PaymentTerms
-from getafix.schema.types import CategoryCode, Country, Currency, VATEXCode
+from getafix.schema.types import CategoryCode, Country, Currency, Profile, VATEXCode
 
 SCHEMAS_DIR = Path(__file__).parent / "schemas"
 
@@ -234,7 +234,7 @@ def test_vat_breakdown_groups_by_category_and_rate() -> None:
         line_item("2", "B", net_price="9.90", quantity=2, vat_rate=7),
         line_item("3", "C", net_price="50.00", vat_rate=19),
     ]
-    rows = vat_breakdown(items, currency=Currency.EUR)
+    rows = vat_breakdown(items)
     by_key = {(r.category_code, r.rate_applicable_percent): r for r in rows}
     s19 = by_key[(CategoryCode.T_S, Decimal("19"))]
     s7 = by_key[(CategoryCode.T_S, Decimal("7"))]
@@ -242,7 +242,6 @@ def test_vat_breakdown_groups_by_category_and_rate() -> None:
     assert s19.calculated_amount == Decimal("66.50")
     assert s7.basis_amount == Decimal("19.80")
     assert s7.calculated_amount == Decimal("1.39")  # 1.386 rounds up
-    assert s19.currency == "EUR"
 
 
 def test_vat_breakdown_nets_allowances_and_charges() -> None:
@@ -362,7 +361,6 @@ def test_monetary_summation_identities() -> None:
     assert ms.tax_total[0].amount == Decimal("18.62")  # BR-CO-14
     assert ms.grand_total == Decimal("116.62")  # BR-CO-15
     assert ms.due_amount == Decimal("106.62")  # BR-CO-16
-    assert ms.currency == "EUR"
 
 
 def test_monetary_summation_without_line_total_sums_bases() -> None:
@@ -547,7 +545,7 @@ def test_basic_wl_invoice_with_allowance_charge_derives_line_total() -> None:
     assert ms.due_amount == Decimal("106.62")
     acs = doc.trade.settlement.allowance_charge
     assert acs is not None
-    assert all(ac.currency == "EUR" for ac in acs)
+    assert {ac.actual_amount for ac in acs} == {Decimal("5.00"), Decimal("3.00")}
     doc.validate()
     _assert_xsd_valid(doc)
 

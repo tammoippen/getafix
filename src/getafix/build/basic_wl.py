@@ -14,28 +14,27 @@ from getafix.build._shared import (
     header,
     monetary_summation,
     payment_terms,
-    stamp_currency,
     trade_delivery,
 )
-from getafix.schema import Context, Document, GuidelineDocument, Profile, TypeCode
 from getafix.schema.accounting import ApplicableTradeTax, HeaderTradeAllowanceCharge
 from getafix.schema.agreement import TradeAgreement
+from getafix.schema.document import Context, Document, GuidelineDocument
 from getafix.schema.party import BuyerTradeParty, SellerTradeParty
 from getafix.schema.settlement import PaymentMeans, PaymentTerms, TradeSettlement
 from getafix.schema.trade import Trade
-from getafix.schema.types import Currency
+from getafix.schema.types import Currency, Profile, TypeCode
 
 
 def _complete_trade_taxes(
-    trade_taxes: Sequence[ApplicableTradeTax], currency: Currency
+    trade_taxes: Sequence[ApplicableTradeTax],
 ) -> list[ApplicableTradeTax]:
     """Fill the derivable fields on caller-supplied BG-23 rows.
 
     Each row needs at least the taxable amount (BT-116) and the
-    category (BT-118); the tax amount (BT-117, per ``BR-CO-17``), the
-    canonical exemption-reason code (BT-121, where one exists) and the
-    currency stamp are filled in when absent. Returns copies — the
-    caller's rows are not mutated.
+    category (BT-118); the tax amount (BT-117, per ``BR-CO-17``) and the
+    canonical exemption-reason code (BT-121, where one exists) are
+    filled in when absent. Returns copies — the caller's rows are not
+    mutated.
     """
     completed: list[ApplicableTradeTax] = []
     for tt in trade_taxes:
@@ -52,12 +51,7 @@ def _complete_trade_taxes(
         if code is None and tt.exemption_reason is None:
             code = DEFAULT_EXEMPTION_CODE.get(tt.category_code)
         completed.append(
-            replace(
-                tt,
-                calculated_amount=calculated,
-                exemption_reason_code=code,
-                currency=tt.currency or str(currency),
-            )
+            replace(tt, calculated_amount=calculated, exemption_reason_code=code)
         )
     return completed
 
@@ -95,12 +89,14 @@ def basic_wl_invoice(
     of the two (or a payment-terms text) is required by ``BR-CO-25``
     whenever the amount due is positive.
     """
-    completed = _complete_trade_taxes(trade_taxes, currency)
-    stamped = stamp_currency(allowance_charges, currency)
+    completed = _complete_trade_taxes(trade_taxes)
+    charges = list(allowance_charges) or None
     allowance_total = sum(
-        (ac.actual_amount for ac in stamped or [] if not ac.indicator), ZERO
+        (ac.actual_amount for ac in allowance_charges if not ac.indicator), ZERO
     )
-    charge_total = sum((ac.actual_amount for ac in stamped or [] if ac.indicator), ZERO)
+    charge_total = sum(
+        (ac.actual_amount for ac in allowance_charges if ac.indicator), ZERO
+    )
     basis_sum = sum((tt.basis_amount or ZERO for tt in completed), ZERO)
     line_total = basis_sum + allowance_total - charge_total
 
@@ -116,13 +112,13 @@ def basic_wl_invoice(
                 currency_code=currency,
                 payment_means=list(payment_means) or None,
                 trade_taxes=completed,
-                allowance_charge=stamped,
+                allowance_charge=charges,
                 terms=payment_terms(terms, due_date),
                 monetary_summation=monetary_summation(
                     currency=currency,
                     line_total=line_total,
                     trade_taxes=completed,
-                    allowance_charges=stamped or (),
+                    allowance_charges=allowance_charges,
                     prepaid_total=prepaid_total,
                 ),
             ),

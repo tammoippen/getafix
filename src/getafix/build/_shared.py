@@ -14,11 +14,9 @@ amounts).
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
-from getafix.schema import Header, IncludedNote, Profile, TypeCode
 from getafix.schema._numeric import round_half_away_from_zero
 from getafix.schema.accounting import (
     ApplicableTradeTax,
@@ -27,6 +25,7 @@ from getafix.schema.accounting import (
     TaxTotal,
 )
 from getafix.schema.delivery import SupplyChainEvent, TradeDelivery
+from getafix.schema.document import Header, IncludedNote
 from getafix.schema.party import (
     BuyerTradeParty,
     PostalTradeAddressExtended,
@@ -35,7 +34,14 @@ from getafix.schema.party import (
     TaxSchemeId,
 )
 from getafix.schema.settlement import PaymentTerms
-from getafix.schema.types import CategoryCode, Country, Currency, VATEXCode
+from getafix.schema.types import (
+    CategoryCode,
+    Country,
+    Currency,
+    Profile,
+    TypeCode,
+    VATEXCode,
+)
 
 Numeric = Decimal | int | str
 """Accepted monetary / quantity input — coerced via :func:`Decimal`.
@@ -213,7 +219,6 @@ def monetary_summation(
         grand_total=grand_total,
         prepaid_total=prepaid,
         due_amount=due,
-        currency=str(currency),
     )
 
 
@@ -253,13 +258,3 @@ def header(
         issue_date=issue_date,
         notes=[IncludedNote(content=n) for n in notes] or None,
     )
-
-
-def stamp_currency(
-    allowance_charges: Sequence[HeaderTradeAllowanceCharge], currency: Currency
-) -> list[HeaderTradeAllowanceCharge] | None:
-    stamped = [
-        ac if ac.currency is not None else replace(ac, currency=str(currency))
-        for ac in allowance_charges
-    ]
-    return stamped or None

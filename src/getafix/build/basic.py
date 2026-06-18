@@ -26,14 +26,13 @@ from getafix.build._shared import (
     monetary_summation,
     optional_decimal,
     payment_terms,
-    stamp_currency,
     to_decimal,
     trade_delivery,
 )
-from getafix.schema import Context, Document, GuidelineDocument, Profile, TypeCode
 from getafix.schema._numeric import round_half_away_from_zero
 from getafix.schema.accounting import ApplicableTradeTax, HeaderTradeAllowanceCharge
 from getafix.schema.agreement import TradeAgreement
+from getafix.schema.document import Context, Document, GuidelineDocument
 from getafix.schema.line import (
     AppliedTradeAllowanceCharge,
     BasisQuantity,
@@ -51,7 +50,7 @@ from getafix.schema.line import (
 from getafix.schema.party import BuyerTradeParty, GlobalID, SellerTradeParty
 from getafix.schema.settlement import PaymentMeans, PaymentTerms, TradeSettlement
 from getafix.schema.trade import Trade, TradeLineItem
-from getafix.schema.types import CategoryCode, Currency, VATEXCode
+from getafix.schema.types import CategoryCode, Currency, Profile, TypeCode, VATEXCode
 
 # Categories whose VAT rate (BT-119 / BT-152) must be 0 — defaulted so
 # the caller need not spell out the only legal value.
@@ -186,7 +185,6 @@ def vat_breakdown(
     items: Sequence[TradeLineItem],
     allowance_charges: Sequence[HeaderTradeAllowanceCharge] = (),
     *,
-    currency: Currency | None = None,
     exemption_reasons: Mapping[CategoryCode, str] | None = None,
     exemption_reason_codes: Mapping[CategoryCode, VATEXCode] | None = None,
 ) -> list[ApplicableTradeTax]:
@@ -254,7 +252,6 @@ def vat_breakdown(
                 category_code=category,
                 exemption_reason_code=code,
                 rate_applicable_percent=rate,
-                currency=str(currency) if currency is not None else None,
             )
         )
     return rows
@@ -295,11 +292,10 @@ def basic_invoice(
     if not items:
         raise ValueError("at least one line item (BG-25) is required (BR-16).")
 
-    stamped = stamp_currency(allowance_charges, currency)
+    charges = list(allowance_charges) or None
     trade_taxes = vat_breakdown(
         items,
-        stamped or (),
-        currency=currency,
+        allowance_charges,
         exemption_reasons=exemption_reasons,
         exemption_reason_codes=exemption_reason_codes,
     )
@@ -320,13 +316,13 @@ def basic_invoice(
                 currency_code=currency,
                 payment_means=list(payment_means) or None,
                 trade_taxes=trade_taxes,
-                allowance_charge=stamped,
+                allowance_charge=charges,
                 terms=payment_terms(terms, due_date),
                 monetary_summation=monetary_summation(
                     currency=currency,
                     line_total=line_total,
                     trade_taxes=trade_taxes,
-                    allowance_charges=stamped or (),
+                    allowance_charges=allowance_charges,
                     prepaid_total=prepaid_total,
                 ),
             ),

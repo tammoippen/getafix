@@ -13,14 +13,14 @@ from getafix.build._shared import (
     optional_decimal,
     to_decimal,
 )
-from getafix.schema import Context, Document, GuidelineDocument, Profile, TypeCode
 from getafix.schema.accounting import MonetarySummation, TaxTotal
 from getafix.schema.agreement import TradeAgreement
 from getafix.schema.delivery import TradeDelivery
+from getafix.schema.document import Context, Document, GuidelineDocument
 from getafix.schema.party import BuyerTradeParty, SellerTradeParty
 from getafix.schema.settlement import TradeSettlement
 from getafix.schema.trade import Trade
-from getafix.schema.types import Currency
+from getafix.schema.types import Currency, Profile, TypeCode
 
 
 def minimum_invoice(
@@ -79,7 +79,6 @@ def minimum_invoice(
                     ),
                     grand_total=grand_total,
                     due_amount=grand_total,
-                    currency=str(currency),
                 ),
             ),
         ),
