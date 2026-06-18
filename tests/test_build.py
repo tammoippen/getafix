@@ -19,13 +19,14 @@ import pytest as pt
 from getafix.build import (
     basic_invoice,
     basic_wl_invoice,
-    buyer_party,
     line_item,
     minimum_invoice,
     monetary_summation,
-    seller_party,
     vat_breakdown,
 )
+from getafix.build.basic import buyer_party, seller_party
+from getafix.build.minimum import buyer_party as minimum_buyer_party
+from getafix.build.minimum import seller_party as minimum_seller_party
 from getafix.schema.accounting import (
     ApplicableTradeTax,
     CategoryTradeTax,
@@ -111,6 +112,34 @@ def test_buyer_party_without_ids_has_no_registrations() -> None:
     assert buyer.tax_registrations is None
     assert buyer.address is not None
     assert buyer.address.country_id == Country.FR
+
+
+def test_minimum_party_builders_delegate_to_shared() -> None:
+    # The MINIMUM builders produce the same shape as the full builders
+    # when no address detail is given — they only restrict the surface.
+    seller = minimum_seller_party(
+        "Acme GmbH", country=Country.DE, vat_id="DE123456789", tax_id="201/113/40209"
+    )
+    assert seller.address.country_id == Country.DE
+    assert seller.address.city_name is None
+    regs = seller.tax_registrations
+    assert regs is not None
+    assert [(r.id.id, r.id.scheme_id) for r in regs] == [
+        ("DE123456789", "VA"),
+        ("201/113/40209", "FC"),
+    ]
+    buyer = minimum_buyer_party("Beta AG", country=Country.DE, vat_id="DE987654321")
+    assert buyer.address is not None
+    assert buyer.address.country_id == Country.DE
+
+
+def test_minimum_party_builders_reject_address_detail() -> None:
+    # Address fields are BASIC_WL+ — the MINIMUM builders must not even
+    # offer them as keyword arguments.
+    with pt.raises(TypeError):
+        minimum_seller_party("S", country=Country.DE, city="Berlin")  # type: ignore[call-arg]
+    with pt.raises(TypeError):
+        minimum_buyer_party("B", country=Country.DE, postcode="10115")  # type: ignore[call-arg]
 
 
 # ---------------------------------------------------------------------------
@@ -394,8 +423,10 @@ def test_minimum_invoice_with_vat_rate() -> None:
     doc = minimum_invoice(
         "INV-1",
         date(2025, 1, 1),
-        seller=seller_party("Acme GmbH", country=Country.DE, vat_id="DE123456789"),
-        buyer=buyer_party("Beta AG", country=Country.DE),
+        seller=minimum_seller_party(
+            "Acme GmbH", country=Country.DE, vat_id="DE123456789"
+        ),
+        buyer=minimum_buyer_party("Beta AG", country=Country.DE),
         tax_basis_total="100.00",
         vat_rate=19,
     )
@@ -414,8 +445,10 @@ def test_minimum_invoice_with_explicit_tax_amount() -> None:
     doc = minimum_invoice(
         "INV-1",
         date(2025, 1, 1),
-        seller=seller_party("Acme GmbH", country=Country.DE, vat_id="DE123456789"),
-        buyer=buyer_party("Beta AG", country=Country.DE),
+        seller=minimum_seller_party(
+            "Acme GmbH", country=Country.DE, vat_id="DE123456789"
+        ),
+        buyer=minimum_buyer_party("Beta AG", country=Country.DE),
         tax_basis_total="100.00",
         tax_amount="19.00",
         buyer_reference="04011000-12345-03",
@@ -429,8 +462,10 @@ def test_minimum_invoice_without_tax() -> None:
     doc = minimum_invoice(
         "INV-1",
         date(2025, 1, 1),
-        seller=seller_party("Acme GmbH", country=Country.DE, vat_id="DE123456789"),
-        buyer=buyer_party("Beta AG", country=Country.DE),
+        seller=minimum_seller_party(
+            "Acme GmbH", country=Country.DE, vat_id="DE123456789"
+        ),
+        buyer=minimum_buyer_party("Beta AG", country=Country.DE),
         tax_basis_total="100.00",
     )
     ms = doc.trade.settlement.monetary_summation
@@ -445,8 +480,8 @@ def test_minimum_invoice_tax_amount_and_rate_conflict() -> None:
         minimum_invoice(
             "INV-1",
             date(2025, 1, 1),
-            seller=seller_party("S", country=Country.DE, vat_id="DE123456789"),
-            buyer=buyer_party("B", country=Country.DE),
+            seller=minimum_seller_party("S", country=Country.DE, vat_id="DE123456789"),
+            buyer=minimum_buyer_party("B", country=Country.DE),
             tax_basis_total="100.00",
             tax_amount="19.00",
             vat_rate=19,

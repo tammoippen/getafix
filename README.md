@@ -107,7 +107,7 @@ the monetary summation (BG-22) — is computed so the arithmetic rules
 ```python
 from datetime import date
 
-from getafix.build import basic_invoice, buyer_party, line_item, seller_party
+from getafix.build.basic import basic_invoice, buyer_party, line_item, seller_party
 from getafix.schema.types import Country
 
 doc = basic_invoice(
@@ -133,22 +133,33 @@ doc.validate()                           # passes out of the box
 xml = doc.to_xml().render(indent=True)   # str — ready to write to factur-x.xml
 ```
 
-There is one constructor per profile, and the builders stop at BASIC —
-COMFORT (EN 16931) and EXTENDED add far more optional structure than a
-convenience constructor can usefully default, so build those by hand
-(see below). The two profiles without line items have their own
-constructors: `minimum_invoice()` (give it the total without VAT and a
-`vat_rate` or `tax_amount`; the totals with VAT follow) and
+There is one module per profile (`getafix.build.minimum` /
+`getafix.build.basic_wl` / `getafix.build.basic`), and the builders
+stop at BASIC — COMFORT (EN 16931) and EXTENDED add far more optional
+structure than a convenience constructor can usefully default, so build
+those by hand (see below). The two profiles without line items have
+their own constructors: `minimum_invoice()` (give it the total without
+VAT and a `vat_rate` or `tax_amount`; the totals with VAT follow) and
 `basic_wl_invoice()` (give it one VAT-breakdown row per category with
 the taxable basis; the per-category tax amounts and the document totals
 follow). `line_item()` derives the line total from price × quantity
 (with optional price base quantity and gross-price / discount wiring),
 defaults the VAT rate where the category admits exactly one legal value
 (0 for `Z`/`E`/`AE`/`G`/`K`, absent for `O`), and the breakdown fills
-in canonical VATEX exemption codes for `AE`/`G`/`K`/`O`. Monetary
-inputs accept `Decimal`, `int` or `str` — `float` is rejected. The
-factories return ordinary schema dataclasses, so anything they don't
-expose can still be set afterwards.
+in canonical VATEX exemption codes for `AE`/`G`/`K`/`O`.
+
+The **party builders are profile-specific** — `seller_party()` /
+`buyer_party()` from `getafix.build.minimum` expose only the
+MINIMUM-valid fields (country code plus tax ids), while the
+`getafix.build.basic` / `getafix.build.basic_wl` twins add postcode /
+city / street lines (BASIC_WL+). Import them from the module for the
+profile you are building; that is why the invoice constructors and
+`line_item` re-export at the `getafix.build` top level but the party
+builders do not.
+
+Monetary inputs accept `Decimal`, `int` or `str` — `float` is
+rejected. The factories return ordinary schema dataclasses, so anything
+they don't expose can still be set afterwards.
 
 For full control — or fields the factories don't cover — build the
 schema tree directly:

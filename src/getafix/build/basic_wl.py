@@ -16,6 +16,8 @@ from getafix.build._shared import (
     payment_terms,
     trade_delivery,
 )
+from getafix.build._shared import buyer_party as buyer_party
+from getafix.build._shared import seller_party as seller_party
 from getafix.schema.accounting import ApplicableTradeTax, HeaderTradeAllowanceCharge
 from getafix.schema.agreement import TradeAgreement
 from getafix.schema.document import Context, Document, GuidelineDocument

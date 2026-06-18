@@ -29,6 +29,8 @@ from getafix.build._shared import (
     to_decimal,
     trade_delivery,
 )
+from getafix.build._shared import buyer_party as buyer_party
+from getafix.build._shared import seller_party as seller_party
 from getafix.schema._numeric import round_half_away_from_zero
 from getafix.schema.accounting import ApplicableTradeTax, HeaderTradeAllowanceCharge
 from getafix.schema.agreement import TradeAgreement

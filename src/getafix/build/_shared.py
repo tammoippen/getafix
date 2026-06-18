@@ -110,13 +110,18 @@ def seller_party(
     line_two: str | None = None,
     country_subdivision: str | None = None,
 ) -> SellerTradeParty:
-    """Build a Seller (BG-4) from the common identifying fields.
+    """Build a BASIC_WL+ Seller (BG-4) — the shared full-field worker.
+
+    The address detail fields (postcode, city, address lines,
+    subdivision) are gated at BASIC_WL+, so this is the builder behind
+    :func:`getafix.build.basic.seller_party` /
+    :func:`getafix.build.basic_wl.seller_party`. For a MINIMUM document
+    (country code only) use the restricted
+    :func:`getafix.build.minimum.seller_party`, which delegates here
+    with the address fields left unset.
 
     ``vat_id`` becomes the BT-31 VAT registration (``schemeID="VA"``),
-    ``tax_id`` the BT-32 local tax number (``schemeID="FC"``). The
-    address detail fields (postcode, city, address lines, subdivision)
-    are BASIC_WL+ — leave them unset for a MINIMUM document, where the
-    address carries only the country code (BT-40).
+    ``tax_id`` the BT-32 local tax number (``schemeID="FC"``).
 
     Note: at least one of BT-29 / BT-30 / BT-31 must identify the
     Seller (``BR-CO-26``) — in practice pass ``vat_id``, or set
@@ -148,11 +153,12 @@ def buyer_party(
     line_two: str | None = None,
     country_subdivision: str | None = None,
 ) -> BuyerTradeParty:
-    """Build a Buyer (BG-7) from the common identifying fields.
+    """Build a BASIC_WL+ Buyer (BG-7) — the shared full-field worker.
 
     ``vat_id`` becomes the BT-48 VAT registration (``schemeID="VA"``).
     As with :func:`seller_party`, the address detail fields are
-    BASIC_WL+ — only the country code renders at MINIMUM.
+    BASIC_WL+; for a MINIMUM document use the restricted
+    :func:`getafix.build.minimum.buyer_party`.
     """
     return BuyerTradeParty(
         name=name,

@@ -6,15 +6,27 @@ derived behind the caller's back. This package is the convenience layer
 on top — factories that take the business inputs and compute everything
 that *can* be computed. One module per profile, plus shared helpers:
 
-* :mod:`getafix.build.minimum` — :func:`minimum_invoice` (header
-  totals only).
+* :mod:`getafix.build.minimum` — :func:`minimum_invoice` (header totals
+  only) plus the MINIMUM-restricted :func:`~getafix.build.minimum.seller_party`
+  / :func:`~getafix.build.minimum.buyer_party`.
 * :mod:`getafix.build.basic_wl` — :func:`basic_wl_invoice` (VAT
-  breakdown, still no line items).
-* :mod:`getafix.build.basic` — :func:`line_item`, :func:`vat_breakdown`
-  and :func:`basic_invoice` (full line-item document).
-* :mod:`getafix.build._shared` — the party builders
-  (:func:`seller_party` / :func:`buyer_party`), the BG-22 totals
-  computer (:func:`monetary_summation`) and the cross-profile internals.
+  breakdown, still no line items) plus the full party builders.
+* :mod:`getafix.build.basic` — :func:`line_item`, :func:`vat_breakdown`,
+  :func:`basic_invoice` (full line-item document) plus the full party
+  builders.
+* :mod:`getafix.build._shared` — the cross-profile internals and the
+  BG-22 totals computer (:func:`monetary_summation`).
+
+This top level re-exports only the helpers whose valid-field set does
+not depend on the profile (the invoice constructors, ``line_item``,
+``vat_breakdown``, ``monetary_summation``). The **party builders are
+profile-specific** — at MINIMUM only the country code is rendered, while
+BASIC_WL+ additionally permits postcode / city / street lines — so they
+are *not* re-exported here. Import ``seller_party`` / ``buyer_party``
+from the module for the profile you are building
+(``getafix.build.minimum`` vs. ``getafix.build.basic`` /
+``getafix.build.basic_wl``); the profile-specific builders delegate to a
+shared full-field worker.
 
 The high-level builders stop at BASIC on purpose: COMFORT (EN 16931)
 and EXTENDED add far more optional structure than a convenience
@@ -30,9 +42,7 @@ calling :meth:`~getafix.schema.document.Document.validate` /
 """
 
 from getafix.build._shared import Numeric as Numeric
-from getafix.build._shared import buyer_party as buyer_party
 from getafix.build._shared import monetary_summation as monetary_summation
-from getafix.build._shared import seller_party as seller_party
 from getafix.build.basic import basic_invoice as basic_invoice
 from getafix.build.basic import line_item as line_item
 from getafix.build.basic import vat_breakdown as vat_breakdown
@@ -43,10 +53,8 @@ __all__ = [
     "Numeric",
     "basic_invoice",
     "basic_wl_invoice",
-    "buyer_party",
     "line_item",
     "minimum_invoice",
     "monetary_summation",
-    "seller_party",
     "vat_breakdown",
 ]
