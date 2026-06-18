@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.element import ValidationError
 from getafix.schema.settlement import FinancialCard
+from getafix.schema.types import Profile
 
 
 @pt.mark.parametrize("value", ["1234", "12345", "123456"])

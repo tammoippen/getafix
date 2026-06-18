@@ -41,11 +41,20 @@ class SchematronResult:
     treated as either pass or fail).
 
     ``ok_count`` — asserts that evaluated cleanly and passed.
+
+    ``reports`` — messages from ``<sch:report>`` elements that fired.
+    A report is the logical inverse of an assert: it fires when its
+    ``test`` evaluates to *true* (the reported condition holds),
+    whereas an assert fires when its test is *false*. The reports in
+    ``FACTUR-X_EXTENDED.sch`` carry no bracketed ``[BR-...]`` code or
+    ``id`` attribute, so they're keyed by their normalised message
+    text rather than a rule code.
     """
 
     violations: frozenset[str]
     indeterminate: frozenset[str]
     ok_count: int
+    reports: frozenset[str] = frozenset()
 
 
 def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronResult:
@@ -63,6 +72,7 @@ def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronR
 
     violations: set[str] = set()
     indeterminate: set[str] = set()
+    reports: set[str] = set()
     ok_count = 0
 
     for pattern in sch_root.findall(f"{{{_SCH_NS}}}pattern"):
@@ -106,10 +116,34 @@ def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronR
                 if evaluated and not fired:
                     ok_count += 1
 
+            for report_el in rule.findall(f"{{{_SCH_NS}}}report"):
+                label = _report_label(report_el)
+                test = report_el.attrib.get("test", "")
+                for ctx in ctx_nodes:
+                    try:
+                        result = elementpath.select(
+                            xml_root,
+                            test,
+                            namespaces=namespaces,
+                            parser=XPath2Parser,
+                            item=ctx,
+                        )
+                    except Exception:  # noqa: BLE001 — elementpath raises a wide variety; treat any as "indeterminate"
+                        # A report whose test can't be evaluated tells us
+                        # nothing — neither fired nor not — so drop it
+                        # rather than recording a phantom report.
+                        break
+                    # A report is the inverse of an assert: it fires when
+                    # its test is *true*.
+                    if result:
+                        reports.add(label)
+                        break
+
     return SchematronResult(
         violations=frozenset(violations),
         indeterminate=frozenset(indeterminate),
         ok_count=ok_count,
+        reports=frozenset(reports),
     )
 
 
@@ -119,3 +153,18 @@ def _code_from_assert(el: etree._Element) -> str:
     if match:
         return match.group(1)
     return el.attrib.get("id", "?")
+
+
+def _report_label(el: etree._Element) -> str:
+    """Identify a fired ``<sch:report>``.
+
+    Prefers a bracketed ``[BR-...]`` code, then the ``id`` attribute,
+    falling back to the report's normalised message text — the
+    EXTENDED reports carry neither code nor id, so the message is the
+    only thing that distinguishes them.
+    """
+    text = " ".join((el.text or "").split())
+    match = _CODE_RX.match(text)
+    if match:
+        return match.group(1)
+    return el.attrib.get("id") or text or "?"

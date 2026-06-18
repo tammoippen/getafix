@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.element import ProfileMismatch
 from getafix.schema.line import (
     OriginCountry,
@@ -30,6 +29,7 @@ from getafix.schema.line import (
     ProductClassification,
     TradeProduct,
 )
+from getafix.schema.types import Profile
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 

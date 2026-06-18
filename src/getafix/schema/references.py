@@ -6,33 +6,13 @@ payload. These are the cross-references that point from an invoice
 back to upstream documents (purchase order, contract, despatch
 advice, …) or forward to downstream supporting material.
 
-Header references by profile:
-
-* MINIMUM: ``BuyerOrderReferencedDocument`` (BT-13-00).
-* BASIC_WL: ``ContractReferencedDocument`` (BT-12-00),
-  ``DespatchAdviceReferencedDocument`` (BT-16-00),
-  ``InvoiceReferencedDocument`` (BG-3).
-* COMFORT: ``SellerOrderReferencedDocument`` (BT-14-00),
-  ``ReceivingAdviceReferencedDocument`` (BT-15-00),
-  ``AdditionalReferencedDocument`` (BG-24) carrying
-  ``AttachmentBinaryObject`` (BT-125), ``SpecifiedProcuringProject``
-  (BT-11-00).
-* EXTENDED: ``DeliveryNoteReferencedDocument`` (BT-X-202-00),
-  ``UltimateCustomerOrderReferencedDocument`` (BG-X-23).
-
-No business rules are enforced in this module. ``BR-52`` (every BG-24
-entry must carry BT-122) is implicit through ``AdditionalReferencedDocument.issuer_assigned_id``
-being a required field.
-
 The line-level delivery-note reference twin lives on
 ``LineTradeDelivery.delivery_note`` (EXTENDED); the despatch / receiving
 advice line twins are not yet modelled (see the README "Status and
 known gaps").
-:class:`~getafix.schema.line.LineBuyerOrderReferencedDocument` (BT-132-00)
-and :class:`~getafix.schema.line.LineAdditionalReferencedDocument`
-(BT-128-00) cover the COMFORT line-level references.
 """
 
+from base64 import b64decode
 from dataclasses import dataclass, field
 from datetime import date
 from typing import ClassVar, Self, override
@@ -55,7 +35,7 @@ class BuyerOrderReferencedDocument(Element):
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Purchase order reference (BT-13).
 
-    An identifier of a referenced purchase order, issued by the Buyer.
+    Order number of the Buyer's purchase order this invoice answers.
     """
     issue_date_time: date | None = field(
         default=None,
@@ -63,7 +43,7 @@ class BuyerOrderReferencedDocument(Element):
     )
     """Purchase order date (BT-X-147-00); EXTENDED-only.
 
-    The issue date of the referenced purchase order (BT-13)."""
+    When the purchase order cited in BT-13 was issued."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -81,7 +61,7 @@ class SellerOrderReferencedDocument(Element):
     )
     """Sales order reference (BT-14).
 
-    An identifier of a referenced sales order, issued by the Seller.
+    Order number the Seller assigned to the referenced sales order.
     """
     issue_date_time: date | None = field(
         default=None,
@@ -89,7 +69,7 @@ class SellerOrderReferencedDocument(Element):
     )
     """Sales order confirmation date (BT-X-146-00); EXTENDED-only.
 
-    The issue date of the referenced sales order (BT-14)."""
+    When the sales order cited in BT-14 was issued."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -107,10 +87,10 @@ class ContractReferencedDocument(Element):
     )
     """Contract reference (BT-12).
 
-    The identification of a contract.
+    Identifies the contract the invoice settles against.
 
-    Note: the contract identifier should be unique in the context of
-    the specific trading relationship and for a defined time period.
+    Note: within a given trading relationship — and over a defined
+    period of time — the identifier should be unambiguous.
     """
 
 
@@ -149,7 +129,8 @@ class UltimateCustomerOrderReferencedDocument(Element):
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Ultimate customer order number (BT-X-150).
 
-    The Ultimate Customer Order number of the final customer.
+    Order number placed by the final customer at the end of the
+    purchase chain.
     """
     issue_date_time: date = field(metadata={"tag": "FormattedIssueDateTime"})
     """Ultimate customer order date (BT-X-151-00).
@@ -162,9 +143,9 @@ class UltimateCustomerOrderReferencedDocument(Element):
 class AttachmentBinaryObject(Element):
     """Attached document, binary payload (BT-125).
 
-    A supporting document attached as a binary object or sent together
-    with the invoice. Used when documentation has to be stored with
-    the invoice for future reference or audit purposes.
+    A supporting document embedded as a binary object or sent along
+    with the invoice. Used when the documentation needs to stay
+    archived next to the invoice for later reference or audit.
 
     Note: rendered as a single ``BinaryObject`` element carrying the
     base64-encoded payload as text and the MIME code / filename as
@@ -175,17 +156,15 @@ class AttachmentBinaryObject(Element):
     profile: ClassVar[Profile] = Profile.COMFORT
 
     mime_code: MIME
-    """Attached-document MIME code (BT-125-1).
-
-    Code list: allowed values are ``application/pdf``, ``image/png``,
-    ``image/jpeg``, ``text/csv``,
-    ``application/vnd.openxmlformats-officedocument.spreadsheetml.sheet``,
-    ``application/vnd.oasis.opendocument.spreadsheet``.
-    """
+    """Attached-document MIME code (BT-125-1)."""
     filename: str
     """Attached-document file name (BT-125-2)."""
     object: str
     """Base64-encoded payload of the attached document (BT-125)."""
+
+    @property
+    def binary_object(self) -> bytes:
+        return b64decode(self.object)
 
     @override
     def to_xml_internal(self, profile: Profile) -> XML:
@@ -220,9 +199,8 @@ class AttachmentBinaryObject(Element):
 class AdditionalReferencedDocument(Element):
     """Additional supporting documents (BG-24).
 
-    A group of business terms providing information about additional
-    supporting documents substantiating the claims made in the
-    invoice.
+    Extra documents that back up what the invoice claims — time
+    sheets, usage reports, tender references and the like.
 
     Note: the same element multiplexes three EN 16931 business terms
     distinguished by ``TypeCode`` (BT-17-0 / BT-18-0 / BT-122-0): a
@@ -241,10 +219,9 @@ class AdditionalReferencedDocument(Element):
     )
     """Supporting-document identifier (BT-17 / BT-18 / BT-122).
 
-    The identifier of the tender or lot the invoice relates to
-    (BT-17), an identifier specified by the Seller for an object on
-    which the invoice is based (BT-18), or an identifier of the
-    supporting document itself (BT-122).
+    The call for tender or lot concerned (BT-17), a Seller-chosen
+    identifier for the object being invoiced (BT-18), or the
+    supporting document's own identifier (BT-122).
 
     Note: which of the three terms this carries is selected via
     ``type_code`` (BT-17-0 / BT-18-0 / BT-122-0).
@@ -254,27 +231,17 @@ class AdditionalReferencedDocument(Element):
     )
     """External document location (BT-124).
 
-    The URL that identifies where the external document is located —
-    a means of locating the resource including its primary access
-    mechanism (e.g. ``http://`` or ``ftp://``).
+    URL pointing at the external document; the scheme prefix
+    (``http://``, ``ftp://``, …) states how the resource is reached.
 
-    Note: external documents do not form part of the invoice. Access
-    to external documents may bear certain risks; use only when the
-    Buyer requires additional information to support the invoice.
+    Note: an externally hosted document is not part of the invoice
+    itself, and fetching it carries some risk — use only when the
+    Buyer needs the extra material to support the invoice.
     """
     type_code: UNTDID1001TypeCode | None = field(
         default=None, metadata={"tag": "TypeCode", "profile": Profile.COMFORT}
     )
     """Reference type code (BT-17-0 / BT-18-0 / BT-122-0).
-
-    Selects which EN 16931 term ``issuer_assigned_id`` carries:
-
-    * ``50`` "Price/sales catalogue response" — tender or lot
-      reference (BT-17-0).
-    * ``130`` "Invoicing data sheet" — invoiced-object identifier
-      (BT-18-0).
-    * ``916`` "Reference paper" — supporting-document reference
-      (BT-122-0).
 
     Code list: UNTDID 1001 (Document name code).
     """
@@ -294,7 +261,7 @@ class AdditionalReferencedDocument(Element):
 class ProcuringProject(Element):
     """Project reference (BT-11-00).
 
-    Detailed information about the project the invoice refers to.
+    Names and identifies the procurement project behind the invoice.
     """
 
     tag: ClassVar[str] = "SpecifiedProcuringProject"
@@ -303,12 +270,12 @@ class ProcuringProject(Element):
     id: str = field(metadata={"tag": "ID", "profile": Profile.COMFORT})
     """Project reference (BT-11).
 
-    The identification of the project the invoice refers to.
+    Identifier of the project behind the invoice.
     """
     name: str = field(metadata={"tag": "Name", "profile": Profile.COMFORT})
     """Project name (BT-11-0).
 
-    The name of the project the invoice refers to.
+    Human-readable name of that same project.
     """
 
 
@@ -316,7 +283,7 @@ class ProcuringProject(Element):
 class DespatchAdviceReferencedDocument(Element):
     """Despatch advice reference (BT-16-00).
 
-    Detailed information on the corresponding despatch advice.
+    Points at the despatch advice that announced the shipment.
     """
 
     tag: ClassVar[str] = "DespatchAdviceReferencedDocument"
@@ -325,7 +292,7 @@ class DespatchAdviceReferencedDocument(Element):
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Despatch advice reference (BT-16).
 
-    An identifier of a referenced despatch advice.
+    Document number of that despatch advice.
     """
     issue_date_time: date | None = field(
         default=None,
@@ -343,7 +310,7 @@ class DespatchAdviceReferencedDocument(Element):
 class ReceivingAdviceReferencedDocument(Element):
     """Receiving advice reference (BT-15-00).
 
-    Detailed information about the associated goods receipt.
+    Points at the goods-receipt confirmation for the delivery.
     """
 
     tag: ClassVar[str] = "ReceivingAdviceReferencedDocument"
@@ -352,7 +319,7 @@ class ReceivingAdviceReferencedDocument(Element):
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Receiving advice reference (BT-15).
 
-    An identifier of a referenced receiving advice.
+    Document number of that receiving advice.
     """
     issue_date_time: date | None = field(
         default=None,
@@ -368,10 +335,9 @@ class ReceivingAdviceReferencedDocument(Element):
 
 @dataclass(kw_only=True, slots=True)
 class DeliveryNoteReferencedDocument(Element):
-    """Delivery note reference (BT-X-202-00).
+    """Delivery note reference (BT-X-202-00). EXTENDED-only.
 
-    Detailed information about the corresponding delivery note.
-    EXTENDED-only.
+    Points at the delivery note that accompanied the goods.
     """
 
     tag: ClassVar[str] = "DeliveryNoteReferencedDocument"
@@ -380,7 +346,7 @@ class DeliveryNoteReferencedDocument(Element):
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Delivery note reference (BT-X-202)."""
     line_id: str | None = field(default=None, metadata={"tag": "LineID"})
-    """Delivery-note line position (BT-X-93); EXTENDED-only.
+    """Delivery-note line position (BT-X-93).
 
     Set only on the per-line delivery note reference
     (:attr:`~getafix.schema.line.LineTradeDelivery.delivery_note`,
@@ -395,12 +361,11 @@ class DeliveryNoteReferencedDocument(Element):
 class InvoiceReferencedDocument(Element):
     """Preceding invoice reference (BG-3).
 
-    A group of business terms providing information on one or more
-    preceding invoices.
+    Points back at one or more earlier invoices in the same billing
+    chain.
 
-    Note: to be used when a preceding invoice is corrected, when a
-    final invoice refers to preceding partial invoices, or when a
-    final invoice refers to preceding prepayment invoices.
+    Note: used when correcting an earlier invoice, or when a final
+    invoice refers back to earlier partial or prepayment invoices.
     """
 
     tag: ClassVar[str] = "InvoiceReferencedDocument"
@@ -409,14 +374,13 @@ class InvoiceReferencedDocument(Element):
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Preceding invoice reference (BT-25).
 
-    The identification of an invoice that was previously sent by the
-    Seller.
+    Invoice number of an earlier invoice the Seller already sent.
     """
     issue_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedIssueDateTime"}
     )
     """Preceding invoice issue date (BT-26).
 
-    Note: required when the preceding-invoice identifier is not
-    unique.
+    Note: must be supplied whenever the BT-25 reference alone would
+    be ambiguous.
     """

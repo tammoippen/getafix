@@ -2,31 +2,36 @@
 
 [![CI](https://github.com/tammoippen/getafix/actions/workflows/CI.yml/badge.svg)](https://github.com/tammoippen/getafix/actions/workflows/CI.yml)
 [![PyPi version](https://img.shields.io/pypi/v/getafix.svg)](https://pypi.python.org/pypi/getafix)
-![Downloads](https://pepy.tech/badge/getafix/month)](https://pepy.tech/project/getafix)
+[![Downloads](https://pepy.tech/badge/getafix/month)](https://pepy.tech/project/getafix)
 [![PyPi license](https://img.shields.io/pypi/l/getafix.svg)](https://pypi.python.org/pypi/getafix)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
 Build, parse and validate
 [**ZUGFeRD 2.x / Factur-X**](https://www.ferd-net.de/standards/zugferd)
-Cross-Industry-Invoice (CII) XML in Python. The dataclass model is
+Cross-Industry-Invoice (CII) XML in Python. The fully typed dataclass model is
 traceable to the EN 16931 business terms (`BT-…`) and groups
 (`BG-…`), so every field on every class maps back to a line in the
-spec.
+spec. A broad, but selective set of business rules (`BR-…`) are enforced
+and documented to allow tracing. An accompanied cli tool `getafix` renders
+invoices to the terminal.
+
+[![minimum invoice](/imgs/minimum.png)](/imgs/minimum.png)
 
 ## Why "getafix"?
 
-Getafix is the village druid in *Asterix* — the one who brews the
+> "get a fix" — _get a Factur-X_
+
+Getafix is the village druid in _Asterix_ — the one who brews the
 magic potion from an exact recipe, drop by drop, so it comes out
 right every time. That is what this library does for **Factur-X**:
 it follows the EN 16931 recipe term by term (`BT-…`/`BG-…`) and
-mixes a valid invoice. The Gaulish `-ix` ending even echoes the
+mixes a valid invoice. The Gaulish `-ix` ending echoes the
 `-X` in Factur-**X**, and since Factur-X is the French half of the
-standard, a French druid felt right. As a bonus, the name reads as
-"get a fix" — *get a valid Factur-X*.
+standard, the French druid felt right.
 
 > **Status: pre-1.0.** Solid for the fields that are modelled across
-> MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); selective EXTENDED
+> MINIMUM / BASIC_WL / BASIC / COMFORT (EN 16931); broad EXTENDED
 > coverage. PDF/A-3 conformance for the host PDF is **out of scope** —
 > `getafix` attaches the embedded `factur-x.xml` but does not
 > upgrade the surrounding PDF to PDF/A-3.
@@ -37,10 +42,10 @@ standard, a French druid felt right. As a bonus, the name reads as
 [`LICENSE`](LICENSE).
 
 This project is an application of the **ZUGFeRD / Factur-X**
-publication issued by the *Forum elektronische Rechnung Deutschland*
+publication issued by the _Forum elektronische Rechnung Deutschland_
 (FeRD) at AWV e.V. The format incorporates **EN 16931**, reproduced
-by FeRD with the permission of **CEN** and **DIN**. *ZUGFeRD* and
-*Factur-X* are trademarks of FeRD / AWV e.V., used here only to
+by FeRD with the permission of **CEN** and **DIN**. _ZUGFeRD_ and
+_Factur-X_ are trademarks of FeRD / AWV e.V., used here only to
 identify the standard this library implements.
 
 The vendored test fixtures under
@@ -79,11 +84,11 @@ pip install getafix
 The base install lets you build / serialise / validate documents with
 the Python stdlib XML parser. The optional extras unlock more:
 
-| Extra            | Pulls in                  | Enables |
-|------------------|---------------------------|---------|
-| `getafix[lxml]` | `lxml`                    | Round-tripping XML produced by other tools (the stdlib parser is fine for most documents; `lxml` is faster and more tolerant of large / namespaced inputs). |
-| `getafix[pdf]`  | `pypdf`                   | Embedding / extracting `factur-x.xml` in a PDF (`getafix.pdf.attach_xml` and `extract_xml`). |
-| `getafix[cli]`  | `lxml`, `rich`, `pypdf`   | The `getafix` console script — pretty-print an invoice and run the BR-* validators against it. |
+| Extra           | Pulls in                | Enables                                                                                                                                                     |
+| --------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getafix[lxml]` | `lxml`                  | Round-tripping XML produced by other tools (the stdlib parser is fine for most documents; `lxml` is faster and more tolerant of large / namespaced inputs). |
+| `getafix[pdf]`  | `pypdf`                 | Embedding / extracting `factur-x.xml` in a PDF (`getafix.pdf.attach_xml` and `extract_xml`).                                                                |
+| `getafix[cli]`  | `lxml`, `rich`, `pypdf` | The `getafix` console script — pretty-print an invoice and run the BR-\* validators against it.                                                             |
 
 Install several at once:
 
@@ -152,8 +157,8 @@ schema tree directly:
 from datetime import date
 from decimal import Decimal
 
-from getafix.schema import (
-    Context, Document, GuidelineDocument, Header, Profile, TypeCode,
+from getafix.schema.document import (
+    Context, Document, GuidelineDocument, Header
 )
 from getafix.schema.accounting import MonetarySummation, TaxTotal
 from getafix.schema.agreement import TradeAgreement
@@ -164,7 +169,7 @@ from getafix.schema.party import (
 )
 from getafix.schema.settlement import TradeSettlement
 from getafix.schema.trade import Trade
-from getafix.schema.types import Country, Currency
+from getafix.schema.types import Country, Currency, Profile, TypeCode
 
 doc = Document(
     context=Context(guideline=GuidelineDocument(id=Profile.MINIMUM)),
@@ -197,7 +202,6 @@ doc = Document(
                 tax_total=[TaxTotal(amount=Decimal("19.00"), currency_id=Currency.EUR)],
                 grand_total=Decimal("119.00"),
                 due_amount=Decimal("119.00"),
-                currency="EUR",
             ),
         ),
     ),
@@ -217,7 +221,7 @@ From XML bytes or a file:
 
 ```python
 import xml.etree.ElementTree as ET
-from getafix.schema import Document
+from getafix.schema.document import Document
 
 tree = ET.parse("factur-x.xml")
 doc = Document.from_xml(tree.getroot())
@@ -236,7 +240,7 @@ From a Factur-X / ZUGFeRD PDF (`getafix[pdf]` extra):
 ```python
 import xml.etree.ElementTree as ET
 from getafix.pdf import extract_xml
-from getafix.schema import Document
+from getafix.schema.document import Document
 
 payload = extract_xml(Path("invoice.pdf"))   # bytes or None
 if payload is None:
@@ -287,9 +291,9 @@ The `getafix[cli]` extra ships a console script that pretty-prints
 an invoice and runs the validators:
 
 ```bash
-$ getafix path/to/factur-x.xml
-$ getafix path/to/invoice.pdf            # reads the embedded XML
-$ getafix --no-validate path/to/file.xml # skip BR-* checks
+> getafix path/to/factur-x.xml
+> getafix path/to/invoice.pdf            # reads the embedded XML
+> getafix --no-validate path/to/file.xml # skip BR-* checks
 ```
 
 Exit codes:
@@ -300,18 +304,20 @@ Exit codes:
   was found in the supplied PDF).
 - `2` — usage / IO / missing dependency error.
 
+[![comfort invoice](/imgs/comfort.png)](/imgs/comfort.png)
+
 ## Profiles
 
 ZUGFeRD / Factur-X defines five conformance profiles, ordered by
 completeness:
 
-| Profile     | URN                                                                 | Carries line items |
-|-------------|----------------------------------------------------------------------|--------------------|
-| `MINIMUM`   | `urn:factur-x.eu:1p0:minimum`                                        | ✗ (header totals only) |
-| `BASIC_WL`  | `urn:factur-x.eu:1p0:basicwl`                                        | ✗ (basic, without lines) |
-| `BASIC`     | `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic`        | ✓ |
-| `COMFORT`   | `urn:cen.eu:en16931:2017`  *(a.k.a. EN 16931)*                       | ✓ |
-| `EXTENDED`  | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended`    | ✓ + sub-lines |
+| Profile    | URN                                                               | Carries line items       |
+| ---------- | ----------------------------------------------------------------- | ------------------------ |
+| `MINIMUM`  | `urn:factur-x.eu:1p0:minimum`                                     | ✗ (header totals only).  |
+| `BASIC_WL` | `urn:factur-x.eu:1p0:basicwl`                                     | ✗ (basic, without lines) |
+| `BASIC`    | `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic`     | ✓                        |
+| `COMFORT`  | `urn:cen.eu:en16931:2017` _(a.k.a. EN 16931)_                     | ✓                        |
+| `EXTENDED` | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended` | ✓ + sub-lines            |
 
 The profile is set on the document via
 `Context(guideline=GuidelineDocument(id=Profile.X))`. Getafix
@@ -344,33 +350,33 @@ against the EXTENDED XSD (declare a `field()` gated `Profile.EXTENDED`,
 in XSD-sequence order); getafix will accept a PR, or pick one up when a
 sample needs it:
 
-* **Party extras** — `RoleCode` (`BT-X-483`…`BT-X-575`) on every trade
+- **Party extras** — `RoleCode` (`BT-X-483`…`BT-X-575`) on every trade
   party; additional legal info (`Description`) on the Buyer (`BT-X-334`)
   and the line-level item seller (`BT-X-571`); contact `TypeCode`
   (`BT-X-315`…`BT-X-575`) on every `DefinedTradeContact` (BG-6 / BG-9).
-* **Line-level twins of header references** — on `LineTradeAgreement`:
+- **Line-level twins of header references** — on `LineTradeAgreement`:
   delivery terms (`BG-X-87`), contract (`BG-X-2`), seller order
   (`BG-X-81`), ultimate-customer order (`BG-X-5`); on
   `LineTradeDelivery`: the actual delivery event / date (`BT-X-85-000`),
   despatch (`BG-X-13`) and receiving (`BG-X-82`) advice; on
   `LineTradeSettlement`: the preceding-invoice reference (`BG-X-48`);
   line-note codes (`BT-X-9` / `BT-X-10`).
-  *(The line-level delivery-note `BG-X-83` and additional-document
-  `BG-X-3` twins **are** modelled.)*
-* **Line monetary totals** — `AllowanceTotalAmount` / `ChargeTotalAmount`
+  _(The line-level delivery-note `BG-X-83` and additional-document
+  `BG-X-3` twins **are** modelled.)_
+- **Line monetary totals** — `AllowanceTotalAmount` / `ChargeTotalAmount`
   / `TaxTotalAmount` / `GrandTotalAmount` (`BT-X-327`…`BT-X-330`); the
   line total and total-allowance-charge are modelled.
-* **Referenced-document leaves** — `FormattedIssueDateTime` on the header
+- **Referenced-document leaves** — `FormattedIssueDateTime` on the header
   additional / contract references (`BT-X-33-00` / `BT-X-148-00` /
   `BT-X-149-00`); preceding-invoice `TypeCode` (`BT-X-555`); accounting
   reference `TypeCode` (`BT-X-99` / `BT-X-290`).
-* **Other shared leaves** — item characteristic `TypeCode` / `ValueMeasure`
+- **Other shared leaves** — item characteristic `TypeCode` / `ValueMeasure`
   (`BT-X-11` / `BT-X-12`), invoicing-period `Description` (`BT-X-264`),
   allowance/charge `SequenceNumeric` / `BasisQuantity` (`BT-X-265` /
   `BT-X-266`), per-line product local `ID` (`BT-X-305`), net-price
   `IncludedTradeTax` (`BG-X-4`, B2C VAT in the unit price).
 
-PDF/A-3 packaging is out of scope; use `factur-x` (PyPI),
+PDF/A-3 packaging is out of scope; use [factur-x](https://github.com/akretion/factur-x),
 [Mustangproject](https://github.com/ZUGFeRD/mustangproject) or a
 dedicated converter for full Factur-X PDF conformance.
 
@@ -384,9 +390,8 @@ validator, and the test / lint workflow.
 
 Specification and validators:
 
-- [FeRD net — ZUGFeRD overview](https://www.ferd-net.de/standards/zugferd)
+- [FeRD net — ZUGFeRD standard](https://www.ferd-net.de/standards/zugferd)
 - [Rechnung Fans — XRechnung / EN 16931 portal](https://portal3.gefeg.com/invoice/tthome/index/617afdc4-623f-44e0-a05b-5b878840e508)
-- [e-Rechnung Bund — official documents](https://e-rechnung-bund.de/mediathek/dokumente/)
 - [Service BW e-Rechnung Validator](https://erechnungsvalidator.service-bw.de/)
 - [Rechnung.fans validator](https://portal3.gefeg.com/invoice/validation)
 - [Invoice Portal validator](https://validator.invoice-portal.de/index.php)

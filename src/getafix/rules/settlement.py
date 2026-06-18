@@ -10,8 +10,6 @@ Each function:
   ``Business Rules`` sheet) and on the precondition data;
 * returns ``list[ValidationError]`` (empty on success);
 * never raises.
-
-See ``AGENTS.md`` "Validator architecture" for the design.
 """
 
 # pyright: reportImportCycles=false
@@ -34,8 +32,8 @@ if TYPE_CHECKING:
 def br_50(
     m: _set.PayeePartyCreditorFinancialAccount, _profile: Profile
 ) -> list[ValidationError]:
-    """BR-50: A Payment account identifier (BT-84) shall be present if Credit
-    transfer (BG-16) information is provided in the Invoice.
+    """BR-50: credit-transfer information (BG-16) on an invoice must
+    come with a payment account identifier (BT-84).
 
     Applies: BASIC_WL+ (BG-17 / BT-84 do not exist below BASIC_WL).
     """
@@ -44,17 +42,15 @@ def br_50(
     return [
         ValidationError(
             "BR-50",
-            "A Payment account identifier (BT-84) shall be present "
-            "if Credit transfer (BG-16) information is provided in "
-            "the Invoice.",
+            "Credit-transfer information (BG-16) carries no payment "
+            "account identifier (BT-84).",
         )
     ]
 
 
 def br_51(m: _set.FinancialCard, _profile: Profile) -> list[ValidationError]:
-    """BR-51: The last 4 to 6 digits of the Payment card primary account
-    number (BT-87) shall be present if Payment card information (BG-18)
-    is provided in the Invoice.
+    """BR-51: payment card information (BG-18) must carry the trailing
+    4..6 digits of the card number (BT-87).
 
     Applies: COMFORT+ (BG-18 first appears at COMFORT). Format guard —
     the field's presence is enforced by the dataclass declaring it
@@ -73,9 +69,9 @@ _CREDIT_TRANSFER_CODES = {"30", "42", "58"}
 
 
 def br_61(m: _set.PaymentMeans, _profile: Profile) -> list[ValidationError]:
-    """BR-61: If the Payment means type code (BT-81) means SEPA credit
-    transfer, Local credit transfer or Non-SEPA international credit
-    transfer, the Payment account identifier (BT-84) shall be present.
+    """BR-61: a credit-transfer payment (BT-81 coding a SEPA, local or
+    non-SEPA international transfer) requires a payment account
+    identifier (BT-84).
 
     Applies: BASIC_WL+ (BG-16 / BT-81 first appear there). The
     credit-transfer family covers UNTDID 4461 codes ``30`` (Credit
@@ -91,7 +87,8 @@ def br_61(m: _set.PaymentMeans, _profile: Profile) -> list[ValidationError]:
             "BR-61",
             "Payment means type code "
             f"{m.type_code!r} indicates a credit transfer; "
-            "the Payment account identifier (BT-84, IBAN) shall be present.",
+            "a payment account identifier (BT-84, IBAN) is required "
+            "but missing.",
         )
     ]
 
@@ -119,9 +116,8 @@ def bt_81_code_shape(m: _set.PaymentMeans, _profile: Profile) -> list[Validation
 def br_co_19(
     m: _set.BillingSpecifiedPeriod, _profile: Profile
 ) -> list[ValidationError]:
-    """BR-CO-19: If Invoicing period (BG-14) is used, the Invoicing period
-    start date (BT-73) or the Invoicing period end date (BT-74) shall be
-    filled, or both.
+    """BR-CO-19: an invoicing period (BG-14) must carry its start date
+    (BT-73), its end date (BT-74), or both.
 
     Applies: BASIC_WL+ (BG-14 / BG-26 do not exist below BASIC_WL).
     Also enforced on BG-26 (line invoicing period) — same dataclass.
@@ -131,18 +127,15 @@ def br_co_19(
     return [
         ValidationError(
             "BR-CO-19",
-            "If Invoicing period (BG-14) is used, the Invoicing "
-            "period start date (BT-73) or the Invoicing period end "
-            "date (BT-74) shall be filled, or both.",
+            "Invoicing period (BG-14) carries neither a start (BT-73) "
+            "nor an end (BT-74) date.",
         )
     ]
 
 
 def br_29(m: _set.BillingSpecifiedPeriod, _profile: Profile) -> list[ValidationError]:
-    """BR-29: If both Invoicing period start date (BT-73) and Invoicing
-    period end date (BT-74) are given then the Invoicing period end date
-    (BT-74) shall be later or equal to the Invoicing period start date
-    (BT-73).
+    """BR-29: when both period endpoints are given, the end (BT-74)
+    may not precede the start (BT-73).
 
     Applies: BASIC_WL+. Also enforced on BG-26 (line invoicing
     period) — same dataclass.
@@ -154,10 +147,7 @@ def br_29(m: _set.BillingSpecifiedPeriod, _profile: Profile) -> list[ValidationE
     return [
         ValidationError(
             "BR-29",
-            "If both Invoicing period start date (BT-73) and "
-            "Invoicing period end date (BT-74) are given then the "
-            "Invoicing period end date (BT-74) shall be later or "
-            "equal to the Invoicing period start date (BT-73).",
+            "Invoicing period end date (BT-74) precedes the start date (BT-73).",
         )
     ]
 
@@ -165,7 +155,7 @@ def br_29(m: _set.BillingSpecifiedPeriod, _profile: Profile) -> list[ValidationE
 def br_5_currency_shape(
     m: _set.TradeSettlement, _profile: Profile
 ) -> list[ValidationError]:
-    """BR-5: An Invoice shall have an Invoice currency code (BT-5).
+    """BR-5: the Invoice currency code (BT-5) is required.
 
     Applies: MINIMUM+. Getafix stretches the rule to also check
     that the value has the ISO 4217 alpha-3 uppercase shape; the
@@ -185,8 +175,7 @@ def br_5_currency_shape(
 
 
 def br_co_18(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]:
-    """BR-CO-18: An Invoice shall at least have one VAT breakdown group
-    (BG-23).
+    """BR-CO-18: at least one VAT breakdown row (BG-23) is required.
 
     Applies: BASIC_WL+ (BG-23 is required from that profile up; the
     MINIMUM XSD does not carry it).
@@ -198,15 +187,14 @@ def br_co_18(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     return [
         ValidationError(
             "BR-CO-18",
-            "An Invoice shall at least have one VAT breakdown group (BG-23).",
+            "No VAT breakdown (BG-23) present — at least one row is required.",
         )
     ]
 
 
 def br_53(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError]:
-    """BR-53: If the VAT accounting currency code (BT-6) is present, then
-    the Invoice total VAT amount in accounting currency (BT-111) shall be
-    provided.
+    """BR-53: setting BT-6 (the VAT accounting currency) obliges the
+    invoice to also state its VAT total in that currency (BT-111).
 
     Applies: BASIC_WL+ (BT-6 only exists from BASIC_WL up).
     """
@@ -218,17 +206,15 @@ def br_53(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError]:
     return [
         ValidationError(
             "BR-53",
-            "If the VAT accounting currency code (BT-6) is "
-            "present, then the Invoice total VAT amount in "
-            "accounting currency (BT-111) shall be provided.",
+            "BT-6 is set but no VAT total in the accounting "
+            "currency (BT-111) was found.",
         )
     ]
 
 
 def br_co_25(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]:
-    """BR-CO-25: In case the Amount due for payment (BT-115) is positive,
-    either the Payment due date (BT-9) or the Payment terms (BT-20) shall
-    be present.
+    """BR-CO-25: a positive amount due (BT-115) needs a payment due
+    date (BT-9) or payment terms text (BT-20) alongside it.
 
     Applies: BASIC_WL+. Both source fields (BT-9 / BT-20) live in
     ``SpecifiedTradePaymentTerms`` which the MINIMUM XSD does not
@@ -245,9 +231,8 @@ def br_co_25(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     return [
         ValidationError(
             "BR-CO-25",
-            "In case the Amount due for payment (BT-115) is "
-            "positive, either the Payment due date (BT-9) or the "
-            "Payment terms (BT-20) shall be present.",
+            "Amount due (BT-115) is positive but neither a payment "
+            "due date (BT-9) nor payment terms (BT-20) are given.",
         )
     ]
 
@@ -287,8 +272,8 @@ def br_co_14(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError
 
 
 def br_co_15(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]:
-    """BR-CO-15: Invoice total amount with VAT (BT-112) = Invoice total
-    amount without VAT (BT-109) + Invoice total VAT amount (BT-110).
+    """BR-CO-15: BT-112 must equal BT-109 + BT-110 — the gross total
+    is the net total plus the VAT total.
 
     Applies: MINIMUM+ except EXTENDED. At EXTENDED
     ``BR-FXEXT-CO-15`` replaces this with a tolerance-banded variant.
@@ -311,8 +296,7 @@ def br_co_15(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
     return [
         ValidationError(
             "BR-CO-15",
-            "Invoice total amount with VAT (BT-112) "
-            f"= {m.monetary_summation.grand_total} differs from "
+            f"BT-112 = {m.monetary_summation.grand_total} differs from "
             f"BT-109 + BT-110 = "
             f"{m.monetary_summation.tax_basis_total} + {bt_110} "
             f"= {expected_grand}.",
@@ -321,8 +305,8 @@ def br_co_15(m: _set.TradeSettlement, profile: Profile) -> list[ValidationError]
 
 
 def br_co_16(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError]:
-    """BR-CO-16: Amount due for payment (BT-115) = Invoice total amount
-    with VAT (BT-112) - Paid amount (BT-113) + Rounding amount (BT-114).
+    """BR-CO-16: BT-115 must equal BT-112 - BT-113 + BT-114 — the
+    amount due is the gross total less prepayments plus rounding.
 
     Applies: MINIMUM+. BT-114 (RoundingAmount) is optional and only
     available from COMFORT onwards — treated as 0 when absent.
@@ -336,8 +320,7 @@ def br_co_16(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError
     return [
         ValidationError(
             "BR-CO-16",
-            "Amount due for payment (BT-115) "
-            f"= {m.monetary_summation.due_amount} differs from "
+            f"BT-115 = {m.monetary_summation.due_amount} differs from "
             f"BT-112 - BT-113 + BT-114 = "
             f"{m.monetary_summation.grand_total} - {prepaid} "
             f"+ {rounding} = {expected_due}.",

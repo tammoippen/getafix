@@ -44,8 +44,8 @@ from pathlib import Path
 
 from lxml import etree
 
-from getafix.schema import Document
 from getafix.schema.agreement import RelevantTradeLocation, TradeDeliveryTerms
+from getafix.schema.document import Document
 from getafix.schema.element import ValidationErrors
 from getafix.schema.line import (
     ChargeFreeQuantity,
@@ -220,7 +220,6 @@ def build_settlement_parties() -> bytes:
                     calculated_amount=Decimal("19.00"),
                     category_code=CategoryCode.T_S,
                     rate_applicable_percent=Decimal("19.00"),
-                    currency="EUR",
                 )
             ],
             invoice_referenced_document=AdvancePaymentReferencedDocument(
@@ -228,7 +227,6 @@ def build_settlement_parties() -> bytes:
                 type_code=TypeCode.T_ProformaInvoice,
                 issue_date_time=date(2026, 4, 15),
             ),
-            currency="EUR",
         )
     ]
     # Reconcile BT-113 (prepaid) and BT-115 (due) with the prepayment so

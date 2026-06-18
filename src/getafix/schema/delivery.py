@@ -1,23 +1,4 @@
-"""Header trade delivery (BG-13-00) — ship-to, dispatch and receipt.
-
-``ApplicableHeaderTradeDelivery`` is the second sibling of the
-``SupplyChainTradeTransaction``. It carries the where-and-when of the
-goods or services covered by the invoice:
-
-* the consignment / transport mode (BG-X-24, EXTENDED only);
-* ship-to (BG-13, BASIC_WL+), ultimate-ship-to (BG-X-27, EXTENDED) and
-  ship-from (BG-X-30, EXTENDED) parties — defined in :mod:`party`;
-* the actual delivery date (BT-72) wrapped in a ``SupplyChainEvent``;
-* the despatch advice (BT-16-00, BASIC_WL+) and receiving advice
-  (BT-15-00, COMFORT+) references, plus the EXTENDED-only delivery
-  note reference — defined in :mod:`references`.
-
-No business rules are enforced in this module. ``BT-72`` participates
-in ``BR-IC-11`` (intra-community supply must carry a delivery date or
-an invoicing period) which lives in :mod:`trade`. The XSD
-``<xs:sequence>`` of ``HeaderTradeDeliveryType`` dictates the field
-order.
-"""
+"""Header trade delivery (BG-13-00) — ship-to, dispatch and receipt."""
 
 from dataclasses import dataclass, field
 from datetime import date
@@ -42,7 +23,7 @@ class LogisticsTransportMovement(Element):
     """Specified Logistics Transport Movement (BT-X-152-00).
 
     Transport-movement sub-block of the related supply-chain
-    consignment; EXTENDED-only.
+    consignment.
     """
 
     tag: ClassVar[str] = "SpecifiedLogisticsTransportMovement"
@@ -51,8 +32,10 @@ class LogisticsTransportMovement(Element):
     mode: str | None = field(default=None, metadata={"tag": "ModeCode"})
     """Delivery method, code (BT-X-152).
 
-    Code list: UN/CEFACT Recommendation 19 / UNTDID 8067 transport
-    mode codes.
+    Code list:
+    [UN/CEFACT Recommendation 19](https://unece.org/trade/uncefact/cl-recommendations) /
+    [UNTDID 8067](https://service.unece.org/trade/untdid/d16b/tred/tred8067.htm)
+    transport mode codes.
     """
 
 
@@ -60,8 +43,8 @@ class LogisticsTransportMovement(Element):
 class SupplyChainConsignment(Element):
     """Related SupplyChain Consignment (BG-X-24).
 
-    A consignment, at header level, related to this trade delivery.
-    EXTENDED-only.
+    Header-level consignment tied to this delivery — carries the
+    transport-movement details.
     """
 
     tag: ClassVar[str] = "RelatedSupplyChainConsignment"
@@ -75,7 +58,7 @@ class SupplyChainConsignment(Element):
 class SupplyChainEvent(Element):
     """Actual delivery (BT-72-000).
 
-    Detailed information about the actual delivery event.
+    Event wrapper carrying the date the delivery actually took place.
     """
 
     tag: ClassVar[str] = "ActualDeliverySupplyChainEvent"
@@ -87,15 +70,15 @@ class SupplyChainEvent(Element):
     )
     """Actual delivery date (BT-72).
 
-    The date on which the supply of goods or services was made or
-    completed.
+    When the goods or services were actually supplied (or supply was
+    completed).
 
-    Note: In Germany, the date of delivery and performance is a
-    mandatory information on invoices. It may additionally be
-    indicated at line level, but must in any case be present here. An
-    exception is prepayment invoices (``ExchangedDocument/TypeCode =
-    386``), where the delivery or performance date is not yet known
-    at the time of invoicing.
+    Note: German invoices must state the delivery/performance date.
+    It may be repeated at line level, but the header occurrence is
+    the one that counts. Prepayment invoices
+    (``ExchangedDocument/TypeCode = 386``) are the exception — there
+    the delivery or performance date isn't known yet when the
+    invoice goes out.
     """
 
 
@@ -103,8 +86,9 @@ class SupplyChainEvent(Element):
 class TradeDelivery(Element):
     """Header trade delivery (BG-13-00).
 
-    A group of business terms providing information about where and
-    when the goods and services invoiced are delivered.
+    The where-and-when of the invoiced goods and services: delivery
+    parties, the actual delivery date, and the transport / receipt
+    document references.
     """
 
     tag: ClassVar[str] = "ApplicableHeaderTradeDelivery"

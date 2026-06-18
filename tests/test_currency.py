@@ -6,11 +6,15 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from getafix.schema import Profile
 from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from getafix.schema.party import TaxSchemeId
 from getafix.schema.settlement import PaymentTerms, TradeSettlement
-from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema.types import (
+    CategoryCode,
+    Currency,
+    Profile,
+    UNTDID2475TaxPointDateCode,
+)
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 
@@ -39,10 +43,11 @@ def test_monetary_summation_two_tax_totals(parser: ParseFromBytes):
     assert parsed == summation
 
 
-def test_amount_currency_id_round_trips(parser: ParseFromBytes):
-    """``currencyID`` attributes on udt:AmountType elements survive a
-    parse → render round-trip even though getafix does not expose
-    them as dataclass fields. Bug sweep #7."""
+def test_amount_currency_id_dropped_except_tax_total(parser: ParseFromBytes):
+    """The Factur-X Schematron forbids ``currencyID`` on every monetary
+    amount except ``TaxTotalAmount`` (BT-110 / BT-111). getafix renders it
+    only there: the attribute is read but dropped on parse for the plain
+    amounts, and never re-emitted on render. Bug sweep #7."""
     src = (
         "<ram:SpecifiedTradeSettlementHeaderMonetarySummation "
         'xmlns:ram="urn:un:unece:uncefact:data:standard:'
@@ -58,8 +63,11 @@ def test_amount_currency_id_round_trips(parser: ParseFromBytes):
     )
     parsed = MonetarySummation.from_xml(parser(src.encode()))
     out = parsed.to_xml_internal(Profile.BASIC_WL).render(indent=True)
-    # Every amount element keeps its currencyID="EUR" attribute.
-    assert out.count('currencyID="EUR"') == 5
+    # Only TaxTotalAmount keeps its currencyID (via TaxTotal.currency_id);
+    # the four plain amounts render bare.
+    assert out.count('currencyID="EUR"') == 1
+    assert '<ram:TaxTotalAmount currencyID="EUR">' in out
+    assert "<ram:LineTotalAmount>100.00</ram:LineTotalAmount>" in out
 
 
 def test_tax_currency_code_requires_matching_tax_total():

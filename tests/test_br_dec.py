@@ -24,7 +24,6 @@ from decimal import Decimal
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.accounting import (
     ApplicableTradeTax,
     HeaderTradeAllowanceCharge,
@@ -33,7 +32,12 @@ from getafix.schema.accounting import (
     TaxTotal,
 )
 from getafix.schema.line import LineMonetarySummation
-from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema.types import (
+    CategoryCode,
+    Currency,
+    Profile,
+    UNTDID2475TaxPointDateCode,
+)
 
 
 def _run(elem, profile=Profile.BASIC_WL):

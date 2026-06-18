@@ -6,7 +6,7 @@
 # that is itself a type annotation" without falling back to ``Any``.
 # Suppress the ``Any`` / ``Unknown`` categories here only; elsewhere
 # in the package they stay on.
-# pyright: reportAny=false, reportExplicitAny=false, reportPrivateUsage = false
+# pyright: reportAny=false, reportExplicitAny=false, reportPrivateUsage=false
 # pyright: reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
 
 import datetime
@@ -17,7 +17,16 @@ from abc import ABC
 from collections.abc import Callable
 from dataclasses import Field, dataclass, fields
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Literal,
+    Self,
+    get_args,
+    get_origin,
+    override,
+)
 
 from tagic.xml import XML
 
@@ -93,48 +102,64 @@ class Element(ABC):
     "Validator architecture" for the design.
     """
 
-    def __post_init__(self) -> None:
-        # Type-shape check at construction time: every dataclass-declared
-        # field must hold a value compatible with its annotation before
-        # any ``BR-*`` validator or XML renderer touches the data. Catches
-        # parser bugs (``from_xml`` builds an ``Any``-typed dict and splats
-        # it into ``cls(**params)``) and hand-built fixtures that drift
-        # from the model. Business rules — which presuppose the shape is
-        # correct — stay in ``validate_internal``.
-        for f in fields(self):
-            value = getattr(self, f.name)
-            expected = _get_non_none_type(f.type)
-            assert not isinstance(expected, str), (
-                f"{type(self).__name__}.{f.name}: annotation {f.type!r} is a "
-                "string-form forward reference; resolve via get_type_hints "
-                "or drop the future-annotations import on the module."
-            )
-            if value is None:
-                if _allows_none(f.type):
-                    continue
-                raise TypeError(f"{type(self).__name__}.{f.name}: required, got None.")
-            _check_field(type(self).__name__, f.name, value, expected)
+    @override
+    def __setattr__(self, name: str, value: Any) -> None:
+        # Type-shape check on *every* assignment — including the per-field
+        # writes the dataclass-generated ``__init__`` performs, so this also
+        # covers construction time (no separate ``__post_init__`` needed).
+        # Every dataclass-declared field must hold a value compatible with
+        # its annotation before any ``BR-*`` validator or XML renderer
+        # touches the data. Catches parser bugs (``from_xml`` builds an
+        # ``Any``-typed dict and splats it into ``cls(**params)``),
+        # hand-built fixtures that drift from the model, and post-construct
+        # mutation (``settlement.currency_code = 42``) that would otherwise
+        # sail past the construction check. Business rules — which presuppose the
+        # shape is correct — stay in ``validate_internal``.
+        #
+        # Names that aren't dataclass fields (there are none settable on a
+        # ``slots=True`` instance beyond the fields, but be explicit) pass
+        # straight through to the slot descriptor.
+        annotation = _field_type_map(type(self)).get(name, _MISSING)
+        if annotation is not _MISSING:
+            _check_assignment(type(self).__name__, name, annotation, value)
+        object.__setattr__(self, name, value)
 
     def validate_internal(self, profile: Profile) -> list[ValidationError]:
         """Collect every business-rule violation under this Element.
 
-        First runs ``self._validators`` against this element, then
-        recurses into every child :class:`Element` reachable through
-        dataclass fields. The Document root raises
-        :class:`ValidationErrors` if the final list is non-empty.
+        First runs ``self._validators`` against this element, then —
+        for every populated field — checks the per-field profile gate
+        (the validation-time mirror of the render-time gate in
+        :meth:`_children_xml`), and finally recurses into every child
+        :class:`Element` reachable through dataclass fields. The
+        Document root raises :class:`ValidationErrors` if the final
+        list is non-empty.
+
+        The profile gate emits ``GETAFIX-FIELD-PROFILE`` for any field
+        populated below the profile it is valid at. Recursion
+        into an out-of-profile subtree is skipped: its contents are
+        moot until the gate on the field itself is satisfied.
         """
         errors: list[ValidationError] = [
             e for v in self._validators for e in v(self, profile)
         ]
         for f in fields(self):
-            if f.name == "currency":
-                continue
             value = getattr(self, f.name)
             if value is None:
                 continue
-            if not isinstance(value, list):
-                value = [value]
-            for v in value:
+            required = self._required_profile(f, value)
+            if profile < required:
+                errors.append(
+                    ValidationError(
+                        "GETAFIX-FIELD-PROFILE",
+                        f"{type(self).__name__}.{f.name}: only allowed at "
+                        f"{required.name}+ profiles "
+                        f"(current profile: {profile.name}).",
+                    )
+                )
+                continue
+            items = value if isinstance(value, list) else [value]
+            for v in items:
                 if isinstance(v, Element):
                     errors.extend(v.validate_internal(profile))
         return errors
@@ -161,48 +186,45 @@ class Element(ABC):
         """
         return None
 
+    def _required_profile(self, f: Field[Any], value: Any) -> Profile:
+        """Lowest profile at which field ``f`` (currently holding
+        ``value``) may be populated.
+
+        Resolution order: the instance hook
+        :meth:`_field_profile`, then the per-field ``metadata['profile']``
+        (``_meta_profile``), then — for an Element / list-of-Element
+        value — the item class's own :attr:`profile` so a ``0..*`` group
+        is gated like a single ``0..1`` Element field. Empty lists and
+        plain scalars without a metadata gate fall through to
+        ``MINIMUM``.
+        """
+        p = self._field_profile(f.name) or _meta_profile(f)
+        if p is None:
+            sample = value[0] if isinstance(value, list) and value else value
+            if isinstance(sample, Element):
+                p = sample.__class__.profile
+        return p or Profile.MINIMUM
+
     def _children_xml(self, profile: Profile) -> list[XML]:
         children: list[XML] = []
-        # Per-Element "currency" field provides the ``currencyID``
-        # attribute for every Decimal field marked ``"amount": True`` in
-        # metadata. Elements without amount fields don't declare it.
-        currency: str | None = getattr(self, "currency", None)
         for f in fields(self):
-            if f.name == "currency":
-                # Internal: not rendered as its own element; it shows up
-                # as the ``currencyID`` attribute on amount fields.
-                continue
             value: Any = getattr(self, f.name)
             if value is None:
                 # not required
                 continue
 
-            p = self._field_profile(f.name) or _meta_profile(f)
-            if p is None:
-                # For list-of-Element fields, the framework consults the
-                # item's class profile so a 0..* group declared at e.g.
-                # COMFORT is gated like a single 0..1 Element field would
-                # be. Empty lists fall through to MINIMUM.
-                sample = value[0] if isinstance(value, list) and value else value
-                if isinstance(sample, Element):
-                    p = sample.__class__.profile
-            if p is None:
-                p = Profile.MINIMUM
-
+            p = self._required_profile(f, value)
             if profile < p:
                 raise ProfileMismatch(
                     f"{self.__class__.__name__}.{f.name}: {profile} < {p}"
                 )
             items: list[Any] = value if isinstance(value, list) else [value]
-            extra_attrs: dict[str, str] | None = None
-            if _meta_is_amount(f) and currency:
-                extra_attrs = {"currencyID": currency}
             for v in items:
                 match v:
                     case str():
-                        children += [_render_str(v, f, extra_attrs)]
+                        children += [_render_str(v, f)]
                     case Decimal():
-                        children += [_render_str(str(v), f, extra_attrs)]
+                        children += [_render_str(str(v), f)]
                     case bool():
                         children += [_render_bool(v, f)]
                     case datetime.date():
@@ -230,12 +252,8 @@ class Element(ABC):
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
 
         params: dict[str, Any] = {}
-        has_currency_field = any(f.name == "currency" for f in fields(cls))
-        captured_currency: str | None = None
         for el in elem:
             for f in fields(cls):
-                if f.name == "currency":
-                    continue
                 curr_type = _get_non_none_type(f.type)
                 origin = get_origin(curr_type)
                 is_list = False
@@ -261,10 +279,19 @@ class Element(ABC):
                     if res is None:
                         continue
                     params[f.name] = Decimal(res)
-                    if has_currency_field and f.metadata.get("amount"):
-                        currency_attr = el.attrib.get("currencyID")
-                        if currency_attr is not None:
-                            captured_currency = currency_attr
+                    if el.attrib.get("currencyID") is not None:
+                        # ``currencyID`` on a monetary amount. The Factur-X
+                        # Schematron forbids it (a forbidding ``<report>``)
+                        # on every amount except ``TaxTotalAmount`` (BT-110 /
+                        # BT-111), which has its own ``TaxTotal.from_xml`` and
+                        # never reaches this generic branch. So any
+                        # ``currencyID`` seen here is on an amount that should
+                        # not carry one. TODO: once parse is profile-aware,
+                        # raise a ValidationError at EXTENDED (where the
+                        # forbidding reports apply) and keep ignoring it
+                        # below EXTENDED. For now, drop it silently — getafix
+                        # never re-emits it on render.
+                        pass
                 elif issubclass(curr_type, bool):
                     assert not is_list
                     params.update(_parse_bool(el, f))
@@ -281,9 +308,48 @@ class Element(ABC):
                             params[f.name] += [curr_type.from_xml(el)]
                         else:
                             params[f.name] = curr_type.from_xml(el)
-        if has_currency_field and captured_currency is not None:
-            params.setdefault("currency", captured_currency)
         return cls(**params)
+
+
+# Sentinel distinct from ``None`` (a legitimate field value) so
+# ``_field_type_map(...).get(name, _MISSING)`` can tell "not a field" apart
+# from "field whose current value is None".
+_MISSING: Any = object()
+
+# Per-class cache of ``field name -> annotation``. ``Element.__setattr__``
+# fires on every assignment, so resolving the field via ``fields()`` each
+# time would be wasteful; the field set of a class is fixed once defined.
+# Keyed on the exact concrete subclass (``type(self)``), which is what
+# ``__setattr__`` looks up.
+_FIELD_TYPE_CACHE: dict[type, dict[str, Any]] = {}
+
+
+def _field_type_map(cls: type) -> dict[str, Any]:
+    cached = _FIELD_TYPE_CACHE.get(cls)
+    if cached is None:
+        cached = {f.name: f.type for f in fields(cls)}
+        _FIELD_TYPE_CACHE[cls] = cached
+    return cached
+
+
+def _check_assignment(cls_name: str, name: str, annotation: Any, value: Any) -> None:
+    """Enforce a field's declared type-shape for one ``name = value`` write.
+
+    Shared by construction (via the per-field writes in the generated
+    ``__init__``) and post-construction mutation, both routed through
+    :meth:`Element.__setattr__`.
+    """
+    expected = _get_non_none_type(annotation)
+    assert not isinstance(expected, str), (
+        f"{cls_name}.{name}: annotation {annotation!r} is a "
+        "string-form forward reference; resolve via get_type_hints "
+        "or drop the future-annotations import on the module."
+    )
+    if value is None:
+        if _allows_none(annotation):
+            return
+        raise TypeError(f"{cls_name}.{name}: required, got None.")
+    _check_field(cls_name, name, value, expected)
 
 
 def _get_non_none_type(field_type: Any) -> Any:
@@ -371,11 +437,6 @@ def _meta_profile(field: Field[Any]) -> Profile | None:
     return p
 
 
-def _meta_is_amount(field: Field[Any]) -> bool:
-    """``True`` when the field renders as a monetary ``udt:AmountType``."""
-    return bool(field.metadata.get("amount"))
-
-
 def _render_bool(value: bool, field: Field[bool]) -> XML:
     return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}")[
         XML("udt:Indicator")[str(value).lower()]
@@ -394,11 +455,8 @@ def _parse_bool(el: ETElement, field: Field[bool]) -> dict[str, bool]:
     return {field.name: json.loads(el[0].text)}
 
 
-def _render_str(
-    value: str, field: Field[str], extra_attrs: dict[str, str] | None = None
-) -> XML:
-    attrs: dict[str, str | bool] = dict(extra_attrs) if extra_attrs else {}
-    return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}", attrs=attrs)[value]
+def _render_str(value: str, field: Field[str]) -> XML:
+    return XML(f"{_meta_ns(field).name}:{_meta_tag(field)}")[value]
 
 
 def _parse_str[T: str](

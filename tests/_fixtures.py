@@ -16,14 +16,6 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from getafix.schema import (
-    Context,
-    Document,
-    GuidelineDocument,
-    Header,
-    Profile,
-    TypeCode,
-)
 from getafix.schema.accounting import (
     ApplicableTradeTax,
     CategoryTradeTax,
@@ -33,6 +25,7 @@ from getafix.schema.accounting import (
 )
 from getafix.schema.agreement import TradeAgreement
 from getafix.schema.delivery import TradeDelivery
+from getafix.schema.document import Context, Document, GuidelineDocument, Header
 from getafix.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,
@@ -58,6 +51,8 @@ from getafix.schema.types import (
     CategoryCode,
     Country,
     Currency,
+    Profile,
+    TypeCode,
     UNTDID2475TaxPointDateCode,
 )
 

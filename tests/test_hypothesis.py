@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest as pt
 from hypothesis import HealthCheck, given, settings
 
-from getafix.schema import Document
+from getafix.schema.document import Document
 from getafix.schema.types import Profile
 
 # Strategy + XSD validation both require lxml — gate the whole module.

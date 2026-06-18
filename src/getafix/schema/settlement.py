@@ -1,33 +1,4 @@
-"""Header trade settlement (BG-19) — currency, payment, totals.
-
-``ApplicableHeaderTradeSettlement`` is the third sibling of the
-``SupplyChainTradeTransaction``. It carries:
-
-* the invoice currency (BT-5) and the optional VAT accounting
-  currency (BT-6, BASIC_WL+);
-* SEPA-specific creditor reference (BT-90) and remittance
-  information (BT-83);
-* payee details if different from seller (BG-10);
-* EXTENDED-only settlement parties: the Seller's invoice file
-  reference (BT-X-204), the Invoicer (BG-X-33), the Invoicee
-  (BG-X-36), and the Payer (BG-X-73);
-* zero-or-more payment means (BG-16) with the associated debited
-  account (BT-91-00) and creditor account (BG-17);
-* one or more VAT breakdowns (BG-23) at BASIC_WL+;
-* optional invoicing period (BG-14, also reused at line level as
-  BG-26);
-* zero-or-more allowance (BG-20) and charge (BG-21) groups —
-  defined in :mod:`accounting`;
-* optional payment terms (BT-20-00); EXTENDED upgrades this to a
-  list of payment-term blocks;
-* the monetary summation (BG-22) — defined in :mod:`accounting`;
-* zero-or-more preceding-invoice references (BG-3) — defined in
-  :mod:`references`;
-* zero-or-more accounting references (BT-19-00);
-* zero-or-more EXTENDED advance payments (BG-X-45) with their
-  included VAT (BG-X-46) and an optional prepayment-invoice
-  reference (BG-X-85).
-"""
+"""Header trade settlement (BG-19) — currency, payment, totals."""
 
 from dataclasses import dataclass, field
 from datetime import date
@@ -37,7 +8,7 @@ from typing import ClassVar, Self, override
 from tagic.xml import XML
 
 from getafix.rules import Validator
-from getafix.rules._types import fields_only_at, list_max_cardinality_below
+from getafix.rules._types import list_max_cardinality_below
 from getafix.rules.settlement import (
     br_5_currency_shape,
     br_29,
@@ -73,6 +44,7 @@ from getafix.schema.types import (
     Profile,
     TypeCode,
     UNTDID4461PaymentMeansCode,
+    VATEXCode,
 )
 
 
@@ -90,7 +62,7 @@ class PayerPartyDebtorFinancialAccount(Element):
     iban_id: str = field(metadata={"tag": "IBANID"})
     """Debited account identifier (BT-91).
 
-    The account to be debited by the direct debit.
+    The account the direct debit will pull from.
     """
 
 
@@ -116,9 +88,9 @@ class PayeePartyCreditorFinancialAccount(Element):
     iban_id: str | None = field(default=None, metadata={"tag": "IBANID"})
     """Payment account identifier (BT-84).
 
-    A unique identifier of the financial account held at a payment
-    service provider to which the payment should be made — IBAN in
-    the SEPA case, a national account number otherwise.
+    Identifies the account — held with a payment service provider —
+    the payment should land on: IBAN in the SEPA case, a national
+    account number otherwise.
 
     Note: per ``BR-50`` either ``iban_id`` or ``proprietary_id``
     must be present; ``BR-61`` further requires an IBAN for SEPA /
@@ -129,8 +101,8 @@ class PayeePartyCreditorFinancialAccount(Element):
     )
     """Payment account name (BT-85); COMFORT+.
 
-    The name of the payment account, used to identify the account
-    when the account holder is different from the Payee.
+    Account name; identifies the account when its holder differs
+    from the Payee.
     """
     proprietary_id: str | None = field(default=None, metadata={"tag": "ProprietaryID"})
     """National (non-SEPA) account number (BT-84-0).
@@ -144,7 +116,7 @@ class PayeePartyCreditorFinancialAccount(Element):
 class FinancialCard(Element):
     """Payment card (BG-18); COMFORT+.
 
-    Carries the last 4..6 digits of the Payment card primary account
+    Carries the trailing 4..6 digits of the card's primary account
     number (BT-87) and an optional cardholder name (BT-88). ``BR-51``
     constrains BT-87 to exactly 4..6 numeric digits.
     """
@@ -206,8 +178,8 @@ class CreditorFinancialInstitution(Element):
 class PaymentMeans(Element):
     """Payment instructions (BG-16).
 
-    A group of business terms providing information about the
-    payment. Repeated 0..* on :class:`TradeSettlement`.
+    How the invoice is meant to be paid. Repeated 0..* on
+    :class:`TradeSettlement`.
 
     Note: only repeat when several bank accounts are to be
     transmitted for credit transfers — the payment means
@@ -228,8 +200,8 @@ class PaymentMeans(Element):
     """Payment means type code (BT-81).
 
     The expected or used means of payment, expressed as a code.
-    Distinguishes SEPA from non-SEPA payments and between credit
-    transfers, direct debits, card payments and other means.
+    Tells SEPA apart from non-SEPA payments, and credit transfers
+    from direct debits, card payments and the rest.
 
     Code list: UNTDID 4461. Frequently-used codes:
 
@@ -274,7 +246,9 @@ class BasisPeriodMeasure(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     value: Decimal
-    """Numeric period length. Role-dependent BT id — BT-X-277 on
+    """Numeric period length. 
+    
+    Role-dependent BT id — BT-X-277 on
     :class:`PaymentPenaltyTerms.basis_period_measure`, BT-X-283 on
     :class:`PaymentDiscountTerms.basis_period_measure`."""
     unit_code: str
@@ -303,10 +277,8 @@ class BasisPeriodMeasure(Element):
 class PaymentPenaltyTerms(Element):
     """Late-payment penalty terms (BG-X-43); EXTENDED only.
 
-    Nested 0..1 on :class:`PaymentTerms`. Shape matches the XSD
-    ``TradePaymentPenaltyTermsType``: every field is optional —
-    callers populate the subset they need (e.g. just
-    ``calculation_percent`` for a flat-rate late fee, or
+    Every field is optional — callers populate the subset they need
+    (e.g. just ``calculation_percent`` for a flat-rate late fee, or
     ``basis_period_measure + actual_amount`` for "after N days, owe
     X"). The mirror class :class:`PaymentDiscountTerms` covers the
     early-payment side with the same shape modulo the final amount
@@ -323,16 +295,14 @@ class PaymentPenaltyTerms(Element):
     attribute is BT-X-276-0)."""
     basis_period_measure: BasisPeriodMeasure | None = None
     """Penalty basis period (BT-X-277; ``@unitCode`` attribute is BT-X-278)."""
-    basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "amount": True}
-    )
+    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
     """Penalty basis amount (BT-X-279)."""
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent"}
     )
     """Penalty rate percentage (BT-X-280)."""
     actual_amount: Decimal | None = field(
-        default=None, metadata={"tag": "ActualPenaltyAmount", "amount": True}
+        default=None, metadata={"tag": "ActualPenaltyAmount"}
     )
     """Penalty amount (BT-X-281)."""
 
@@ -341,10 +311,9 @@ class PaymentPenaltyTerms(Element):
 class PaymentDiscountTerms(Element):
     """Early-payment discount terms (BG-X-44); EXTENDED only.
 
-    Nested 0..1 on :class:`PaymentTerms`. Same shape as
-    :class:`PaymentPenaltyTerms` except the final amount carries
-    the ``ActualDiscountAmount`` XML tag rather than
-    ``ActualPenaltyAmount``.
+    Same shape as :class:`PaymentPenaltyTerms` except the
+    final amount carries the ``ActualDiscountAmount`` XML
+    tag rather than ``ActualPenaltyAmount``.
     """
 
     tag: ClassVar[str] = "ApplicableTradePaymentDiscountTerms"
@@ -357,16 +326,14 @@ class PaymentDiscountTerms(Element):
     attribute is BT-X-282-0)."""
     basis_period_measure: BasisPeriodMeasure | None = None
     """Discount basis period (BT-X-283; ``@unitCode`` attribute is BT-X-284)."""
-    basis_amount: Decimal | None = field(
-        default=None, metadata={"tag": "BasisAmount", "amount": True}
-    )
+    basis_amount: Decimal | None = field(default=None, metadata={"tag": "BasisAmount"})
     """Discount basis amount (BT-X-285)."""
     calculation_percent: Decimal | None = field(
         default=None, metadata={"tag": "CalculationPercent"}
     )
     """Discount rate percentage (BT-X-286)."""
     actual_amount: Decimal | None = field(
-        default=None, metadata={"tag": "ActualDiscountAmount", "amount": True}
+        default=None, metadata={"tag": "ActualDiscountAmount"}
     )
     """Discount amount (BT-X-287)."""
 
@@ -375,9 +342,9 @@ class PaymentDiscountTerms(Element):
 class PaymentTerms(Element):
     """Payment terms (BT-20-00).
 
-    A group of business terms providing the textual description of
-    the payment terms, the payment due date and (for SEPA direct
-    debits) the mandate reference. EXTENDED adds optional partial-
+    Bundles the payment conditions: the free-text terms, the payment
+    due date and (for SEPA direct debits) the mandate
+    reference. EXTENDED adds optional partial-
     payment amount and nested penalty / discount terms; the
     settlement-level cardinality widens from 0..1 (BASIC_WL through
     COMFORT) to 0..* at EXTENDED (multiple payment-term schedules),
@@ -389,29 +356,18 @@ class PaymentTerms(Element):
     tag: ClassVar[str] = "SpecifiedTradePaymentTerms"
     profile: ClassVar[Profile] = Profile.BASIC_WL
 
-    _validators: ClassVar[tuple[Validator["PaymentTerms"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED,
-            "partial_payment_amount",
-            "penalty_terms",
-            "discount_terms",
-            "payee",
-        ),
-    )
-
     description: str | None = field(default=None, metadata={"tag": "Description"})
     """Payment terms, free text (BT-20).
 
-    A textual description of the payment terms that apply to the
-    amount due for payment — including the description of possible
-    penalties. May contain multiple lines and multiple terms.
+    Free-text statement of the conditions under which the amount due
+    is to be paid, penalty clauses included. May span several lines
+    and several terms.
     """
     due: date | None = field(default=None, metadata={"tag": "DueDateDateTime"})
     """Payment due date (BT-9).
 
-    The date when the payment is due — the due date of the net
-    payment. For partial payments this is the first net due date;
-    the description of more complex schedules belongs in
+    When the net payment falls due. With partial payments this names
+    the first net due date; spell out more complex schedules in
     :attr:`description` (BT-20).
     """
     debit_mandate_id: str | None = field(
@@ -419,17 +375,13 @@ class PaymentTerms(Element):
     )
     """SEPA mandate reference (BT-89).
 
-    Unique identifier assigned by the Payee for referencing the
-    direct-debit mandate. Used to pre-notify the Buyer of a SEPA
-    direct debit.
+    Mandate number under which the Payee tracks the direct-debit
+    authorisation; lets the Buyer recognise an announced SEPA direct
+    debit.
     """
     partial_payment_amount: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "PartialPaymentAmount",
-            "amount": True,
-            "profile": Profile.EXTENDED,
-        },
+        metadata={"tag": "PartialPaymentAmount", "profile": Profile.EXTENDED},
     )
     """Partial-payment amount for this term (BT-X-275); EXTENDED only."""
     penalty_terms: PaymentPenaltyTerms | None = field(
@@ -455,8 +407,7 @@ class PaymentTerms(Element):
 class BillingSpecifiedPeriod(Element):
     """Invoicing period (BG-14 at header / BG-26 at line).
 
-    A group of business terms providing information on the period
-    the invoice covers — also called the delivery period.
+    The period the invoice covers — also called the delivery period.
 
     Note: the element name ``BillingSpecifiedPeriod`` is shared
     between header (BG-14) and line (BG-26) level — the BT IDs on
@@ -478,15 +429,16 @@ class BillingSpecifiedPeriod(Element):
     )
     """Invoicing period start date (BT-73 header / BT-134 line).
 
-    The initial date of delivery of goods or services.
+    First day of the period — when delivery of the goods or services
+    began.
     """
     end: date | None = field(
         default=None, metadata={"tag": "EndDateTime", "profile": Profile.BASIC_WL}
     )
     """Invoicing period end date (BT-74 header / BT-135 line).
 
-    The date on which the delivery of goods or services was
-    completed.
+    Last day of the period — when delivery of the goods or services
+    finished.
     """
 
 
@@ -494,8 +446,8 @@ class BillingSpecifiedPeriod(Element):
 class ReceivableAccountingAccount(Element):
     """Buyer accounting reference (BT-19-00).
 
-    Wrapper around BT-19 — the textual value specifying where the
-    relevant data is to be posted in the Buyer's financial accounts.
+    Wrapper around BT-19 — the posting key for the Buyer's financial
+    accounts.
     """
 
     tag: ClassVar[str] = "ReceivableSpecifiedTradeAccountingAccount"
@@ -504,8 +456,8 @@ class ReceivableAccountingAccount(Element):
     id: str = field(metadata={"tag": "ID"})
     """Buyer accounting reference (BT-19).
 
-    A textual value that specifies where to book the relevant data
-    in the Buyer's financial accounts.
+    Free-text posting key telling the Buyer's bookkeeping which
+    account the invoice data belongs on.
     """
 
 
@@ -525,7 +477,9 @@ class AppliedTradeTax(Element):
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Tax type code (BT-X-273-0). ``"VAT"`` at EN16931; UNTDID 5153
+    """Tax type code (BT-X-273-0). `
+    
+    `"VAT"`` at EN16931; [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm)
     at EXTENDED for non-VAT tax types (insurance tax, mineral oil
     tax, …)."""
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
@@ -546,10 +500,6 @@ class LogisticsServiceCharge(Element):
     into BT-108 alongside BG-21 document-level charges per
     ``BR-FXEXT-CO-12``, and into the per-category VAT breakdown via
     ``BR-FXEXT-{cat}-08``.
-
-    Field order matches the XSD ``LogisticsServiceChargeType``
-    ``<xs:sequence>``: ``Description`` → ``AppliedAmount`` →
-    ``AppliedTradeTax``.
     """
 
     tag: ClassVar[str] = "SpecifiedLogisticsServiceCharge"
@@ -557,12 +507,11 @@ class LogisticsServiceCharge(Element):
 
     description: str = field(metadata={"tag": "Description"})
     """Logistics service charge description (BT-X-271)."""
-    applied_amount: Decimal = field(metadata={"tag": "AppliedAmount", "amount": True})
+    applied_amount: Decimal = field(metadata={"tag": "AppliedAmount"})
     """Logistics service charge amount (BT-X-272)."""
     applied_trade_tax: list[AppliedTradeTax]
     """Per-category VAT applied to the charge (BT-X-273-00 wrapper;
     1..* per XSD). Non-empty asserted in :meth:`__post_init__`."""
-    currency: str | None = None
 
     def __post_init__(self) -> None:
         # XSD minOccurs=1 on AppliedTradeTax — the dataclass type is
@@ -598,8 +547,9 @@ class TaxCurrencyExchange(Element):
     conversion_rate_date_time: date | None = field(
         default=None, metadata={"tag": "ConversionRateDateTime"}
     )
-    """Conversion-rate date (BT-X-261, wrapped in BT-X-261-00). Plain
-    date — XSD wraps it in ``udt:DateTimeType`` with the same
+    """Conversion-rate date (BT-X-261, wrapped in BT-X-261-00). 
+    
+    Plain date — XSD wraps it in ``udt:DateTimeType`` with the same
     ``format="102"`` (YYYYMMDD) pattern as BT-2 IssueDateTime."""
 
 
@@ -607,28 +557,29 @@ class TaxCurrencyExchange(Element):
 class AdvancePaymentTradeTax(Element):
     """VAT included in an advance payment (BG-X-46); EXTENDED-only.
 
-    The ``IncludedTradeTax`` of a :class:`AdvancePayment` — the VAT
-    already accounted for in a prepayment. Same ``ram:TradeTaxType``
+    The VAT already accounted for in a prepayment. Same ``ram:TradeTaxType``
     as the BG-23 breakdown; only the fields the prepayment populates
-    are modelled, in XSD-sequence order.
+    are modelle.
     """
 
     tag: ClassVar[str] = "IncludedTradeTax"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
     calculated_amount: Decimal | None = field(
-        default=None, metadata={"tag": "CalculatedAmount", "amount": True}
+        default=None, metadata={"tag": "CalculatedAmount"}
     )
     """VAT amount included in the prepayment (BT-X-293)."""
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
-    """Tax type code (BT-X-294); UNTDID 5153, normally ``"VAT"``."""
+    """Tax type code (BT-X-294);
+    [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm),
+    normally ``"VAT"``."""
     exemption_reason: str | None = field(
         default=None, metadata={"tag": "ExemptionReason"}
     )
     """VAT exemption reason text (BT-X-295)."""
     category_code: CategoryCode = field(metadata={"tag": "CategoryCode"})
     """VAT category code (BT-X-296)."""
-    exemption_reason_code: str | None = field(
+    exemption_reason_code: VATEXCode | None = field(
         default=None, metadata={"tag": "ExemptionReasonCode"}
     )
     """VAT exemption reason code (BT-X-297)."""
@@ -636,20 +587,13 @@ class AdvancePaymentTradeTax(Element):
         default=None, metadata={"tag": "RateApplicablePercent"}
     )
     """VAT rate (BT-X-298)."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed as ``currencyID`` on
-    ``CalculatedAmount`` (BT-X-293). Getafix helper — not a BT
-    field itself (the XSD encodes it as an attribute, not an
-    element)."""
 
 
 @dataclass(kw_only=True, slots=True)
 class AdvancePaymentReferencedDocument(Element):
     """Prepayment-invoice reference on an advance payment (BG-X-85); EXTENDED-only.
 
-    The ``InvoiceSpecifiedReferencedDocument`` of a
-    :class:`AdvancePayment` — points at the prepayment / proforma
-    invoice that recorded the advance.
+    Points at the prepayment / proforma invoice that recorded the advance.
     """
 
     tag: ClassVar[str] = "InvoiceSpecifiedReferencedDocument"
@@ -681,7 +625,7 @@ class AdvancePayment(Element):
     tag: ClassVar[str] = "SpecifiedAdvancePayment"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    paid_amount: Decimal = field(metadata={"tag": "PaidAmount", "amount": True})
+    paid_amount: Decimal = field(metadata={"tag": "PaidAmount"})
     """Prepaid amount (BT-X-291)."""
     received_date_time: date | None = field(
         default=None, metadata={"tag": "FormattedReceivedDateTime"}
@@ -691,10 +635,6 @@ class AdvancePayment(Element):
     """VAT included in the prepayment (BG-X-46, 1..* per XSD)."""
     invoice_referenced_document: AdvancePaymentReferencedDocument | None = None
     """Reference to the prepayment invoice (BG-X-85, 0..1)."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed as ``currencyID`` on
-    ``PaidAmount`` (BT-X-291). Getafix helper — not a BT field
-    itself (the XSD encodes it as an attribute, not an element)."""
 
     def __post_init__(self) -> None:
         # XSD minOccurs=1 on IncludedTradeTax.
@@ -718,18 +658,12 @@ class TradeSettlement(Element):
     tag: ClassVar[str] = "ApplicableHeaderTradeSettlement"
 
     _validators: ClassVar[tuple[Validator["TradeSettlement"], ...]] = (
-        # EXTENDED-only fields: must be None at lower profiles, lest the
-        # render machinery silently drop them.
-        fields_only_at(
-            Profile.EXTENDED,
-            "invoice_issuer_reference",
-            "invoicer",
-            "invoicee",
-            "payer",
-            "currency_exchange",
-            "logistics_service_charges",
-            "advance_payments",
-        ),
+        # EXTENDED-only fields (invoice_issuer_reference, invoicer,
+        # invoicee, payer, currency_exchange, logistics_service_charges,
+        # advance_payments) are gated generically by
+        # ``Element.validate_internal`` via each field's
+        # ``metadata['profile']``.
+        #
         # SpecifiedTradePaymentTerms widens from 0..1 (BASIC_WL..COMFORT)
         # to 0..* at EXTENDED — cap the getafix list to 1 entry below
         # EXTENDED so an over-populated list fails loud rather than
@@ -750,10 +684,9 @@ class TradeSettlement(Element):
     )
     """Bank-assigned creditor identifier (BT-90).
 
-    A unique banking reference identifier of the Payee or Seller
-    assigned by the Payee's or Seller's bank — typically the SEPA
-    creditor identifier. Used to pre-notify the Buyer of a SEPA
-    direct debit.
+    Banking reference that identifies the Payee or Seller, issued by
+    their bank — typically the SEPA creditor identifier; lets the
+    Buyer recognise an announced SEPA direct debit.
     """
     payment_reference: str | None = field(
         default=None, metadata={"tag": "PaymentReference", "profile": Profile.BASIC_WL}
@@ -761,14 +694,16 @@ class TradeSettlement(Element):
     """Remittance information (BT-83).
 
     A textual value used to link the payment to the invoice — most
-    commonly the invoice number. In a payment transaction this
-    reference is returned to the Seller as remittance information.
+    commonly the invoice number. When the payment executes, the
+    Seller receives the value again as remittance information.
 
-    Note: for cross-border SEPA payments only Latin characters and
-    at most 140 characters should be used; the value must not start
+    Note: cross-border SEPA payments accept Latin characters only,
+    and at most 140 of them; the value must not start
     or end with ``/`` and must not contain ``//``. Structured
-    references following ISO 11649:2009 map to the SEPA Structured
-    Remittance Information / Creditor Reference field; EACT
+    references following
+    [ISO 11649:2009](https://www.iso.org/standard/50649.html) map to
+    the SEPA Structured Remittance Information / Creditor Reference
+    field; EACT
     structured references map to the Unstructured Remittance
     Information field. National-border SEPA payments may relax
     these rules.
@@ -778,8 +713,8 @@ class TradeSettlement(Element):
     )
     """VAT accounting currency code (BT-6); BASIC_WL+.
 
-    The currency used for VAT accounting and reporting purposes as
-    accepted or required in the Seller's country.
+    Currency in which VAT is accounted and reported, as the Seller's
+    country accepts or prescribes.
 
     Note: required only when it differs from the invoice currency
     (BT-5). When set, ``BR-53`` requires a second ``TaxTotal`` row
@@ -791,10 +726,10 @@ class TradeSettlement(Element):
     currency_code: Currency = field(metadata={"tag": "InvoiceCurrencyCode"})
     """Invoice currency code (BT-5).
 
-    The currency in which all invoice amounts are given, except for
-    the invoice VAT total in VAT accounting currency (BT-111). Only
-    one currency may be used in the invoice, except for that BT-111
-    exception per Article 230 of Council Directive 2006/112/EC.
+    Currency every amount on the invoice is denominated in. The one
+    permitted exception is the VAT total restated in the VAT
+    accounting currency (BT-111), per Article 230 of Council
+    Directive 2006/112/EC.
 
     Code list: ISO 4217.
     """
@@ -807,21 +742,25 @@ class TradeSettlement(Element):
     invoicer: InvoicerTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Invoicer party (BG-X-33); EXTENDED-only — the party that
-    issued the invoice when different from the Seller."""
+    """Invoicer party (BG-X-33); EXTENDED-only,
+    
+    The party that issued the invoice when different from the Seller."""
     invoicee: InvoiceeTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Invoicee party (BG-X-36); EXTENDED-only — the party the
-    invoice is addressed to when different from the Buyer."""
+    """Invoicee party (BG-X-36); EXTENDED-only.
+    
+    The party the invoice is addressed to when different from the Buyer."""
     payee: PayeeTradeParty | None = None
-    """Payee (BG-10); BASIC_WL+ — provided when different from the
-    Seller."""
+    """Payee (BG-10); BASIC_WL+.
+    
+    Provided when different from the Seller."""
     payer: PayerTradeParty | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
-    """Payer party (BG-X-73); EXTENDED-only — the party that settles
-    the invoice when neither Buyer nor Payee."""
+    """Payer party (BG-X-73); EXTENDED-only.
+    
+    The party that settles the invoice when neither Buyer nor Payee."""
     currency_exchange: TaxCurrencyExchange | None = field(
         default=None, metadata={"profile": Profile.EXTENDED}
     )
@@ -829,8 +768,7 @@ class TradeSettlement(Element):
     payment_means: list[PaymentMeans] | None = None
     """Payment means (BG-16, 0..*); BASIC_WL+."""
     trade_taxes: list[ApplicableTradeTax] | None = None
-    """VAT breakdown rows (BG-23, 1..*); required from BASIC_WL+
-    (``BR-CO-18``)."""
+    """VAT breakdown rows (BG-23, 1..*); required from BASIC_WL+ (``BR-CO-18``)."""
     billing_period: BillingSpecifiedPeriod | None = None
     """Header invoicing period (BG-14); BASIC_WL+."""
     allowance_charge: list[HeaderTradeAllowanceCharge] | None = None
@@ -840,18 +778,18 @@ class TradeSettlement(Element):
     )
     """Logistics service charges (BG-X-42, 0..*); EXTENDED only.
 
-    Each entry sums into BT-108 via
-    ``BR-FXEXT-CO-12`` and into its declared VAT category's BG-23 row
-    via ``BR-FXEXT-{cat}-08``.
+    Each entry sums into BT-108 via ``BR-FXEXT-CO-12`` and into 
+    its declared VAT category's BG-23 row via ``BR-FXEXT-{cat}-08``.
     """
     terms: list[PaymentTerms] | None = None
-    """Payment terms (BT-20-00); BASIC_WL+ — singleton list at every
-    profile up to and including COMFORT; multiple entries permitted
-    only at EXTENDED (XSD widens from ``minOccurs=0`` to
-    ``minOccurs=0 maxOccurs=unbounded``). Constructing a list of
-    more than one entry at a non-EXTENDED profile renders fine but
-    fails XSD validation when checked against the lower-profile
-    schemas — exercised by ``test_xsd_validity``.
+    """Payment terms (BT-20-00); BASIC_WL+ 
+    
+    Singleton list at every profile up to and including COMFORT; 
+    multiple entries permitted only at EXTENDED (XSD widens from 
+    ``minOccurs=0`` to ``minOccurs=0 maxOccurs=unbounded``). 
+    Constructing a list of more than one entry at a non-EXTENDED 
+    profile renders fine but fails XSD validation when checked 
+    against the lower-profile schemas — exercised by ``test_xsd_validity``.
     """
     monetary_summation: MonetarySummation
     """Document totals (BG-22); required at every profile."""

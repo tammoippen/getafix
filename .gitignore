@@ -20,6 +20,8 @@ coverage.xml
 # need are extracted into tests/schemas/).
 ZF24_EN/
 ZF24_EN.zip
+ZF25_EN/
+ZF25_EN.zip
 
 # Derived from ZF24_EN xlsx — regenerate with
 # `uv run python tools/extract_business_terms.py`

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from getafix.report.types import dim_paren
+from getafix.report.types import dim_paren, format_bytes
 
 if TYPE_CHECKING:
     from datetime import date
@@ -40,9 +40,11 @@ def format_reference(ref: ReferencedDocument) -> str:
 
 
 def format_attachment(attachment: AttachmentBinaryObject) -> str:
-    """Embedded supporting document (BT-125) as ``<filename> (<mime>)``.
+    """Embedded supporting document (BT-125) as ``<filename> (<mime>, <size>)``.
 
-    Summarises the binary payload by its file name (BT-125-2) and MIME
-    type (BT-125-1) rather than dumping the base64 content.
+    Summarises the binary payload by its file name (BT-125-2), MIME
+    type (BT-125-1) and decoded size rather than dumping the base64
+    content.
     """
-    return f"{attachment.filename} {dim_paren(attachment.mime_code.value)}"
+    size = format_bytes(len(attachment.binary_object))
+    return f"{attachment.filename} {dim_paren(f'{attachment.mime_code.value}, {size}')}"

@@ -60,6 +60,23 @@ def format_amount(value: Decimal, currency: str) -> str:
     return f"{value} {currency}"
 
 
+def format_bytes(size: int) -> str:
+    """Byte count with a binary (IEC) unit suffix.
+
+    Bytes show as a bare integer (``512 B``); larger sizes step through
+    ``KiB`` / ``MiB`` / ``GiB`` / ``TiB`` / ``PiB`` (1024-based) with one
+    decimal (``35.6 KiB``).
+    """
+    if size < 1024:
+        return f"{size} B"
+    value = float(size)
+    for unit in ("KiB", "MiB", "GiB", "TiB"):
+        value /= 1024
+        if value < 1024:
+            return f"{value:.1f} {unit}"
+    return f"{value / 1024:.1f} PiB"
+
+
 def format_period(start: date | None, end: date | None) -> str:
     """Date range ``<start> → <end>`` with ``…`` for an open endpoint.
 

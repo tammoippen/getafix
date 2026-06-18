@@ -23,7 +23,6 @@ from decimal import Decimal
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.accounting import ApplicableTradeTax
 from getafix.schema.element import ProfileMismatch
 from getafix.schema.line import (
@@ -37,7 +36,7 @@ from getafix.schema.line import (
     NetTradePrice,
 )
 from getafix.schema.settlement import ReceivableAccountingAccount
-from getafix.schema.types import CategoryCode, UNTDID2475TaxPointDateCode
+from getafix.schema.types import CategoryCode, Profile, UNTDID2475TaxPointDateCode
 from tests._fixtures import wrap_subtree
 from tests._parsers import ParseFromBytes
 

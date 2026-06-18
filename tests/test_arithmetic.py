@@ -9,7 +9,6 @@ from decimal import Decimal
 
 import pytest as pt
 
-from getafix.schema import Profile
 from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
 from getafix.schema.element import ValidationErrors
 from getafix.schema.line import (
@@ -24,7 +23,12 @@ from getafix.schema.line import (
 )
 from getafix.schema.settlement import PaymentTerms, TradeSettlement
 from getafix.schema.trade import TradeLineItem
-from getafix.schema.types import CategoryCode, Currency, UNTDID2475TaxPointDateCode
+from getafix.schema.types import (
+    CategoryCode,
+    Currency,
+    Profile,
+    UNTDID2475TaxPointDateCode,
+)
 from tests._fixtures import make_vat_doc
 
 
@@ -38,8 +42,15 @@ def test_br_16_error():
         doc.validate()
     assert any(v.code == "BR-16" for v in e.value.errors)
 
+    # At MINIMUM / BASIC_WL the BR-16 line-item requirement is dropped.
+    # The fixture carries BASIC_WL+ fields, so relabelling it MINIMUM now
+    # trips the generic field-profile gate — assert only that BR-16 itself
+    # is gone, not that the (artificially downgraded) document is clean.
     doc.context.guideline.id = Profile.MINIMUM
-    doc.validate()
+    try:
+        doc.validate()
+    except ValidationErrors as exc:
+        assert not any(v.code == "BR-16" for v in exc.errors)  # noqa: PT017
     doc.context.guideline.id = Profile.BASIC_WL
     doc.validate()
 

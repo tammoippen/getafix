@@ -4,30 +4,7 @@ Top-level shape of a Cross-Industry Invoice:
 
 * :class:`Document` — the ``rsm:CrossIndustryInvoice`` root carrying
   :attr:`~Document.context` (BG-2), :attr:`~Document.header`
-  (BT-1-00) and :attr:`~Document.trade` (BG-25-00). Public entry
-  points are :meth:`~Document.to_xml` and :meth:`~Document.validate`.
-* :class:`Context` (BG-2) — process-control block; carries the
-  optional :class:`BusinessDocument` (BT-23-00) and the required
-  :class:`GuidelineDocument` (BT-24-00).
-* :class:`Header` (BT-1-00) — document-wide properties: invoice
-  number (BT-1), type code (BT-3), issue date (BT-2), invoice notes
-  (BG-1), plus EXTENDED-only ``Name`` / ``CopyIndicator`` /
-  ``LanguageID`` / ``EffectiveSpecifiedPeriod``.
-* :class:`IncludedNote` (BG-1) — invoice note repeated 0..* on the
-  header.
-* :class:`EffectivePeriod` (BT-X-6-000) — contractual due date when
-  it differs from the payment due date (e.g. SEPA direct debit).
-
-No business rules are enforced in this module. ``BR-1`` (specification
-identifier required), ``BR-2`` (invoice number required), ``BR-3``
-(issue date required) and ``BR-4`` (type code required) are implicit
-through the required dataclass fields on :class:`Header` and
-:class:`GuidelineDocument`.
-
-The :meth:`Document.validate` method is the public entry point that
-collects every :class:`ValidationError` recursively in one pass and
-raises a single :class:`ValidationErrors`; child validators append to
-the list and never raise.
+  (BT-1-00) and :attr:`~Document.trade` (BG-25-00).
 """
 
 from dataclasses import dataclass, field
@@ -63,14 +40,13 @@ class BusinessDocument(Element):
     id: str | None = field(default=None, metadata={"tag": "ID"})
     """Business process type (BT-23).
 
-    Identifies the business process context in which the transaction
-    appears, to enable the Buyer to process the invoice in an
-    appropriate way.
+    Names the business-process setting the transaction belongs to so
+    the Buyer can route the invoice through the matching workflow.
 
-    Note: to be specified by the Buyer. Used to define the purpose of
-    the settlement (invoice of an agent, contract partner,
-    subcontractor, settlement document for a construction contract,
-    etc.).
+    Note: the value is prescribed by the Buyer and conveys what the
+    settlement is for — an agent's invoice, a contract partner, a
+    subcontractor, a settlement document under a construction
+    contract, and so on.
 
     Examples: production material, other material, freight invoice.
     """
@@ -89,14 +65,9 @@ class GuidelineDocument(Element):
     id: Profile = field(metadata={"tag": "ID"})
     """Specification identifier (BT-24).
 
-    An identification of the specification containing the total set
-    of rules regarding semantic content, cardinalities and business
-    rules to which the data contained in the instance document
-    conforms.
-
-    Note: conformant invoices specify ``urn:cen.eu:en16931:2017``.
-    Invoices compliant with a user specification may identify that
-    user specification here. No identification scheme is to be used.
+    Points at the specification — the complete rule set covering
+    semantics, cardinalities and business rules — that the instance
+    document claims conformance with.
     """
 
 
@@ -104,8 +75,8 @@ class GuidelineDocument(Element):
 class Context(Element):
     """Exchange document context (BG-2).
 
-    A group of business terms providing information on the business
-    process and rules applicable to the invoice document.
+    Process-control block: states which business process the invoice
+    takes part in and which rule set (specification) governs it.
     """
 
     namespace: ClassVar[Namespace] = Namespace.rsm
@@ -121,18 +92,17 @@ class Context(Element):
     """
 
     business: BusinessDocument | None = None
-    """Business process context (BT-23-00); EXTENDED-mandatory."""
+    """Business process context (BT-23-00)."""
     guideline: GuidelineDocument
-    """Specification identifier (BT-24-00); required at every profile."""
+    """Specification identifier (BT-24-00)."""
 
 
 @dataclass(kw_only=True, slots=True)
 class IncludedNote(Element):
     """Invoice note (BG-1).
 
-    A group of business terms providing textual notes that are
-    relevant to the invoice as a whole, together with an indication
-    of the subject of the note.
+    Free-text note block on the invoice header: the note text itself
+    plus optional codes stating what the note is about.
     """
 
     tag: ClassVar[str] = "IncludedNote"
@@ -143,29 +113,28 @@ class IncludedNote(Element):
     )
     """Content code (BT-X-5).
 
-    A code classifying the content of the invoice note. EXTENDED-only.
+    Coded classification of what the note says. EXTENDED-only.
 
-    Code list: UNTDID 4451 — must carry the same meaning as
-    ``subject_code`` (BT-21).
+    Code list: [UNTDID 4451](https://service.unece.org/trade/untdid/d16b/tred/tred4451.htm)
+    — must carry the same meaning as ``subject_code`` (BT-21).
     """
     content: str | None = field(
         default=None, metadata={"tag": "Content", "profile": Profile.BASIC_WL}
     )
     """Invoice note text (BT-22).
 
-    A textual note that gives unstructured information that is
-    relevant to the invoice as a whole, such as the reason for a
-    correction or an assignment note when the invoice has been
-    factored.
+    Unstructured free text carrying information that concerns the
+    invoice as a whole — e.g. why a correction was issued, or an
+    assignment note when the invoice has been factored.
     """
     subject_code: str | None = field(
         default=None, metadata={"tag": "SubjectCode", "profile": Profile.BASIC_WL}
     )
     """Invoice note subject code (BT-21).
 
-    The subject of the textual note in BT-22.
+    States what the note text (BT-22) is about.
 
-    Code list: UNTDID 4451.
+    Code list: [UNTDID 4451](https://service.unece.org/trade/untdid/d16b/tred/tred4451.htm).
     """
 
 
@@ -173,8 +142,9 @@ class IncludedNote(Element):
 class EffectivePeriod(Element):
     """Contractual due date of the invoice (BT-X-6-000).
 
-    Indicates the due date of the invoice when it differs from the
-    payment due date (typical case: SEPA direct debits). EXTENDED-only.
+    Marks when the invoice contractually falls due, where that
+    differs from the payment due date (typical case: SEPA direct
+    debits). EXTENDED-only.
     """
 
     tag: ClassVar[str] = "EffectiveSpecifiedPeriod"
@@ -201,14 +171,14 @@ class Header(Element):
     id: str = field(metadata={"tag": "ID"})
     """Invoice number (BT-1).
 
-    A unique identification of the invoice.
+    Uniquely identifies the invoice.
 
-    Note: the sequential number required in Article 226(2) of
-    Directive 2006/112/EC to uniquely identify the invoice within
-    the business context, time frame, operating systems and records
-    of the Seller. It may be based on one or more series of numbers
-    which may include alphanumeric characters. No identification
-    scheme is to be used.
+    Note: this is the sequential number that Article 226(2) of
+    Directive 2006/112/EC demands so an invoice can be told apart
+    unambiguously across the Seller's records, operating systems,
+    business context and time frame. One or more number series — which
+    may mix in alphanumeric characters — can feed it; the value
+    carries no identification scheme.
     """
 
     name: str | None = field(
@@ -218,21 +188,16 @@ class Header(Element):
 
     Free-text label for the document — e.g. ``INVOICE``, ``CREDIT
     NOTE``, ``DEBIT NOTE``, ``PROFORMA INVOICE``.
-
-    Note: the Factur-X 1.08 XSD emits ``Name`` on
-    ``ExchangedDocumentType`` only at EXTENDED; MINIMUM, BASIC_WL,
-    BASIC and EN 16931 drop the field. Placed between ``ID`` and
-    ``TypeCode`` to match the EXTENDED XSD ``<xs:sequence>``.
     """
 
     type_code: TypeCode = field(metadata={"tag": "TypeCode"})
     """Invoice type code (BT-3).
 
-    A code specifying the functional type of the invoice.
+    Coded document function — what kind of invoice this is.
 
-    Code list: UNTDID 1001 — commercial invoices and credit notes are
-    defined according to the entries in UNTDID 1001; other entries
-    may be used where applicable.
+    Code list: UNTDID 1001 — commercial invoices and credit notes
+    take their definitions from the UNTDID 1001 entries; further
+    entries may be used where they apply.
 
     Note: at BASIC_WL and MINIMUM only code ``751`` "Invoice
     information for accounting purposes" may be used — that profile
@@ -243,15 +208,15 @@ class Header(Element):
     issue_date: date = field(metadata={"tag": "IssueDateTime"})
     """Invoice issue date (BT-2).
 
-    The date when the invoice was issued.
+    Calendar date on which the Seller issued the invoice.
     """
 
-    copyright_indicator: bool | None = field(
+    copy_indicator: bool | None = field(
         default=None, metadata={"tag": "CopyIndicator", "profile": Profile.EXTENDED}
     )
     """Copy indicator (BT-X-3).
 
-    Marks the document as a copy of another invoice document.
+    Flags this document as a duplicate of an invoice issued earlier.
     EXTENDED-only.
     """
     language_id: str | None = field(
@@ -259,10 +224,10 @@ class Header(Element):
     )
     """Invoice language code (BT-X-4).
 
-    Indicates the language used in the invoice document.
+    Language the invoice document is written in.
     EXTENDED-only.
 
-    Code list: ISO 639-2.
+    Code list: [ISO 639-2](https://www.loc.gov/standards/iso639-2/php/code_list.php).
 
     Example: ``de``.
     """

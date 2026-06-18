@@ -7,7 +7,7 @@ or add a business-rule validator.
 
 ## Repository layout
 
-```
+```plain
 src/getafix/
 ├── __init__.py
 ├── build/                 # high-level factories — one module per profile
@@ -69,30 +69,28 @@ Every schema class inherits from `getafix.schema.element.Element`, a
   element emits (`ram:`, `rsm:`, `udt:`, `qdt:`). The default namespace
   is `Namespace.ram`; override on subclasses that emit `rsm:`.
 - **`profile`** (`ClassVar[Profile]`) — the lowest Factur-X profile at
-  which the *element* may appear. Rendering at a lower profile raises
+  which the _element_ may appear. Rendering at a lower profile raises
   `ProfileMismatch`.
 - A pair of methods, `to_xml_internal(profile)` and `from_xml(elem)`,
   that walk the dataclass fields. Each field's `metadata` dict carries
-  `tag`, optional `ns`, optional `profile`, and the `"amount": True`
-  flag that triggers `currencyID` stamping.
+  `tag`, optional `ns`, and optional `profile`.
 
 ### Field metadata keys
 
-| Key        | Type                       | Used by              | Notes |
-|------------|----------------------------|----------------------|-------|
-| `tag`      | `str`                      | leaf renderers       | XML element name for `str`/`Decimal`/`bool`/`date` fields. Not needed on `Element`-typed fields (the child uses its class `tag`). |
-| `ns`       | `Namespace`                | leaf renderers       | Override the default `ram:` namespace on this field. |
-| `profile`  | `Profile`                  | `Element._children_xml` | Field-level minimum profile gate. |
-| `amount`   | `bool`                     | `Element._children_xml` | When `True`, the sibling `currency: str \| None` field stamps `currencyID` onto this element. |
+| Key       | Type        | Used by                 | Notes                                                                                                                             |
+| --------- | ----------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `tag`     | `str`       | leaf renderers          | XML element name for `str`/`Decimal`/`bool`/`date` fields. Not needed on `Element`-typed fields (the child uses its class `tag`). |
+| `ns`      | `Namespace` | leaf renderers          | Override the default `ram:` namespace on this field.                                                                              |
+| `profile` | `Profile`   | `Element._children_xml` | Field-level minimum profile gate.                                                                                                 |
 
 ### Profile gating, two layers
 
 The Factur-X "Used in:" matrix is encoded in two places:
 
 1. **Class-level `profile: ClassVar[Profile]`** on each `Element`
-   subclass — the lowest profile at which the *element* may appear.
+   subclass — the lowest profile at which the _element_ may appear.
 2. **Field-level `metadata={"profile": Profile.X}`** on each `field()`
-   — the lowest profile at which the *individual field* may appear
+   — the lowest profile at which the _individual field_ may appear
    inside that element.
 
 `Element._children_xml` reads both and raises `ProfileMismatch` if a
@@ -106,16 +104,18 @@ and `basis_amount` differently for header vs line.
 
 ### Currency on amounts
 
-Every amount-bearing dataclass (`MonetarySummation`, `TaxTotal`,
-`ApplicableTradeTax`, `TradeAllowanceCharge`, `GrossTradePrice`,
-`NetTradePrice`, `AppliedTradeAllowanceCharge`, `LineMonetarySummation`,
-`LogisticsServiceCharge`, `AdvancePayment`, `AdvancePaymentTradeTax`,
-`PaymentPenaltyTerms`, `PaymentDiscountTerms`) carries a sibling
-`currency: str | None` field. On render, `_children_xml` stamps it onto
-every `"amount": True` field's `currencyID` attribute; on parse,
-`from_xml` captures the first `currencyID` it sees back into
-`currency`. The field is excluded from XML iteration and validation
-walks.
+The XSD makes `currencyID` optional on `udt:AmountType`, but the Factur-X
+Schematron forbids it (a forbidding `<report>`) on every monetary amount
+*except* `TaxTotalAmount` (BT-110 / BT-111) — the one amount that may be
+expressed in a currency other than the invoice currency (BT-5 vs. the VAT
+accounting currency BT-6). getafix therefore renders `currencyID` on
+nothing but `TaxTotal`, which carries its own required `currency_id` field
+and overrides `to_xml_internal` to emit it. Every other amount renders
+bare. On parse, a `currencyID` on any other amount is read but dropped
+(see `Element.from_xml`); a `TODO` there marks where, once parse is
+profile-aware, it should become an EXTENDED validation error (the
+forbidding reports apply at EXTENDED) while staying ignored below.
+Currency is not part of validation.
 
 ### Profile enum ordering
 
@@ -255,22 +255,27 @@ labelled with their BT/BG id.
    technical-appendix PDF carries the BT/BG ids and XSD positions).
 2. Locate the right dataclass under `src/getafix/schema/`.
 3. Add the `field()` declaration, in XSD `<xs:sequence>` order:
+
    ```python
    new_field: str | None = field(
        default=None, metadata={"tag": "NewField", "profile": Profile.BASIC_WL}
    )
    """Docstring with the BT id and a short narrative."""
    ```
-4. If the field is monetary, add `"amount": True` to the metadata and
-   make sure the enclosing dataclass has a `currency: str | None` field.
+
+4. If the field is monetary, render it like any other `Decimal` — no
+   `currencyID` and no extra metadata. The Schematron forbids `currencyID`
+   on every amount except `TaxTotalAmount`, which is handled separately
+   (see "Currency on amounts").
 5. Run `make tests`. `tests/test_xsd_validity.py` will catch ordering
    regressions automatically by re-rendering every shipped sample and
    validating against the profile XSD.
 
-## Adding a new BR-* validator
+## Adding a new BR-\* validator
 
 1. Add the function to the right `rules/<topic>.py` (or `rules/trade.py`
    if it needs cross-sibling access). Match the `Validator[T]` shape:
+
    ```python
    def br_42(m: _line.TradeAllowanceCharge, profile: Profile) -> list[ValidationError]:
        """BR-42: …spec text…"""
@@ -280,6 +285,7 @@ labelled with their BT/BG id.
            return []
        return [ValidationError("BR-42", "…message…")]
    ```
+
 2. Wire it into the target element's `_validators` ClassVar tuple.
 3. Add at least one positive (rule fires) and one negative (rule
    passes) test under `tests/`.
@@ -331,13 +337,14 @@ The `tools/` directory carries four scripts that together keep the
 schema docstrings in sync with the Factur-X 1.08 workbook
 (`docs/spec/1_FACTUR-X 1.08 - … - VF.xlsx`):
 
-| Tool | Purpose |
-|------|---------|
-| `extract_business_terms.py` | Reads every per-profile sheet and emits two sidecars — flat `tools/business_terms.json` (keyed by BT/BG id) and `tools/business_terms_tree.json` (xpath-segment tree). Sidecars are gitignored; regenerated on every `make ids-check`. |
-| `extract_business_rules.py` | Emits `tools/business_rules.json` covering BR-* / BR-CO-* / BR-CL-* / BR-DEC-* / BR-FXEXT-* / BR-HYBRID-* / per-VAT-category families. |
-| `check_schema_docs.py` | Statically walks every `Element` subclass (via `griffe`) and fails if a class or field is missing a docstring or BT/BG citation, or if its `profile` gate would render the term below the earliest profile the workbook admits it on (XSD-vs-EN-semantic divergences are allow-listed in `KNOWN_PROFILE_EXCEPTIONS`). With `--check-citations` (used by `make ids-check`) it additionally cross-checks every `BT-` / `BG-` / `BR-` citation in `src/`, `docs/`, `README.md` and `AGENTS.md` against the sidecars, failing on a typo or hallucinated id. With `--show-missing` also lists every XSD-allowed child not yet modelled (informational; surfaced through `make docs-coverage`). |
+| Tool                        | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `extract_business_terms.py` | Reads every per-profile sheet and emits two sidecars — flat `tools/business_terms.json` (keyed by BT/BG id) and `tools/business_terms_tree.json` (xpath-segment tree). Sidecars are gitignored; regenerated on every `make ids-check`.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `extract_business_rules.py` | Emits `tools/business_rules.json` covering `BR-` / `BR-CO-` / `BR-CL-` / `BR-DEC-` / `BR-FXEXT-` / `BR-HYBRID-` / per-VAT-category families.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `check_schema_docs.py`      | Statically walks every `Element` subclass (via `griffe`) and fails if a class or field is missing a docstring or BT/BG citation, or if its `profile` gate would render the term below the earliest profile the workbook admits it on (XSD-vs-EN-semantic divergences are allow-listed in `KNOWN_PROFILE_EXCEPTIONS`). With `--check-citations` (used by `make ids-check`) it additionally cross-checks every `BT-` / `BG-` / `BR-` citation in `src/`, `docs/`, `README.md` and `AGENTS.md` against the sidecars, failing on a typo or hallucinated id. With `--show-missing` also lists every XSD-allowed child not yet modelled (informational; surfaced through `make docs-coverage`). |
+| `check_verbatim.py`         | Fails if any docstring in `getafix.schema` or `getafix.rules` — or any non-docstring string literal in the rules package (the `ValidationError` messages ship to users) — shares a run of 6+ consecutive words with the workbook's English text columns (descriptions, usage notes, rule prose). Copied spec wording is a licensing risk; everything must paraphrase. Official term names cited with their BT/BG id, code-list entries and legal citations are allow-listed in `ALLOWED_RUNS` (keyed by the normalised phrase, so copying _more_ prose around an allow-listed phrase still fails).                                                                                        |
 
-The audit runs as part of `make ids-check` and CI.
+The audits run as part of `make ids-check` and CI.
 
 The test suite includes:
 
@@ -363,8 +370,8 @@ The test suite includes:
   formal compliance requirement for Factur-X. Pair with a dedicated
   converter when full conformance is needed.
 - **Schematron `.sch` rules.** The per-profile schematron files are
-  not vendored. If we want automated BR-* enforcement against the
-  official rules, those are the source of truth — today the BR-*
+  not vendored. If we want automated `BR-` enforcement against the
+  official rules, those are the source of truth — today the `BR-`
   checks are hand-coded.
 - **EXTENDED CIUS full coverage.** Every top-level EXTENDED
   structure is modelled; the residual leaf attributes and line-level

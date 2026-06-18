@@ -17,18 +17,6 @@ line-scoped element / BT IDs:
 * :class:`LineTradeSettlement` (BG-30-00) — line VAT (BG-30),
   optional invoicing period (BG-26), optional allowances (BG-27) and
   charges (BG-28), and the line total (BT-131-00).
-
-This module covers the BASIC profile shape plus the COMFORT
-product enrichments :class:`ProductCharacteristic` (BG-32),
-:class:`ProductClassification` (BG-33), :class:`OriginCountry`
-(BG-34) and the line-level reference fields
-:class:`LineBuyerOrderReferencedDocument` (BT-132),
-:class:`LineAdditionalReferencedDocument` (BT-128) and the line
-reuse of :class:`~getafix.schema.settlement.ReceivableAccountingAccount`
-(BT-133). The EXTENDED sub-line / ``IncludedReferencedProduct`` /
-per-line deviating-party groups are modelled here too; the residual
-EXTENDED line-level references are listed in the README "Status and
-known gaps".
 """
 
 from dataclasses import dataclass, field
@@ -39,11 +27,7 @@ from typing import ClassVar, Literal, Self, override
 from tagic.xml import XML
 
 from getafix.rules import Validator
-from getafix.rules._types import (
-    fields_only_at,
-    list_max_cardinality_below,
-    max_decimals,
-)
+from getafix.rules._types import list_max_cardinality_below, max_decimals
 from getafix.rules.line import applied_price_charge_extended_only, br_27, br_28
 from getafix.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
 from getafix.schema.element import Element, ETElement
@@ -58,14 +42,14 @@ from getafix.schema.settlement import (
     BillingSpecifiedPeriod,
     ReceivableAccountingAccount,
 )
-from getafix.schema.types import Currency, LineStatusReasonCode, Namespace, Profile
+from getafix.schema.types import LineStatusReasonCode, Namespace, Profile
 
 
 @dataclass(kw_only=True, slots=True)
 class LineIncludedNote(Element):
     """Invoice line note (BT-127-00).
 
-    Detailed information about the free text of the line item.
+    Wrapper for the line item's free-text note.
 
     Note: distinct from :class:`getafix.schema.document.IncludedNote`
     (header-level BG-1) because at BASIC the line note carries only
@@ -78,8 +62,8 @@ class LineIncludedNote(Element):
     content: str = field(metadata={"tag": "Content"})
     """Invoice line note (BT-127).
 
-    A textual note that gives unstructured information that is
-    relevant to the invoice line.
+    Unstructured free text carrying information that concerns this
+    particular invoice line.
     """
 
 
@@ -107,9 +91,11 @@ class Quantity(Element):
     ``BilledQuantity``, BT-150 / BT-150-1 on ``BasisQuantity``.
     Rendered as the ``unitCode`` attribute.
 
-    Code list: UN/ECE Recommendation 20 (and 21 for passengers, types
-    of cargo, packages and packaging materials) — e.g. ``C62`` for
-    "one", ``H87`` for "piece", ``KGM`` for kilogram.
+    Code list:
+    [UN/ECE Recommendation 20](https://unece.org/trade/uncefact/cl-recommendations)
+    ([UN/ECE Recommendation 21](https://unece.org/trade/uncefact/cl-recommendations)
+    covers the passenger / cargo-type / package codes) — e.g. ``C62``
+    for "one", ``H87`` for "piece", ``KGM`` for kilogram.
     """
 
     @override
@@ -133,7 +119,7 @@ class Quantity(Element):
 class BasisQuantity(Quantity):
     """Item price base quantity (BT-149 / BT-149-1).
 
-    The number of item units to which the price applies. Carries the
+    How many item units the quoted price buys. Carries the
     unit-of-measure code (BT-150 / BT-150-1) which must match the
     invoiced-quantity unit (BT-130).
     """
@@ -156,7 +142,8 @@ class AppliedTradeAllowanceCharge(Element):
     ``ActualAmount`` (BT-147); EXTENDED adds the percentage (BT-X-34 /
     BT-X-300), basis amount (BT-X-35 / BT-X-301), reason code (BT-X-313 /
     BT-X-314) and reason text (BT-X-36 / BT-X-303) — all four gated
-    EXTENDED per-field and via ``fields_only_at``. The element is
+    EXTENDED per-field via ``metadata['profile']`` (enforced generically
+    by ``Element.validate_internal``). The element is
     ``0..1`` below EXTENDED (a single allowance) and ``0..*`` at
     EXTENDED; the cardinality / charge gates live on the enclosing
     :class:`GrossTradePrice` and in
@@ -171,13 +158,6 @@ class AppliedTradeAllowanceCharge(Element):
 
     _validators: ClassVar[tuple[Validator["AppliedTradeAllowanceCharge"], ...]] = (
         applied_price_charge_extended_only,
-        fields_only_at(
-            Profile.EXTENDED,
-            "calculation_percent",
-            "basis_amount",
-            "reason_code",
-            "reason",
-        ),
     )
 
     indicator: bool = field(metadata={"tag": "ChargeIndicator"})
@@ -193,41 +173,38 @@ class AppliedTradeAllowanceCharge(Element):
     """Item price discount / charge percentage (BT-X-34 allowance /
     BT-X-300 charge); EXTENDED only."""
     basis_amount: Decimal | None = field(
-        default=None,
-        metadata={"tag": "BasisAmount", "profile": Profile.EXTENDED, "amount": True},
+        default=None, metadata={"tag": "BasisAmount", "profile": Profile.EXTENDED}
     )
     """Item price discount / charge basis amount (BT-X-35 allowance /
     BT-X-301 charge); EXTENDED only."""
-    actual_amount: Decimal = field(metadata={"tag": "ActualAmount", "amount": True})
+    actual_amount: Decimal = field(metadata={"tag": "ActualAmount"})
     """Item price discount (BT-147) or charge (BT-X-302).
 
-    The total discount subtracted from (or charge added to) the item
-    gross price to calculate the item net price.
+    Total discount taken off — or charge added onto — the gross
+    unit price (BT-148) on the way to the net unit price (BT-146).
     """
     reason_code: str | None = field(
         default=None, metadata={"tag": "ReasonCode", "profile": Profile.EXTENDED}
     )
     """Reason code for the discount (BT-X-313) / charge (BT-X-314);
-    EXTENDED only. Code list: UNTDID 5189 (allowance) / 7161 (charge)."""
+    EXTENDED only. Code list:
+    [UNTDID 5189](https://service.unece.org/trade/untdid/d16b/tred/tred5189.htm)
+    (allowance) /
+    [UNTDID 7161](https://service.unece.org/trade/untdid/d16b/tred/tred7161.htm)
+    (charge)."""
     reason: str | None = field(
         default=None, metadata={"tag": "Reason", "profile": Profile.EXTENDED}
     )
     """Reason, free text, for the discount (BT-X-36) / charge (BT-X-303);
     EXTENDED only."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed on every amount attribute.
-
-    Populated on parse from the ``currencyID`` attribute; set
-    explicitly when building programmatically.
-    """
 
 
 @dataclass(kw_only=True, slots=True)
 class GrossTradePrice(Element):
     """Item gross price (BT-148-00).
 
-    Detailed information on the gross price of the item — the unit
-    price before subtracting the item price discount.
+    The item's gross unit price — what it costs before the item
+    price discount comes off.
     """
 
     tag: ClassVar[str] = "GrossPriceProductTradePrice"
@@ -243,11 +220,11 @@ class GrossTradePrice(Element):
         ),
     )
 
-    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
+    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount"})
     """Item gross price (BT-148).
 
-    The unit price, exclusive of VAT, before subtracting the item
-    price discount.
+    VAT-exclusive unit price before the item price discount comes
+    off.
 
     Note: must not be negative — enforced by ``BR-28``.
     """
@@ -262,8 +239,6 @@ class GrossTradePrice(Element):
     :func:`getafix.rules._types.list_max_cardinality_below` and
     :func:`getafix.rules.line.applied_price_charge_extended_only`.
     """
-    currency: Currency | None = None
-    """Document currency (BT-5) echoed on the gross-price amount."""
 
 
 @dataclass(kw_only=True, slots=True)
@@ -279,11 +254,11 @@ class NetTradePrice(Element):
 
     _validators: ClassVar[tuple[Validator["NetTradePrice"], ...]] = (br_27,)
 
-    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount", "amount": True})
+    charge_amount: Decimal = field(metadata={"tag": "ChargeAmount"})
     """Item net price (BT-146).
 
-    The price of an item, exclusive of VAT, after subtracting the
-    item price discount.
+    VAT-exclusive unit price once the item price discount has been
+    taken off.
 
     Note: the net price must equal the gross price (BT-148) less the
     item price discount (BT-147), and must not be negative —
@@ -291,12 +266,6 @@ class NetTradePrice(Element):
     """
     basis_quantity: BasisQuantity | None = None
     """Item price base quantity (BT-149)."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed on the net-price amount.
-
-    Populated on parse from the ``currencyID`` attribute; set
-    explicitly when building programmatically.
-    """
 
 
 @dataclass(kw_only=True, slots=True)
@@ -331,7 +300,7 @@ class ProductClassification(Element):
     Note: EN 16931 modelled this group as BG-33; Factur-X 1.08 folds
     it into the BT-158-00 wrapper id.
 
-    Code list for ``list_id``: UNTDID 7143 (extended Code List).
+
     """
 
     tag: ClassVar[str] = "DesignatedProductClassification"
@@ -340,7 +309,10 @@ class ProductClassification(Element):
     class_code: str
     """Item classification identifier (BT-158)."""
     list_id: str
-    """Scheme identifier (BT-158-1); required per ``BR-65``."""
+    """Scheme identifier (BT-158-1); required per ``BR-65``.
+    
+    Code list: [UNTDID 7143](https://service.unece.org/trade/untdid/d16b/tred/tred7143.htm)
+    (extended Code List)."""
     list_version_id: str | None = None
     """Scheme version identifier (BT-158-2)."""
     class_name: str | None = None
@@ -400,8 +372,8 @@ class ProductClassification(Element):
 class OriginCountry(Element):
     """Item country of origin (BT-159-00); COMFORT+.
 
-    The country from which the item originates, as an ISO 3166-1
-    alpha-2 code on the single inner ``<ram:ID>`` element (BT-159).
+    Where the item comes from, as an ISO 3166-1 alpha-2 code on the
+    single inner ``<ram:ID>`` element (BT-159).
 
     Note: EN 16931 modelled this group as BG-34; Factur-X 1.08 folds
     it into the BT-159-00 wrapper id.
@@ -516,8 +488,8 @@ class IncludedReferencedProduct(Element):
 class TradeProduct(Element):
     """Item information (BG-31).
 
-    A group of business terms providing information about the goods
-    and services invoiced. EN 16931 enriches the BASIC shape with
+    Describes what is being invoiced — the goods or services
+    themselves. EN 16931 enriches the BASIC shape with
     the three product groups :class:`ProductCharacteristic` (BG-32),
     :class:`ProductClassification` (BG-33), and :class:`OriginCountry`
     (BG-34). EXTENDED layers on six per-item identifier / naming
@@ -531,24 +503,11 @@ class TradeProduct(Element):
     tag: ClassVar[str] = "SpecifiedTradeProduct"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    _validators: ClassVar[tuple[Validator["TradeProduct"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED,
-            "industry_assigned_id",
-            "model_id",
-            "batch_id",
-            "brand_name",
-            "model_name",
-            "individual_product_instances",
-            "included_referenced_products",
-        ),
-    )
-
     global_id: GlobalID | None = None
     """Item standard identifier (BT-157).
 
-    An item identifier based on a registered scheme — the
-    ``schemeID`` attribute is required when the value is set
+    Identifies the item under a registered scheme (GTIN, EAN, …) —
+    the ``schemeID`` attribute is required when the value is set
     (``BR-64``).
     """
     seller_assigned_id: str | None = field(
@@ -632,16 +591,10 @@ class DocumentLineDocument(Element):
     tag: ClassVar[str] = "AssociatedDocumentLineDocument"
     profile: ClassVar[Profile] = Profile.BASIC
 
-    _validators: ClassVar[tuple[Validator["DocumentLineDocument"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED, "parent_line_id", "status_code", "status_reason_code"
-        ),
-    )
-
     line_id: str = field(metadata={"tag": "LineID"})
     """Invoice line identifier (BT-126).
 
-    A unique identifier for the individual line within the invoice.
+    Identifies this line unambiguously within the invoice.
     """
     parent_line_id: str | None = field(
         default=None, metadata={"tag": "ParentLineID", "profile": Profile.EXTENDED}
@@ -661,10 +614,9 @@ class DocumentLineDocument(Element):
     )
     """Line status code (BT-X-7); EXTENDED only.
 
-    Per the XSD this is ``qdt:LineStatusCodeType`` (UNTDID 1229,
+    Per the XSD this is ``qdt:LineStatusCodeType``
+    ([UNTDID 1229](https://service.unece.org/trade/untdid/d16b/tred/tred1229.htm),
     "action request" — ADD / DELETE / CHANGE / NO_ACTION / …).
-    Modelled as a plain ``str`` — the UNTDID 1229 codelist is not
-    enumerated by getafix.
     """
     status_reason_code: LineStatusReasonCode | None = field(
         default=None,
@@ -698,12 +650,6 @@ class LineBuyerOrderReferencedDocument(Element):
 
     tag: ClassVar[str] = "BuyerOrderReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
-
-    _validators: ClassVar[tuple[Validator["LineBuyerOrderReferencedDocument"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED, "issuer_assigned_id", "formatted_issue_date_time"
-        ),
-    )
 
     issuer_assigned_id: str | None = field(
         default=None, metadata={"tag": "IssuerAssignedID", "profile": Profile.EXTENDED}
@@ -784,10 +730,6 @@ class LineAdditionalReferencedDocument(Element):
     tag: ClassVar[str] = "AdditionalReferencedDocument"
     profile: ClassVar[Profile] = Profile.COMFORT
 
-    _validators: ClassVar[tuple[Validator["LineAdditionalReferencedDocument"], ...]] = (
-        fields_only_at(Profile.EXTENDED, "line_id", "name"),
-    )
-
     issuer_assigned_id: str = field(metadata={"tag": "IssuerAssignedID"})
     """Invoice line object identifier (BT-128, line settlement) or
     supporting-document number (BT-X-27, BG-X-3 line agreement)."""
@@ -809,7 +751,9 @@ class LineAdditionalReferencedDocument(Element):
     """Scheme identifier (BT-128-1, line settlement / BT-X-32, BG-X-3
     line agreement).
 
-    Code list: UNTDID 1153 (reference qualifier).
+    Code list:
+    [UNTDID 1153](https://service.unece.org/trade/untdid/d16b/tred/tred1153.htm)
+    (reference qualifier).
     """
 
 
@@ -817,15 +761,14 @@ class LineAdditionalReferencedDocument(Element):
 class LineTradeAgreement(Element):
     """Line trade agreement / price details (BG-29).
 
-    A group of business terms providing information about the price
-    applied for the goods and services invoiced on the invoice line.
+    The pricing side of the invoice line: what unit price the
+    invoiced goods or services are billed at, gross and net.
 
     :class:`~getafix.schema.party.ItemSellerTradeParty` (BG-X-90)
     is modelled here (field :attr:`item_seller`).
 
     Deferred EXTENDED slots (per-line twins of structures already
-    modelled at header level; no observed real-world use — add when
-    a fixture needs them):
+    modelled at header level; add when needed):
 
     * ``ApplicableTradeDeliveryTerms`` — line-level Incoterms.
     * ``SellerOrderReferencedDocument`` — per-line seller's order ref.
@@ -836,12 +779,6 @@ class LineTradeAgreement(Element):
 
     tag: ClassVar[str] = "SpecifiedLineTradeAgreement"
     profile: ClassVar[Profile] = Profile.BASIC
-
-    _validators: ClassVar[tuple[Validator["LineTradeAgreement"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED, "quotation_ref", "additional_references", "item_seller"
-        ),
-    )
 
     buyer_order_ref: LineBuyerOrderReferencedDocument | None = None
     """Referenced purchase-order line (BT-132-00); COMFORT+."""
@@ -888,18 +825,6 @@ class LineTradeDelivery(Element):
 
     tag: ClassVar[str] = "SpecifiedLineTradeDelivery"
     profile: ClassVar[Profile] = Profile.BASIC
-
-    _validators: ClassVar[tuple[Validator["LineTradeDelivery"], ...]] = (
-        fields_only_at(
-            Profile.EXTENDED,
-            "charge_free_quantity",
-            "package_quantity",
-            "per_package_unit_quantity",
-            "ship_to",
-            "ultimate_ship_to",
-            "delivery_note",
-        ),
-    )
 
     billed_quantity: Quantity | None = field(
         default=None, metadata={"tag": "BilledQuantity"}
@@ -948,47 +873,36 @@ class LineMonetarySummation(Element):
 
     _validators: ClassVar[tuple[Validator["LineMonetarySummation"], ...]] = (
         max_decimals("BR-DEC-23", field_name="line_total"),
-        fields_only_at(Profile.EXTENDED, "total_allowance_charge"),
     )
 
     line_total: Decimal | None = field(
-        default=None, metadata={"tag": "LineTotalAmount", "amount": True}
+        default=None, metadata={"tag": "LineTotalAmount"}
     )
     """Invoice line net amount (BT-131).
 
-    The total amount of the invoice line — net of VAT but inclusive
-    of line-level allowances, charges and other relevant taxes
+    What the whole line comes to — net of VAT but inclusive of
+    line-level allowances, charges and other relevant taxes
     (computed as ``net_price * billed_quantity +/- line allowances /
     charges``).
     """
     total_allowance_charge: Decimal | None = field(
         default=None,
-        metadata={
-            "tag": "TotalAllowanceChargeAmount",
-            "profile": Profile.EXTENDED,
-            "amount": True,
-        },
+        metadata={"tag": "TotalAllowanceChargeAmount", "profile": Profile.EXTENDED},
     )
-    """Total allowance and charge amount for the line (BT-X-98);
+    """Combined allowance / charge total of the line (BT-X-98);
     EXTENDED-only.
 
     The net of all BG-27 allowances and BG-28 charges on this invoice
     line; informational, already folded into :attr:`line_total`."""
-    currency: str | None = None
-    """Document currency (BT-5) echoed on the line-total amount.
-
-    Populated on parse from the ``currencyID`` attribute; set
-    explicitly when building programmatically.
-    """
 
 
 @dataclass(kw_only=True, slots=True)
 class LineTradeSettlement(Element):
     """Line trade settlement (BG-30-00).
 
-    Grouping of billing information at line level: line VAT
-    (BG-30), optional invoicing period (BG-26), optional allowances
-    (BG-27) and charges (BG-28), and the line total (BT-131-00).
+    The billing side of the invoice line: line VAT (BG-30), optional
+    invoicing period (BG-26), optional allowances (BG-27) and
+    charges (BG-28), and the line total (BT-131-00).
     """
 
     tag: ClassVar[str] = "SpecifiedLineTradeSettlement"
@@ -1018,8 +932,8 @@ class LineTradeSettlement(Element):
     """Invoice line allowances (BG-27) and charges (BG-28).
 
     Note: same dataclass for both, distinguished by ``ChargeIndicator``.
-    All charges and taxes are assumed to be liable to the same VAT
-    rate as the invoice line.
+    Any charge or tax here is taken to share the VAT rate of its
+    invoice line.
     """
     monetary_summation: LineMonetarySummation
     """Invoice line totals (BT-131-00); required."""
