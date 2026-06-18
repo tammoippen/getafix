@@ -10,6 +10,12 @@ or add a business-rule validator.
 ```plain
 src/getafix/
 ├── __init__.py
+├── build/                 # high-level factories — one module per profile
+│   ├── __init__.py        # public re-exports
+│   ├── _shared.py         # party builders, monetary_summation, cross-profile internals
+│   ├── minimum.py         # minimum_invoice
+│   ├── basic_wl.py        # basic_wl_invoice
+│   └── basic.py           # line_item, vat_breakdown, basic_invoice
 ├── cli.py                 # console script entry point
 ├── pdf.py                 # PDF/A-3 attachment helpers (pypdf)
 ├── report/                # rich console pretty-printer (one module per schema topic)
@@ -194,6 +200,59 @@ in `rules/<topic>.py` short-circuits with
 guards with the inverse. Both end up on the same element's
 `_validators` tuple; profile gating in each function picks the
 right one to fire.
+
+## Factory layer (`getafix.build`)
+
+The schema stays deliberately low level — every BT is set explicitly.
+`getafix.build` is the convenience layer on top: free-standing
+factories that take business inputs and compute everything derivable
+(line totals per Factur-X §7.1.8 rounding, the BG-23 breakdown
+grouped per category/rate, the BG-22 totals along the `BR-CO-11` …
+`BR-CO-16` identities, canonical VATEX exemption-code defaults). The
+package has one module per profile — `minimum.py` (`minimum_invoice`),
+`basic_wl.py` (`basic_wl_invoice`), `basic.py` (`line_item`,
+`vat_breakdown`, `basic_invoice`) — plus `_shared.py` for the helpers
+used by more than one of them (`monetary_summation`, the numeric
+coercion / header / payment-term / delivery internals, and the
+full-field party workers). `__init__.py` re-exports the public surface.
+Follow the `rules/_types.py` convention: the `_shared` module is
+private, so its members carry plain names (no leading underscore) and
+are imported across the package; only names private to a single module
+keep the underscore.
+
+**Profile-specific helpers vs. shared.** A helper whose set of *valid
+fields* changes with the profile gets a thin per-profile wrapper that
+exposes only that profile's fields and delegates to the shared
+full-field worker. The party builders are the case in point:
+`minimum.seller_party` / `minimum.buyer_party` take only country + tax
+ids (MINIMUM renders just the country code, BT-40), while
+`basic`/`basic_wl` re-export the shared BASIC_WL+ worker that also takes
+postcode / city / street lines. Consequently the top-level
+`getafix.build` re-exports only profile-*unambiguous* helpers (the
+invoice constructors, `line_item`, `vat_breakdown`,
+`monetary_summation`); the party builders are imported from the profile
+module instead. When adding a builder, check whether its valid-field
+set is profile-dependent and split it the same way — most helpers are
+not (e.g. `payment_terms` / `trade_delivery` are only used at BASIC_WL+,
+and `minimum_invoice` already omits the params that would be invalid at
+MINIMUM, so they need no MINIMUM variant).
+
+**The builders stop at BASIC on purpose.** COMFORT (EN 16931) and
+EXTENDED add far more optional structure than a convenience constructor
+can usefully default — point users at the raw schema for those, and do
+not grow `build/` to cover them. COMFORT-only fields (e.g. BT-154 item
+description, BT-114 rounding) are deliberately not exposed.
+
+Rules for changes here:
+
+- factories must return plain schema dataclasses and never mutate
+  caller-supplied elements (copy via `dataclasses.replace` when a
+  derived field needs filling);
+- every constructor's happy path must produce a document that passes
+  `Document.validate()` *and* the profile XSD — `tests/test_build.py`
+  asserts both;
+- monetary inputs are `Decimal | int | str`; `float` is rejected
+  (binary representation noise must not leak into amounts).
 
 ## Report architecture
 
