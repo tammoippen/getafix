@@ -11,7 +11,7 @@ Build, parse and validate
 [**ZUGFeRD 2.x / Factur-X**](https://www.ferd-net.de/standards/zugferd)
 Cross-Industry-Invoice (CII) XML in Python. `getafix` provides a fully typed dataclass model for creating and parsed invoices - every field traceable to the EN 16931 business terms (`BT-…`) and groups (`BG-…`). Validation follows a broad, but selective set of business rules (`BR-…`). An accompanied cli tool `getafix` renders and validaes invoices in the terminal.
 
-[![minimum invoice](/imgs/minimum.png)](/imgs/minimum.png)
+[![minimum invoice](https://github.com/tammoippen/getafix/blob/main/imgs/minimum.png)](https://github.com/tammoippen/getafix/blob/main/imgs/minimum.png)
 
 ## Why "getafix"?
 
@@ -214,7 +214,7 @@ Exit codes:
 - `1` — parsed but at least one validation rule fired (or the document could not be parsed as a CII invoice, or no Factur-X XML was found in the supplied PDF).
 - `2` — usage / IO / missing dependency error.
 
-[![comfort invoice](/imgs/comfort.png)](/imgs/comfort.png)
+[![comfort invoice](https://github.com/tammoippen/getafix/blob/main/imgs/comfort.png)](https://github.com/tammoippen/getafix/blob/main/imgs/comfort.png)
 
 ## Profiles
 
