@@ -66,7 +66,7 @@ class Element(ABC):
     Subclasses override this with a tuple of free-standing functions
     from :mod:`getafix.rules` (one per ``BR-*`` rule). Each function
     is invoked with ``(self, profile)`` and returns a
-    ``list[ValidationError]`` (empty on success). See ``AGENTS.md``
+    ``list[ValidationError]`` (empty on success). See ``CONTRIBUTING.md``
     "Validator architecture" for the design.
     """
 

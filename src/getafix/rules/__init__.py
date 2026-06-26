@@ -7,7 +7,7 @@ accounting, party, line, trade). Element classes in
 directly and wire them into a ``_validators: ClassVar[tuple[...]]``
 attribute that ``Element.validate_internal`` iterates.
 
-See ``AGENTS.md`` "Validator architecture" for the design.
+See ``CONTRIBUTING.md`` "Validator architecture" for the design.
 """
 
 from getafix.rules._types import Validator as Validator

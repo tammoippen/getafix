@@ -31,7 +31,7 @@ Checks 1-3 fail the audit; the fourth is informational.
 
 ``--check-citations`` adds a fourth, broader pass: it scans every ``BT-``,
 ``BG-`` **and** ``BR-`` citation across ``src/``, ``docs/``,
-``README.md`` and ``AGENTS.md`` prose — not just schema docstrings —
+``README.md`` and ``CONTRIBUTING.md`` prose — not just schema docstrings —
 and fails on any id that doesn't resolve against the
 ``tools/business_terms.json`` / ``tools/business_rules.json``
 sidecars. This catches typos / hallucinated spec references in
@@ -1068,7 +1068,7 @@ def _rule_known(rid: str, rules: dict[str, Any]) -> bool:
 
 def _collect_citation_sources(root: Path) -> list[Path]:
     """Every file the broad cross-check scans: all getafix ``*.py``,
-    every ``docs/*.md``, plus the top-level ``README.md`` / ``AGENTS.md``.
+    every ``docs/*.md``, plus the top-level ``README.md`` / ``CONTRIBUTING.md``.
     """
     sources: list[Path] = []
     src_root = root / "src/getafix"
@@ -1077,7 +1077,7 @@ def _collect_citation_sources(root: Path) -> list[Path]:
     docs_root = root / "docs"
     if docs_root.exists():
         sources.extend(docs_root.rglob("*.md"))
-    for top in ("README.md", "AGENTS.md"):
+    for top in ("README.md", "CONTRIBUTING.md"):
         p = root / top
         if p.is_file():
             sources.append(p)
@@ -1222,7 +1222,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--check-citations",
         action="store_true",
         help="Additionally cross-check every BT-/BG-/BR- citation across "
-        "src/, docs/, README.md and AGENTS.md against the workbook "
+        "src/, docs/, README.md and CONTRIBUTING.md against the workbook "
         "sidecars (the former check_bt_br_ids.py audit). Fails on any "
         "id that doesn't resolve.",
     )
