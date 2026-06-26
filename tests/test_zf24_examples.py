@@ -323,12 +323,14 @@ class TestBasicEinfach:
     def test_line_quantity_and_unit_code(self, basic_einfach: Document) -> None:
         # BT-129 BilledQuantity + BT-130 UnitCode (UN/ECE Rec 20). H87 = piece.
         delivery = basic_einfach.trade.items[0].delivery
+        assert delivery.billed_quantity
         assert delivery.billed_quantity.value == Decimal("20.0000")
         assert delivery.billed_quantity.unit_code == "H87"
 
     def test_line_vat_category_standard(self, basic_einfach: Document) -> None:
         # Line VAT category (BG-30) — standard rate, 19%.
         tax = basic_einfach.trade.items[0].settlement.applicable_trade_tax
+        assert tax
         assert tax.type_code == "VAT"
         assert tax.category_code == "S"
         assert tax.rate_applicable_percent == Decimal("19")
@@ -336,6 +338,7 @@ class TestBasicEinfach:
     def test_line_total(self, basic_einfach: Document) -> None:
         # BT-131: line net amount = 20 x 9.90 = 198.00.
         item = basic_einfach.trade.items[0]
+        assert item.agreement.net_price
         assert item.agreement.net_price.charge_amount == Decimal("9.90")  # BT-146
         assert item.settlement.monetary_summation.line_total == Decimal("198.00")
 
@@ -381,8 +384,10 @@ class TestBasicTaxifahrt:
         item = basic_taxifahrt.trade.items[0]
         assert item.associated_document.line_id == "1"
         assert item.product.name == "Grundpreis (Pauschale)"
+        assert item.delivery.billed_quantity
         assert item.delivery.billed_quantity.unit_code == "H87"
         assert item.delivery.billed_quantity.value == Decimal("1")
+        assert item.agreement.net_price
         assert item.agreement.net_price.charge_amount == Decimal("3.90")
         assert item.settlement.monetary_summation.line_total == Decimal("3.90")
 
@@ -390,8 +395,10 @@ class TestBasicTaxifahrt:
         item = basic_taxifahrt.trade.items[1]
         assert item.associated_document.line_id == "2"
         # UN/ECE Rec 20 code "KMT" = kilometre. Decimal-precision quantity.
+        assert item.delivery.billed_quantity
         assert item.delivery.billed_quantity.unit_code == "KMT"
         assert item.delivery.billed_quantity.value == Decimal("6.50")
+        assert item.agreement.net_price
         assert item.agreement.net_price.charge_amount == Decimal("2.00")
         # 6.50 km x 2.00 EUR/km = 13.00, but the example renders as "13".
         assert item.settlement.monetary_summation.line_total == Decimal("13")
@@ -399,6 +406,7 @@ class TestBasicTaxifahrt:
     def test_both_lines_share_reduced_rate(self, basic_taxifahrt: Document) -> None:
         for item in basic_taxifahrt.trade.items:
             tax = item.settlement.applicable_trade_tax
+            assert tax
             assert tax.category_code == "S"
             assert tax.rate_applicable_percent == Decimal("7")
 
@@ -449,9 +457,12 @@ class TestBasicRechnungskorrektur:
             # required line-level BTs must be populated.
             assert item.associated_document.line_id == str(idx)
             assert item.product.name  # BT-153
+            assert item.delivery.billed_quantity
             assert item.delivery.billed_quantity.unit_code  # BT-130
             assert item.delivery.billed_quantity.value is not None  # BT-129
+            assert item.agreement.net_price
             assert item.agreement.net_price.charge_amount is not None  # BT-146
+            assert item.settlement.applicable_trade_tax
             assert item.settlement.applicable_trade_tax.category_code  # BT-151
             assert item.settlement.monetary_summation.line_total is not None  # BT-131
 

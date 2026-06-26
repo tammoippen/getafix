@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest as pt
 
-from getafix.schema.element import ValidationErrors
+from getafix.errors import ValidationErrors
 from getafix.schema.types import CategoryCode, VATEXCode
 from tests._fixtures import make_vat_doc
 

@@ -13,6 +13,7 @@ from typing import ClassVar, override
 
 from tagic.xml import XML
 
+from getafix.errors import ValidationErrors
 from getafix.schema.element import Element
 from getafix.schema.trade import Trade
 from getafix.schema.types import Namespace, Profile, TypeCode
@@ -282,7 +283,6 @@ class Document(Element):
         one pass, rather than fixing one error only to discover the
         next on the following run.
         """
-        from getafix.schema.element import ValidationErrors
 
         profile = self.context.guideline.id
         errors = self.validate_internal(profile)

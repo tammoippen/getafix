@@ -15,7 +15,7 @@ from rich.console import Console
 from rich.table import Table
 
 if TYPE_CHECKING:
-    from getafix.schema.element import ValidationError
+    from getafix.errors import ValidationError
 
 
 def render_validation_errors(

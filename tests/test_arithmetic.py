@@ -9,8 +9,8 @@ from decimal import Decimal
 
 import pytest as pt
 
+from getafix.errors import ValidationErrors
 from getafix.schema.accounting import ApplicableTradeTax, MonetarySummation, TaxTotal
-from getafix.schema.element import ValidationErrors
 from getafix.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,

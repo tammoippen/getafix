@@ -29,6 +29,7 @@ import pytest as pt
 from getafix.schema.accounting import (
     HeaderTradeAllowanceCharge,
     LineTradeAllowanceCharge,
+    TradeAllowanceCharge,
 )
 from getafix.schema.element import ProfileMismatch
 from getafix.schema.types import Profile
@@ -118,7 +119,5 @@ class TestAbstractBase:
         assert LineTradeAllowanceCharge.context == "line"
 
     def test_bare_class_is_abstract(self) -> None:
-        from getafix.schema.accounting import TradeAllowanceCharge
-
         with pt.raises(TypeError, match="abstract"):
             TradeAllowanceCharge(indicator=False, actual_amount=Decimal("5.00"))

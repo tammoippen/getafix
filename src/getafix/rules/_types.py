@@ -18,7 +18,8 @@ the schema.
 from collections.abc import Callable
 from decimal import Decimal
 
-from getafix.schema.element import Element, ValidationError
+from getafix.errors import ValidationError
+from getafix.schema.element import Element
 from getafix.schema.types import Profile
 
 type Validator[T: Element] = Callable[[T, Profile], list[ValidationError]]

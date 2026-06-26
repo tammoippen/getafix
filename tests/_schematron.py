@@ -66,7 +66,7 @@ def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronR
     """
     sch_root = etree.parse(str(sch_path)).getroot()
     namespaces = {
-        ns.attrib["prefix"]: ns.attrib["uri"]
+        str(ns.attrib["prefix"]): str(ns.attrib["uri"])
         for ns in sch_root.findall(f"{{{_SCH_NS}}}ns")
     }
 

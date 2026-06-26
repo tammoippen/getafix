@@ -24,15 +24,16 @@ from decimal import Decimal
 
 import pytest as pt
 
+from getafix.errors import ValidationErrors
 from getafix.schema.accounting import CategoryTradeTax, HeaderTradeAllowanceCharge
 from getafix.schema.document import Document
-from getafix.schema.element import ValidationErrors
 from getafix.schema.types import CategoryCode, Currency
 from tests._fixtures import make_vat_doc
 
 
 def _set_line_rate(doc: Document, rate: Decimal | None) -> None:
     line = doc.trade.items[0]
+    assert line.settlement.applicable_trade_tax
     line.settlement.applicable_trade_tax.rate_applicable_percent = rate
 
 
@@ -118,6 +119,7 @@ class TestNotSubjectToVat:
         doc = make_vat_doc(line_category=CategoryCode.T_O)
         _set_line_rate(doc, Decimal("0"))
         # Align BG-23 + parties so other BR-O-* don't fire first.
+        assert doc.trade.settlement.trade_taxes
         doc.trade.settlement.trade_taxes[0].category_code = CategoryCode.T_O
         doc.trade.settlement.trade_taxes[0].rate_applicable_percent = None
         doc.trade.settlement.trade_taxes[0].exemption_reason = "Out of scope"
@@ -127,6 +129,7 @@ class TestNotSubjectToVat:
 
     def test_br_o_6_doc_allowance_rate_forbidden(self) -> None:
         doc = make_vat_doc(line_category=CategoryCode.T_O)
+        assert doc.trade.settlement.trade_taxes
         doc.trade.settlement.trade_taxes[0].category_code = CategoryCode.T_O
         doc.trade.settlement.trade_taxes[0].rate_applicable_percent = None
         doc.trade.settlement.trade_taxes[0].exemption_reason = "Out of scope"
@@ -150,9 +153,11 @@ class TestIgicCanary:
     def test_br_af_5_passes_at_positive_rate(self) -> None:
         doc = make_vat_doc(line_category=CategoryCode.T_L)
         _set_line_rate(doc, Decimal("7"))
+        assert doc.trade.settlement.trade_taxes
         doc.trade.settlement.trade_taxes[0].rate_applicable_percent = Decimal("7")
         # Recompute totals — BG-23 basis 100, rate 7% → calculated 7.00.
         doc.trade.settlement.trade_taxes[0].calculated_amount = Decimal("7.00")
+        assert doc.trade.settlement.monetary_summation.tax_total
         doc.trade.settlement.monetary_summation.tax_total = [
             type(doc.trade.settlement.monetary_summation.tax_total[0])(
                 amount=Decimal("7.00"), currency_id=Currency.EUR

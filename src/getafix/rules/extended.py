@@ -30,7 +30,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from getafix.schema.element import ValidationError
+from getafix.errors import ValidationError
 from getafix.schema.types import CategoryCode, LineStatusReasonCode, Profile
 
 if TYPE_CHECKING:

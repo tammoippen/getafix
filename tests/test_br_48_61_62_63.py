@@ -21,9 +21,9 @@ from decimal import Decimal
 
 import pytest as pt
 
+from getafix.errors import ValidationErrors
 from getafix.schema.accounting import ApplicableTradeTax
 from getafix.schema.document import Document
-from getafix.schema.element import ValidationErrors
 from getafix.schema.party import URIID, URIUniversalCommunication
 from getafix.schema.settlement import PayeePartyCreditorFinancialAccount, PaymentMeans
 from getafix.schema.types import (

@@ -38,8 +38,8 @@ from pathlib import Path
 import pytest as pt
 from lxml import etree
 
+from getafix.errors import ValidationErrors
 from getafix.schema.document import Document
-from getafix.schema.element import ValidationErrors
 from tests._schematron import evaluate_schematron
 
 _SCH_PATH = (

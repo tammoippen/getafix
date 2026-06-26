@@ -17,6 +17,7 @@ from rich.console import Console
 
 from getafix.report import render_invoice, render_validation_errors
 from getafix.report.line import net_price_cell
+from getafix.report.types import format_bytes
 from getafix.schema.accounting import LineTradeAllowanceCharge, MonetarySummation
 from getafix.schema.agreement import TradeAgreement
 from getafix.schema.delivery import TradeDelivery
@@ -480,8 +481,6 @@ def test_render_invoice_renders_business_process_accounting_and_attachment() -> 
 )
 def test_format_bytes_picks_appropriate_unit(size: int, expected: str) -> None:
     """Byte counts render with a 1024-based IEC unit suffix."""
-    from getafix.report.types import format_bytes
-
     assert format_bytes(size) == expected
 
 

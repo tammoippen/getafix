@@ -22,6 +22,7 @@ from getafix.schema.accounting import (
     TaxTotal,
 )
 from getafix.schema.document import GuidelineDocument, Header, IncludedNote
+from getafix.schema.line import LineAdditionalReferencedDocument
 from getafix.schema.types import Currency, TypeCode
 
 
@@ -95,19 +96,13 @@ class TestLiteralFields:
     at construction time — BT-128-0 is fixed to ``"130"``."""
 
     def test_literal_field_accepts_declared_value(self) -> None:
-        from getafix.schema.line import LineAdditionalReferencedDocument
-
         LineAdditionalReferencedDocument(issuer_assigned_id="X-1", type_code="130")
 
     def test_literal_field_uses_default(self) -> None:
-        from getafix.schema.line import LineAdditionalReferencedDocument
-
         ref = LineAdditionalReferencedDocument(issuer_assigned_id="X-1")
         assert ref.type_code == "130"
 
     def test_literal_field_rejects_other_value(self) -> None:
-        from getafix.schema.line import LineAdditionalReferencedDocument
-
         with pt.raises(TypeError, match=r"type_code: expected one of \{'130'\}"):
             LineAdditionalReferencedDocument(
                 issuer_assigned_id="X-1",

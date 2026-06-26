@@ -17,11 +17,14 @@ Two themes:
 from __future__ import annotations
 
 from decimal import Decimal
+from pathlib import Path
 
 import pytest as pt
+from lxml import etree
 
+from getafix.errors import ValidationErrors
 from getafix.schema.accounting import ApplicableTradeTax
-from getafix.schema.element import ValidationErrors
+from getafix.schema.document import Document
 from getafix.schema.line import (
     DocumentLineDocument,
     LineMonetarySummation,
@@ -365,12 +368,6 @@ class TestFXExtSubInvoiceLineSampleClean:
     well-formed sub-invoice-line tree."""
 
     def test_hardware_sample_passes_full_validation(self) -> None:
-        from pathlib import Path
-
-        from lxml import etree
-
-        from getafix.schema.document import Document
-
         xml = Path(
             "tests/samples/EXTENDED_zf24_SubInvoiceLines_Hardware.xml"
         ).read_bytes()

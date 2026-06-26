@@ -20,7 +20,7 @@ import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from getafix.schema.element import ValidationError
+from getafix.errors import ValidationError
 from getafix.schema.types import Profile
 
 _PAN_RE = re.compile(r"^\d{4,6}$")
