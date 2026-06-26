@@ -178,7 +178,7 @@ These hold across every dataclass; new code MUST preserve them.
 
 - **Field order matches the XSD `<xs:sequence>`.** `_children_xml` iterates `dataclasses.fields()` in declaration order. The EXTENDED XSD is the master reference; lower profiles drop fields but never reorder. `tests/test_xsd_validity.py` enforces this by re-rendering every sample.
 - **`udt:DateTimeType` carries `format="102"`** (CCYYMMDD). The parser rejects any other format. The single exception is `qdt:FormattedDateTimeType` (for `FormattedIssueDateTime` and `FormattedReceivedDateTime`), which uses the `qdt:` namespace but the same `format="102"` payload.
-- **`udt:AmountType` carries an optional `currencyID` attribute** — in most profiles (except EXTENDED) it is allowed to set them. Getafix ignores the `currencyID` in all cases, except where EXTENDED requires them.
+- **`udt:AmountType` carries an optional `currencyID` attribute** — see `Currency on amounts` seciotn for details.
 - **`udt:IndicatorType`** wraps `<udt:Indicator>true|false</udt:Indicator>`.
 - **Empty / self-closing string elements** (e.g. `<ram:LineTwo/>`, `<ram:BICID/>`) parse as `None` for the corresponding optional field. PEPPOL-EN16931-R008 warns against empty elements, but real-world ZUGFeRD samples ship them anyway, so the parser is lenient. On render the field is simply omitted.
 
