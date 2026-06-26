@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
-      - run: uv build 
+      - run: uv build
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v5
@@ -22,4 +22,4 @@ jobs:
           path: dist/*
 
       - name: Publish
-        run: uv publish -v -n -t ${{ secrets.PYPI_PASS }}
+        run: uv publish -v -n
