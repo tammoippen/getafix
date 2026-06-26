@@ -1,9 +1,6 @@
 # CONTRIBUTING.md
 
-Internal notes for contributors and coding agents working on
-**getafix**. End-user material lives in `README.md`; everything below
-assumes you have a checkout and want to extend the model, fix a bug,
-or add a business-rule validator.
+Internal notes for contributors and coding agents working on **getafix**. End-user material lives in `README.md`; everything below assumes you have a checkout and want to extend the model, fix a bug, or add a business-rule validator.
 
 ## Repository layout
 
@@ -11,6 +8,7 @@ or add a business-rule validator.
 src/getafix/
 ├── __init__.py
 ├── cli.py                 # console script entry point
+├── errors.py              # ValidationError(s)
 ├── pdf.py                 # PDF/A-3 attachment helpers (pypdf)
 ├── report/                # rich console pretty-printer (one module per schema topic)
 │   ├── __init__.py        # render_invoice orchestrator + public re-exports
@@ -27,7 +25,7 @@ src/getafix/
 │   ├── trade.py           # line-items table
 │   └── references.py      # format_reference
 ├── schema/                # the CII data model (dataclasses)
-│   ├── element.py         # Element base, ProfileMismatch, ValidationError(s)
+│   ├── element.py         # Element base, ProfileMismatch 
 │   ├── types.py           # enums: Profile, Namespace, TypeCode, …
 │   ├── document.py        # Document / Context / Header  (BG-0 / BG-2 / BT-1-00)
 │   ├── trade.py           # Trade (BG-25-00), TradeLineItem (BG-25)
@@ -47,8 +45,6 @@ src/getafix/
     ├── settlement.py
     ├── trade.py           # cross-sibling rules (per-VAT-category families, arithmetic)
     └── extended.py        # BR-FXEXT-* CIUS overlay
-
-ZF24_EN/                   # vendored spec (gitignored)
 tests/                     # pytest suite, sample corpus, hypothesis strategies
 tools/                     # one-shot scripts (codelist regen, sample fetch,
                            #   render_report.py: XML → PNG/SVG of the report)
@@ -56,18 +52,11 @@ tools/                     # one-shot scripts (codelist regen, sample fetch,
 
 ## How the model is structured
 
-Every schema class inherits from `getafix.schema.element.Element`, a
-`@dataclass(kw_only=True, slots=True)` mixin that knows three things:
+Every schema class inherits from `getafix.schema.element.Element`, a `@dataclass(kw_only=True, slots=True)` mixin that knows three things:
 
-- **`tag` / `namespace`** (`ClassVar`) — the qualified XML tag the
-  element emits (`ram:`, `rsm:`, `udt:`, `qdt:`). The default namespace
-  is `Namespace.ram`; override on subclasses that emit `rsm:`.
-- **`profile`** (`ClassVar[Profile]`) — the lowest Factur-X profile at
-  which the _element_ may appear. Rendering at a lower profile raises
-  `ProfileMismatch`.
-- A pair of methods, `to_xml_internal(profile)` and `from_xml(elem)`,
-  that walk the dataclass fields. Each field's `metadata` dict carries
-  `tag`, optional `ns`, and optional `profile`.
+- **`tag` / `namespace`** (`ClassVar`) — the qualified XML tag the element emits (`ram:`, `rsm:`, `udt:`, `qdt:`). The default namespace is `Namespace.ram`; override on subclasses that emit `rsm:`.
+- **`profile`** (`ClassVar[Profile]`) — the lowest Factur-X profile at which the _element_ may appear. Rendering at a lower profile raises `ProfileMismatch`.
+- A pair of methods, `to_xml_internal(profile)` and `from_xml(elem)`, that walk the dataclass fields. Each field's `metadata` dict carries `tag`, optional `ns`, and optional `profile`.
 
 ### Field metadata keys
 
@@ -79,45 +68,21 @@ Every schema class inherits from `getafix.schema.element.Element`, a
 
 ### Profile gating, two layers
 
+`Profile` is a `StrEnum` whose member order encodes ordinal rank
+(`MINIMUM < BASIC_WL < BASIC < COMFORT < EXTENDED`). 
+
 The Factur-X "Used in:" matrix is encoded in two places:
 
-1. **Class-level `profile: ClassVar[Profile]`** on each `Element`
-   subclass — the lowest profile at which the _element_ may appear.
-2. **Field-level `metadata={"profile": Profile.X}`** on each `field()`
-   — the lowest profile at which the _individual field_ may appear
-   inside that element.
+1. **Class-level `profile: ClassVar[Profile]`** on each `Element` subclass — the lowest profile at which the _element_ may appear.
+2. **Field-level `metadata={"profile": Profile.X}`** on each `field()` — the lowest profile at which the _individual field_ may appear inside that element.
 
-`Element._children_xml` reads both and raises `ProfileMismatch` if a
-field that is set on the dataclass requires a profile higher than the
-document's.
+`Element._children_xml` reads both and raises `ProfileMismatch` if a field that is set on the dataclass requires a profile higher than the document's.
 
-`Element._field_profile(name)` is the override hook for fields whose
-gate depends on instance state — see
-`TradeAllowanceCharge._field_profile`, which gates `calculation_percent`
-and `basis_amount` differently for header vs line.
+`Element._field_profile(name)` is the override hook for fields whose gate depends on instance state — see `TradeAllowanceCharge._field_profile`, which gates `calculation_percent` and `basis_amount` differently for header vs line.
 
 ### Currency on amounts
 
-The XSD makes `currencyID` optional on `udt:AmountType`, but the Factur-X
-Schematron forbids it (a forbidding `<report>`) on every monetary amount
-*except* `TaxTotalAmount` (BT-110 / BT-111) — the one amount that may be
-expressed in a currency other than the invoice currency (BT-5 vs. the VAT
-accounting currency BT-6). getafix therefore renders `currencyID` on
-nothing but `TaxTotal`, which carries its own required `currency_id` field
-and overrides `to_xml_internal` to emit it. Every other amount renders
-bare. On parse, a `currencyID` on any other amount is read but dropped
-(see `Element.from_xml`); a `TODO` there marks where, once parse is
-profile-aware, it should become an EXTENDED validation error (the
-forbidding reports apply at EXTENDED) while staying ignored below.
-Currency is not part of validation.
-
-### Profile enum ordering
-
-`Profile` is a `StrEnum` whose member order encodes ordinal rank
-(`MINIMUM < BASIC_WL < BASIC < COMFORT < EXTENDED`). All four order
-comparators (`__lt__` / `__le__` / `__gt__` / `__ge__`) are overridden
-to use that ordinal — the inherited `StrEnum` lexicographic compare
-would give wrong answers (`BASIC_WL <= MINIMUM` would be `True`).
+The XSD makes `currencyID` optional on `udt:AmountType`, but the Factur-X Schematron forbids it (a forbidding `<report>`) on every monetary amount *except* `TaxTotalAmount` (BT-110 / BT-111) — the one amount that may be expressed in a currency other than the invoice currency (BT-5 vs. the VAT accounting currency BT-6). getafix therefore renders `currencyID` on nothing but `TaxTotal`, which carries its own required `currency_id` field and overrides `to_xml_internal` to emit it. Every other amount renders bare. On parse, a `currencyID` on any other amount is read but dropped (see `Element.from_xml`); a `TODO` there marks where, once parse is profile-aware, it should become an EXTENDED validation error (the forbidding reports apply at EXTENDED) while staying ignored below. Currency is not part of validation.
 
 ## Validator architecture
 
@@ -145,55 +110,21 @@ class TradeSettlement(Element):
     )
 ```
 
-`Element.validate_internal(profile)` runs every registered validator on
-`self`, then recurses into every child `Element` reachable through
-dataclass fields, returning the merged error list. The public entry
-point is `Document.validate()`, which collects every violation in one
-pass and raises a single `ValidationErrors` aggregate.
+`Element.validate_internal(profile)` runs every registered validator on `self`, then recurses into every child `Element` reachable through dataclass fields, returning the merged error list. The public entry point is `Document.validate()`, which collects every violation in one pass and raises a single `ValidationErrors` aggregate.
 
-Validator modules live in `getafix.rules.<topic>` mirroring the
-schema modules they validate against. Cross-sibling rules (per-VAT-
-category required parties, document arithmetic, sub-line walker) live
-in `getafix.rules.trade` and `getafix.rules.extended` because they
-need to read across the agreement / settlement / line items in one
-pass.
+Validator modules live in `getafix.rules.<topic>` mirroring the schema modules they validate against. Cross-sibling rules (per-VAT- category required parties, document arithmetic, sub-line walker) live in `getafix.rules.trade` and `getafix.rules.extended` because they need to read across the agreement / settlement / line items in one pass.
 
 ### Import cycle
 
-Each `schema/<topic>.py` runtime-imports the validator functions from
-`getafix.rules.<topic>` to wire them onto `_validators`; each
-`rules/<topic>.py` imports element types from `schema.<topic>` for the
-function annotations only. The runtime graph has no cycle —
-annotations are kept inert with `from __future__ import annotations`
-and the schema imports sit under a `TYPE_CHECKING` guard. Pyright
-still walks the static cycle and reports it, so every rule module
-opens with `# pyright: reportImportCycles=false`. Use the same
-pattern when adding a new `rules/<topic>.py`.
+Each `schema/<topic>.py` runtime-imports the validator functions from `getafix.rules.<topic>` to wire them onto `_validators`; each `rules/<topic>.py` imports element types from `schema.<topic>` for the function annotations only. The runtime graph has no cycle — annotations are kept inert with `from __future__ import annotations` and the schema imports sit under a `TYPE_CHECKING` guard. Pyright still walks the static cycle and reports it, so every rule module opens with `# pyright: reportImportCycles=false`. Use the same pattern when adding a new `rules/<topic>.py`.
 
 ### Per-VAT-category families
 
-The eight VAT categories that demand a required-party check
-(`AE` / `E` / `G` / `IC` / `IG` / `IP` / `S` / `Z`) plus the inverted
-`O` family expand into one `br_<cat>_<n>` function per BR id —
-31 functions total in `rules/trade.py`. Shared helpers
-(`_seller_predicate_*`, `_has_vat_id`, `_iter_tax_registrations`,
-`_line_has_category`, `_alw_has_category`, `_chg_has_category`) sit
-next to the validators. The rate (`-5/-6/-7`) and exemption-reason
-(`-10`) constraints across the same nine categories collapse into
-two table-driven dispatchers
-(:func:`getafix.rules.trade.vat_category_rates` and
-:func:`getafix.rules.trade.vat_category_exemption_reason`).
+The eight VAT categories that demand a required-party check (`AE` / `E` / `G` / `IC` / `IG` / `IP` / `S` / `Z`) plus the inverted `O` family expand into one `br_<cat>_<n>` function per BR id — 31 functions total in `rules/trade.py`. Shared helpers (`_seller_predicate_*`, `_has_vat_id`, `_iter_tax_registrations`, `_line_has_category`, `_alw_has_category`, `_chg_has_category`) sit next to the validators. The rate (`-5/-6/-7`) and exemption-reason (`-10`) constraints across the same nine categories collapse into two table-driven dispatchers (:func:`getafix.rules.trade.vat_category_rates` and :func:`getafix.rules.trade.vat_category_exemption_reason`).
 
 ### EXTENDED short-circuits
 
-EXTENDED replaces seven EN 16931 arithmetic identities
-(`BR-CO-4 / -10 / -11 / -12 / -13 / -15` plus `BR-CO-17`) with
-tolerance-banded variants in `rules/extended.py`. The replaced rule
-in `rules/<topic>.py` short-circuits with
-`if profile >= Profile.EXTENDED: return []`; the EXTENDED variant
-guards with the inverse. Both end up on the same element's
-`_validators` tuple; profile gating in each function picks the
-right one to fire.
+EXTENDED replaces seven EN 16931 arithmetic identities (`BR-CO-4 / -10 / -11 / -12 / -13 / -15` plus `BR-CO-17`) with tolerance-banded variants in `rules/extended.py`. The replaced rule in `rules/<topic>.py` short-circuits with `if profile >= Profile.EXTENDED: return []`; the EXTENDED variant guards with the inverse. Both end up on the same element's `_validators` tuple; profile gating in each function picks the right one to fire.
 
 ## Report architecture
 
@@ -210,8 +141,7 @@ labelled with their BT/BG id.
 
 ## Adding a new BT / BG field
 
-1. Find the spec entry in the vendored `ZF24_EN/` appendix (the
-   technical-appendix PDF carries the BT/BG ids and XSD positions).
+1. Find the spec entry in the vendored `ZF24_EN/` appendix (the technical-appendix PDF carries the BT/BG ids and XSD positions).
 2. Locate the right dataclass under `src/getafix/schema/`.
 3. Add the `field()` declaration, in XSD `<xs:sequence>` order:
 
@@ -222,18 +152,12 @@ labelled with their BT/BG id.
    """Docstring with the BT id and a short narrative."""
    ```
 
-4. If the field is monetary, render it like any other `Decimal` — no
-   `currencyID` and no extra metadata. The Schematron forbids `currencyID`
-   on every amount except `TaxTotalAmount`, which is handled separately
-   (see "Currency on amounts").
-5. Run `make tests`. `tests/test_xsd_validity.py` will catch ordering
-   regressions automatically by re-rendering every shipped sample and
-   validating against the profile XSD.
+4. If the field is monetary, render it like any other `Decimal` — no `currencyID` and no extra metadata. The Schematron forbids `currencyID` on every amount except `TaxTotalAmount`, which is handled separately (see "Currency on amounts").
+5. Run `make tests`. `tests/test_xsd_validity.py` will catch ordering regressions automatically by re-rendering every shipped sample and validating against the profile XSD.
 
 ## Adding a new BR-\* validator
 
-1. Add the function to the right `rules/<topic>.py` (or `rules/trade.py`
-   if it needs cross-sibling access). Match the `Validator[T]` shape:
+1. Add the function to the right `rules/<topic>.py` (or `rules/trade.py` if it needs cross-sibling access). Match the `Validator[T]` shape:
 
    ```python
    def br_42(m: _line.TradeAllowanceCharge, profile: Profile) -> list[ValidationError]:
@@ -246,31 +170,17 @@ labelled with their BT/BG id.
    ```
 
 2. Wire it into the target element's `_validators` ClassVar tuple.
-3. Add at least one positive (rule fires) and one negative (rule
-   passes) test under `tests/`.
+3. Add at least one positive (rule fires) and one negative (rule passes) test under `tests/`.
 
 ## Wire conventions
 
 These hold across every dataclass; new code MUST preserve them.
 
-- **Field order matches the XSD `<xs:sequence>`.** `_children_xml`
-  iterates `dataclasses.fields()` in declaration order. The EN16931
-  (COMFORT) XSD is the master reference; lower profiles drop fields
-  but never reorder. `tests/test_xsd_validity.py` enforces this by
-  re-rendering every sample.
-- **`udt:DateTimeType` carries `format="102"`** (CCYYMMDD). The
-  parser rejects any other format. The single exception is
-  `qdt:FormattedDateTimeType` (for `FormattedIssueDateTime` and
-  `FormattedReceivedDateTime`), which uses the `qdt:` namespace but
-  the same `format="102"` payload.
-- **`udt:AmountType` carries an optional `currencyID` attribute** —
-  see the "Currency on amounts" section above.
+- **Field order matches the XSD `<xs:sequence>`.** `_children_xml` iterates `dataclasses.fields()` in declaration order. The EXTENDED XSD is the master reference; lower profiles drop fields but never reorder. `tests/test_xsd_validity.py` enforces this by re-rendering every sample.
+- **`udt:DateTimeType` carries `format="102"`** (CCYYMMDD). The parser rejects any other format. The single exception is `qdt:FormattedDateTimeType` (for `FormattedIssueDateTime` and `FormattedReceivedDateTime`), which uses the `qdt:` namespace but the same `format="102"` payload.
+- **`udt:AmountType` carries an optional `currencyID` attribute** — in most profiles (except EXTENDED) it is allowed to set them. Getafix ignores the `currencyID` in all cases, except where EXTENDED requires them.
 - **`udt:IndicatorType`** wraps `<udt:Indicator>true|false</udt:Indicator>`.
-- **Empty / self-closing string elements** (e.g. `<ram:LineTwo/>`,
-  `<ram:BICID/>`) parse as `None` for the corresponding optional
-  field. PEPPOL-EN16931-R008 warns against empty elements, but
-  real-world ZUGFeRD samples ship them anyway, so the parser is
-  lenient. On render the field is simply omitted.
+- **Empty / self-closing string elements** (e.g. `<ram:LineTwo/>`, `<ram:BICID/>`) parse as `None` for the corresponding optional field. PEPPOL-EN16931-R008 warns against empty elements, but real-world ZUGFeRD samples ship them anyway, so the parser is lenient. On render the field is simply omitted.
 
 ## Development workflow
 
@@ -286,15 +196,11 @@ make ids-check          # regenerate BT/BR sidecars + run BT/BR + schema-docs au
 make docs-coverage      # same as ids-check but also prints "XSD child not modelled" notes
 ```
 
-CI runs `make check` then `make synth-check`, `make ids-check`, then
-`make tests` on Linux / macOS / Windows (`.github/workflows/CI.yml`).
-Tagging `v*` triggers `Publish.yml` to push to PyPI.
+CI runs `make check` then `make synth-check`, then `make tests` on Linux / macOS / Windows (`.github/workflows/CI.yml`). Tagging `v*` triggers `Publish.yml` to push to PyPI.
 
 ### Spec-conformance tooling
 
-The `tools/` directory carries four scripts that together keep the
-schema docstrings in sync with the Factur-X 1.08 workbook
-(`docs/spec/1_FACTUR-X 1.08 - … - VF.xlsx`):
+The `tools/` directory carries four scripts that together keep the schema docstrings in sync with the Factur-X 1.08 workbook (get them from the [official source](https://www.ferd-net.de/standards/zugferd)) - developed and tested for the 2.4 version:
 
 | Tool                        | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -303,35 +209,20 @@ schema docstrings in sync with the Factur-X 1.08 workbook
 | `check_schema_docs.py`      | Statically walks every `Element` subclass (via `griffe`) and fails if a class or field is missing a docstring or BT/BG citation, or if its `profile` gate would render the term below the earliest profile the workbook admits it on (XSD-vs-EN-semantic divergences are allow-listed in `KNOWN_PROFILE_EXCEPTIONS`). With `--check-citations` (used by `make ids-check`) it additionally cross-checks every `BT-` / `BG-` / `BR-` citation in `src/`, `docs/`, `README.md` and `CONTRIBUTING.md` against the sidecars, failing on a typo or hallucinated id. With `--show-missing` also lists every XSD-allowed child not yet modelled (informational; surfaced through `make docs-coverage`). |
 | `check_verbatim.py`         | Fails if any docstring in `getafix.schema` or `getafix.rules` — or any non-docstring string literal in the rules package (the `ValidationError` messages ship to users) — shares a run of 6+ consecutive words with the workbook's English text columns (descriptions, usage notes, rule prose). Copied spec wording is a licensing risk; everything must paraphrase. Official term names cited with their BT/BG id, code-list entries and legal citations are allow-listed in `ALLOWED_RUNS` (keyed by the normalised phrase, so copying _more_ prose around an allow-listed phrase still fails).                                                                                        |
 
-The audits run as part of `make ids-check` and CI.
-
 The test suite includes:
 
-- `tests/test_*.py` — unit tests for each schema module and rule
-  family.
-- `tests/test_samples.py` — parser checks against real-world samples
-  in `tests/samples/`; provenance + license (Apache 2.0) in
-  `tests/samples/SOURCES.md`.
-- `tests/test_zf24_examples.py` — parser checks against the official
-  Factur-X 1.08 examples shipped under `ZF24_EN/Examples/` (skipped
-  when the kit is not present).
-- `tests/test_xsd_validity.py` — re-renders every sample and validates
-  the output against the profile XSD. Guards the field-ordering
-  invariant.
+- `tests/test_*.py` — unit tests for each schema module and rule family.
+- `tests/test_samples.py` — parser checks against real-world samples in `tests/samples/`; provenance + license (Apache 2.0) in `tests/samples/SOURCES.md`.
+- `tests/test_zf24_examples.py` — parser checks against the official Factur-X 1.08 examples shipped under `tests/samples`.
+- `tests/test_xsd_validity.py` — re-renders every sample and validates the output against the profile XSD. Guards the field-ordering invariant.
 - `tests/test_hypothesis.py` — round-trips Hypothesis-generated
   documents. Failing examples surface modelling gaps that the static
   samples miss.
 
 ## Out of scope (today)
 
-- **PDF/A-3 conformance.** `getafix.pdf` attaches XML to an existing
-  PDF using pypdf, but does not upgrade the host PDF to PDF/A-3 — the
-  formal compliance requirement for Factur-X. Pair with a dedicated
-  converter when full conformance is needed.
-- **Schematron `.sch` rules.** The per-profile schematron files are
-  not vendored. If we want automated `BR-` enforcement against the
-  official rules, those are the source of truth — today the `BR-`
-  checks are hand-coded.
+- **PDF/A-3 conformance.** `getafix.pdf` attaches XML to an existing PDF using pypdf, but does not upgrade the host PDF to PDF/A-3 — the formal compliance requirement for Factur-X. Pair with a dedicated converter when full conformance is needed.
+- **Schematron `.sch` rules.** The per-profile schematron files are not vendored. I want as few hard dependencies as possible, so the `BR-` checks are hand-coded.
 - **EXTENDED CIUS full coverage.** Every top-level EXTENDED
   structure is modelled; the residual leaf attributes and line-level
   twins of header references are enumerated in the README "Status and
@@ -339,8 +230,5 @@ The test suite includes:
 
 ## See also
 
-- `README.md` — user guide, the profile table and the enumerated
-  EXTENDED gaps.
-- `tools/check_schema_docs.py` — audits every BT/BG/BR citation in the
-  sources against the workbook sidecars (`make ids-check`) and reports
-  XSD children not yet modelled (`make docs-coverage`).
+- `README.md` — user guide, the profile table and the enumerated EXTENDED gaps.
+- `tools/check_schema_docs.py` — audits every BT/BG/BR citation in the sources against the workbook sidecars (`make ids-check`) and reports XSD children not yet modelled (`make docs-coverage`).
