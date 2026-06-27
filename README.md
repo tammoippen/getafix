@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tammoippen/getafix/actions/workflows/CI.yml/badge.svg)](https://github.com/tammoippen/getafix/actions/workflows/CI.yml)
 [![PyPi version](https://img.shields.io/pypi/v/getafix.svg)](https://pypi.python.org/pypi/getafix)
-[![Downloads](https://pepy.tech/badge/getafix/month)](https://pepy.tech/project/getafix)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/getafix?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/getafix)
 [![PyPi license](https://img.shields.io/pypi/l/getafix.svg)](https://pypi.python.org/pypi/getafix)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
