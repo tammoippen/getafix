@@ -307,7 +307,7 @@ def basic_invoice(
 
     return Document(
         context=Context(guideline=GuidelineDocument(id=Profile.BASIC)),
-        header=header(Profile.BASIC, invoice_number, issue_date, type_code, notes),
+        header=header(invoice_number, issue_date, type_code, notes),
         trade=Trade(
             items=list(items),
             agreement=TradeAgreement(

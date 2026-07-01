@@ -34,14 +34,7 @@ from getafix.schema.party import (
     TaxSchemeId,
 )
 from getafix.schema.settlement import PaymentTerms
-from getafix.schema.types import (
-    CategoryCode,
-    Country,
-    Currency,
-    Profile,
-    TypeCode,
-    VATEXCode,
-)
+from getafix.schema.types import CategoryCode, Country, Currency, TypeCode, VATEXCode
 
 Numeric = Decimal | int | str
 """Accepted monetary / quantity input — coerced via :func:`Decimal`.
@@ -251,13 +244,8 @@ def trade_delivery(delivery_date: date | None) -> TradeDelivery:
 
 
 def header(
-    profile: Profile,
-    invoice_number: str,
-    issue_date: date,
-    type_code: TypeCode,
-    notes: Sequence[str],
+    invoice_number: str, issue_date: date, type_code: TypeCode, notes: Sequence[str]
 ) -> Header:
-    del profile  # reserved for future per-profile defaults
     return Header(
         id=invoice_number,
         type_code=type_code,

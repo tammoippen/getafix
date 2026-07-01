@@ -104,7 +104,7 @@ def basic_wl_invoice(
 
     return Document(
         context=Context(guideline=GuidelineDocument(id=Profile.BASIC_WL)),
-        header=header(Profile.BASIC_WL, invoice_number, issue_date, type_code, notes),
+        header=header(invoice_number, issue_date, type_code, notes),
         trade=Trade(
             agreement=TradeAgreement(
                 buyer_reference=buyer_reference, seller=seller, buyer=buyer

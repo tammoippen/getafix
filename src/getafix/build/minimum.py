@@ -90,7 +90,7 @@ def minimum_invoice(
 
     return Document(
         context=Context(guideline=GuidelineDocument(id=Profile.MINIMUM)),
-        header=header(Profile.MINIMUM, invoice_number, issue_date, type_code, ()),
+        header=header(invoice_number, issue_date, type_code, ()),
         trade=Trade(
             agreement=TradeAgreement(
                 buyer_reference=buyer_reference, seller=seller, buyer=buyer
