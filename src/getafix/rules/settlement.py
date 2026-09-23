@@ -21,6 +21,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from getafix.errors import ValidationError
+from getafix.schema._numeric import round_half_away_from_zero
 from getafix.schema.types import Profile
 
 _PAN_RE = re.compile(r"^\d{4,6}$")
@@ -355,3 +356,35 @@ def getafix_adv_prepaid(
             f"the prepaid total (BT-113) of {prepaid}.",
         )
     ]
+
+
+def getafix_adv_vat_required(
+    m: _set.AdvancePaymentTradeTax, profile: Profile
+) -> list[ValidationError]:
+    """GETAFIX-FIELD-REQUIRED: an advance payment's VAT entry (BG-X-46)
+    must carry its VAT amount (BT-X-293).
+
+    The dataclass keeps the field optional so
+    :meth:`~getafix.schema.settlement.AdvancePayment.__post_init__`
+    can fill it in from the rate; this rule catches the cases it
+    cannot fill (several VAT entries or no rate), which the Factur-X
+    schematron rejects.
+
+    Applies: EXTENDED (BG-X-46 does not exist below).
+    """
+    if profile < Profile.EXTENDED or m.calculated_amount is not None:
+        return []
+    return [
+        ValidationError(
+            "GETAFIX-FIELD-REQUIRED",
+            "AdvancePaymentTradeTax.calculated_amount (BT-X-293) is "
+            "missing; set it, or give a single VAT entry a rate so it "
+            "can be derived.",
+        )
+    ]
+
+
+def advance_payment_vat(paid: Decimal, rate: Decimal) -> Decimal:
+    """VAT contained in the gross amount ``paid`` at ``rate`` percent,
+    rounded half away from zero to two decimals."""
+    return round_half_away_from_zero(paid * rate / (Decimal("100") + rate))
