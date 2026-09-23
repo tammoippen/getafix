@@ -13,7 +13,8 @@ PDF input additionally needs the ``pdf`` extra (pypdf)::
 
 Exit codes:
 
-* ``0`` — XML parsed cleanly and passed every validator.
+* ``0`` — XML parsed cleanly and passed every validator (warnings
+  are printed but do not fail).
 * ``1`` — XML parsed but at least one validation rule fired
   (or the document tree could not be parsed as a CII invoice, or no
   Factur-X XML was found in the supplied PDF).
@@ -75,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
+    from getafix.errors import ValidationWarning
     from getafix.report import render_invoice, render_validation_errors
     from getafix.schema.document import Document
 
@@ -139,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     profile = doc.context.guideline.id
     errors = doc.validate_internal(profile)
     render_validation_errors(errors, console=out)
-    return 1 if errors else 0
+    return 1 if any(not isinstance(e, ValidationWarning) for e in errors) else 0
 
 
 if __name__ == "__main__":  # pragma: no cover
