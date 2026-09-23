@@ -10,6 +10,7 @@ from tagic.xml import XML
 from getafix.rules import Validator
 from getafix.rules._types import list_max_cardinality_below
 from getafix.rules.settlement import (
+    advance_payment_vat,
     br_5_currency_shape,
     br_29,
     br_50,
@@ -24,6 +25,7 @@ from getafix.rules.settlement import (
     br_co_25,
     bt_81_code_shape,
     getafix_adv_prepaid,
+    getafix_adv_vat_required,
 )
 from getafix.schema.accounting import (
     ApplicableTradeTax,
@@ -566,10 +568,18 @@ class AdvancePaymentTradeTax(Element):
     tag: ClassVar[str] = "IncludedTradeTax"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
+    _validators: ClassVar[tuple[Validator["AdvancePaymentTradeTax"], ...]] = (
+        getafix_adv_vat_required,
+    )
+
     calculated_amount: Decimal | None = field(
         default=None, metadata={"tag": "CalculatedAmount"}
     )
-    """VAT amount included in the prepayment (BT-X-293)."""
+    """VAT amount included in the prepayment (BT-X-293).
+
+    Required by the schematron. Optional here so
+    :meth:`AdvancePayment.__post_init__` can derive it; left unset it
+    fails ``GETAFIX-FIELD-REQUIRED``."""
     type_code: str = field(default="VAT", metadata={"tag": "TypeCode"})
     """Tax type code (BT-X-294);
     [UNTDID 5153](https://service.unece.org/trade/untdid/d16b/tred/tred5153.htm),
@@ -623,6 +633,9 @@ class AdvancePayment(Element):
     invoice. ``PaidAmount`` (BT-X-291) reduces the amount still due
     through BT-113; it does not change the tax totals (BT-110, BG-23),
     which always cover the whole invoice.
+
+    With a single VAT entry that has a rate but no amount, the VAT
+    amount (BT-X-293) is derived from ``paid_amount`` on construction.
     """
 
     tag: ClassVar[str] = "SpecifiedAdvancePayment"
@@ -646,6 +659,19 @@ class AdvancePayment(Element):
                 "AdvancePayment.included_trade_tax: at least one IncludedTradeTax "
                 "entry is required (XSD minOccurs=1)."
             )
+        # With a single VAT entry the whole prepayment is taxed at one
+        # rate, so a missing BT-X-293 follows from BT-X-291 and the rate.
+        # Several entries can't be split without more data; those are
+        # left to ``GETAFIX-FIELD-REQUIRED``.
+        if len(self.included_trade_tax) == 1:
+            tax = self.included_trade_tax[0]
+            if (
+                tax.calculated_amount is None
+                and tax.rate_applicable_percent is not None
+            ):
+                tax.calculated_amount = advance_payment_vat(
+                    self.paid_amount, tax.rate_applicable_percent
+                )
 
 
 @dataclass(kw_only=True, slots=True)

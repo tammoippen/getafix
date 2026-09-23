@@ -1,6 +1,8 @@
 """Advance payments (BG-X-45) — getafix-specific rules.
 
 * ``GETAFIX-ADV-PREPAID`` — Σ BT-X-291 must not exceed BT-113.
+* ``GETAFIX-FIELD-REQUIRED`` — BT-X-293 must be present, and is
+  derived on construction when a single VAT entry has a rate.
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from lxml import etree
 from getafix.errors import ValidationErrors
 from getafix.schema.document import Document
 from getafix.schema.settlement import AdvancePayment, AdvancePaymentTradeTax
-from getafix.schema.types import CategoryCode
+from getafix.schema.types import CategoryCode, Profile
 
 SAMPLES = Path(__file__).parent / "samples"
 # One advance of 119.00 incl. 19.00 VAT at 19 %; BT-113 = 119.00.
@@ -92,3 +94,57 @@ class TestPrepaidSum:
         assert tax_total is not None
         assert tax_total[0].amount == Decimal("76.67")
         assert doc.validate() == []
+
+
+class TestVatAmountRequired:
+    def test_derived_from_single_rate(self) -> None:
+        adv = AdvancePayment(
+            paid_amount=Decimal("2975.00"), included_trade_tax=[_tax(None)]
+        )
+        assert adv.included_trade_tax[0].calculated_amount == Decimal("475.00")
+
+    def test_derivation_rounds_half_away_from_zero(self) -> None:
+        # 10.05 * 7 / 107 = 0.6574… → 0.66
+        adv = AdvancePayment(
+            paid_amount=Decimal("10.05"), included_trade_tax=[_tax(None, rate="7")]
+        )
+        assert adv.included_trade_tax[0].calculated_amount == Decimal("0.66")
+
+    def test_explicit_amount_kept(self) -> None:
+        adv = AdvancePayment(
+            paid_amount=Decimal("119.00"), included_trade_tax=[_tax("18.99")]
+        )
+        assert adv.included_trade_tax[0].calculated_amount == Decimal("18.99")
+
+    def test_derived_amount_is_rendered(self) -> None:
+        doc = _load()
+        advances = doc.trade.settlement.advance_payments
+        assert advances is not None
+        advances[0] = AdvancePayment(
+            paid_amount=Decimal("119.00"), included_trade_tax=[_tax(None)]
+        )
+        assert "<ram:CalculatedAmount>19.00</ram:CalculatedAmount>" in str(doc.to_xml())
+
+    @pt.mark.parametrize(
+        "taxes",
+        [
+            pt.param([_tax(None, rate=None)], id="no-rate"),
+            pt.param([_tax(None), _tax("5.00", rate="7")], id="several-entries"),
+        ],
+    )
+    def test_underivable_amount_fires(
+        self, taxes: list[AdvancePaymentTradeTax]
+    ) -> None:
+        adv = AdvancePayment(paid_amount=Decimal("119.00"), included_trade_tax=taxes)
+        assert adv.included_trade_tax[0].calculated_amount is None
+        codes = [e.code for e in adv.validate_internal(Profile.EXTENDED)]
+        assert "GETAFIX-FIELD-REQUIRED" in codes
+
+    def test_unset_after_construction_fails_validate(self) -> None:
+        doc = _load()
+        advances = doc.trade.settlement.advance_payments
+        assert advances is not None
+        advances[0].included_trade_tax[0].calculated_amount = None
+        with pt.raises(ValidationErrors) as e:
+            _ = doc.validate()
+        assert _codes(e.value) == {"GETAFIX-FIELD-REQUIRED"}
