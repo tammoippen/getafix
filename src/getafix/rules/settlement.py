@@ -20,7 +20,7 @@ import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from getafix.errors import ValidationError
+from getafix.errors import ValidationError, ValidationWarning
 from getafix.schema._numeric import round_half_away_from_zero
 from getafix.schema.types import Profile
 
@@ -388,3 +388,42 @@ def advance_payment_vat(paid: Decimal, rate: Decimal) -> Decimal:
     """VAT contained in the gross amount ``paid`` at ``rate`` percent,
     rounded half away from zero to two decimals."""
     return round_half_away_from_zero(paid * rate / (Decimal("100") + rate))
+
+
+def getafix_adv_vat_plausible(
+    m: _set.AdvancePayment, profile: Profile
+) -> list[ValidationError]:
+    """GETAFIX-ADV-VAT-PLAUSIBLE (warning): the VAT reported for an
+    advance payment (BT-X-293) should fit its gross amount (BT-X-291).
+
+    With one VAT entry the expected amount is
+    ``BT-X-291 * rate / (100 + rate)``. With several entries only the
+    total VAT can be bounded: it must lie between what the lowest and
+    the highest rate would give. Each entry allows 0.01 of rounding.
+    Entries without a rate or amount skip the check.
+
+    Applies: EXTENDED (BG-X-45 does not exist below).
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    taxes = m.included_trade_tax
+    rates = [t.rate_applicable_percent for t in taxes]
+    amounts = [t.calculated_amount for t in taxes]
+    if any(r is None for r in rates) or any(a is None for a in amounts):
+        return []
+    known_rates = [r for r in rates if r is not None]
+    vat = sum((a for a in amounts if a is not None), Decimal("0"))
+    low = advance_payment_vat(m.paid_amount, min(known_rates))
+    high = advance_payment_vat(m.paid_amount, max(known_rates))
+    low, high = min(low, high), max(low, high)
+    tolerance = Decimal("0.01") * len(taxes)
+    if low - tolerance <= vat <= high + tolerance:
+        return []
+    expected = str(low) if low == high else f"{low} .. {high}"
+    return [
+        ValidationWarning(
+            "GETAFIX-ADV-VAT-PLAUSIBLE",
+            f"Advance payment of {m.paid_amount} reports VAT {vat} "
+            f"(BT-X-293); its rate(s) imply {expected}.",
+        )
+    ]
