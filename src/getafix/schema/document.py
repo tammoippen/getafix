@@ -13,7 +13,7 @@ from typing import ClassVar, override
 
 from tagic.xml import XML
 
-from getafix.errors import ValidationErrors
+from getafix.errors import ValidationErrors, ValidationWarning
 from getafix.schema.element import Element
 from getafix.schema.trade import Trade
 from getafix.schema.types import Namespace, Profile, TypeCode
@@ -274,7 +274,7 @@ class Document(Element):
         profile = self.context.guideline.id
         return self.to_xml_internal(profile)
 
-    def validate(self) -> None:
+    def validate(self) -> list[ValidationWarning]:
         """Validate every business rule recursively.
 
         Collects every :class:`ValidationError` from this document and
@@ -282,9 +282,14 @@ class Document(Element):
         Callers can inspect ``exc.errors`` to see every violation in
         one pass, rather than fixing one error only to discover the
         next on the following run.
+
+        :class:`ValidationWarning` findings never raise; they are
+        returned when the document is otherwise valid.
         """
 
         profile = self.context.guideline.id
-        errors = self.validate_internal(profile)
+        findings = self.validate_internal(profile)
+        errors = [e for e in findings if not isinstance(e, ValidationWarning)]
         if errors:
             raise ValidationErrors(errors)
+        return [e for e in findings if isinstance(e, ValidationWarning)]

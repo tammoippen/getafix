@@ -15,6 +15,16 @@ class ValidationError(ValueError):
         self.message: str = message
 
 
+class ValidationWarning(ValidationError):
+    """A plausibility finding that does not make the document invalid.
+
+    Validators return warnings in the same list as errors, so
+    ``Element.validate_internal`` reports both. ``Document.validate``
+    raises only for plain errors and returns the warnings; the CLI
+    prints them without failing the exit code.
+    """
+
+
 class ValidationErrors(ValueError):
     """Aggregate exception holding every ValidationError from a single
     ``Document.validate`` pass.
