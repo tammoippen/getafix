@@ -164,6 +164,7 @@ class AttachmentBinaryObject(Element):
 
     @property
     def binary_object(self) -> bytes:
+        """Decoded bytes of the attached document (BT-125)."""
         return b64decode(self.object)
 
     @override
