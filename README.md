@@ -196,6 +196,8 @@ except ValidationErrors as exc:
 
 `Document.validate()` walks the document tree once and collects every business-rule violation, raising a single `ValidationErrors` aggregate. Each `ValidationError` carries the rule's code (e.g. `BR-CO-15`) and a human-readable message.
 
+Plausibility checks are reported as `ValidationWarning` (a `ValidationError` subclass). They never raise: `validate()` returns them when the document is otherwise valid, and the CLI prints them without failing. Rule codes starting with `GETAFIX-` are getafix's own checks, not part of Factur-X — e.g. `GETAFIX-ADV-PREPAID` (advance payments must not exceed BT-113) and the `GETAFIX-ADV-VAT-PLAUSIBLE` warning (an advance payment's VAT must fit its amount and rate).
+
 Every rule getafix enforces lives in `getafix.rules` — one module per schema topic (`accounting`, `line`, `party`, `settlement`, `trade`, `extended`), each wired onto the relevant element's `_validators`.
 
 ## Command-line tool

@@ -25,6 +25,7 @@ from getafix.rules.settlement import (
     br_co_25,
     bt_81_code_shape,
     getafix_adv_prepaid,
+    getafix_adv_vat_plausible,
     getafix_adv_vat_required,
 )
 from getafix.schema.accounting import (
@@ -640,6 +641,10 @@ class AdvancePayment(Element):
 
     tag: ClassVar[str] = "SpecifiedAdvancePayment"
     profile: ClassVar[Profile] = Profile.EXTENDED
+
+    _validators: ClassVar[tuple[Validator["AdvancePayment"], ...]] = (
+        getafix_adv_vat_plausible,
+    )
 
     paid_amount: Decimal = field(metadata={"tag": "PaidAmount"})
     """Prepaid amount (BT-X-291)."""
