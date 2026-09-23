@@ -326,3 +326,32 @@ def br_co_16(m: _set.TradeSettlement, _profile: Profile) -> list[ValidationError
             f"+ {rounding} = {expected_due}.",
         )
     ]
+
+
+def getafix_adv_prepaid(
+    m: _set.TradeSettlement, profile: Profile
+) -> list[ValidationError]:
+    """GETAFIX-ADV-PREPAID: the listed advance payments (BG-X-45) must
+    not add up to more than the prepaid total (BT-113).
+
+    getafix-specific; Factur-X has no rule linking the two. Each
+    ``PaidAmount`` (BT-X-291) is a gross prepayment counted in BT-113.
+    BT-113 may be larger, since not every prepayment has to be
+    itemised. A missing BT-113 counts as 0.
+
+    Applies: EXTENDED (BG-X-45 does not exist below). Tax totals
+    (BT-110, BG-23) are unaffected by prepayments and are not checked.
+    """
+    if profile < Profile.EXTENDED or not m.advance_payments:
+        return []
+    paid = sum((a.paid_amount for a in m.advance_payments), Decimal("0"))
+    prepaid = m.monetary_summation.prepaid_total or Decimal("0")
+    if paid <= prepaid:
+        return []
+    return [
+        ValidationError(
+            "GETAFIX-ADV-PREPAID",
+            f"Advance payments (BT-X-291) add up to {paid}, more than "
+            f"the prepaid total (BT-113) of {prepaid}.",
+        )
+    ]
