@@ -23,6 +23,7 @@ from getafix.rules.settlement import (
     br_co_19,
     br_co_25,
     bt_81_code_shape,
+    getafix_adv_prepaid,
 )
 from getafix.schema.accounting import (
     ApplicableTradeTax,
@@ -619,7 +620,9 @@ class AdvancePayment(Element):
 
     Records an amount already paid before the invoice, together with
     the VAT it included and an optional reference to the prepayment
-    invoice. ``PaidAmount`` (BT-X-291) reduces the amount still due.
+    invoice. ``PaidAmount`` (BT-X-291) reduces the amount still due
+    through BT-113; it does not change the tax totals (BT-110, BG-23),
+    which always cover the whole invoice.
     """
 
     tag: ClassVar[str] = "SpecifiedAdvancePayment"
@@ -676,6 +679,7 @@ class TradeSettlement(Element):
         br_co_14,
         br_co_15,
         br_co_16,
+        getafix_adv_prepaid,
     )
 
     creditor_reference: str | None = field(
@@ -802,4 +806,5 @@ class TradeSettlement(Element):
     )
     """Advance payments / prepayments (BG-X-45, 0..*); EXTENDED-only.
 
-    Each entry's ``PaidAmount`` reduces the amount still due."""
+    Each entry's ``PaidAmount`` reduces the amount still due; together
+    they must not exceed BT-113 (``GETAFIX-ADV-PREPAID``)."""
