@@ -29,7 +29,11 @@ from tagic.xml import XML
 from getafix.rules import Validator
 from getafix.rules._types import list_max_cardinality_below, max_decimals
 from getafix.rules.line import applied_price_charge_extended_only, br_27, br_28
-from getafix.schema.accounting import ApplicableTradeTax, LineTradeAllowanceCharge
+from getafix.schema.accounting import (
+    ApplicableTradeTax,
+    LineTaxTotal,
+    LineTradeAllowanceCharge,
+)
 from getafix.schema.element import Element, ETElement
 from getafix.schema.party import (
     GlobalID,
@@ -865,7 +869,9 @@ class LineMonetarySummation(Element):
 
     Detailed information about the line totals. ``LineTotalAmount``
     (BT-131) is modelled at BASIC; EXTENDED adds the optional
-    ``TotalAllowanceChargeAmount``.
+    line charge / allowance totals (BT-X-327 / BT-X-328), the line
+    VAT totals (BT-X-329 / BT-X-590), the line gross total
+    (BT-X-330) and ``TotalAllowanceChargeAmount`` (BT-X-98).
     """
 
     tag: ClassVar[str] = "SpecifiedTradeSettlementLineMonetarySummation"
@@ -885,6 +891,39 @@ class LineMonetarySummation(Element):
     (computed as ``net_price * billed_quantity +/- line allowances /
     charges``).
     """
+    charge_total: Decimal | None = field(
+        default=None, metadata={"tag": "ChargeTotalAmount", "profile": Profile.EXTENDED}
+    )
+    """Sum of the line charges, net of VAT (BT-X-327); EXTENDED-only.
+
+    Totals the BG-28 charges of this invoice line; informational,
+    already folded into :attr:`line_total`."""
+    allowance_total: Decimal | None = field(
+        default=None,
+        metadata={"tag": "AllowanceTotalAmount", "profile": Profile.EXTENDED},
+    )
+    """Sum of the line allowances, net of VAT (BT-X-328);
+    EXTENDED-only.
+
+    Totals the BG-27 allowances of this invoice line; informational,
+    already folded into :attr:`line_total`."""
+    tax_total: list[LineTaxTotal] | None = field(
+        default=None, metadata={"profile": Profile.EXTENDED}
+    )
+    """Line VAT totals (BT-X-329 / BT-X-590); 0..2 entries,
+    EXTENDED-only.
+
+    Note: at most one entry in the invoice currency (BT-X-329, its
+    ``currency_id`` equal to BT-5) and at most one in the VAT
+    accounting currency (BT-X-590, its ``currency_id`` equal to
+    BT-6); no other currency is admitted."""
+    grand_total: Decimal | None = field(
+        default=None, metadata={"tag": "GrandTotalAmount", "profile": Profile.EXTENDED}
+    )
+    """Line grand total amount (BT-X-330); EXTENDED-only.
+
+    What the line comes to with VAT included — the line-level
+    counterpart of BT-112."""
     total_allowance_charge: Decimal | None = field(
         default=None,
         metadata={"tag": "TotalAllowanceChargeAmount", "profile": Profile.EXTENDED},

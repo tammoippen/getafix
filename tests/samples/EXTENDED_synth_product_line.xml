@@ -109,6 +109,10 @@ GLN 4304171000002</ram:Content>
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
           <ram:LineTotalAmount>52.00</ram:LineTotalAmount>
+          <ram:ChargeTotalAmount>0.00</ram:ChargeTotalAmount>
+          <ram:AllowanceTotalAmount>0.00</ram:AllowanceTotalAmount>
+          <ram:TaxTotalAmount currencyID="EUR">9.88</ram:TaxTotalAmount>
+          <ram:GrandTotalAmount>61.88</ram:GrandTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
     </ram:IncludedSupplyChainTradeLineItem>

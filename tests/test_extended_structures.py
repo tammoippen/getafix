@@ -19,9 +19,13 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
 from lxml import etree
 
+from getafix.schema.accounting import LineTaxTotal
 from getafix.schema.document import Document
+from getafix.schema.element import ProfileMismatch
+from getafix.schema.types import Currency, Profile
 
 _SAMPLES = Path(__file__).parent / "samples"
 
@@ -172,6 +176,39 @@ class TestProductLine:
         assert dl.ship_to.name == "Filiale Süd"
         assert dl.ultimate_ship_to is not None
         assert dl.ultimate_ship_to.name == "Endkunde Karl Käufer"
+
+    def test_line_monetary_totals_parsed(self) -> None:
+        ms = _load(self.SAMPLE).trade.items[0].settlement.monetary_summation
+        assert ms.charge_total == Decimal("0.00")
+        assert ms.allowance_total == Decimal("0.00")
+        assert ms.tax_total is not None
+        assert [(t.amount, t.currency_id) for t in ms.tax_total] == [
+            (Decimal("9.88"), Currency.EUR)
+        ]
+        assert isinstance(ms.tax_total[0], LineTaxTotal)
+        assert ms.grand_total == Decimal("61.88")
+
+    def test_line_monetary_totals_render_in_xsd_order(self) -> None:
+        out = _rendered(_load(self.SAMPLE))
+        start = out.index("<ram:SpecifiedTradeSettlementLineMonetarySummation>")
+        block = out[
+            start : out.index("</ram:SpecifiedTradeSettlementLineMonetary", start)
+        ]
+        tags = [
+            "LineTotalAmount",
+            "ChargeTotalAmount",
+            "AllowanceTotalAmount",
+            'TaxTotalAmount currencyID="EUR"',
+            "GrandTotalAmount",
+        ]
+        positions = [block.index(f"<ram:{t}") for t in tags]
+        assert positions == sorted(positions)
+
+    def test_line_monetary_totals_rejected_below_extended(self) -> None:
+        ms = _load(self.SAMPLE).trade.items[0].settlement.monetary_summation
+        ms.charge_total = ms.allowance_total = ms.grand_total = None
+        with pytest.raises(ProfileMismatch, match="tax_total"):
+            ms.to_xml_internal(Profile.COMFORT)
 
     def test_roundtrip_emits_all_new_elements(self) -> None:
         out = _rendered(_load(self.SAMPLE))

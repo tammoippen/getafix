@@ -618,6 +618,21 @@ def _put_line_item(draw, parent: etree._Element, profile: Profile) -> None:
         _put_specified_period(draw, lts, "BillingSpecifiedPeriod")
     lsumm = _sub(lts, "ram", "SpecifiedTradeSettlementLineMonetarySummation")
     _put_amount(lsumm, "ram", "LineTotalAmount", draw(_amount))
+    if profile == Profile.EXTENDED:
+        # Line totals BT-X-327 / BT-X-328 / BT-X-329 / BT-X-330.
+        for local in ("ChargeTotalAmount", "AllowanceTotalAmount"):
+            if draw(st.booleans()):
+                _put_amount(lsumm, "ram", local, draw(_amount))
+        if draw(st.booleans()):
+            _put_amount(
+                lsumm,
+                "ram",
+                "TaxTotalAmount",
+                draw(_amount),
+                currency=draw(_currency_code),
+            )
+        if draw(st.booleans()):
+            _put_amount(lsumm, "ram", "GrandTotalAmount", draw(_amount))
 
 
 # ---------------------------------------------------------------------------
