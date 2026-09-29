@@ -25,8 +25,9 @@ from collections.abc import Callable, Iterator
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from getafix.errors import ValidationError
-from getafix.schema.types import CategoryCode, Profile
+from getafix.errors import ValidationError, ValidationWarning
+from getafix.schema._numeric import round_half_away_from_zero
+from getafix.schema.types import CategoryCode, LineStatusReasonCode, Profile
 
 if TYPE_CHECKING:
     from getafix.schema import trade as _trade
@@ -1257,3 +1258,262 @@ def line_tax_total_currencies(
                 )
             )
     return errors
+
+
+# ---------------------------------------------------------------------------
+# Line totals plausibility — GETAFIX-LINE-* (warnings)
+# ---------------------------------------------------------------------------
+#
+# The spec defines the EXTENDED line totals (BT-X-327 … BT-X-330,
+# BT-X-590) but no rule ties them to the line's own data. These
+# warnings recompute each total from the line's allowances / charges,
+# quantity, price and VAT rate. Every derived amount is rounded half
+# away from zero to two decimals; a derivation that multiplies allows
+# 0.01 of slack. BT-X-98 is left unchecked: the spec does not say
+# whether it nets allowances against charges or adds them up.
+
+
+_ONE_CENT = Decimal("0.01")
+
+
+def _is_detail(item: _trade.TradeLineItem) -> bool:
+    """``True`` for ``DETAIL`` lines or lines without BT-X-8; ``GROUP``
+    and ``INFORMATION`` lines may report totals of their sub-lines."""
+    code = item.associated_document.status_reason_code
+    return code is None or code == LineStatusReasonCode.DETAIL
+
+
+def _line_allowance_charge_sums(item: _trade.TradeLineItem) -> tuple[Decimal, Decimal]:
+    """``(Σ BG-27 allowances, Σ BG-28 charges)`` of the line."""
+    acs = item.settlement.allowance_charge or []
+    allowances = sum((a.actual_amount for a in acs if not a.indicator), Decimal("0"))
+    charges = sum((a.actual_amount for a in acs if a.indicator), Decimal("0"))
+    return allowances, charges
+
+
+def _line_vat(item: _trade.TradeLineItem, currency: str) -> Decimal | None:
+    """The line's VAT total in ``currency`` (BT-X-329 / BT-X-590)."""
+    return next(
+        (
+            t.amount
+            for t in item.settlement.monetary_summation.tax_total or []
+            if t.currency_id == currency
+        ),
+        None,
+    )
+
+
+def _warn(code: str, item: _trade.TradeLineItem, message: str) -> ValidationWarning:
+    return ValidationWarning(
+        code, f"line {item.associated_document.line_id!r}: {message}"
+    )
+
+
+def getafix_line_charges(
+    m: _trade.TradeLineItem, profile: Profile
+) -> list[ValidationError]:
+    """GETAFIX-LINE-CHARGES (warning): the line charge total
+    (BT-X-327) should equal the sum of the line's BG-28 charges.
+
+    Applies: EXTENDED, ``DETAIL`` lines and lines without BT-X-8.
+    """
+    total = m.settlement.monetary_summation.charge_total
+    if profile < Profile.EXTENDED or total is None or not _is_detail(m):
+        return []
+    _, charges = _line_allowance_charge_sums(m)
+    if total == charges:
+        return []
+    return [
+        _warn(
+            "GETAFIX-LINE-CHARGES",
+            m,
+            f"charge total (BT-X-327) = {total}, but the line charges "
+            f"(BG-28) add up to {charges}.",
+        )
+    ]
+
+
+def getafix_line_allowances(
+    m: _trade.TradeLineItem, profile: Profile
+) -> list[ValidationError]:
+    """GETAFIX-LINE-ALLOWANCES (warning): the line allowance total
+    (BT-X-328) should equal the sum of the line's BG-27 allowances.
+
+    Applies: EXTENDED, ``DETAIL`` lines and lines without BT-X-8.
+    """
+    total = m.settlement.monetary_summation.allowance_total
+    if profile < Profile.EXTENDED or total is None or not _is_detail(m):
+        return []
+    allowances, _ = _line_allowance_charge_sums(m)
+    if total == allowances:
+        return []
+    return [
+        _warn(
+            "GETAFIX-LINE-ALLOWANCES",
+            m,
+            f"allowance total (BT-X-328) = {total}, but the line "
+            f"allowances (BG-27) add up to {allowances}.",
+        )
+    ]
+
+
+def getafix_line_net(
+    m: _trade.TradeLineItem, profile: Profile
+) -> list[ValidationError]:
+    """GETAFIX-LINE-NET (warning): the line net amount (BT-131) should
+    equal ``BT-129 * BT-146 / BT-149 + Σ BG-28 - Σ BG-27``.
+
+    Quantity times net price per base quantity, plus the line charges,
+    less the line allowances. BT-131 may legitimately contain other
+    taxes (e.g. insurance tax), which this check cannot see — hence a
+    warning, not an error.
+
+    Applies: BASIC+, ``DETAIL`` lines and lines without BT-X-8 that
+    carry BT-131, BT-129 and BT-146.
+    """
+    if profile < Profile.BASIC or not _is_detail(m):
+        return []
+    line_total = m.settlement.monetary_summation.line_total
+    quantity = m.delivery.billed_quantity
+    price = m.agreement.net_price
+    if line_total is None or quantity is None or price is None:
+        return []
+    base = price.basis_quantity.value if price.basis_quantity is not None else None
+    if base == 0:
+        return []
+    allowances, charges = _line_allowance_charge_sums(m)
+    amount = quantity.value * price.charge_amount / (base or Decimal("1"))
+    expected = round_half_away_from_zero(amount) + charges - allowances
+    if abs(line_total - expected) <= _ONE_CENT:
+        return []
+    formula = f"quantity {quantity.value} x net price {price.charge_amount}"
+    if base is not None:
+        formula += f" / base quantity {base}"
+    if charges or allowances:
+        formula += f" + charges {charges} - allowances {allowances}"
+    return [
+        _warn(
+            "GETAFIX-LINE-NET",
+            m,
+            f"net amount (BT-131) = {line_total}, but {formula} = "
+            f"{expected} (fine if BT-131 includes another tax, e.g. "
+            f"insurance tax).",
+        )
+    ]
+
+
+def getafix_line_vat(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """GETAFIX-LINE-VAT (warning): a line VAT total in the invoice
+    currency (BT-X-329) should equal ``BT-131 * BT-152 / 100``.
+
+    Applies: EXTENDED, lines carrying BT-X-329, BT-131 and a VAT rate
+    (BT-152).
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    warnings: list[ValidationError] = []
+    for item in m.items:
+        line_total = item.settlement.monetary_summation.line_total
+        tax = item.settlement.applicable_trade_tax
+        vat = _line_vat(item, m.settlement.currency_code)
+        if (
+            vat is None
+            or line_total is None
+            or tax is None
+            or tax.rate_applicable_percent is None
+        ):
+            continue
+        rate = tax.rate_applicable_percent
+        expected = round_half_away_from_zero(line_total * rate / Decimal("100"))
+        if abs(vat - expected) <= _ONE_CENT:
+            continue
+        warnings.append(
+            _warn(
+                "GETAFIX-LINE-VAT",
+                item,
+                f"VAT total (BT-X-329) = {vat}, but net amount {line_total} "
+                f"at {rate} % gives {expected}.",
+            )
+        )
+    return warnings
+
+
+def getafix_line_gross(m: _trade.Trade, profile: Profile) -> list[ValidationError]:
+    """GETAFIX-LINE-GROSS (warning): the line grand total (BT-X-330)
+    should equal the line net amount (BT-131) plus the line VAT in the
+    invoice currency (BT-X-329).
+
+    Without BT-X-329 the VAT is derived from the line's rate (BT-152).
+
+    Applies: EXTENDED, lines carrying BT-X-330 and BT-131.
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    warnings: list[ValidationError] = []
+    for item in m.items:
+        ms = item.settlement.monetary_summation
+        tax = item.settlement.applicable_trade_tax
+        if ms.grand_total is None or ms.line_total is None:
+            continue
+        vat = _line_vat(item, m.settlement.currency_code)
+        if vat is None and tax is not None and tax.rate_applicable_percent is not None:
+            vat = round_half_away_from_zero(
+                ms.line_total * tax.rate_applicable_percent / Decimal("100")
+            )
+        if vat is None:
+            continue
+        expected = ms.line_total + vat
+        if abs(ms.grand_total - expected) <= _ONE_CENT:
+            continue
+        warnings.append(
+            _warn(
+                "GETAFIX-LINE-GROSS",
+                item,
+                f"grand total (BT-X-330) = {ms.grand_total}, but net amount "
+                f"{ms.line_total} + VAT {vat} = {expected}.",
+            )
+        )
+    return warnings
+
+
+def getafix_line_vat_accounting(
+    m: _trade.Trade, profile: Profile
+) -> list[ValidationError]:
+    """GETAFIX-LINE-VAT-ACCOUNTING (warning): a line VAT total in the
+    VAT accounting currency (BT-X-590) should equal the invoice-currency
+    one (BT-X-329) converted at the stated rate (BT-X-260).
+
+    Applies: EXTENDED, when BT-6 and a BT-5 → BT-6 conversion
+    (BG-X-41) are given; lines carrying both line VAT totals.
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    settlement = m.settlement
+    exchange = settlement.currency_exchange
+    tax_currency = settlement.tax_currency_code
+    if (
+        tax_currency is None
+        or exchange is None
+        or exchange.source_currency_code != settlement.currency_code
+        or exchange.target_currency_code != tax_currency
+    ):
+        return []
+    warnings: list[ValidationError] = []
+    for item in m.items:
+        vat = _line_vat(item, settlement.currency_code)
+        vat_accounting = _line_vat(item, tax_currency)
+        if vat is None or vat_accounting is None:
+            continue
+        expected = round_half_away_from_zero(vat * exchange.conversion_rate)
+        if abs(vat_accounting - expected) <= _ONE_CENT:
+            continue
+        warnings.append(
+            _warn(
+                "GETAFIX-LINE-VAT-ACCOUNTING",
+                item,
+                f"VAT total in {tax_currency} (BT-X-590) = {vat_accounting}, "
+                f"but {vat} {settlement.currency_code} at rate "
+                f"{exchange.conversion_rate} gives {expected}.",
+            )
+        )
+    return warnings
