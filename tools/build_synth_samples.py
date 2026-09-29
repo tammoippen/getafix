@@ -45,6 +45,7 @@ from pathlib import Path
 from lxml import etree
 
 from getafix.errors import ValidationErrors
+from getafix.schema.accounting import LineTaxTotal
 from getafix.schema.agreement import RelevantTradeLocation, TradeDeliveryTerms
 from getafix.schema.document import Document
 from getafix.schema.line import (
@@ -73,7 +74,7 @@ from getafix.schema.settlement import (
     AdvancePaymentReferencedDocument,
     AdvancePaymentTradeTax,
 )
-from getafix.schema.types import CategoryCode, Country, Incoterms, TypeCode
+from getafix.schema.types import CategoryCode, Country, Currency, Incoterms, TypeCode
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SAMPLES = _ROOT / "tests" / "samples"
@@ -251,7 +252,8 @@ def build_product_line() -> bytes:
     ``UltimateShipToTradeParty``), and records free-goods,
     package-count and units-per-package quantities
     (``ChargeFreeQuantity`` / ``PackageQuantity`` /
-    ``PerPackageUnitQuantity``).
+    ``PerPackageUnitQuantity``), and states the line's charge /
+    allowance / VAT / gross totals (BT-X-327 … BT-X-330).
     """
     doc = _load_base()
     item = doc.trade.items[0]
@@ -295,6 +297,15 @@ def build_product_line() -> bytes:
             postcode="79098", city_name="Freiburg", country_id=Country.DE
         ),
     )
+
+    # 52.00 net at 19 % standard rate, no line allowances / charges.
+    summation = item.settlement.monetary_summation
+    summation.charge_total = Decimal("0.00")
+    summation.allowance_total = Decimal("0.00")
+    summation.tax_total = [
+        LineTaxTotal(amount=Decimal("9.88"), currency_id=Currency.EUR)
+    ]
+    summation.grand_total = Decimal("61.88")
     return _serialize(doc)
 
 

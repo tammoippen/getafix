@@ -113,6 +113,30 @@ class TaxTotal(Element):
 
 
 @dataclass(kw_only=True, slots=True)
+class LineTaxTotal(TaxTotal):
+    """Invoice line total VAT amount (BT-X-329 / BT-X-590); EXTENDED-only.
+
+    Line-level twin of :class:`TaxTotal`, one instance per row of
+    :attr:`getafix.schema.line.LineMonetarySummation.tax_total`:
+
+    * BT-X-329 — the VAT of this line in the invoice currency; its
+      ``currency_id`` (BT-X-329-0) matches ``InvoiceCurrencyCode``
+      (BT-5).
+    * BT-X-590 — the same VAT expressed in the VAT accounting
+      currency; its ``currency_id`` (BT-X-590-0) matches
+      ``TaxCurrencyCode`` (BT-6).
+
+    Like the header total, the amount always carries its
+    ``currencyID`` attribute. Unlike BT-110 / BT-111 no decimal cap
+    applies (``BR-DEC-13`` / ``BR-DEC-15`` target the header only).
+    """
+
+    profile: ClassVar[Profile] = Profile.EXTENDED
+
+    _validators: ClassVar[tuple[Validator["TaxTotal"], ...]] = (br_5_currency_shape,)
+
+
+@dataclass(kw_only=True, slots=True)
 class MonetarySummation(Element):
     """Document totals (BG-22).
 
