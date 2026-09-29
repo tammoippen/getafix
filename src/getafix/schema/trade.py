@@ -69,6 +69,7 @@ from getafix.rules.trade import (
     br_z_2,
     br_z_3,
     br_z_4,
+    line_tax_total_currencies,
     vat_category_exemption_reason,
     vat_category_rates,
 )
@@ -183,6 +184,9 @@ class Trade(Element):
         # exemption-reason constraints (BR-{cat}-10).
         vat_category_rates,
         vat_category_exemption_reason,
+        # EXTENDED line VAT totals (BT-X-329 / BT-X-590) must name BT-5
+        # or BT-6, at most once each.
+        line_tax_total_currencies,
         # EXTENDED CIUS — tolerance-banded BR-CO-* replacements and
         # per-VAT-category sum identities (§5.2 / §5.3 of EXTENDED.md).
         # Each guards with `if profile < Profile.EXTENDED: return []`

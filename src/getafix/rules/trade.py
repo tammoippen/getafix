@@ -1202,3 +1202,58 @@ def vat_category_rates(m: _trade.Trade, _profile: Profile) -> list[ValidationErr
         )
 
     return errors
+
+
+# ---------------------------------------------------------------------------
+# Line VAT totals — BT-X-329 / BT-X-590
+# ---------------------------------------------------------------------------
+
+
+def line_tax_total_currencies(
+    m: _trade.Trade, profile: Profile
+) -> list[ValidationError]:
+    """BT-X-329 / BT-X-590: each line VAT total names a known currency,
+    at most once.
+
+    Applies: EXTENDED (the only profile carrying the line totals). The
+    EXTENDED schematron admits at most one line ``TaxTotalAmount`` in
+    the invoice currency (BT-X-329, ``currencyID`` = BT-5) and at most
+    one in the VAT accounting currency (BT-X-590, ``currencyID`` =
+    BT-6) — ``FX-SCH-A-000372`` and its accounting-currency twin — and
+    reports every other ``currencyID`` as not used. None of these carry
+    a ``BR-*`` id, so the error is keyed by BT-X-329.
+    One error per offending line.
+    """
+    if profile < Profile.EXTENDED:
+        return []
+    allowed = {m.settlement.currency_code}
+    if m.settlement.tax_currency_code is not None:
+        allowed.add(m.settlement.tax_currency_code)
+    errors: list[ValidationError] = []
+    for item in m.items:
+        currencies = [
+            t.currency_id for t in item.settlement.monetary_summation.tax_total or []
+        ]
+        line_id = item.associated_document.line_id
+        unknown = sorted({c for c in currencies if c not in allowed})
+        if unknown:
+            errors.append(
+                _err(
+                    "BT-X-329",
+                    f"line {line_id!r}: VAT total currency {', '.join(unknown)} "
+                    f"matches neither BT-5 (invoice currency) nor BT-6 "
+                    f"(VAT accounting currency); allowed: "
+                    f"{', '.join(sorted(allowed))}.",
+                )
+            )
+        repeated = sorted({c for c in currencies if currencies.count(c) > 1})
+        if repeated:
+            errors.append(
+                _err(
+                    "BT-X-329",
+                    f"line {line_id!r}: more than one VAT total in "
+                    f"{', '.join(repeated)}; at most one per currency is "
+                    f"allowed (BT-X-329 / BT-X-590).",
+                )
+            )
+    return errors
