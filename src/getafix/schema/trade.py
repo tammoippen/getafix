@@ -69,6 +69,12 @@ from getafix.rules.trade import (
     br_z_2,
     br_z_3,
     br_z_4,
+    getafix_line_allowances,
+    getafix_line_charges,
+    getafix_line_gross,
+    getafix_line_net,
+    getafix_line_vat,
+    getafix_line_vat_accounting,
     line_tax_total_currencies,
     vat_category_exemption_reason,
     vat_category_rates,
@@ -97,6 +103,14 @@ class TradeLineItem(Element):
 
     tag: ClassVar[str] = "IncludedSupplyChainTradeLineItem"
     profile: ClassVar[Profile] = Profile.BASIC
+
+    # Plausibility warnings: the line totals should follow from the
+    # line's own allowances / charges, quantity and price.
+    _validators: ClassVar[tuple[Validator["TradeLineItem"], ...]] = (
+        getafix_line_charges,
+        getafix_line_allowances,
+        getafix_line_net,
+    )
 
     associated_document: DocumentLineDocument
     """Associated line document (BT-126-00) — line id and optional note."""
@@ -187,6 +201,11 @@ class Trade(Element):
         # EXTENDED line VAT totals (BT-X-329 / BT-X-590) must name BT-5
         # or BT-6, at most once each.
         line_tax_total_currencies,
+        # Plausibility warnings on the line VAT / gross totals; they
+        # need BT-5 / BT-6, hence Trade rather than TradeLineItem.
+        getafix_line_vat,
+        getafix_line_gross,
+        getafix_line_vat_accounting,
         # EXTENDED CIUS — tolerance-banded BR-CO-* replacements and
         # per-VAT-category sum identities (§5.2 / §5.3 of EXTENDED.md).
         # Each guards with `if profile < Profile.EXTENDED: return []`
