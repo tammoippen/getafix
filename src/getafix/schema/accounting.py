@@ -34,7 +34,13 @@ from getafix.rules.accounting import (
     bt_95_0_102_0_vat_only,
     bt_118_0_vat_only,
 )
-from getafix.schema.element import Element, ETElement
+from getafix.schema.element import (
+    CaseFix,
+    Element,
+    ETElement,
+    parse_code,
+    set_case_fixes,
+)
 from getafix.schema.types import (
     CategoryCode,
     Currency,
@@ -109,7 +115,11 @@ class TaxTotal(Element):
         if elem.text is None:
             raise ValueError
         value = elem.text.strip()
-        return cls(amount=Decimal(value), currency_id=Currency(currency_id))
+        currency, case_fixed = parse_code(Currency, currency_id)
+        fixes: list[CaseFix] = (
+            [("currency_id", currency_id, currency)] if case_fixed else []
+        )
+        return set_case_fixes(cls(amount=Decimal(value), currency_id=currency), fixes)
 
 
 @dataclass(kw_only=True, slots=True)

@@ -10,6 +10,7 @@
 # pyright: reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false
 
 import datetime
+import enum
 import json
 import types
 import xml.etree.ElementTree as _stdlib_etree
@@ -30,7 +31,7 @@ from typing import (
 
 from tagic.xml import XML
 
-from getafix.errors import ValidationError
+from getafix.errors import ValidationError, ValidationWarning
 from getafix.schema.types import Namespace, Profile
 
 if TYPE_CHECKING:
@@ -52,8 +53,23 @@ else:
 class ProfileMismatch(ValueError): ...
 
 
-@dataclass(kw_only=True, slots=True)
+type CaseFix = tuple[str, str, enum.StrEnum]
+"""``(field name, raw wire text, code it was matched to)`` — one code
+the parser accepted only by ignoring case (see :func:`parse_code`)."""
+
+
+# Not ``slots=True``: that would generate ``__slots__ = ()`` and leave no
+# room for ``_case_fixes`` — the ``tuple[CaseFix, ...]`` of codes
+# :meth:`Element.from_xml` matched case-insensitively. It is a bare slot,
+# not a dataclass field (an annotation would make it one), so it never
+# renders, compares or reaches ``__init__``; it is set only on parsed
+# instances, hence read with ``getattr``. Every concrete subclass still
+# uses ``slots=True``.
+@dataclass(kw_only=True)
 class Element(ABC):
+    # The slot can't carry an annotation (that would make it a field).
+    __slots__: ClassVar[tuple[str, ...]] = ("_case_fixes",)  # pyright: ignore[reportUnannotatedClassAttribute]
+
     tag: ClassVar[str]
     namespace: ClassVar[Namespace] = Namespace.ram
     profile: ClassVar[Profile] = Profile.MINIMUM
@@ -111,6 +127,15 @@ class Element(ABC):
         errors: list[ValidationError] = [
             e for v in self._validators for e in v(self, profile)
         ]
+        for name, raw, code in getattr(self, "_case_fixes", ()):
+            errors.append(
+                ValidationWarning(
+                    "GETAFIX-CODE-CASE",
+                    f"{type(self).__name__}.{name}: {raw!r} read as "
+                    f"{code.value!r}; Factur-X compares codes "
+                    "case-sensitively.",
+                )
+            )
         for f in fields(self):
             value = getattr(self, f.name)
             if value is None:
@@ -220,6 +245,7 @@ class Element(ABC):
             raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
 
         params: dict[str, Any] = {}
+        case_fixes: list[CaseFix] = []
         for el in elem:
             for f in fields(cls):
                 curr_type = _get_non_none_type(f.type)
@@ -235,9 +261,16 @@ class Element(ABC):
                     curr_type = type(get_args(curr_type)[0])
 
                 if issubclass(curr_type, str):
-                    res = _parse_str(el, f, curr_type)
+                    res = _parse_str(el, f, str)
                     if res is None:
                         continue
+                    if issubclass(curr_type, enum.StrEnum):
+                        code, case_fixed = parse_code(curr_type, res)
+                        if case_fixed:
+                            case_fixes.append((f.name, res, code))
+                        res = code
+                    else:
+                        res = curr_type(res)
                     if is_list:
                         before = params.get(f.name, [])
                         res = [*before, res]
@@ -276,7 +309,37 @@ class Element(ABC):
                             params[f.name] += [curr_type.from_xml(el)]
                         else:
                             params[f.name] = curr_type.from_xml(el)
-        return cls(**params)
+        return set_case_fixes(cls(**params), case_fixes)
+
+
+def set_case_fixes[T: Element](element: T, fixes: list[CaseFix]) -> T:
+    """Attach the parser's case-insensitive code matches to ``element``.
+
+    For ``from_xml`` overrides that read a code themselves (e.g. from an
+    attribute) via :func:`parse_code`. Returns ``element``.
+    """
+    if fixes:
+        object.__setattr__(element, "_case_fixes", tuple(fixes))
+    return element
+
+
+def parse_code[E: enum.StrEnum](code_list: type[E], raw: str) -> tuple[E, bool]:
+    """Look up wire text ``raw`` in ``code_list``, ignoring case if needed.
+
+    Returns ``(code, case_fixed)``. ``case_fixed`` is ``True`` when
+    ``raw`` only matched after case-folding (``vatex-eu-132`` →
+    ``VATEX-EU-132``) — the Factur-X schematron would reject it, so the
+    caller records it for a ``GETAFIX-CODE-CASE`` warning. Raises
+    ``ValueError`` when no code matches even ignoring case.
+    """
+    try:
+        return code_list(raw), False
+    except ValueError:
+        folded = raw.casefold()
+        for code in code_list:
+            if code.value.casefold() == folded:
+                return code, True
+        raise
 
 
 # Sentinel distinct from ``None`` (a legitimate field value) so
