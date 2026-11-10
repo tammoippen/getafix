@@ -113,7 +113,7 @@ class TaxTotal(Element):
 
 
 @dataclass(kw_only=True, slots=True)
-class LineTaxTotal(TaxTotal):
+class LineTaxTotal(Element):
     """Invoice line total VAT amount (BT-X-329 / BT-X-590); EXTENDED-only.
 
     Line-level twin of :class:`TaxTotal`, one instance per row of
@@ -126,14 +126,56 @@ class LineTaxTotal(TaxTotal):
       currency; its ``currency_id`` (BT-X-590-0) matches
       ``TaxCurrencyCode`` (BT-6).
 
-    Like the header total, the amount always carries its
-    ``currencyID`` attribute. Unlike BT-110 / BT-111 no decimal cap
+    Unlike the header total, the amount optionally carries its
+    ``currencyID`` attribute; an amount without one is read as being in
+    the invoice currency (BT-5). Unlike BT-110 / BT-111 no decimal cap
     applies (``BR-DEC-13`` / ``BR-DEC-15`` target the header only).
     """
 
+    tag: ClassVar[str] = "TaxTotalAmount"
     profile: ClassVar[Profile] = Profile.EXTENDED
 
-    _validators: ClassVar[tuple[Validator["TaxTotal"], ...]] = (br_5_currency_shape,)
+    _validators: ClassVar[tuple[Validator["LineTaxTotal"], ...]] = (
+        br_5_currency_shape,
+    )
+
+    amount: Decimal
+    """Line total VAT amount (BT-X-329 / BT-X-590).
+
+    All per-category VAT amounts added together.
+    """
+    currency_id: Currency | None = None
+    """Currency identifier (BT-X-329-0 / BT-X-590-0).
+
+    Distinguishes BT-X-329 (invoice currency) from BT-X-590 (accounting
+    currency); rendered as the ``currencyID`` attribute. ``None`` means
+    the invoice currency (BT-5).
+
+    Code list: ISO 4217 — alphabetic representation only.
+
+    Examples: ``EUR``, ``USD``.
+    """
+
+    @override
+    def to_xml_internal(self, profile: Profile) -> XML:
+        attrs: dict[str, str | bool] | None = None
+        if self.currency_id:
+            attrs = {"currencyID": self.currency_id}
+        return XML(self.get_tag(), attrs=attrs)[str(self.amount)]
+
+    @override
+    @classmethod
+    def from_xml(cls, elem: ETElement) -> Self:
+        if elem.tag != cls.get_qualified_tag():
+            raise ValueError(f"Have {elem.tag=}. Expect {cls.get_qualified_tag()=}")
+        currency_id_val = elem.attrib.get("currencyID")
+        currency_id = None
+        if currency_id_val is not None:
+            currency_id = Currency(currency_id_val)
+        if elem.text is None:
+            raise ValueError
+        value = elem.text.strip()
+        return cls(amount=Decimal(value), currency_id=currency_id)
 
 
 @dataclass(kw_only=True, slots=True)

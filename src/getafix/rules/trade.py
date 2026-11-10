@@ -1233,7 +1233,8 @@ def line_tax_total_currencies(
     errors: list[ValidationError] = []
     for item in m.items:
         currencies = [
-            t.currency_id for t in item.settlement.monetary_summation.tax_total or []
+            t.currency_id or m.settlement.currency_code
+            for t in item.settlement.monetary_summation.tax_total or []
         ]
         line_id = item.associated_document.line_id
         unknown = sorted({c for c in currencies if c not in allowed})
@@ -1291,13 +1292,18 @@ def _line_allowance_charge_sums(item: _trade.TradeLineItem) -> tuple[Decimal, De
     return allowances, charges
 
 
-def _line_vat(item: _trade.TradeLineItem, currency: str) -> Decimal | None:
-    """The line's VAT total in ``currency`` (BT-X-329 / BT-X-590)."""
+def _line_vat(
+    item: _trade.TradeLineItem, currency: str, invoice_currency: str
+) -> Decimal | None:
+    """The line's VAT total in ``currency`` (BT-X-329 / BT-X-590).
+
+    A total without ``currencyID`` counts as ``invoice_currency`` (BT-5).
+    """
     return next(
         (
             t.amount
             for t in item.settlement.monetary_summation.tax_total or []
-            if t.currency_id == currency
+            if (t.currency_id or invoice_currency) == currency
         ),
         None,
     )
@@ -1415,7 +1421,7 @@ def getafix_line_vat(m: _trade.Trade, profile: Profile) -> list[ValidationError]
     for item in m.items:
         line_total = item.settlement.monetary_summation.line_total
         tax = item.settlement.applicable_trade_tax
-        vat = _line_vat(item, m.settlement.currency_code)
+        vat = _line_vat(item, m.settlement.currency_code, m.settlement.currency_code)
         if (
             vat is None
             or line_total is None
@@ -1455,7 +1461,7 @@ def getafix_line_gross(m: _trade.Trade, profile: Profile) -> list[ValidationErro
         tax = item.settlement.applicable_trade_tax
         if ms.grand_total is None or ms.line_total is None:
             continue
-        vat = _line_vat(item, m.settlement.currency_code)
+        vat = _line_vat(item, m.settlement.currency_code, m.settlement.currency_code)
         if vat is None and tax is not None and tax.rate_applicable_percent is not None:
             vat = round_half_away_from_zero(
                 ms.line_total * tax.rate_applicable_percent / Decimal("100")
@@ -1500,8 +1506,8 @@ def getafix_line_vat_accounting(
         return []
     warnings: list[ValidationError] = []
     for item in m.items:
-        vat = _line_vat(item, settlement.currency_code)
-        vat_accounting = _line_vat(item, tax_currency)
+        vat = _line_vat(item, settlement.currency_code, settlement.currency_code)
+        vat_accounting = _line_vat(item, tax_currency, settlement.currency_code)
         if vat is None or vat_accounting is None:
             continue
         expected = round_half_away_from_zero(vat * exchange.conversion_rate)
