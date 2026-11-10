@@ -49,49 +49,10 @@ _SAMPLES_DIR = Path(__file__).parent / "samples"
 _SAMPLES = sorted(_SAMPLES_DIR.glob("EXTENDED_*.xml"))
 
 
-# Codes the elementpath-backed schematron evaluator misfires on
-# *globally* — not getafix coverage gaps but limitations of the
-# pure-Python XPath-2 engine compared with Saxon-class XSLT-2
-# processors that the .sch was authored against. Each entry has
-# been confirmed both by manual inspection of the .sch expression
-# (the offending construct is documented inline below) and by
-# cross-checking against getafix's own implementation of the
-# same rule.
-#
-# Suppression of these codes from `actual_gaps` is *conditional* on
-# getafix not firing them itself: if getafix genuinely emits
-# (say) ``BR-FXEXT-11`` on a sample with an orphan ParentLineID,
-# it'll appear in getafix_codes, the suppression no-ops, and the
-# code is counted as legitimately closed by getafix — exactly
-# how we want the oracle to behave.
-_ELEMENTPATH_FALSE_POSITIVES: frozenset[str] = frozenset(
-    {
-        # BR-FXEXT-CO-15: the .sch test binds ``$Currency`` to the
-        # ``ram:InvoiceCurrencyCode`` *node* and uses it in a
-        # ``[@currencyID=$Currency]`` predicate. Saxon implicit-
-        # string-casts the node; elementpath returns an empty
-        # sequence (= assert failed). Affects every EXTENDED sample
-        # that has a single TaxTotalAmount with a matching
-        # currencyID — i.e. essentially all of them.
-        "BR-FXEXT-CO-15",
-        # BR-FXEXT-11: the .sch test is
-        # ``some $p in //LineID satisfies normalize-space($p) =
-        #   normalize-space(this/ParentLineID)``.
-        # Saxon implicit-casts ``$p`` (a LineID *node*) to a string
-        # for ``normalize-space()``; elementpath doesn't, so the
-        # ``some ... satisfies`` returns false on any sample that
-        # uses ParentLineID. getafix's ``br_fxext_11``
-        # implementation (rules/extended.py) evaluates the
-        # resolution check correctly.
-        "BR-FXEXT-11",
-    }
-)
-
-
 # Per-sample allowlist for *genuine* getafix coverage gaps —
 # rules the schematron fires that getafix doesn't implement yet.
-# Currently empty: the elementpath bucket above covers every
-# divergence the current EXTENDED sample corpus surfaces.
+# Currently empty: the schematron and getafix agree on every
+# sample in the current EXTENDED corpus.
 _EXPECTED_SCHEMATRON_ONLY: dict[str, frozenset[str]] = {}
 
 
@@ -141,14 +102,8 @@ def test_extended_sample_matches_schematron(sample: Path) -> None:
     # 2. Coverage gaps must match the pinned allowlist — surprise new
     #    gaps fail the test so they get acknowledged in
     #    _EXPECTED_SCHEMATRON_ONLY rather than slipping in silently.
-    #    Codes in _ELEMENTPATH_FALSE_POSITIVES are silently removed
-    #    from the actual-gap set *only when getafix also doesn't
-    #    fire them* — if getafix legitimately fires (say)
-    #    ``BR-FXEXT-11`` on a sample with an orphan parent ref, the
-    #    code lands in getafix_codes and is subtracted naturally,
-    #    so the suppression doesn't accidentally mask a real bug.
     expected_gaps = _EXPECTED_SCHEMATRON_ONLY.get(sample.name, frozenset())
-    actual_gaps = sch_result.violations - getafix_codes - _ELEMENTPATH_FALSE_POSITIVES
+    actual_gaps = sch_result.violations - getafix_codes
     assert actual_gaps == expected_gaps, (
         f"{sample.name}: schematron-vs-getafix coverage drift.\n"
         f"  expected schematron-only: {sorted(expected_gaps)}\n"
