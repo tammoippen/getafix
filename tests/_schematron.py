@@ -15,14 +15,85 @@ the same document.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Iterator, Sequence
+from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-import elementpath
-from elementpath import XPath2Parser
+from elementpath import XPath2Parser, XPathContext
 from lxml import etree
 
 _SCH_NS = "http://purl.oclc.org/dsdl/schematron"
+
+
+class _IsolatedBindingContext(XPathContext):
+    """``XPathContext`` that evaluates each range binding from the original item.
+
+    Works around an ``elementpath`` (≤ 5.1.2) bug in
+    ``XPathContext.iter_product``, which backs ``for`` / ``some`` /
+    ``every``: every ``$var in <expr>`` binding runs against the *same*
+    context object, and walking a path moves that object's ``item``. So:
+
+    * in ``for $a in ../X, $b in Y return …`` the relative path ``Y``
+      is resolved from the node ``../X`` selected, not from the rule
+      context — the binding comes back empty and the whole ``for``
+      yields ``()``;
+    * in ``some $p in //X satisfies Y`` the ``satisfies`` clause is
+      evaluated on a copy of that moved context, so ``Y`` resolves
+      from the last node ``//X`` visited.
+
+    XPath 2.0 says range expressions and the ``return`` /
+    ``satisfies`` clause all see the *enclosing* focus (only
+    variables change). Saxon, which the Factur-X ``.sch`` files are
+    written against, follows that. This subclass snapshots the focus
+    when the product starts and hands every binding a fresh copy
+    with that focus restored; variables stay shared (``copy`` keeps
+    the same dict), so later bindings still see earlier ones.
+    """
+
+    def iter_product(
+        self,
+        selectors: Sequence[Callable[[Any], Any]],
+        varnames: Sequence[str] | None = None,
+    ) -> Iterator[Any]:
+        item, position, size = self.item, self.position, self.size
+
+        def isolate(selector: Callable[[Any], Any]) -> Callable[[Any], Any]:
+            def run(ctx: XPathContext) -> Any:
+                fresh = copy(ctx)
+                fresh.item, fresh.position, fresh.size = item, position, size
+                return selector(fresh)
+
+            return run
+
+        return super().iter_product([isolate(s) for s in selectors], varnames)
+
+
+def _select(
+    xml_root: etree._Element, path: str, namespaces: dict[str, str], item: Any = None
+) -> Any:
+    """``elementpath.select`` with :class:`_IsolatedBindingContext`."""
+    token = XPath2Parser(namespaces).parse(path)
+    context = _IsolatedBindingContext(xml_root, namespaces, item=item)
+    return token.get_results(context)
+
+
+def _test(
+    xml_root: etree._Element, test: str, namespaces: dict[str, str], item: Any
+) -> bool:
+    """Evaluate an ``<assert>`` / ``<report>`` ``test`` as Schematron does.
+
+    Schematron takes the XPath *effective boolean value* of ``test``.
+    Python truthiness is not that: a ``for … return <bool>`` test
+    yields ``[False]``, a non-empty (truthy) list, so a failing assert
+    would silently pass. Wrapping the test in ``boolean(…)`` lets
+    elementpath apply the XPath rules, including raising ``FORG0006``
+    for sequences with no boolean value (reported as indeterminate).
+    """
+    return bool(_select(xml_root, f"boolean({test})", namespaces, item=item))
+
+
 _CODE_RX = re.compile(r"\[([A-Z][A-Z0-9-]+)\]")
 
 
@@ -81,9 +152,7 @@ def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronR
             if not context:
                 continue
             try:
-                raw_ctx = elementpath.select(
-                    xml_root, context, namespaces=namespaces, parser=XPath2Parser
-                )
+                raw_ctx = _select(xml_root, context, namespaces)
             except Exception:  # noqa: BLE001 — elementpath raises a wide variety; treat any as "indeterminate"
                 # Unsupported XPath in the context selector — every assert
                 # under this rule is effectively indeterminate, but we don't
@@ -97,13 +166,7 @@ def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronR
                 fired = False
                 for ctx in ctx_nodes:
                     try:
-                        result = elementpath.select(
-                            xml_root,
-                            test,
-                            namespaces=namespaces,
-                            parser=XPath2Parser,
-                            item=ctx,
-                        )
+                        result = _test(xml_root, test, namespaces, ctx)
                     except Exception:  # noqa: BLE001 — elementpath raises a wide variety; treat any as "indeterminate"
                         indeterminate.add(code)
                         evaluated = False
@@ -121,13 +184,7 @@ def evaluate_schematron(sch_path: Path, xml_root: etree._Element) -> SchematronR
                 test = report_el.attrib.get("test", "")
                 for ctx in ctx_nodes:
                     try:
-                        result = elementpath.select(
-                            xml_root,
-                            test,
-                            namespaces=namespaces,
-                            parser=XPath2Parser,
-                            item=ctx,
-                        )
+                        result = _test(xml_root, test, namespaces, ctx)
                     except Exception:  # noqa: BLE001 — elementpath raises a wide variety; treat any as "indeterminate"
                         # A report whose test can't be evaluated tells us
                         # nothing — neither fired nor not — so drop it
