@@ -41,7 +41,7 @@ def _doc() -> Document:
     return Document.from_xml(etree.fromstring(_SAMPLE.read_bytes()))
 
 
-def _set_line_tax(doc: Document, *totals: tuple[str, Currency]) -> None:
+def _set_line_tax(doc: Document, *totals: tuple[str, Currency | None]) -> None:
     doc.trade.items[0].settlement.monetary_summation.tax_total = [
         LineTaxTotal(amount=Decimal(amount), currency_id=cur) for amount, cur in totals
     ]
@@ -105,6 +105,57 @@ def test_document_validate_reports_code() -> None:
     with pytest.raises(ValidationErrors) as exc:
         doc.validate()
     assert {e.code for e in exc.value.errors} == {"BT-X-329"}
+
+
+def test_missing_currency_counts_as_invoice_currency() -> None:
+    doc = _doc()
+    _set_line_tax(doc, ("9.88", None))
+    assert _messages(doc) == []
+    assert _line_codes(doc) == []
+    doc.validate()
+
+
+def test_missing_currency_duplicates_invoice_currency() -> None:
+    doc = _doc()
+    _set_line_tax(doc, ("9.88", None), ("9.88", Currency.EUR))
+    (msg,) = _messages(doc)
+    assert "more than one" in msg
+    assert "EUR" in msg
+
+
+def test_missing_currency_vat_mismatch_warns() -> None:
+    doc = _doc()
+    _set_line_tax(doc, ("9.00", None))
+    doc.trade.items[0].settlement.monetary_summation.grand_total = Decimal("61.00")
+    assert _line_codes(doc) == ["GETAFIX-LINE-VAT"]
+
+
+@pytest.mark.parametrize(
+    ("xml", "currency"),
+    [
+        ("<ram:TaxTotalAmount>9.88</ram:TaxTotalAmount>", None),
+        (
+            '<ram:TaxTotalAmount currencyID="EUR">9.88</ram:TaxTotalAmount>',
+            Currency.EUR,
+        ),
+    ],
+)
+def test_line_tax_total_xml_round_trip(xml: str, currency: Currency | None) -> None:
+    ns = 'xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"'
+    elem = etree.fromstring(
+        xml.replace("<ram:TaxTotalAmount", f"<ram:TaxTotalAmount {ns}", 1)
+    )
+    parsed = LineTaxTotal.from_xml(elem)
+    assert parsed == LineTaxTotal(amount=Decimal("9.88"), currency_id=currency)
+    rendered = str(parsed.to_xml_internal(Profile.EXTENDED))
+    assert ("currencyID" in rendered) == (currency is not None)
+    assert "9.88" in rendered
+
+
+def test_line_tax_total_without_currency_passes_br_5() -> None:
+    assert (
+        LineTaxTotal(amount=Decimal("9.88")).validate_internal(Profile.EXTENDED) == []
+    )
 
 
 def test_line_tax_total_has_no_header_decimal_cap() -> None:

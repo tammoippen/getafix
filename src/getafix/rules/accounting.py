@@ -31,16 +31,18 @@ if TYPE_CHECKING:
     from getafix.schema import accounting as _acc
 
 
-def br_5_currency_shape(m: _acc.TaxTotal, _profile: Profile) -> list[ValidationError]:
+def br_5_currency_shape(
+    m: _acc.TaxTotal | _acc.LineTaxTotal, _profile: Profile
+) -> list[ValidationError]:
     """BR-5: the Invoice currency code (BT-5) is required.
 
     Applies: MINIMUM+. Getafix stretches the rule to also check
     that the value has the ISO 4217 alpha-3 uppercase shape; the
     presence check itself is implicit through the required dataclass
-    field.
+    field. An absent (optional) line ``currencyID`` passes.
     """
     cid = m.currency_id
-    if len(cid) == 3 and cid.isalpha() and cid.upper() == cid:
+    if cid is None or (len(cid) == 3 and cid.isalpha() and cid.upper() == cid):
         return []
     return [
         ValidationError(
