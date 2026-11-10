@@ -19,7 +19,13 @@ from typing import ClassVar, Self, override
 
 from tagic.xml import XML
 
-from getafix.schema.element import Element, ETElement
+from getafix.schema.element import (
+    CaseFix,
+    Element,
+    ETElement,
+    parse_code,
+    set_case_fixes,
+)
 from getafix.schema.types import MIME, Profile, UNTDID1001TypeCode
 
 
@@ -189,10 +195,12 @@ class AttachmentBinaryObject(Element):
         filename = elem.attrib["filename"]
         assert isinstance(mime_code, str)
         assert isinstance(filename, str)
-        return cls(
-            mime_code=MIME(mime_code.strip()),
-            filename=filename.strip(),
-            object=elem.text.strip(),
+        raw_mime = mime_code.strip()
+        mime, case_fixed = parse_code(MIME, raw_mime)
+        fixes: list[CaseFix] = [("mime_code", raw_mime, mime)] if case_fixed else []
+        return set_case_fixes(
+            cls(mime_code=mime, filename=filename.strip(), object=elem.text.strip()),
+            fixes,
         )
 
 
